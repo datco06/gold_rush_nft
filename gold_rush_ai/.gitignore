@@ -2,6 +2,8 @@ __pycache__/
 .pytest_cache/
 # Nhật ký người chơi KHÔNG đưa lên Git (dữ liệu thật, có thể có biệt danh)
 data/nhat_ky/*.jsonl
+# SQLite và file journal của lịch sử nhiệm vụ chỉ lưu local.
+data/nhiem_vu/
 # Bản đồ sinh thử — sinh lại được từ seed
 artifacts/ban_do/
 # .gitignore gốc bỏ qua toàn bộ artifacts/; model backend sinh local không được theo dõi.
