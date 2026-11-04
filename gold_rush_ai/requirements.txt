@@ -10,3 +10,5 @@ streamlit>=1.50
 requests
 httpx
 pytest
+# Nạp .env cho lệnh test/dashboard qua python -m dotenv (có CLI).
+python-dotenv[cli]>=1.0

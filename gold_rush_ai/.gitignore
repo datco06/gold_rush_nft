@@ -4,5 +4,5 @@ __pycache__/
 data/nhat_ky/*.jsonl
 # Bản đồ sinh thử — sinh lại được từ seed
 artifacts/ban_do/
-# Mô hình nhỏ (vài KB JSON) thì đưa lên Git; mô hình lớn (.pt, .onnx, .tflite > 50 MB)
-# thì dùng Git LFS hoặc Hugging Face Hub — xem mục 9 của notebook AI Web Apps.
+# .gitignore gốc bỏ qua toàn bộ artifacts/; model backend sinh local không được theo dõi.
+# Model JSON sẵn có được theo dõi tại ../gold_rush/assets/models/.

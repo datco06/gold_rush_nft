@@ -16,3 +16,5 @@ analyzer:
     # Gọi hàm bất đồng bộ mà không await (ví dụ phát âm thanh) là có chủ ý
     # trong dự án này, nên hạ xuống mức nhắc nhở.
     unawaited_futures: ignore
+  exclude:
+    - build/**
