@@ -13,6 +13,7 @@ Chạy:  uvicorn api.main:app --reload --port 8000      (tài liệu tương tá
 | GET    | /api/mo-hinh/do-kho    | tải tệp mô hình hiện hành (app cập nhật mô hình không cần phát hành lại) |
 | GET    | /api/ban-do/sinh       | sinh bản đồ .tmx mới theo seed                             |
 | POST   | /api/tro-ly            | trợ lý gợi ý cách chơi (RAG rút gọn)                        |
+| POST   | /api/ai/nhiem-vu/tao   | tạo nhiệm vụ, lưu lịch sử và xử lý retry                    |
 | GET    | /api/man               | danh sách màn chơi (man_choi.json)                          |
 | POST   | /api/man/bat-dau       | đăng ký bắt đầu màn có cọc: (ví, số vé) → mã ván, MỘT lần    |
 | GET    | /api/man/ve            | vé (ví, số vé) đã dùng để bắt đầu ván nào chưa                |
@@ -40,6 +41,7 @@ from core import do_kho, man_choi, nhat_ky, sinh_ban_do, trong_tai
 from core.eth_ky import dia_chi_tu_khoa
 from core.luoi import doc_tmx
 from core.tro_ly import TroLy
+from api.nhiem_vu import khoi_dong_nhiem_vu, nhiem_vu_da_nap, router as router_nhiem_vu
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("api")
@@ -49,6 +51,7 @@ STATE: dict = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Nạp MỘT LẦN lúc khởi động; một thành phần lỗi không làm sập cả server
+    khoi_dong_nhiem_vu(app)
     if "do_kho" in ENABLED:
         try:
             STATE["do_kho"] = json.loads(MO_HINH_DO_KHO.read_text(encoding="utf-8"))
@@ -68,10 +71,12 @@ async def lifespan(app: FastAPI):
             log.error("không nạp được kho tri thức %s: %s", KB_DIR, e)
     yield
     STATE.clear()
+    app.state.nhiem_vu = None
 
 
 app = FastAPI(title="Gold Rush AI API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+app.include_router(router_nhiem_vu)
 
 
 @app.middleware("http")
@@ -90,9 +95,10 @@ def _can(ten: str):
 
 
 @app.get("/api/health")
-def health():
+def health(request: Request):
     return {"status": "ok", "bat": sorted(ENABLED),
-            "da_nap": {"do_kho": "do_kho" in STATE, "tro_ly": "tro_ly" in STATE},
+            "da_nap": {"do_kho": "do_kho" in STATE, "tro_ly": "tro_ly" in STATE,
+                       "nhiem_vu": nhiem_vu_da_nap(request.app)},
             "phien_ban_mo_hinh": STATE.get("do_kho", {}).get("phien_ban")}
 
 
