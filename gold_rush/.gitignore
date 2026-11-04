@@ -1,0 +1,25 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/
+
+# Thư mục nền tảng do `flutter create .` sinh ra.
+# Bỏ dấu # ở các dòng dưới nếu nhóm muốn đưa chúng lên Git.
+#android/
+#ios/
+#web/
+#windows/
+#linux/
+#macos/
+
+# Tài nguyên sinh tự động — chạy `python3 cong-cu/sinh_tai_nguyen.py` là có lại.
+# Mặc định VẪN đưa lên Git để người khác tải về chạy được ngay,
+# nên các dòng dưới đang bị vô hiệu hoá.
+#assets/images/
+#assets/audio/
+#assets/tiles/

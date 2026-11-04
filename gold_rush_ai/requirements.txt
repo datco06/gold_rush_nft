@@ -1,0 +1,12 @@
+# Máy chủ AI của Gold Rush — chạy được trên CPU, không cần GPU
+fastapi>=0.115
+uvicorn[standard]
+pydantic>=2.7
+numpy
+scikit-learn>=1.5
+matplotlib
+# Giao diện + kiểm thử
+streamlit>=1.50
+requests
+httpx
+pytest

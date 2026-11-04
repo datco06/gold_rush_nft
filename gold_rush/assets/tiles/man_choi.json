@@ -1,0 +1,77 @@
+{
+ "phien_ban": 1,
+ "man": [
+  {
+   "id": 1,
+   "ten": "Đồng cỏ",
+   "mo_ta": "Màn luyện tập: không giới hạn thời gian, thua không mất gì.",
+   "tep": "gold_rush.tmx",
+   "gioi_han_giay": 0,
+   "he_so_ke_dich": 1.0,
+   "coc": 0,
+   "thuong": 0,
+   "so_xu": 24,
+   "sao": 1
+  },
+  {
+   "id": 2,
+   "ten": "Rừng thưa",
+   "mo_ta": "Cây cối lưa thưa, ít quái — làm quen với đồng hồ.",
+   "tep": "man_2.tmx",
+   "gioi_han_giay": 100,
+   "he_so_ke_dich": 1.0,
+   "coc": 5,
+   "thuong": 5,
+   "so_xu": 18,
+   "sao": 2
+  },
+  {
+   "id": 3,
+   "ten": "Hang đá",
+   "mo_ta": "Nhiều ngõ cụt; bộ xương bắt đầu đông hơn.",
+   "tep": "man_3.tmx",
+   "gioi_han_giay": 110,
+   "he_so_ke_dich": 1.05,
+   "coc": 8,
+   "thuong": 8,
+   "so_xu": 20,
+   "sao": 3
+  },
+  {
+   "id": 4,
+   "ten": "Rừng rậm",
+   "mo_ta": "Vật cản dày đặc, phải tính đường trước khi đi.",
+   "tep": "man_4.tmx",
+   "gioi_han_giay": 120,
+   "he_so_ke_dich": 1.1,
+   "coc": 12,
+   "thuong": 12,
+   "so_xu": 20,
+   "sao": 3
+  },
+  {
+   "id": 5,
+   "ten": "Thung lũng xương",
+   "mo_ta": "Bảy bộ xương canh giữ, chạy nhanh hơn.",
+   "tep": "man_5.tmx",
+   "gioi_han_giay": 130,
+   "he_so_ke_dich": 1.15,
+   "coc": 16,
+   "thuong": 16,
+   "so_xu": 22,
+   "sao": 4
+  },
+  {
+   "id": 6,
+   "ten": "Mỏ vàng",
+   "mo_ta": "Màn cuối: 24 xu, 13 kẻ địch, kẻ địch nhanh hơn 20%.",
+   "tep": "man_6.tmx",
+   "gioi_han_giay": 120,
+   "he_so_ke_dich": 1.2,
+   "coc": 20,
+   "thuong": 24,
+   "so_xu": 24,
+   "sao": 5
+  }
+ ]
+}

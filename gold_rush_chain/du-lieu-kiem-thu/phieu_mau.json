@@ -1,0 +1,28 @@
+{
+  "trong_tai": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "hop_dong": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "luyen_tap": {
+    "phieu": {
+      "nguoiChoi": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+      "man": 1,
+      "ve": 0,
+      "soVang": 10,
+      "maVan": "0xd797b3c020aa87537274d8ef21a3d732bb6d667515bab7a693b898458b30c958",
+      "hanChot": 2000000000
+    },
+    "chu_ky": "0xd7d3ec4db5ab5800f0b1a42e49fea0d6969d38af9e8ce94a6ff07701c5d0f2a71c98a32c0623bd3a88f49bf6b1976057b4f201a19a4102256a8a89eb028d3fc61c",
+    "bam": "0x9a1c4c6da9621d772768823fe84f856ff9500aeb177834ca4b210643994ee81a"
+  },
+  "man_coc": {
+    "phieu": {
+      "nguoiChoi": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+      "man": 2,
+      "ve": 1,
+      "soVang": 23,
+      "maVan": "0x25e96e361c0ed428a2c89cd2a34676fbee1b0cba450a80b0f269e83d2080c35e",
+      "hanChot": 2000000000
+    },
+    "chu_ky": "0x99a49f3afc75cf1bc1e1db769c3f6d01c037e940e158b7bcdd75248ad43e0d895d6299edde9414c0178787d59890ceceef3323cea6bcff3ffb088800f73b9aeb1c",
+    "bam": "0xb6fc241fb4df8075dba723343aa8bfd2ede05170e51178456e747e4f35af770c"
+  }
+}

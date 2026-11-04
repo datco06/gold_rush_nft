@@ -1,0 +1,37 @@
+name: gold_rush
+description: Gold Rush - game 2D dựng lại theo sách "Building Games with Flutter" (2022) trên Flame bản hiện hành.
+publish_to: 'none'
+version: 1.3.0+4
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Phiên bản đối chiếu pub.dev ngày 22/09/2026.
+  # Ba gói này phát hành đồng bộ: flame_tiled 3.1.2 và flame_audio 2.12.2
+  # đều khai báo phụ thuộc flame ^1.38.0.
+  flame: ^1.38.2
+  flame_tiled: ^3.1.2
+  flame_audio: ^2.12.2
+
+  # Gửi nhật ký ván chơi về máy chủ gold_rush_ai (lib/ai/gui_nhat_ky.dart).
+  # Đối chiếu pub.dev ngày 09/10/2026: bản mới nhất 1.6.0.
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/tiles/
+    - assets/audio/
+    # Mô hình AI chạy trên máy (tệp nhỏ, < vài MB). Mô hình lớn để ở máy chủ.
+    - assets/models/

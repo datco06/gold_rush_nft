@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+# Nhật ký người chơi KHÔNG đưa lên Git (dữ liệu thật, có thể có biệt danh)
+data/nhat_ky/*.jsonl
+# Bản đồ sinh thử — sinh lại được từ seed
+artifacts/ban_do/
+# Mô hình nhỏ (vài KB JSON) thì đưa lên Git; mô hình lớn (.pt, .onnx, .tflite > 50 MB)
+# thì dùng Git LFS hoặc Hugging Face Hub — xem mục 9 của notebook AI Web Apps.

@@ -1,0 +1,18 @@
+# Bộ quy tắc phân tích mã nguồn cho dự án Gold Rush.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Game vẽ lại 60 lần mỗi giây; const giúp Flutter bỏ qua việc dựng lại widget.
+    prefer_const_constructors: true
+    prefer_const_literals_to_create_immutables: true
+    # Bắt buộc khai báo kiểu trả về để mã dễ đọc với người mới.
+    always_declare_return_types: true
+    # Dùng dấu nháy đơn cho chuỗi, thống nhất toàn dự án.
+    prefer_single_quotes: true
+
+analyzer:
+  errors:
+    # Gọi hàm bất đồng bộ mà không await (ví dụ phát âm thanh) là có chủ ý
+    # trong dự án này, nên hạ xuống mức nhắc nhở.
+    unawaited_futures: ignore
