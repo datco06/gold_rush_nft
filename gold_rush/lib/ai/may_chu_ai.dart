@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -15,13 +16,21 @@ enum LoiApiAi {
 
 class KetQuaApiAi {
   final Map<String, dynamic>? duLieu;
+  final Uint8List? bytes;
+  final String? contentType;
   final LoiApiAi? loi;
   final int? maHttp;
 
-  const KetQuaApiAi._({this.duLieu, this.loi, this.maHttp});
+  const KetQuaApiAi._({
+    this.duLieu,
+    this.bytes,
+    this.contentType,
+    this.loi,
+    this.maHttp,
+  });
 }
 
-/// Gọi JSON cho các API AI. Client truyền vào do caller quản lý.
+/// Gọi JSON hoặc tải byte từ máy chủ AI. Client truyền vào do caller quản lý.
 /// Mỗi lần gọi gửi một request, timeout hủy riêng request đó qua abort trigger.
 class MayChuAi {
   final Uri? _mayChu;
@@ -51,29 +60,62 @@ class MayChuAi {
     required Map<String, Object> body,
     Map<String, String> headers = const {},
   }) async {
-    final mayChu = _mayChu;
-    if (mayChu == null) {
-      return const KetQuaApiAi._(loi: LoiApiAi.chuaCauHinh);
+    final kq = await _goi(
+      'POST',
+      duongDan,
+      body: body,
+      headers: headers,
+      gioiHanByte: 65536,
+    );
+    if (kq.loi != null) return kq;
+    try {
+      final json = jsonDecode(utf8.decode(kq.bytes!));
+      if (json is! Map<String, dynamic>) {
+        throw const FormatException('Phản hồi AI phải là object');
+      }
+      return KetQuaApiAi._(duLieu: json, maHttp: kq.maHttp);
+    } on FormatException {
+      return const KetQuaApiAi._(loi: LoiApiAi.phanHoiKhongHopLe);
     }
+  }
+
+  /// GET giới hạn 1 MiB, giữ ngữ cảnh/header của cùng client dùng để POST.
+  Future<KetQuaApiAi> getBytes(
+    String duongDan, {
+    Map<String, String> headers = const {},
+  }) => _goi('GET', duongDan, headers: headers, gioiHanByte: 1024 * 1024);
+
+  Future<KetQuaApiAi> _goi(
+    String method,
+    String duongDan, {
+    Map<String, Object>? body,
+    required Map<String, String> headers,
+    required int gioiHanByte,
+  }) async {
+    final mayChu = _mayChu;
+    if (mayChu == null) return const KetQuaApiAi._(loi: LoiApiAi.chuaCauHinh);
     final diaChi = mayChu.replace(
       path: '${mayChu.path.replaceFirst(RegExp(r'/+$'), '')}$duongDan',
     );
     final httpClient = client ?? http.Client();
     final huy = Completer<void>();
     try {
-      return await _gui(
-        httpClient,
-        diaChi,
-        body,
-        headers,
-        huy.future,
-      ).timeout(thoiGianCho);
+      final request =
+          http.AbortableRequest(method, diaChi, abortTrigger: huy.future)
+            ..followRedirects = false
+            ..headers.addAll({
+              if (body != null) 'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              if (_maNguoiChoiDemo != null) 'X-Demo-Player': _maNguoiChoiDemo,
+              ...headers,
+            });
+      if (body != null) request.body = jsonEncode(body);
+      return await _gui(httpClient, request, gioiHanByte).timeout(thoiGianCho);
     } on TimeoutException {
       return const KetQuaApiAi._(loi: LoiApiAi.hetThoiGian);
     } on FormatException {
       return const KetQuaApiAi._(loi: LoiApiAi.phanHoiKhongHopLe);
     } on Exception {
-      // Gồm lỗi HTTP, socket và TLS của các client nền tảng.
       return const KetQuaApiAi._(loi: LoiApiAi.ketNoi);
     } finally {
       huy.complete();
@@ -83,20 +125,9 @@ class MayChuAi {
 
   Future<KetQuaApiAi> _gui(
     http.Client client,
-    Uri diaChi,
-    Map<String, Object> body,
-    Map<String, String> headers,
-    Future<void> huy,
+    http.BaseRequest request,
+    int gioiHanByte,
   ) async {
-    final request = http.AbortableRequest('POST', diaChi, abortTrigger: huy)
-      ..followRedirects = false
-      ..headers.addAll({
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (_maNguoiChoiDemo != null) 'X-Demo-Player': _maNguoiChoiDemo,
-        ...headers,
-      })
-      ..body = jsonEncode(body);
     final response = await client.send(request);
     if (response.statusCode != 200) {
       await response.stream.listen(null).cancel();
@@ -105,18 +136,18 @@ class MayChuAi {
         maHttp: response.statusCode,
       );
     }
-    final bytes = <int>[];
+    final bytes = BytesBuilder(copy: false);
     await for (final chunk in response.stream) {
-      if (bytes.length + chunk.length > 65536) {
+      if (bytes.length + chunk.length > gioiHanByte) {
         throw const FormatException('Phản hồi AI quá lớn');
       }
-      bytes.addAll(chunk);
+      bytes.add(chunk);
     }
-    final json = jsonDecode(utf8.decode(bytes));
-    if (json is! Map<String, dynamic>) {
-      throw const FormatException('Phản hồi AI phải là object');
-    }
-    return KetQuaApiAi._(duLieu: json, maHttp: response.statusCode);
+    return KetQuaApiAi._(
+      bytes: bytes.takeBytes().asUnmodifiableView(),
+      contentType: response.headers['content-type'],
+      maHttp: response.statusCode,
+    );
   }
 }
 
