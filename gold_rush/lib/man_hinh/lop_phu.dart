@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../ai/may_chu_nhiem_vu.dart';
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../man_choi.dart';
+import 'nhiem_vu.dart';
 
 /// Bốn màn hình phủ lên trên game: Menu, Cài đặt, Tạm dừng, Kết thúc.
 ///
@@ -132,6 +134,21 @@ class ManHinhMenu extends StatelessWidget {
 
   const ManHinhMenu({super.key, required this.game});
 
+  void _moNhiemVu(BuildContext context) {
+    // Danh tính demo do người chạy cấu hình, quyền truy cập do backend kiểm tra.
+    const demo = String.fromEnvironment('GOLD_RUSH_QUEST_DEMO_PLAYER');
+    try {
+      final api = MayChuNhiemVu(maNguoiChoiDemo: demo.isEmpty ? null : demo);
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ManHinhNhiemVu(mayChu: api, manChoi: 1),
+      ));
+    } on ArgumentError {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cấu hình API nhiệm vụ không hợp lệ.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return _Khung(
@@ -149,6 +166,11 @@ class ManHinhMenu extends StatelessWidget {
           nhan: 'Cửa hàng nhân vật',
           bieuTuong: Icons.storefront_rounded,
           khiBam: game.moCuaHang,
+        ),
+        _Nut(
+          nhan: 'Nhiệm vụ AI',
+          bieuTuong: Icons.auto_awesome,
+          khiBam: () => _moNhiemVu(context),
         ),
         _Nut(
           nhan: 'Cài đặt',
