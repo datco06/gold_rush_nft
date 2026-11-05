@@ -45,6 +45,8 @@ from api.nhiem_vu import khoi_dong_nhiem_vu, nhiem_vu_da_nap, router as router_n
 from api.de_xuat_do_kho import (de_xuat_do_kho_da_nap, khoi_dong_de_xuat_do_kho,
                                  router as router_de_xuat_do_kho)
 
+from api.nhan_vat_ai import khoi_dong_nhan_vat_ai, nhan_vat_ai_da_nap, router as router_nhan_vat_ai
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("api")
 STATE: dict = {}
@@ -55,6 +57,7 @@ async def lifespan(app: FastAPI):
     # Nạp MỘT LẦN lúc khởi động; một thành phần lỗi không làm sập cả server
     khoi_dong_nhiem_vu(app)
     khoi_dong_de_xuat_do_kho(app)
+    khoi_dong_nhan_vat_ai(app)
     if "do_kho" in ENABLED:
         try:
             STATE["do_kho"] = json.loads(MO_HINH_DO_KHO.read_text(encoding="utf-8"))
@@ -76,12 +79,14 @@ async def lifespan(app: FastAPI):
     STATE.clear()
     app.state.nhiem_vu = None
     app.state.de_xuat_do_kho = None
+    app.state.nhan_vat_ai = None
 
 
 app = FastAPI(title="Gold Rush AI API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 app.include_router(router_nhiem_vu)
 app.include_router(router_de_xuat_do_kho)
+app.include_router(router_nhan_vat_ai)
 
 
 @app.middleware("http")
@@ -104,7 +109,8 @@ def health(request: Request):
     return {"status": "ok", "bat": sorted(ENABLED),
             "da_nap": {"do_kho": "do_kho" in STATE, "tro_ly": "tro_ly" in STATE,
                        "nhiem_vu": nhiem_vu_da_nap(request.app),
-                       "de_xuat_do_kho": de_xuat_do_kho_da_nap(request.app)},
+                       "de_xuat_do_kho": de_xuat_do_kho_da_nap(request.app),
+                       "nhan_vat_ai": nhan_vat_ai_da_nap(request.app)},
             "phien_ban_mo_hinh": STATE.get("do_kho", {}).get("phien_ban")}
 
 

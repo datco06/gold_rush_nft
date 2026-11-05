@@ -17,7 +17,7 @@ import time
 from uuid import uuid4
 
 from .ai_nhan_vat import KetQuaTaoAnh
-from .nhan_vat_ai import AnhNhanVat, KICH_THUOC_ANH_XEM_TRUOC
+from .nhan_vat_ai import AnhNhanVat, KICH_THUOC_ANH_XEM_TRUOC, YeuCauTaoNhanVat
 from .xu_ly_anh import chuan_hoa_anh
 
 
@@ -27,6 +27,29 @@ class LoiKhoAnh(RuntimeError):
 
 class KhoAnhDay(LoiKhoAnh):
     """Số ảnh còn hạn đã đạt giới hạn cấu hình."""
+
+
+class XungDotYeuCauAnh(ValueError):
+    """C?ng request ID c?n h?n ?? ???c d?ng cho m? t? kh?c."""
+
+
+_SQL_YEU_CAU = """SELECT a.*, y.fingerprint AS request_fingerprint
+                   FROM yeu_cau_anh y JOIN anh_nhan_vat a ON a.image_id = y.image_id
+                   WHERE y.player_id = ? AND y.request_id = ?"""
+
+
+def _ma_hop_le(value: str) -> None:
+    if not isinstance(value, str) or re.fullmatch(r"[A-Za-z0-9_-]{1,64}", value) is None:
+        raise ValueError("M? ng??i ch?i v? request c?n 1..64 ch?, s?, g?ch n?i ho?c g?ch d??i")
+
+
+def _fingerprint(player_id: str, request_id: str, yeu_cau: YeuCauTaoNhanVat) -> str:
+    _ma_hop_le(player_id)
+    _ma_hop_le(request_id)
+    if not isinstance(yeu_cau, YeuCauTaoNhanVat):
+        raise ValueError("C?n y?u c?u t?o nh?n v?t h?p l?")
+    yc = YeuCauTaoNhanVat.model_validate(yeu_cau.model_dump(warnings=False), strict=True)
+    return sha256(yc.model_dump_json().encode("utf-8")).hexdigest()
 
 
 class KhoAnh:
@@ -59,6 +82,13 @@ class KhoAnh:
                     expires_at REAL NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS ix_anh_het_han ON anh_nhan_vat(expires_at);
+                CREATE TABLE IF NOT EXISTS yeu_cau_anh (
+                    player_id TEXT NOT NULL,
+                    request_id TEXT NOT NULL,
+                    fingerprint TEXT NOT NULL,
+                    image_id TEXT NOT NULL UNIQUE,
+                    PRIMARY KEY(player_id, request_id)
+                );
             """)
 
     @contextmanager
@@ -87,30 +117,80 @@ class KhoAnh:
             raise ValueError("Thời gian server không hợp lệ")
         return value
 
-    def luu(self, ket_qua: KetQuaTaoAnh) -> AnhNhanVat:
-        """Cấp ID mới, chuẩn hóa ảnh, rồi lưu metadata và byte trong cùng transaction."""
+    @staticmethod
+    def _chuan_bi_anh(ket_qua: KetQuaTaoAnh) -> tuple[AnhNhanVat, bytes, str]:
         if not isinstance(ket_qua, KetQuaTaoAnh):
-            raise ValueError("Cần kết quả tạo ảnh hợp lệ")
+            raise ValueError("C?n k?t qu? t?o ?nh h?p l?")
         image_id = f"img_{uuid4().hex}"
         metadata = AnhNhanVat(image_id=image_id, image_url=f"/api/ai/nhan-vat/anh/{image_id}",
                              width=KICH_THUOC_ANH_XEM_TRUOC, height=KICH_THUOC_ANH_XEM_TRUOC,
                              generation_source=ket_qua.generation_source)
-        # Giải mã và xử lý ảnh ngoài transaction ghi để giữ khóa SQL ngắn.
         png = chuan_hoa_anh(ket_qua.png)
-        checksum = sha256(png).hexdigest()
+        return metadata, png, sha256(png).hexdigest()
+
+    @staticmethod
+    def _don(conn: sqlite3.Connection, bay_gio: float) -> int:
+        count = conn.execute("DELETE FROM anh_nhan_vat WHERE expires_at <= ?", (bay_gio,)).rowcount
+        conn.execute("""DELETE FROM yeu_cau_anh WHERE NOT EXISTS
+                        (SELECT 1 FROM anh_nhan_vat a WHERE a.image_id = yeu_cau_anh.image_id)""")
+        return count
+
+    def _ghi_anh(self, conn, metadata, png, checksum, bay_gio) -> None:
+        het_han = bay_gio + self.han_luu_giay
+        if not math.isfinite(het_han) or het_han <= bay_gio:
+            raise ValueError("Th?i h?n ?nh kh?ng h?p l?")
+        if conn.execute("SELECT COUNT(*) FROM anh_nhan_vat").fetchone()[0] >= self.so_anh_toi_da:
+            raise KhoAnhDay("Kho ?nh ?? ??t gi?i h?n, c?n d?n ?nh h?t h?n tr??c khi l?u th?m")
+        conn.execute("""INSERT INTO anh_nhan_vat(image_id, payload, png, checksum, expires_at)
+                        VALUES (?, ?, ?, ?, ?)""",
+                     (metadata.image_id, metadata.model_dump_json(), png, checksum, het_han))
+
+    def luu(self, ket_qua: KetQuaTaoAnh) -> AnhNhanVat:
+        """C?p ID m?i v? l?u ?nh n?i b?, metadata c?ng byte trong m?t transaction."""
+        metadata, png, checksum = self._chuan_bi_anh(ket_qua)
         with self._ket_noi() as conn:
             conn.execute("BEGIN IMMEDIATE")
             bay_gio = self._bay_gio()
-            het_han = bay_gio + self.han_luu_giay
-            if not math.isfinite(het_han) or het_han <= bay_gio:
-                raise ValueError("Thời hạn ảnh không hợp lệ")
-            conn.execute("DELETE FROM anh_nhan_vat WHERE expires_at <= ?", (bay_gio,))
-            so_anh = conn.execute("SELECT COUNT(*) FROM anh_nhan_vat").fetchone()[0]
-            if so_anh >= self.so_anh_toi_da:
-                raise KhoAnhDay("Kho ảnh đã đạt giới hạn, cần dọn ảnh hết hạn trước khi lưu thêm")
-            conn.execute("""INSERT INTO anh_nhan_vat(image_id, payload, png, checksum, expires_at)
-                            VALUES (?, ?, ?, ?, ?)""",
-                         (image_id, metadata.model_dump_json(), png, checksum, het_han))
+            self._don(conn, bay_gio)
+            self._ghi_anh(conn, metadata, png, checksum, bay_gio)
+        return metadata
+
+    def _cache(self, row, fingerprint: str, bay_gio: float) -> AnhNhanVat | None:
+        if row is None:
+            return None
+        anh = self._doc_dong(row, row["image_id"], bay_gio)
+        if anh is None:
+            return None
+        cu = row["request_fingerprint"]
+        if not isinstance(cu, str) or re.fullmatch(r"[0-9a-f]{64}", cu) is None:
+            raise LoiKhoAnh("D? li?u request ?nh ?? l?u kh?ng h?p l?")
+        if cu != fingerprint:
+            raise XungDotYeuCauAnh("Request ID ?? ???c d?ng cho m? t? kh?c")
+        return anh[0]
+
+    def lay_theo_yeu_cau(self, player_id: str, request_id: str,
+                        yeu_cau: YeuCauTaoNhanVat) -> AnhNhanVat | None:
+        fingerprint = _fingerprint(player_id, request_id, yeu_cau)
+        with self._ket_noi() as conn:
+            row = conn.execute(_SQL_YEU_CAU, (player_id, request_id)).fetchone()
+        return self._cache(row, fingerprint, self._bay_gio())
+
+    def luu_theo_yeu_cau(self, player_id: str, request_id: str, yeu_cau: YeuCauTaoNhanVat,
+                         ket_qua: KetQuaTaoAnh) -> AnhNhanVat:
+        """Ch? l?u m?t ?nh theo ng??i/request trong th?i gian ?nh c?n h?n."""
+        fingerprint = _fingerprint(player_id, request_id, yeu_cau)
+        metadata, png, checksum = self._chuan_bi_anh(ket_qua)
+        with self._ket_noi() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(_SQL_YEU_CAU, (player_id, request_id)).fetchone()
+            bay_gio = self._bay_gio()
+            cu = self._cache(row, fingerprint, bay_gio)
+            if cu is not None:
+                return cu
+            self._don(conn, bay_gio)
+            self._ghi_anh(conn, metadata, png, checksum, bay_gio)
+            conn.execute("""INSERT INTO yeu_cau_anh(player_id, request_id, fingerprint, image_id)
+                            VALUES (?, ?, ?, ?)""", (player_id, request_id, fingerprint, metadata.image_id))
         return metadata
 
     def doc(self, image_id: str) -> tuple[AnhNhanVat, bytes] | None:
@@ -119,12 +199,26 @@ class KhoAnh:
             raise ValueError("ID ảnh không hợp lệ")
         with self._ket_noi() as conn:
             row = conn.execute("SELECT * FROM anh_nhan_vat WHERE image_id = ?", (image_id,)).fetchone()
+        return self._doc_dong(row, image_id, self._bay_gio())
+
+    def doc_cho_nguoi(self, player_id: str, image_id: str) -> tuple[AnhNhanVat, bytes] | None:
+        _ma_hop_le(player_id)
+        if not isinstance(image_id, str) or re.fullmatch(r"img_[0-9a-f]{32}", image_id) is None:
+            raise ValueError("ID ?nh kh?ng h?p l?")
+        with self._ket_noi() as conn:
+            row = conn.execute("""SELECT a.* FROM anh_nhan_vat a JOIN yeu_cau_anh y
+                                  ON a.image_id = y.image_id WHERE y.player_id = ? AND a.image_id = ?""",
+                               (player_id, image_id)).fetchone()
+        return self._doc_dong(row, image_id, self._bay_gio())
+
+    @staticmethod
+    def _doc_dong(row, image_id: str, bay_gio: float) -> tuple[AnhNhanVat, bytes] | None:
         if row is None:
             return None
         het_han = row["expires_at"]
         if not isinstance(het_han, (int, float)) or not math.isfinite(het_han):
             raise LoiKhoAnh("Thời hạn ảnh đã lưu không hợp lệ")
-        if het_han <= self._bay_gio():
+        if het_han <= bay_gio:
             return None
         try:
             metadata = AnhNhanVat.model_validate_json(row["payload"])
@@ -140,5 +234,4 @@ class KhoAnh:
         """Xóa các ảnh hết hạn, trả số hàng đã xóa; phần trống được SQLite tái sử dụng."""
         with self._ket_noi() as conn:
             conn.execute("BEGIN IMMEDIATE")
-            cursor = conn.execute("DELETE FROM anh_nhan_vat WHERE expires_at <= ?", (self._bay_gio(),))
-            return cursor.rowcount
+            return self._don(conn, self._bay_gio())
