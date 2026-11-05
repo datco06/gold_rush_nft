@@ -8,3 +8,5 @@ data/nhiem_vu/
 artifacts/ban_do/
 # .gitignore gốc bỏ qua toàn bộ artifacts/; model backend sinh local không được theo dõi.
 # Model JSON sẵn có được theo dõi tại ../gold_rush/assets/models/.
+# Ảnh xem trước và metadata SQLite chỉ lưu local.
+data/anh_nhan_vat/
