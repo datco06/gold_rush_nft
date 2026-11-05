@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../ai/may_chu_de_xuat_do_kho.dart';
 import '../ai/may_chu_nhiem_vu.dart';
+import '../ai/may_chu_nhan_vat.dart';
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../man_choi.dart';
+import 'anh_nhan_vat.dart';
 import 'de_xuat_do_kho.dart';
 import 'nhiem_vu.dart';
 
@@ -136,6 +138,20 @@ class ManHinhMenu extends StatelessWidget {
 
   const ManHinhMenu({super.key, required this.game});
 
+  void _moAnhNhanVat(BuildContext context) {
+    const demo = String.fromEnvironment('GOLD_RUSH_IMAGE_DEMO_PLAYER');
+    try {
+      final api = MayChuNhanVat(maNguoiChoiDemo: demo.isEmpty ? null : demo);
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ManHinhAnhNhanVat(mayChu: api),
+      ));
+    } on ArgumentError {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cấu hình API ảnh nhân vật không hợp lệ.')),
+      );
+    }
+  }
+
   void _moDeXuatDoKho(BuildContext context) {
     const demo = String.fromEnvironment('GOLD_RUSH_DIFFICULTY_DEMO_PLAYER');
     try {
@@ -192,6 +208,11 @@ class ManHinhMenu extends StatelessWidget {
           nhan: 'Nhiệm vụ AI',
           bieuTuong: Icons.auto_awesome,
           khiBam: () => _moNhiemVu(context),
+        ),
+        _Nut(
+          nhan: 'Ảnh nhân vật AI',
+          bieuTuong: Icons.image_outlined,
+          khiBam: () => _moAnhNhanVat(context),
         ),
         _Nut(
           nhan: 'Cài đặt',
