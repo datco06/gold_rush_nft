@@ -30,3 +30,6 @@
 # File xuất mã nguồn để phân tích
 GoldRush_CauTruc.txt
 GoldRush_Source.txt
+
+# Hardhat local deployments
+gold_rush_chain/ignition/deployments/chain-31337/
