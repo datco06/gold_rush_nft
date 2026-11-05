@@ -1,4 +1,3 @@
-"""API đề xuất độ khó với lịch sử do backend cung cấp và demo có nhãn."""
 from contextlib import contextmanager
 import json
 from pathlib import Path

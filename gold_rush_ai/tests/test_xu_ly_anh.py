@@ -1,4 +1,3 @@
-"""Kiểm tra byte ảnh bằng Pillow thật, không mạng hay model bên ngoài."""
 from io import BytesIO
 from pathlib import Path
 

@@ -1,4 +1,3 @@
-"""API nhiệm vụ: context server/demo, service và SQLite thật trong thư mục tạm."""
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path

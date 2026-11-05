@@ -33,7 +33,6 @@ Future<void> _bam(WidgetTester tester, String nhan) async {
   await tester.pumpAndSettle();
   final images = find.byType(Image);
   if (images.evaluate().isNotEmpty) {
-    // Image.memory giải mã frame ngoài đồng hồ giả lập của widget test.
     await tester.runAsync(
       () => precacheImage(
         tester.widget<Image>(images.first).image,

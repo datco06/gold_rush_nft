@@ -30,8 +30,6 @@ class KetQuaApiAi {
   });
 }
 
-/// Gọi JSON hoặc tải byte từ máy chủ AI. Client truyền vào do caller quản lý.
-/// Mỗi lần gọi gửi một request, timeout hủy riêng request đó qua abort trigger.
 class MayChuAi {
   final Uri? _mayChu;
   final String? _maNguoiChoiDemo;
@@ -79,7 +77,6 @@ class MayChuAi {
     }
   }
 
-  /// GET giới hạn 1 MiB, giữ ngữ cảnh/header của cùng client dùng để POST.
   Future<KetQuaApiAi> getBytes(
     String duongDan, {
     Map<String, String> headers = const {},

@@ -1,4 +1,3 @@
-"""Service ảnh nối pipeline với SQLite thật và idempotency theo người chơi."""
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path

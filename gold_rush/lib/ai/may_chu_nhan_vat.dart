@@ -8,7 +8,6 @@ import 'may_chu_ai.dart';
 
 typedef LoiAnhNhanVat = LoiApiAi;
 
-/// tao trả metadata; tai trả metadata và PNG đã giải mã kiểm tra thành công.
 class KetQuaAnhNhanVat {
   final AnhNhanVat? anh;
   final Uint8List? png;
@@ -24,8 +23,6 @@ class KetQuaAnhNhanVat {
       maHttp == 429;
 }
 
-/// Giữ cùng maYeuCau/mô tả khi retry POST trong TTL; dùng tai để tải lại ảnh.
-/// Client được inject chịu trách nhiệm header xác thực của backend khi có.
 class MayChuNhanVat {
   final MayChuAi _api;
 

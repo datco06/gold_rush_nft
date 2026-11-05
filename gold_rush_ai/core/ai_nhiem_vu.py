@@ -1,8 +1,3 @@
-"""Sinh nhiệm vụ rule-based offline; không gọi LLM, mạng hoặc cấp thưởng.
-
-Caller cung cấp màn/bản đồ tin cậy và lịch sử của người/phiên đang xét.
-Module không tự lưu lịch sử hoặc xác nhận quyền chơi màn.
-"""
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -17,11 +12,10 @@ from .nhiem_vu import DeXuatNhiemVu, NhiemVu
 
 
 class KhongCoNhiemVuPhuHop(ValueError):
-    """Không có lựa chọn hợp lệ hoặc chỉ còn mục tiêu vừa được sử dụng."""
+    pass
 
 
 def _khoa(nv: DeXuatNhiemVu, stage_id: int) -> tuple[int, str, int, int | None]:
-    # Nội dung thực tế, không dùng ID/tiêu đề/nhãn độ khó để lách chống lặp.
     return stage_id, nv.objective, nv.target, nv.time_limit_seconds
 
 
@@ -33,18 +27,11 @@ def tao_nhiem_vu_du_phong(
     do_kho: Literal["easy", "medium", "hard"] = "easy",
     rng: Random | None = None,
 ) -> NhiemVu:
-    """Ưu tiên mục tiêu ngoài 5 nhiệm vụ gần nhất cùng màn, từ cũ đến mới.
-
-    Hết lựa chọn mới thì dùng mục tiêu lâu nhất trong cửa sổ; không lặp ngay
-    mục tiêu cuối. Lịch sử phải do caller truyền lại để chống lặp giữa các lần gọi.
-    Độ khó do caller chọn; mặc định easy, chưa phải cá nhân hóa bằng lịch sử chơi.
-    """
     if do_kho not in ("easy", "medium", "hard"):
         raise ValueError("Độ khó phải là easy, medium hoặc hard")
     if man.gioi_han_giay < 0:
         raise KhongCoNhiemVuPhuHop("Thời gian của màn không được âm")
 
-    # Kiểm tra dữ liệu trước khi tính đường đi hoặc xây các lựa chọn khó hơn.
     probe = DeXuatNhiemVu(title="Kiểm tra màn", description="Thu thập một đồng xu.",
                          objective="collect_coins", target=1, difficulty="easy")
     try:
@@ -80,7 +67,6 @@ def tao_nhiem_vu_du_phong(
             dx = DeXuatNhiemVu(**mau, difficulty=do_kho)
             hop_le.append(kiem_tra_nhiem_vu(dx, man, ban_do))
         except ValueError:
-            # Màn quá ngắn có thể vẫn cho phép mục tiêu nhặt một phần số xu.
             continue
 
     gan_day = [nv for nv in lich_su if nv.stage_id == man.id][-5:]

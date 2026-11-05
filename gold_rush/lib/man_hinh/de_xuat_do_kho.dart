@@ -4,7 +4,6 @@ import '../ai/de_xuat_do_kho.dart';
 import '../ai/may_chu_de_xuat_do_kho.dart';
 import '../cau_hinh.dart';
 
-/// Xem đề xuất từ lịch sử của màn do tầng gọi chọn.
 class ManHinhDeXuatDoKho extends StatefulWidget {
   final MayChuDeXuatDoKho mayChu;
   final int manChoi;

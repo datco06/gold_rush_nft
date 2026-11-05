@@ -1,4 +1,3 @@
-"""HTTP giả lập tại transport; không gửi request tới dịch vụ LLM thật."""
 import json
 
 import httpx

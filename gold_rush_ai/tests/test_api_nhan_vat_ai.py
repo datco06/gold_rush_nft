@@ -1,4 +1,3 @@
-"""API ảnh dùng demo thật, SQLite tạm và ngữ cảnh server xác minh."""
 from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path

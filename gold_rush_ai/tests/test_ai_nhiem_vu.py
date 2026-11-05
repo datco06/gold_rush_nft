@@ -1,4 +1,3 @@
-"""Bộ sinh offline phải dùng validator thật và tránh lặp nội dung mục tiêu."""
 from copy import deepcopy
 from pathlib import Path
 from random import Random
@@ -96,7 +95,6 @@ def test_tu_choi_do_kho_khong_ho_tro(sai):
 
 
 def test_loai_muc_tieu_qua_han_nhung_van_sinh_duoc_nhat_mot_xu():
-    # 7 giây đủ nhặt xu đầu, không đủ 2 xu hoặc hoàn thành theo validator.
     nv = tao(man=man_choi(gioi_han_giay=7), rng=Random(2))
     assert nv.objective == "collect_coins"
     assert nv.target == 1

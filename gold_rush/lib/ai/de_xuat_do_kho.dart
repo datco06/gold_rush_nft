@@ -1,4 +1,3 @@
-/// Đề xuất schema v1 từ API, để tầng tích hợp duyệt hệ số tốc độ kẻ địch.
 class DeXuatDoKho {
   final int manChoi;
   final String doKho;

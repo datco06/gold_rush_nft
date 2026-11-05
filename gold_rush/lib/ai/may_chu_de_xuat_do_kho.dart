@@ -19,8 +19,6 @@ class KetQuaDeXuatDoKho {
       maHttp == 429;
 }
 
-/// Chỉ gửi ID màn. Backend cung cấp lịch sử, quyền truy cập và hệ số trước.
-/// Demo dùng X-Demo-Player khi backend đã bật AI_DIFFICULTY_DEMO.
 class MayChuDeXuatDoKho {
   final MayChuAi _api;
 

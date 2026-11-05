@@ -1,9 +1,3 @@
-"""Kiểm tra đề xuất dựa trên manifest và bản đồ do backend cung cấp.
-
-Chỉ nhận dữ liệu màn đáng tin cậy từ server, không lấy khả năng màn từ client.
-Ước lượng thời gian theo đường tham lam 4 hướng với biên an toàn cho demo;
-đây là bộ lọc bảo thủ, không mô phỏng kẻ địch hoặc chứng minh người chơi sẽ thắng.
-"""
 from __future__ import annotations
 
 import math
@@ -14,11 +8,6 @@ from .nhiem_vu import DeXuatNhiemVu
 
 
 def _giay_thu_thap(ban_do: BanDo, so_xu: int) -> int:
-    """Lộ trình chứng kiến: chọn xu gần nhất, dùng A* đang có để đi tới xu.
-
-    Thời hạn demo tối thiểu = ceil(thời gian đi * 1.5 + 5 giây).
-    Không coi lộ trình tham lam là lời giải ngắn nhất qua mọi đồng xu.
-    """
     o = ban_do.cac_diem("george")[0]
     con = set(ban_do.cac_diem("coin"))
     so_buoc = 0
@@ -34,7 +23,6 @@ def _giay_thu_thap(ban_do: BanDo, so_xu: int) -> int:
 
 
 def kiem_tra_nhiem_vu(de_xuat: DeXuatNhiemVu, man: ManChoi, ban_do: BanDo) -> DeXuatNhiemVu:
-    """Trả đề xuất đã kiểm tra hoặc ValueError; không sửa đề xuất/map hay cấp thưởng."""
     loi_ban_do = kiem_tra_choi_duoc(ban_do)
     if loi_ban_do:
         raise ValueError("Dữ liệu bản đồ không hợp lệ: " + "; ".join(loi_ban_do))

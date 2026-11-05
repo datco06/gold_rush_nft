@@ -1,4 +1,3 @@
-"""Kho ảnh SQLite thật, thời gian giả lập, rollback và giới hạn đồng thời."""
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path

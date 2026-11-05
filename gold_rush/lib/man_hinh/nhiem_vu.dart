@@ -6,8 +6,6 @@ import '../ai/may_chu_nhiem_vu.dart';
 import '../ai/nhiem_vu.dart';
 import '../cau_hinh.dart';
 
-/// Xem và tạo đề xuất nhiệm vụ cho màn do bên gọi chọn.
-/// Backend quyết định quyền truy cập màn và ngữ cảnh demo/verified.
 class ManHinhNhiemVu extends StatefulWidget {
   final MayChuNhiemVu mayChu;
   final int manChoi;
@@ -33,7 +31,6 @@ class _ManHinhNhiemVuState extends State<ManHinhNhiemVu> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.manChoi != widget.manChoi ||
         !identical(oldWidget.mayChu, widget.mayChu)) {
-      // Phản hồi của màn hoặc danh tính cũ không được ghi vào phiên mới.
       _phienTai++;
       _ketQua = null;
       _maYeuCau = null;

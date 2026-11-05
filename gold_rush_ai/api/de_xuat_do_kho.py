@@ -1,11 +1,3 @@
-"""API đề xuất độ khó độc lập với model logistic và DDA trong ván.
-
-Bật thành phần 'de_xuat_do_kho' trong ENABLED. AI_DIFFICULTY_DEMO=true
-cho phép X-Demo-Player ở màn 1 với lịch sử rỗng và hệ số gốc 1.0.
-Backend cấp NguCanhDeXuatDoKho qua request.state.ai_difficulty_context hoặc
-thay dependency lay_ngu_canh_de_xuat sau khi xác minh người, màn và lịch sử.
-API chỉ tính đề xuất từ snapshot, tầng tích hợp quyết định nơi áp dụng/lưu hệ số.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -66,7 +58,6 @@ def khoi_dong_de_xuat_do_kho(app: FastAPI) -> None:
         cac_man = doc(config.MAN_CHOI)
         if not cac_man:
             raise ValueError("Danh sách màn trống")
-        # Tái dùng validation của bộ lõi trước khi công bố component sẵn sàng.
         for man in cac_man.values():
             de_xuat_do_kho(man, ())
         state.demo_enabled = demo in ("true", "1")
@@ -102,7 +93,6 @@ def lay_ngu_canh_de_xuat(
         if not isinstance(ctx, NguCanhDeXuatDoKho):
             raise HTTPException(503, "Ngữ cảnh đề xuất độ khó từ backend không hợp lệ")
         try:
-            # Snapshot mới cũng kiểm tra các object bị sửa qua model_copy/model_construct.
             return NguCanhDeXuatDoKho.model_validate(ctx.model_dump(warnings=False), strict=True)
         except ValueError:
             raise HTTPException(503, "Ngữ cảnh đề xuất độ khó từ backend không hợp lệ") from None

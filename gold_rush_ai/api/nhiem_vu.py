@@ -1,10 +1,3 @@
-"""Router nhiệm vụ độc lập với gameplay và blockchain.
-
-Bật bằng ENABLED có 'nhiem_vu'; AI_QUEST_DB tùy chọn đường dẫn SQLite.
-AI_QUEST_DEMO=true cho phép X-Demo-Player, chỉ màn 1 và luôn offline.
-Backend thật cung cấp NguCanhNguoiChoi qua request.state.ai_quest_player
-hoặc dependency lay_ngu_canh_nguoi_choi; không tin quyền từ body/client.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -56,7 +49,6 @@ class TrangThaiNhiemVu:
 
 
 def khoi_dong_nhiem_vu(app: FastAPI):
-    """Nạp riêng theo vòng đời app; một thành phần lỗi không làm sập API chung."""
     import config
 
     state = TrangThaiNhiemVu(enabled="nhiem_vu" in config.ENABLED)
@@ -72,7 +64,6 @@ def khoi_dong_nhiem_vu(app: FastAPI):
         if not state.cac_man:
             raise ValueError("Danh sách màn trống")
         for mid, man in state.cac_man.items():
-            # ManChoi là dataclass, không tự kiểm tra kiểu của dữ liệu JSON.
             if type(man.id) is not int or not 1 <= man.id <= 1000:
                 raise ValueError("ID màn không hợp lệ cho nhiệm vụ")
             if type(man.so_xu) is not int or not 1 <= man.so_xu <= 100000:
@@ -146,7 +137,6 @@ def tao_nhiem_vu(
     man = state.cac_man.get(yc.stage_id)
     if man is None:
         raise HTTPException(404, "Không có màn được yêu cầu")
-    # Tách namespace demo/verified; biết ID demo không đọc/ghi được history thật.
     player_key = sha256(f"{ctx.context_source}:{ctx.player_id}".encode("ascii")).hexdigest()
     service = state.demo_service if ctx.context_source == "demo" else state.service
     try:

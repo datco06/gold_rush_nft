@@ -1,9 +1,3 @@
-"""Schema nhiệm vụ dùng chung cho provider, nghiệp vụ và API về sau.
-
-collect_coins: target là số xu; finish_before_time: target luôn là 1 màn;
-finish_with_max_hits: target là số lần trúng đòn tối đa khi hoàn thành màn.
-Đề xuất AI chỉ chứa nội dung/mục tiêu; server sở hữu ID, màn, nguồn và thưởng.
-"""
 from __future__ import annotations
 
 from typing import Literal, Self
@@ -38,7 +32,6 @@ class DeXuatNhiemVu(_Schema):
         if self.objective == "finish_before_time":
             if self.target != 1 or self.time_limit_seconds is None:
                 raise ValueError("Nhiệm vụ hoàn thành trước hạn cần target=1 và thời hạn")
-        # Gameplay hiện có 100 máu, mất 25/lần: trúng lần thứ tư là thua.
         if self.objective == "finish_with_max_hits" and self.target > 3:
             raise ValueError("Số lần trúng đòn tối đa phải nằm trong 0..3")
         return self

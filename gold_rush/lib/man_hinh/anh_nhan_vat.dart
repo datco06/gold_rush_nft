@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../ai/anh_nhan_vat.dart';
 import '../ai/may_chu_nhan_vat.dart';
 
-/// Preview ảnh tĩnh; cùng client/ngữ cảnh được dùng cho cả tạo và tải ảnh.
 class ManHinhAnhNhanVat extends StatefulWidget {
   final MayChuNhanVat mayChu;
 
@@ -30,7 +29,6 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
   void didUpdateWidget(covariant ManHinhAnhNhanVat oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.mayChu, widget.mayChu)) {
-      // Kết quả của danh tính cũ không được xuất hiện trong phiên mới.
       _phienTai++;
       _ketQua = null;
       _anh = null;

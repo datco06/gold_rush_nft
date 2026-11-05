@@ -1,4 +1,3 @@
-"""Contract và giới hạn nhiệm vụ; không gọi mạng hoặc sửa tài nguyên game."""
 import json
 
 import pytest
@@ -31,7 +30,6 @@ def man_choi(**thay_doi):
 
 
 def ban_do():
-    # Đường thẳng: George tại 0, ba xu ở 4/8/12; một ô = 16px.
     return BanDo(13, 1, [[False] * 13], [
         ("george", 0, 0), ("coin", 4, 0), ("coin", 8, 0), ("coin", 12, 0),
     ])
@@ -153,14 +151,12 @@ def test_thoi_han_khong_vuot_gioi_han_man():
 
 
 def test_thoi_gian_xet_dung_so_xu_can_nhat():
-    # 4 ô = 64/74 giây; biên demo 1.5 lần + 5s, làm tròn lên = 7s.
     assert kiem_tra(de_xuat(target=1, time_limit_seconds=7)).target == 1
     with pytest.raises(ValueError, match="(?i)thời"):
         kiem_tra(de_xuat(target=1, time_limit_seconds=6))
 
 
 def test_nhiem_vu_hoan_thanh_can_thoi_gian_cho_toan_bo_xu():
-    # 12 ô = 192/74 giây; biên demo 1.5 lần + 5s, làm tròn lên = 9s.
     assert kiem_tra(de_xuat(objective="finish_before_time", target=1, time_limit_seconds=9))
     with pytest.raises(ValueError, match="(?i)thời"):
         kiem_tra(de_xuat(objective="finish_before_time", target=1, time_limit_seconds=8))

@@ -1,4 +1,3 @@
-"""Adapter Images API kiểm thử bằng transport giả, không gọi dịch vụ trả phí."""
 import base64
 from io import BytesIO
 import json

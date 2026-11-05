@@ -1,4 +1,3 @@
-"""Lưu trữ SQLite thật trong thư mục tạm, không ghi dữ liệu vận hành."""
 import sqlite3
 
 import pytest

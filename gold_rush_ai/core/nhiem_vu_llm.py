@@ -1,7 +1,3 @@
-"""LLM viết nội dung cho mục tiêu backend đã chọn; lỗi thì giữ fallback.
-
-Đây là hàm stateless, chưa có API, lưu trữ hoặc xác minh hoàn thành nhiệm vụ.
-"""
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -36,7 +32,6 @@ def tao_nhiem_vu_voi_llm(
     do_kho: Literal["easy", "medium", "hard"] = "easy",
     rng: Random | None = None,
 ) -> NhiemVu:
-    """Chỉ gắn nguồn llm khi nội dung và điều kiện đều qua kiểm tra của server."""
     du_phong = tao_nhiem_vu_du_phong(man, ban_do, lich_su=lich_su, do_kho=do_kho, rng=rng)
     if provider is None:
         return du_phong

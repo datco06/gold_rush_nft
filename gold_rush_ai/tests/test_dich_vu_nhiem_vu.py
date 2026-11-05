@@ -1,4 +1,3 @@
-"""Service dùng generator/validator và SQLite thật; LLM được giả lập tại biên."""
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 import json
@@ -136,7 +135,6 @@ def test_same_key_da_luu_giua_lan_doc_cache_va_doc_lich_su(tmp_path):
     nguoi_thang = service(tep)
     nguoi_gui_lai = DichVuNhiemVu(KhoChoLichSu(tep))
     m, bd = context()
-    # Màn chỉ có một lựa chọn: nếu đọc history mới rồi sinh lại sẽ báo hết quest.
     m = replace(m, gioi_han_giay=7)
     args = {"player_id": "player_a", "request_id": "request_1", "man": m, "ban_do": bd}
     with ThreadPoolExecutor(max_workers=1) as pool:

@@ -1,8 +1,3 @@
-"""Adapter HTTP cho giao thức chat-completions tương thích.
-
-Không gọi mạng lúc import/khởi tạo. Đọc cấu hình bằng provider_tu_moi_truong;
-mặc định tắt. Chỉ bật khi server chủ động đặt LLM_ENABLED=true cùng URL/model.
-"""
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -16,12 +11,11 @@ import httpx
 
 
 class LoiProviderLLM(RuntimeError):
-    """Lỗi đã lược bỏ body, URL và header có thể chứa thông tin nhạy cảm."""
+    pass
 
 
 class NhaCungCapLLM(Protocol):
     def sinh(self, *, system_prompt: str, user_prompt: str) -> str:
-        """Trả text JSON hoặc LoiProviderLLM; adapter phải có timeout riêng."""
         ...
 
 
@@ -56,7 +50,6 @@ class ChatCompletionsLLM:
             "response_format": {"type": "json_object"},
         }
         headers = {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
-        # Client được inject thuộc caller; client tự tạo được đóng sau mỗi lần gọi.
         manager = nullcontext(self._client) if self._client is not None else httpx.Client()
         try:
             with manager as client:
@@ -77,12 +70,10 @@ class ChatCompletionsLLM:
                 raise LoiProviderLLM("LLM không trả nội dung hoàn chỉnh")
             return content
         except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, RecursionError):
-            # Không retry ngầm: timeout/429 không được tạo thêm yêu cầu có thể tính phí.
             raise LoiProviderLLM("Không nhận được phản hồi LLM hợp lệ") from None
 
 
 def provider_tu_moi_truong(moi_truong: Mapping[str, str] | None = None) -> ChatCompletionsLLM | None:
-    """Factory không gọi mạng; không tự nạp .env hoặc chọn dịch vụ/model trả phí."""
     env = os.environ if moi_truong is None else moi_truong
     bat = env.get("LLM_ENABLED", "false").strip().lower()
     if bat in ("false", "0", ""):

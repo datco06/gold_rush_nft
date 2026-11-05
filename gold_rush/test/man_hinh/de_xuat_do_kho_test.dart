@@ -21,7 +21,6 @@ Future<void> _nap(WidgetTester tester, MayChuDeXuatDoKho api, {int man = 1}) =>
     );
 
 Future<void> _bamXem(WidgetTester tester) async {
-  // Hủy stream HTTP có thể hoàn tất ở zone thực của Dart SDK.
   await tester.runAsync(() async {
     await tester.tap(find.text('Xem đề xuất'));
     await Future<void>.delayed(Duration.zero);

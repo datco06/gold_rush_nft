@@ -1,9 +1,3 @@
-"""HTTP adapter cho Images API trả data[0].b64_json, tương thích GPT Image.
-
-Không tự chọn URL/model hoặc gọi mạng lúc khởi tạo. Chỉ một POST, không retry,
-không tải URL ảnh từ response. Pipeline ai_nhan_vat kiểm tra ảnh và chuẩn hóa.
-Contract: https://developers.openai.com/api/reference/resources/images/methods/generate
-"""
 from __future__ import annotations
 
 import base64
@@ -23,12 +17,6 @@ _GIOI_HAN_ANH = 5 * 1024 * 1024
 
 
 class ImagesGenerationsAnh:
-    """Sinh một PNG vuông; timeout áp dụng cho mỗi thao tác HTTP.
-
-    URL/model do server cấu hình, cần hỗ trợ output_format=png, nền trong suốt
-    và dữ liệu base64. Client inject thuộc caller; client tự tạo được đóng.
-    Không có deadline tổng cho toàn bộ thời gian sinh và đọc stream.
-    """
 
     generation_source: Literal["image_model"] = "image_model"
 
@@ -85,7 +73,6 @@ class ImagesGenerationsAnh:
                                    timeout=self.timeout_seconds, follow_redirects=False) as response:
                     if response.status_code != 200:
                         raise LoiProviderAnh("Dịch vụ ảnh chưa trả kết quả hợp lệ")
-                    # Không giải nén HTTP trước khi giới hạn byte dữ liệu.
                     if response.headers.get("content-encoding", "identity").strip().lower() != "identity":
                         raise LoiProviderAnh("Phản hồi ảnh dùng encoding chưa hỗ trợ")
                     body = bytearray()
@@ -109,14 +96,12 @@ class ImagesGenerationsAnh:
                 raise LoiProviderAnh("Dữ liệu ảnh thiếu hoặc vượt giới hạn")
             return raw
         except (httpx.HTTPError, ValueError, TypeError, RecursionError):
-            # Không đưa body/URL/header/prompt vào lỗi hoặc retry có thể tính phí.
             raise LoiProviderAnh("Không nhận được phản hồi sinh ảnh hợp lệ") from None
 
 
 def provider_anh_tu_moi_truong(
     moi_truong: Mapping[str, str] | None = None, *, client: httpx.Client | None = None,
 ) -> ImagesGenerationsAnh | None:
-    """Chỉ tạo provider khi AI_IMAGE_ENABLED=true; không tự nạp .env hay gọi mạng."""
     env = os.environ if moi_truong is None else moi_truong
     bat = env.get("AI_IMAGE_ENABLED", "false").strip().lower()
     if bat in ("false", "0", ""):

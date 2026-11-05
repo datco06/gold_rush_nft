@@ -1,4 +1,3 @@
-/// Metadata preview tĩnh schema v1 do backend cấp.
 class AnhNhanVat {
   final String maAnh;
   final String duongDanAnh;

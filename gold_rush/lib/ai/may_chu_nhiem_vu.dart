@@ -5,7 +5,6 @@ import 'nhiem_vu.dart';
 
 typedef LoiNhiemVu = LoiApiAi;
 
-/// Giao diện có thể hiển thị lỗi và cho thử lại qua kết quả này.
 class KetQuaNhiemVu {
   final NhiemVu? nhiemVu;
   final LoiNhiemVu? loi;
@@ -20,8 +19,6 @@ class KetQuaNhiemVu {
       maHttp == 429;
 }
 
-/// Caller giữ cùng maYeuCau khi thử lại, tạo mã mới khi cần nhiệm vụ khác.
-/// Demo chỉ dùng với backend đã bật AI_QUEST_DEMO.
 class MayChuNhiemVu {
   final MayChuAi _api;
 

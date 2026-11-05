@@ -21,7 +21,6 @@ Future<void> _nap(WidgetTester tester, MayChuNhiemVu api, {int man = 1}) =>
     );
 
 Future<void> _bamTao(WidgetTester tester) async {
-  // Hủy stream của HTTP có thể hoàn tất ở zone thực của Dart SDK.
   await tester.runAsync(() async {
     await tester.tap(find.text('Tạo nhiệm vụ'));
     await Future<void>.delayed(Duration.zero);

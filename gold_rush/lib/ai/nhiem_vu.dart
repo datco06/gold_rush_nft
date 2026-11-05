@@ -1,5 +1,3 @@
-/// Nhiệm vụ schema v1 do backend kiểm tra và cấp ID.
-/// Các trường chuỗi dùng giá trị wire để khớp hợp đồng Python.
 class NhiemVu {
   final String id;
   final int manChoi;

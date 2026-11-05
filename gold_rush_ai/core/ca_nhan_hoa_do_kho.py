@@ -1,10 +1,3 @@
-"""Đề xuất độ khó theo luật từ lịch sử đúng người chơi do backend cung cấp.
-
-Caller chọn lịch sử đã xác minh, sắp từ cũ đến mới. Nhật ký hiện không có
-player_id ổn định nên module không tự gom toàn bộ log thành lịch sử cá nhân.
-Điểm hiệu suất = trung bình (0.7 * thắng + 0.3 * tỷ lệ xu) trên tối đa 10 ván
-cùng màn/bản đồ, bỏ ván thoát giữa chừng và retry trùng mã ván.
-"""
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -17,7 +10,7 @@ from .nhat_ky import NhatKyVan
 
 SO_VAN_TOI_THIEU = 3
 CUA_SO_LICH_SU = 10
-DIEM_MOI_XU = 20  # Khớp CauHinh.diemMoiDongXu và trọng tài hiện có.
+DIEM_MOI_XU = 20
 BUOC_HE_SO_TOI_DA = 0.05
 
 
@@ -52,13 +45,6 @@ def de_xuat_do_kho(
     *,
     he_so_truoc: float = 1.0,
 ) -> DeXuatDoKho:
-    """Đề xuất tham số cho tầng gọi duyệt, dùng cùng một nơi áp dụng với DDA.
-
-    Hệ số cũ cũng do backend/tầng tích hợp cung cấp. Thiếu 3 ván có kết quả
-    thắng/thua thì đưa dần về 1.0, tối đa 0.05 mỗi lần. Điểm từ 0.4 là medium,
-    từ 0.75 là hard. Hệ số đích = kẹp(1 + 0.4 * (điểm - 0.5), 0.8, 1.15).
-    Đây là điểm quy ước của luật, không phải xác suất từ mô hình logistic.
-    """
     if (not isinstance(man, ManChoi) or type(man.id) is not int or not 1 <= man.id <= 1000
             or type(man.so_xu) is not int or not 1 <= man.so_xu <= 100000
             or not isinstance(man.tep, str) or not man.tep.strip()):

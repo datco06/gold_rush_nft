@@ -1,4 +1,3 @@
-"""Contract mô tả và metadata ảnh tĩnh, nguồn demo/model được ghi rõ."""
 import pytest
 from pydantic import ValidationError
 

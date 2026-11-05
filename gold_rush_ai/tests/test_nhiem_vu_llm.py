@@ -1,4 +1,3 @@
-"""LLM chỉ sinh nội dung; mục tiêu hợp lệ và fallback thuộc backend."""
 import json
 from random import Random
 

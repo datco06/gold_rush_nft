@@ -1,9 +1,3 @@
-"""Kho PNG và metadata SQLite, ghi nguyên tử và hết hạn theo thời gian server.
-
-Mỗi thao tác mở connection riêng. SQLite tuần tự hóa kiểm tra sức chứa và ghi
-bằng BEGIN IMMEDIATE. Ảnh hết hạn không được trả về; don_het_han và luu mới
-xóa các hàng hết hạn để SQLite tái sử dụng dung lượng trong file database.
-"""
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -22,15 +16,15 @@ from .xu_ly_anh import chuan_hoa_anh
 
 
 class LoiKhoAnh(RuntimeError):
-    """Kho không truy cập được hoặc dữ liệu ảnh lưu bị hỏng."""
+    pass
 
 
 class KhoAnhDay(LoiKhoAnh):
-    """Số ảnh còn hạn đã đạt giới hạn cấu hình."""
+    pass
 
 
 class XungDotYeuCauAnh(ValueError):
-    """C?ng request ID c?n h?n ?? ???c d?ng cho m? t? kh?c."""
+    pass
 
 
 _SQL_YEU_CAU = """SELECT a.*, y.fingerprint AS request_fingerprint
@@ -55,7 +49,6 @@ def _fingerprint(player_id: str, request_id: str, yeu_cau: YeuCauTaoNhanVat) -> 
 class KhoAnh:
     def __init__(self, duong_dan: str | Path, *, han_luu_giay: int = 86400,
                  so_anh_toi_da: int = 200, lay_thoi_gian: Callable[[], float] = time.time):
-        """TTL 1 giây..1 năm, sức chứa 1..10000 ảnh; mặc định 24 giờ và 200 ảnh."""
         if str(duong_dan) == ":memory:":
             raise ValueError("Kho ảnh cần đường dẫn file SQLite")
         if type(han_luu_giay) is not int or not 1 <= han_luu_giay <= 31536000:
@@ -146,7 +139,6 @@ class KhoAnh:
                      (metadata.image_id, metadata.model_dump_json(), png, checksum, het_han))
 
     def luu(self, ket_qua: KetQuaTaoAnh) -> AnhNhanVat:
-        """C?p ID m?i v? l?u ?nh n?i b?, metadata c?ng byte trong m?t transaction."""
         metadata, png, checksum = self._chuan_bi_anh(ket_qua)
         with self._ket_noi() as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -177,7 +169,6 @@ class KhoAnh:
 
     def luu_theo_yeu_cau(self, player_id: str, request_id: str, yeu_cau: YeuCauTaoNhanVat,
                          ket_qua: KetQuaTaoAnh) -> AnhNhanVat:
-        """Ch? l?u m?t ?nh theo ng??i/request trong th?i gian ?nh c?n h?n."""
         fingerprint = _fingerprint(player_id, request_id, yeu_cau)
         metadata, png, checksum = self._chuan_bi_anh(ket_qua)
         with self._ket_noi() as conn:
@@ -194,7 +185,6 @@ class KhoAnh:
         return metadata
 
     def doc(self, image_id: str) -> tuple[AnhNhanVat, bytes] | None:
-        """Trả metadata/PNG còn hạn; ID chưa tồn tại hoặc đã hết hạn trả None."""
         if not isinstance(image_id, str) or re.fullmatch(r"img_[0-9a-f]{32}", image_id) is None:
             raise ValueError("ID ảnh không hợp lệ")
         with self._ket_noi() as conn:
@@ -231,7 +221,6 @@ class KhoAnh:
         return metadata, png
 
     def don_het_han(self) -> int:
-        """Xóa các ảnh hết hạn, trả số hàng đã xóa; phần trống được SQLite tái sử dụng."""
         with self._ket_noi() as conn:
             conn.execute("BEGIN IMMEDIATE")
             return self._don(conn, self._bay_gio())

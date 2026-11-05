@@ -1,8 +1,3 @@
-"""SQLite lưu nhiệm vụ đã cấp, không thay thế hồ sơ hoặc tiến trình gameplay.
-
-Mỗi thao tác dùng connection riêng; transaction ghi chỉ kiểm tra/lưu dữ liệu,
-không giữ khóa database trong lúc gọi LLM. Request ID có phạm vi từng player.
-"""
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -14,15 +9,15 @@ from .nhiem_vu import NhiemVu
 
 
 class LoiKhoNhiemVu(RuntimeError):
-    """Kho không truy cập được hoặc dữ liệu lưu không còn đúng contract."""
+    pass
 
 
 class XungDotYeuCauNhiemVu(ValueError):
-    """Một request ID đã được dùng cho màn hoặc độ khó khác."""
+    pass
 
 
 class LichSuNhiemVuDaThayDoi(RuntimeError):
-    """Có nhiệm vụ mới được lưu sau snapshot dùng để sinh nhiệm vụ hiện tại."""
+    pass
 
 
 def _kiem_tra_id(value: str):
@@ -104,7 +99,6 @@ class KhoNhiemVu:
             return self._tim(conn, player_id, request_id, stage_id, do_kho)
 
     def lich_su(self, player_id: str, stage_id: int, *, limit: int = 5) -> list[NhiemVu]:
-        """Các nhiệm vụ gần nhất cùng player/màn, trả theo thứ tự cũ đến mới."""
         _kiem_tra_id(player_id)
         _kiem_tra_man(stage_id)
         if type(limit) is not int or not 1 <= limit <= 100:
@@ -116,10 +110,8 @@ class KhoNhiemVu:
 
     def luu(self, player_id: str, request_id: str, nhiem_vu: NhiemVu,
             *, sau_nhiem_vu_id: str | None) -> NhiemVu:
-        """Lưu một lần theo request; từ chối snapshot cũ để caller sinh lại mục tiêu."""
         _kiem_tra_id(player_id)
         _kiem_tra_id(request_id)
-        # model_copy/model_construct có thể bỏ qua validation của model ban đầu.
         nv = NhiemVu.model_validate_json(nhiem_vu.model_dump_json())
         with self._ket_noi() as conn:
             conn.execute("BEGIN IMMEDIATE")

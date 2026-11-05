@@ -1,4 +1,3 @@
-"""Demo dùng sprite thật và pipeline kiểm tra provider qua biên sinh byte ảnh."""
 from io import BytesIO
 import json
 from pathlib import Path

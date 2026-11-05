@@ -1,4 +1,3 @@
-"""Tạo byte ảnh xem trước qua provider hoặc mẫu offline có nhãn nguồn."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -32,11 +31,6 @@ def tao_anh_nhan_vat(
     demo_provider: NhaCungCapAnh,
     provider: NhaCungCapAnh | None = None,
 ) -> KetQuaTaoAnh:
-    """Provider được truyền rõ ràng, gọi tối đa một lần rồi dùng demo khi lỗi.
-
-    Nội dung mô tả đi trong JSON riêng. Nguồn do adapter trên server khai báo;
-    byte ảnh cần vượt qua kiểm tra và chuẩn hóa PNG 128x128 trước khi trả kết quả.
-    """
     if not isinstance(yeu_cau, YeuCauTaoNhanVat):
         raise ValueError("Cần YeuCauTaoNhanVat hợp lệ")
     yc = YeuCauTaoNhanVat.model_validate(yeu_cau.model_dump(warnings=False), strict=True)

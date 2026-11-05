@@ -1,8 +1,3 @@
-"""Nối bộ sinh LLM/fallback với lịch sử nhiệm vụ bền vững.
-
-Player ID phải do tầng gọi xác minh hoặc gắn với phiên demo ổn định; service
-không xác thực người dùng, mở khóa màn hoặc xác nhận hoàn thành/cấp thưởng.
-"""
 from __future__ import annotations
 
 from random import Random
@@ -23,18 +18,11 @@ class DichVuNhiemVu:
 
     def tao(self, *, player_id: str, request_id: str, man: ManChoi, ban_do: BanDo,
             do_kho: Literal["easy", "medium", "hard"] = "easy", rng: Random | None = None) -> NhiemVu:
-        """Retry đã lưu trả cùng kết quả; các request đồng thời chỉ lưu một bản.
-
-        Sinh ngoài transaction SQL. Nếu lịch sử bị cập nhật, thử lại tối đa hai
-        lần bằng rule-based để không tự gọi thêm LLM. Không cam kết đúng một
-        lần gọi provider khi nhiều tiến trình cùng bắt đầu trước lúc có bản lưu.
-        """
         for lan in range(3):
             cu = self.kho.lay_theo_yeu_cau(player_id, request_id, man.id, do_kho)
             if cu is not None:
                 return cu
             lich_su = self.kho.lich_su(player_id, man.id)
-            # Cùng request có thể vừa được lưu trước khi đọc xong history.
             cu = self.kho.lay_theo_yeu_cau(player_id, request_id, man.id, do_kho)
             if cu is not None:
                 return cu

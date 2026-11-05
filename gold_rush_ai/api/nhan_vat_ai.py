@@ -1,12 +1,3 @@
-"""Tạo và lấy preview nhân vật qua ID, có cache request theo người/phiên.
-
-ENABLED có 'nhan_vat_ai'; AI_IMAGE_DEMO=true cho X-Demo-Player.
-AI_IMAGE_DB, AI_IMAGE_TTL_SECONDS và AI_IMAGE_MAX_IMAGES cấu hình kho ảnh.
-Backend cấp NguCanhNguoiChoi tại request.state.ai_image_player sau xác minh,
-hoặc thay dependency lay_ngu_canh_anh. Provider mặc định là demo offline.
-AI_IMAGE_ENABLED=true cùng AI_IMAGE_URL, AI_IMAGE_MODEL bật Images API cho
-ngữ cảnh verified; AI_IMAGE_API_KEY và AI_IMAGE_TIMEOUT_SECONDS là tùy chọn.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass

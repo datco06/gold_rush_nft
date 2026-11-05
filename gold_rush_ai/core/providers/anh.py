@@ -1,8 +1,3 @@
-"""Giao diện provider ảnh và demo bằng frame từ tài nguyên game có sẵn.
-
-Adapter dịch vụ thật cần giới hạn thời gian/dung lượng khi tải ảnh và chuyển
-lỗi dịch vụ thành LoiProviderAnh. Khởi tạo provider không phát sinh yêu cầu mạng.
-"""
 from __future__ import annotations
 
 from io import BytesIO
@@ -17,23 +12,17 @@ from ..nhan_vat_ai import YeuCauTaoNhanVat
 
 
 class LoiProviderAnh(RuntimeError):
-    """Lỗi provider với thông báo đã lược bỏ key, URL và đường dẫn nội bộ."""
+    pass
 
 
 class NhaCungCapAnh(Protocol):
     generation_source: Literal["demo", "image_model"]
 
     def sinh(self, *, system_prompt: str, user_prompt: str) -> bytes:
-        """Trả byte ảnh hoặc LoiProviderAnh; adapter sở hữu timeout và giới hạn tải."""
         ...
 
 
 class AnhMauOffline:
-    """Chọn mẫu theo từ khóa, lấy frame đầu 16x16 của sprite sheet 64x64.
-
-    File được chọn từ danh sách cố định trong thư mục do server cung cấp.
-    Khi có nhiều từ khóa, ưu tiên thợ mỏ, hiệp sĩ, rồi cao bồi.
-    """
 
     generation_source: Literal["demo"] = "demo"
 

@@ -167,7 +167,6 @@ class ManHinhMenu extends StatelessWidget {
   }
 
   void _moNhiemVu(BuildContext context) {
-    // Danh tính demo do người chạy cấu hình, quyền truy cập do backend kiểm tra.
     const demo = String.fromEnvironment('GOLD_RUSH_QUEST_DEMO_PLAYER');
     try {
       final api = MayChuNhiemVu(maNguoiChoiDemo: demo.isEmpty ? null : demo);

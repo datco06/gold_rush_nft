@@ -1,4 +1,3 @@
-"""Đề xuất rule-based từ nhật ký đã được backend chọn đúng người và màn."""
 from dataclasses import replace
 
 import pytest

@@ -1,8 +1,3 @@
-"""Demo ba API AI, không cần blockchain hoặc provider trả phí.
-
-Chạy từ gold_rush_ai: python scripts/chay_demo_ai.py [--port 8000] [--kiem-tra]
-Dữ liệu chỉ tồn tại trong phiên; Ctrl+C dừng server và xóa SQLite demo.
-"""
 from __future__ import annotations
 
 import argparse
@@ -27,11 +22,10 @@ _THANH_PHAN = ("nhiem_vu", "de_xuat_do_kho", "nhan_vat_ai")
 
 
 class LoiDemoAI(RuntimeError):
-    """Thông báo demo không chứa key, prompt hoặc body lỗi của dịch vụ."""
+    pass
 
 
 def moi_truong_demo(goc: Mapping[str, str], thu_muc: Path, run_id: str) -> dict[str, str]:
-    """Tạo bản sao env cho subprocess, không sửa .env hoặc env của caller."""
     env = {k: v for k, v in goc.items()
            if not k.upper().startswith(("AI_", "LLM_", "UVICORN_"))
            and k.upper() != "WEB_CONCURRENCY"}
@@ -57,7 +51,6 @@ def moi_truong_demo(goc: Mapping[str, str], thu_muc: Path, run_id: str) -> dict[
 
 
 def ung_dung_demo():
-    """Factory chỉ dùng trong child demo; marker health phân biệt đúng server sở hữu."""
     run_id = os.environ.get("AI_DEMO_RUN_ID", "")
     if not re.fullmatch(r"[0-9a-f]{32}", run_id):
         raise ValueError("Cần khởi chạy bằng scripts/chay_demo_ai.py")
@@ -94,7 +87,6 @@ def cho_san_sang(process, client: httpx.Client, run_id: str) -> None:
 
 
 def kiem_tra_demo(client: httpx.Client, player: str) -> None:
-    """Gửi request qua HTTP thật; kiểm tra schema, retry và quyền tải PNG."""
     from PIL import Image
     from core.ca_nhan_hoa_do_kho import DeXuatDoKho
     from core.nhan_vat_ai import AnhNhanVat

@@ -1,4 +1,3 @@
-"""Schema mô tả và metadata cho ảnh nhân vật tĩnh xem trước."""
 from __future__ import annotations
 
 from typing import Literal, Self

@@ -1,4 +1,3 @@
-"""Runner demo phải cô lập dữ liệu, tắt provider và dừng đúng tiến trình sở hữu."""
 import os
 from pathlib import Path
 import socket
