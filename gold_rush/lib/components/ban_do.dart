@@ -98,7 +98,7 @@ class BanDo {
       hang,
       (y) => List<bool>.generate(cot, (x) {
         // tileAt trả về null khi ra ngoài phạm vi; Gid.tile == 0 là ô trống.
-        final gid = lop.tileAt(x, y);
+        final gid = lop.tileData?[y][x];
         return gid != null && gid.tile != 0;
       }),
     );
