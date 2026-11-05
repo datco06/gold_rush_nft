@@ -21,6 +21,7 @@ def client(tmp_path, monkeypatch, *, enabled=True, demo=True, context=None, **en
     monkeypatch.setattr(config, "ENABLED", {"nhan_vat_ai"} if enabled else set())
     monkeypatch.setattr(config, "APP_FLUTTER", ASSETS.parents[1])
     monkeypatch.setenv("AI_IMAGE_DB", str(tmp_path / "images.sqlite3"))
+    monkeypatch.setenv("AI_IMAGE_ENABLED", "false")
     monkeypatch.setenv("AI_IMAGE_DEMO", "true" if demo else "false")
     monkeypatch.setenv("AI_IMAGE_TTL_SECONDS", "86400")
     monkeypatch.setenv("AI_IMAGE_MAX_IMAGES", "200")
@@ -210,3 +211,79 @@ def test_router_health_va_shutdown_app_chung(tmp_path, monkeypatch):
         assert c.get("/api/health").json()["da_nap"]["nhan_vat_ai"] is True
         assert URL in c.get("/openapi.json").json()["paths"]
     assert api.main.app.state.nhan_vat_ai is None
+
+def test_config_noi_http_provider_vao_context_verified(tmp_path, monkeypatch):
+    import base64
+    import httpx
+    import api.nhan_vat_ai as module
+    from core.providers.anh_http import provider_anh_tu_moi_truong
+    from api.nhiem_vu import NguCanhNguoiChoi
+    calls = []
+    with Image.new("RGBA", (1024, 1024), "red") as image, BytesIO() as buf:
+        image.save(buf, format="PNG")
+        encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+    def handler(request):
+        calls.append(request)
+        assert request.headers["Authorization"] == "Bearer secret-test"
+        return httpx.Response(200, json={"data": [{"b64_json": encoded}]})
+    with httpx.Client(transport=httpx.MockTransport(handler)) as upstream:
+        monkeypatch.setattr(module, "provider_anh_tu_moi_truong", lambda: provider_anh_tu_moi_truong(client=upstream))
+        with client(tmp_path, monkeypatch, demo=False, context=NguCanhNguoiChoi(player_id="trusted"),
+                    AI_IMAGE_ENABLED="true", AI_IMAGE_URL="https://image.example/v1/images/generations",
+                    AI_IMAGE_MODEL="image-test", AI_IMAGE_API_KEY="secret-test") as (c, _):
+            first, repeated = tao(c), tao(c)
+            assert first.status_code == repeated.status_code == 200
+            assert first.json() == repeated.json()
+            assert first.json()["generation_source"] == "image_model"
+            assert first.json()["context_source"] == "verified"
+            assert tao(c, description="Cao bồi").status_code == 409
+            image = c.get(first.json()["image_url"])
+            assert image.status_code == 200
+            with Image.open(BytesIO(image.content)) as decoded:
+                assert decoded.size == (128, 128)
+                assert decoded.getpixel((64, 64)) == (255, 0, 0, 255)
+    assert len(calls) == 1
+
+
+def test_provider_da_bat_nhung_phien_demo_khong_goi_http(tmp_path, monkeypatch):
+    import httpx
+    import api.nhan_vat_ai as module
+    from core.providers.anh_http import provider_anh_tu_moi_truong
+    def handler(request):
+        raise AssertionError("Không được gọi provider trả phí trong phiên demo")
+    with httpx.Client(transport=httpx.MockTransport(handler)) as upstream:
+        monkeypatch.setattr(module, "provider_anh_tu_moi_truong", lambda: provider_anh_tu_moi_truong(client=upstream))
+        with client(tmp_path, monkeypatch, AI_IMAGE_ENABLED="true", AI_IMAGE_URL="https://image.example/v1/images/generations", AI_IMAGE_MODEL="image-test") as (c, app):
+            assert app.state.nhan_vat_ai.service.provider is not None
+            assert tao(c).json()["generation_source"] == "demo"
+
+
+def test_provider_http_loi_fallback_demo_co_nhan_va_retry_khong_goi_lai(tmp_path, monkeypatch, caplog):
+    import httpx
+    import api.nhan_vat_ai as module
+    from core.providers.anh_http import provider_anh_tu_moi_truong
+    from api.nhiem_vu import NguCanhNguoiChoi
+    calls = []
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(429, text="secret-test private-prompt")
+    with httpx.Client(transport=httpx.MockTransport(handler)) as upstream:
+        monkeypatch.setattr(module, "provider_anh_tu_moi_truong", lambda: provider_anh_tu_moi_truong(client=upstream))
+        with client(tmp_path, monkeypatch, demo=False, context=NguCanhNguoiChoi(player_id="trusted"),
+                    AI_IMAGE_ENABLED="true", AI_IMAGE_URL="https://image.example/v1/images/generations", AI_IMAGE_MODEL="image-test") as (c, _):
+            first, repeated = tao(c), tao(c)
+            assert first.status_code == repeated.status_code == 200
+            assert first.json() == repeated.json()
+            assert first.json()["generation_source"] == "demo"
+            assert first.json()["context_source"] == "verified"
+    assert len(calls) == 1
+    assert "secret-test" not in caplog.text
+    assert "private-prompt" not in caplog.text
+
+
+def test_cau_hinh_provider_sai_van_cho_phep_demo_khong_lo_config(tmp_path, monkeypatch, caplog):
+    with client(tmp_path, monkeypatch, AI_IMAGE_ENABLED="true", AI_IMAGE_URL="https://secret-test@image.example/generate", AI_IMAGE_MODEL="image-test") as (c, _):
+        assert tao(c).status_code == 200
+        assert tao(c).json()["generation_source"] == "demo"
+    assert "Cấu hình provider ảnh" in caplog.text
+    assert "secret-test" not in caplog.text

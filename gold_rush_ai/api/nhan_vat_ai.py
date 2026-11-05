@@ -4,6 +4,8 @@ ENABLED có 'nhan_vat_ai'; AI_IMAGE_DEMO=true cho X-Demo-Player.
 AI_IMAGE_DB, AI_IMAGE_TTL_SECONDS và AI_IMAGE_MAX_IMAGES cấu hình kho ảnh.
 Backend cấp NguCanhNguoiChoi tại request.state.ai_image_player sau xác minh,
 hoặc thay dependency lay_ngu_canh_anh. Provider mặc định là demo offline.
+AI_IMAGE_ENABLED=true cùng AI_IMAGE_URL, AI_IMAGE_MODEL bật Images API cho
+ngữ cảnh verified; AI_IMAGE_API_KEY và AI_IMAGE_TIMEOUT_SECONDS là tùy chọn.
 """
 from __future__ import annotations
 
@@ -22,6 +24,7 @@ from core.dich_vu_anh import DichVuAnh
 from core.kho_anh import KhoAnh, LoiKhoAnh, XungDotYeuCauAnh
 from core.nhan_vat_ai import AnhNhanVat, YeuCauTaoNhanVat
 from core.providers.anh import AnhMauOffline, LoiProviderAnh
+from core.providers.anh_http import provider_anh_tu_moi_truong
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ai/nhan-vat", tags=["AI ảnh nhân vật"])
@@ -60,7 +63,12 @@ def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
                      han_luu_giay=ttl, so_anh_toi_da=capacity)
         kho.don_het_han()
         state.kho = kho
-        state.service = DichVuAnh(kho, demo_provider=provider_demo)
+        try:
+            provider = provider_anh_tu_moi_truong()
+        except (ValueError, TypeError) as e:
+            log.warning("Cấu hình provider ảnh không hợp lệ (%s); dùng mẫu demo", type(e).__name__)
+            provider = None
+        state.service = DichVuAnh(kho, demo_provider=provider_demo, provider=provider)
         state.demo_service = DichVuAnh(kho, demo_provider=provider_demo)
         state.demo_enabled = demo in ("true", "1")
     except (OSError, ValueError, TypeError, LoiKhoAnh, LoiProviderAnh) as e:
