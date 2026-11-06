@@ -37,9 +37,17 @@ from pydantic import BaseModel, Field
 from config import (BAN_DO_DIR, CHAIN_ID, CORS_ORIGINS, ENABLED, HOP_DONG_CUA_HANG, KB_DIR, MAN_CHOI,
                     MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU, SO_VE, TRONG_TAI_KHOA)
 from core import do_kho, man_choi, nhat_ky, sinh_ban_do, trong_tai
+from core.csdl import khoi_tao_csdl, lay_csdl
 from core.eth_ky import dia_chi_tu_khoa
 from core.luoi import doc_tmx
+from core.quan_ly_nhiem_vu import cap_nhat_tien_do
+from core.tien_trinh import hoan_thanh_man
 from core.tro_ly import TroLy
+
+from api.ban_do_moi import router as ban_do_router
+from api.kho_do import router as kho_do_router
+from api.nhiem_vu import router as nhiem_vu_router
+from api.tien_trinh import router as tien_trinh_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("api")
@@ -48,6 +56,13 @@ STATE: dict = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Khởi tạo CSDL SQLite nếu chưa có
+    try:
+        khoi_tao_csdl()
+        log.info("CSDL SQLite đã được khởi tạo/sẵn sàng")
+    except Exception as e:
+        log.error("Không khởi tạo được CSDL SQLite: %s", e)
+
     # Nạp MỘT LẦN lúc khởi động; một thành phần lỗi không làm sập cả server
     if "do_kho" in ENABLED:
         try:
@@ -72,6 +87,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Gold Rush AI API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+
+# Đăng ký các router mở rộng (Tiến trình, Kho đồ, Nhiệm vụ, Bản đồ)
+app.include_router(tien_trinh_router)
+app.include_router(kho_do_router)
+app.include_router(nhiem_vu_router)
+app.include_router(ban_do_router)
 
 
 @app.middleware("http")
@@ -111,6 +132,47 @@ async def nhan_nhat_ky(request: Request):
     if any(v["ma_van"] == nk.ma_van for v in nhat_ky.doc_tat_ca(NHAT_KY_DIR)):
         return {"da_luu": True, "ma_van": nk.ma_van, "trung": True}
     nhat_ky.luu(nk, NHAT_KY_DIR)
+
+    # Tích hợp cập nhật tiến trình & nhiệm vụ nếu nhật ký có kèm player_id
+    if nk.player_id:
+        try:
+            with lay_csdl() as conn:
+                so_xu_nhat = len([e for e in nk.su_kien if e.loai == "nhat_xu"])
+                so_trung_don = len([e for e in nk.su_kien if e.loai == "trung_don"])
+
+                # Kiểm tra hợp lệ bằng trọng tài nếu có màn và bản đồ
+                hop_le = 0
+                ly_do = ""
+                tep_tmx = BAN_DO_DIR / Path(nk.ban_do).name
+                if tep_tmx.exists():
+                    try:
+                        m_info = _cac_man().get(nk.man) if "vang" in ENABLED and "man_choi" in STATE else None
+                        kd = trong_tai.kiem_dinh(nk.model_dump(), doc_tmx(tep_tmx), m_info)
+                        hop_le = 1 if kd.hop_le else 0
+                        ly_do = "; ".join(kd.ly_do)
+                    except Exception as e_kd:
+                        ly_do = f"Lỗi kiểm định: {e_kd}"
+
+                conn.execute(
+                    """INSERT OR REPLACE INTO match_results
+                       (ma_van, player_id, man, seed, ket_qua, so_xu, giay, hop_le, ly_do_tu_choi, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
+                    (nk.ma_van, nk.player_id, nk.man, None, nk.ket_qua, so_xu_nhat, nk.giay, hop_le, ly_do),
+                )
+
+                # Cập nhật nhiệm vụ nhặt xu
+                if so_xu_nhat > 0:
+                    cap_nhat_tien_do(conn, nk.player_id, "nhat_xu", so_xu_nhat)
+
+                # Nếu thắng và hợp lệ: tự động mở khóa màn tiếp theo, cộng exp, hoàn thành nhiệm vụ
+                if hop_le and nk.ket_qua == "thang":
+                    hoan_thanh_man(conn, nk.player_id, stage_id=nk.man)
+                    cap_nhat_tien_do(conn, nk.player_id, "hoan_thanh_man", 1)
+                    if so_trung_don == 0:
+                        cap_nhat_tien_do(conn, nk.player_id, "choi_khong_trung_don", 1)
+        except Exception as e:
+            log.warning("Lỗi cập nhật tiến trình cho ván %s: %s", nk.ma_van, e)
+
     return {"da_luu": True, "ma_van": nk.ma_van}
 
 

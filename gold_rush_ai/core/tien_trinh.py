@@ -46,7 +46,8 @@ def lay_hoac_tao_nguoi_choi(
 ) -> dict[str, Any]:
     """Lấy thông tin người chơi, nếu chưa có thì tạo mới kèm tiến trình khởi đầu."""
     cur = conn.cursor()
-    vi = wallet_address.lower() if wallet_address else None
+    vi = wallet_address.lower() if isinstance(wallet_address, str) and wallet_address.strip() else None
+    ten = ten_hien_thi if isinstance(ten_hien_thi, str) else ""
 
     # Tìm theo player_id hoặc theo ví
     if vi:
@@ -64,7 +65,7 @@ def lay_hoac_tao_nguoi_choi(
         cur.execute(
             """INSERT INTO players (player_id, wallet_address, ten_hien_thi, created_at, last_login)
                VALUES (?, ?, ?, ?, ?)""",
-            (player_id, vi, ten_hien_thi or player_id, gio, gio),
+            (player_id, vi, ten or player_id, gio, gio),
         )
         # Tạo tiến trình ban đầu
         cur.execute(
