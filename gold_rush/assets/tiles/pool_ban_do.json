@@ -1,0 +1,69 @@
+{
+  "phien_ban_thuat_toan": "v1.3",
+  "tong_so_ban_do": 3,
+  "danh_sach": [
+    {
+      "seed": 101,
+      "ten_tep": "map_seed_101.tmx",
+      "ten": "Đồng Bằng Hoang Sơ",
+      "mo_ta": "Bản đồ sinh ngẫu nhiên cấp Dễ: đường đi thoáng đãng, số lượng quái vừa phải.",
+      "sao": 2,
+      "so_xu": 20,
+      "so_zombie": 4,
+      "so_skeleton": 3,
+      "kich_thuoc": [
+        40,
+        30
+      ],
+      "chi_so": {
+        "seed": 101,
+        "ti_le_di_duoc": 0.827,
+        "duong_tb_toi_xu": 23.7,
+        "duong_xa_nhat_toi_xu": 40,
+        "ke_dich_gan_nhat": 16
+      }
+    },
+    {
+      "seed": 102,
+      "ten_tep": "map_seed_102.tmx",
+      "ten": "Khu Rừng Ẩn Giấu",
+      "mo_ta": "Bản đồ sinh ngẫu nhiên cấp Trung bình: vật cản rải rác, thích hợp cho AI Quest.",
+      "sao": 3,
+      "so_xu": 24,
+      "so_zombie": 5,
+      "so_skeleton": 4,
+      "kich_thuoc": [
+        40,
+        30
+      ],
+      "chi_so": {
+        "seed": 102,
+        "ti_le_di_duoc": 0.881,
+        "duong_tb_toi_xu": 21.7,
+        "duong_xa_nhat_toi_xu": 39,
+        "ke_dich_gan_nhat": 16
+      }
+    },
+    {
+      "seed": 103,
+      "ten_tep": "map_seed_103.tmx",
+      "ten": "Mê Cung Đá Cổ",
+      "mo_ta": "Bản đồ sinh ngẫu nhiên cấp Khó: ngóc ngách hiểm trở, bộ xương canh gác dày đặc.",
+      "sao": 4,
+      "so_xu": 28,
+      "so_zombie": 7,
+      "so_skeleton": 5,
+      "kich_thuoc": [
+        40,
+        30
+      ],
+      "chi_so": {
+        "seed": 103,
+        "ti_le_di_duoc": 0.722,
+        "duong_tb_toi_xu": 20.3,
+        "duong_xa_nhat_toi_xu": 38,
+        "ke_dich_gan_nhat": 14
+      }
+    }
+  ]
+}

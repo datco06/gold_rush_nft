@@ -203,3 +203,23 @@ Tài liệu này quy chuẩn hóa toàn bộ các API mới được xây dựng
 * **`GET /api/maps/pool`**: Trả về danh sách và trạng thái kiểm định của toàn bộ file `.tmx` đóng gói sẵn trong `assets/tiles/`.
 * **`GET /api/maps/generate?seed=7&mat_do=0.36&dinh_dang=json`**: Sinh bản đồ theo seed và trả về JSON chỉ số (đường đi trung bình, kẻ địch gần nhất) hoặc XML TMX (`dinh_dang=tmx`).
 
+### 5.1. Danh mục Pool bản đồ đóng gói sẵn (assets/tiles/)
+Để giải quyết giới hạn Flutter nạp tĩnh từ assets bundle, Người 5 đã sinh sẵn bộ 3 bản đồ Procedural chuẩn hóa kèm catalog `pool_ban_do.json`:
+1. `map_seed_101.tmx` (Seed 101, 20 xu, 4 zombie, 3 skeleton, 2 sao - Dễ).
+2. `map_seed_102.tmx` (Seed 102, 24 xu, 5 zombie, 4 skeleton, 3 sao - Trung bình).
+3. `map_seed_103.tmx` (Seed 103, 28 xu, 7 zombie, 5 skeleton, 4 sao - Khó).
+
+### 5.2. Cách sử dụng trong Flutter (Người 1 & Người 2)
+```dart
+// Nạp trực tiếp từ tên tệp đã đóng gói sẵn:
+final banDo = await BanDo.nap('map_seed_101.tmx');
+
+// Hoặc đọc catalog để dựng màn hình chọn bản đồ thử thách:
+final catalogStr = await rootBundle.loadString('assets/tiles/pool_ban_do.json');
+final Map<String, dynamic> catalog = jsonDecode(catalogStr);
+for (var item in catalog['danh_sach']) {
+  print('Bản đồ: ${item['ten']} - File: ${item['ten_tep']} - Số sao: ${item['sao']}');
+}
+```
+
+
