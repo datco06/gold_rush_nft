@@ -27,3 +27,5 @@ BAN_DO_DIR = Path(os.environ.get("BAN_DO_DIR", APP_FLUTTER / "assets" / "tiles")
 SO_PHIEU = Path(os.environ.get("SO_PHIEU", DATA_DIR / "phieu" / "da_cap.jsonl"))
 SO_VE = Path(os.environ.get("SO_VE", DATA_DIR / "phieu" / "ve_da_bat_dau.jsonl"))
 MAN_CHOI = Path(os.environ.get("MAN_CHOI", BAN_DO_DIR / "man_choi.json"))   # dùng chung với app + Ignition
+CSDL_PATH = Path(os.environ.get("CSDL_PATH", DATA_DIR / "gold_rush.db"))
+

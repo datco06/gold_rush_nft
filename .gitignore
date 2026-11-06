@@ -27,6 +27,12 @@
 **/*.keystore
 **/key.properties
 
+# SQLite / Local Database
+*.db
+*.sqlite3
+**/data/*.db
+**/data/*.sqlite3
+
 # File xuất mã nguồn để phân tích
 GoldRush_CauTruc.txt
 GoldRush_Source.txt
