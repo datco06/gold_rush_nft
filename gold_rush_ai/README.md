@@ -223,7 +223,7 @@ không lấy trực tiếp từ JSON hoặc header danh tính tự khai của Fl
 
 | Thuộc tính | Kiểu Python | Dữ liệu |
 |---|---|---|
-| `ai_quest_player` | `api.nhiem_vu.NguCanhNguoiChoi` | `player_id`, `allowed_stage_ids` (frozenset), `difficulty`, `context_source="verified"` |
+| `ai_quest_player` | `api.nhiem_vu.NguCanhNhiemVu` | `player_id`, `allowed_stage_ids` (frozenset), `ho_so` gồm level/lịch sử đã xác minh, `context_source="verified"` |
 | `ai_difficulty_context` | `api.de_xuat_do_kho.NguCanhDeXuatDoKho` | `nguoi_choi`, `stage_id`, `lich_su` (tuple `NhatKyVan`, cũ đến mới), `he_so_truoc` |
 | `ai_image_player` | `api.nhiem_vu.NguCanhNguoiChoi` | Danh tính đã xác minh; chưa có entitlement hoàn thành sáu màn |
 
@@ -231,9 +231,62 @@ không lấy trực tiếp từ JSON hoặc header danh tính tự khai của Fl
 ứng dụng. Khi demo tắt mà chưa có context, API trả `503`, không tự tin dữ liệu
 Flutter. `X-Demo-Player` chỉ được dùng khi bật demo và không phải xác thực.
 Backend người 5 cung cấp danh tính, màn được phép, lịch sử đã xác minh và hệ số
-trước; module AI kiểm tra schema và tạo đề xuất. Quest hiện chưa nhận level và
-lịch sử hiệu suất. Độ khó cần ít nhất ba ván có kết quả, xét tối đa mười ván
+trước; module AI kiểm tra schema và tạo đề xuất. Độ khó cần ít nhất ba ván có
+kết quả, xét tối đa mười ván
 đúng màn/bản đồ, hệ số trong `0.8–1.15`, mỗi đề xuất thay đổi tối đa `0.05`.
+
+### Hồ sơ cá nhân hóa nhiệm vụ
+
+Backend người 5 có thể tạo snapshot bằng contract sau rồi gán vào
+`request.state.ai_quest_player` sau khi xác minh danh tính và tiến trình:
+
+```python
+from api.nhiem_vu import NguCanhNhiemVu
+from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
+
+context = NguCanhNhiemVu(
+    player_id="player_demo",
+    allowed_stage_ids=frozenset({1}),
+    ho_so=HoSoNhiemVu(level=3, recent_history=()),
+)
+```
+
+`level` là cấp độ người chơi, số nguyên 1–1000; không suy ra bằng ID màn hoặc
+số màn đã mở. `recent_history` là tuple tối đa 1000 `core.nhat_ky.NhatKyVan`,
+theo thứ tự cũ đến mới. Backend phải chọn lịch sử đúng người và đã xác minh;
+telemetry/biệt danh tự khai không chứng minh quyền sở hữu lịch sử. Ví dụ trên
+là contract để tích hợp, chưa phải middleware xác thực hay nguồn cấp độ thật.
+Request Flutter giữ nguyên `{"stage_id":1}`; gửi level/hồ sơ/lịch sử trong body
+bị từ chối, không ghi đè dữ liệu backend.
+
+Quy tắc chọn nhiệm vụ hiện là rule-based:
+
+| Cấp độ | Độ khó tối đa |
+|---|---|
+| 1–2 | `easy` |
+| 3–4 | `medium` |
+| 5 trở lên | `hard` |
+
+Hiệu suất dùng lại bộ đánh giá `core/ca_nhan_hoa_do_kho.py`: tối thiểu ba ván
+có kết quả, tối đa mười ván gần nhất đúng màn/bản đồ, bỏ ván bỏ cuộc và mẫu trùng.
+Điểm = 70% tỷ lệ thắng + 30% tỷ lệ xu trung bình; dưới 0.4 là dễ, từ 0.75 là khó,
+còn lại trung bình. Mức cuối không vượt trần cấp độ. Thiếu lịch sử dùng mức
+trung bình rồi áp trần, nên người mới cấp 1–2 nhận mức dễ. Lịch sử mâu thuẫn,
+điểm vượt số xu hoặc hồ sơ sai trả `503` trước khi gọi LLM, không suy diễn từ
+số liệu hỏng. Đây là luật MVP, chưa được hiệu chỉnh trên dữ liệu chơi thật.
+
+Mức đã chọn thay đổi mục tiêu xu, thời hạn và giới hạn trúng đòn của bộ sinh
+hiện có; mọi ứng viên vẫn qua kiểm tra bản đồ/thời gian. LLM chỉ viết nội dung,
+không được đổi các điều kiện hoặc phần thưởng. Nhiệm vụ trả về vẫn theo schema
+cũ để Flutter tiếp tục đọc được.
+
+Với `NguCanhNhiemVu`, cùng player/key/stage trả lại nhiệm vụ đã cấp kể cả khi
+level hoặc lịch sử thay đổi; key mới dùng snapshot mới. Quy tắc này cũng áp dụng
+khi hai snapshot đồng thời tranh cùng key; không có schema migration SQLite.
+Dùng lại key cho stage khác vẫn trả `409`. Cache retry không tốn quota LLM.
+Contract cũ `NguCanhNguoiChoi` vẫn hỗ trợ nhãn `difficulty` do backend chỉ định,
+chưa cá nhân hóa theo hồ sơ; demo offline tiếp tục dùng contract cũ/màn 1.
+Nguồn danh tính, cấp độ, tiến trình và lịch sử thật cần nối ở task tích hợp backend.
 
 Các màn hình/client Flutter nhận stage động được, nhưng entry menu hiện truyền
 màn `1`. Nhiệm vụ chưa được gameplay theo dõi hoàn thành; hệ số đề xuất chưa tự

@@ -3,6 +3,7 @@ from __future__ import annotations
 from random import Random
 from typing import Literal
 
+from .ca_nhan_hoa_nhiem_vu import HoSoNhiemVu, chon_do_kho_nhiem_vu
 from .kho_nhiem_vu import KhoNhiemVu, LichSuNhiemVuDaThayDoi, LoiKhoNhiemVu
 from .luoi import BanDo
 from .man_choi import ManChoi
@@ -24,23 +25,27 @@ class DichVuNhiemVu:
             raise ValueError("Quota cần database riêng với kho nhiệm vụ")
 
     def tao(self, *, player_id: str, request_id: str, man: ManChoi, ban_do: BanDo,
-            do_kho: Literal["easy", "medium", "hard"] = "easy", rng: Random | None = None) -> NhiemVu:
+            do_kho: Literal["easy", "medium", "hard"] = "easy", rng: Random | None = None,
+            ho_so: HoSoNhiemVu | None = None) -> NhiemVu:
         provider = self.provider
         if provider is not None and self.quota is not None:
             provider = LLMCoQuota(provider, self.quota, player_id, self.gioi_han_ngay)
+        do_kho_cache = do_kho if ho_so is None else None
         for lan in range(3):
-            cu = self.kho.lay_theo_yeu_cau(player_id, request_id, man.id, do_kho)
+            cu = self.kho.lay_theo_yeu_cau(player_id, request_id, man.id, do_kho_cache)
             if cu is not None:
                 return cu
+            do_kho_moi = chon_do_kho_nhiem_vu(man, ho_so) if ho_so is not None else do_kho
             lich_su = self.kho.lich_su(player_id, man.id)
-            cu = self.kho.lay_theo_yeu_cau(player_id, request_id, man.id, do_kho)
+            cu = self.kho.lay_theo_yeu_cau(player_id, request_id, man.id, do_kho_cache)
             if cu is not None:
                 return cu
             nv = tao_nhiem_vu_voi_llm(man, ban_do, provider=provider if lan == 0 else None,
-                                     lich_su=lich_su, do_kho=do_kho, rng=rng)
+                                     lich_su=lich_su, do_kho=do_kho_moi, rng=rng)
             try:
                 return self.kho.luu(player_id, request_id, nv,
-                                    sau_nhiem_vu_id=lich_su[-1].id if lich_su else None)
+                                    sau_nhiem_vu_id=lich_su[-1].id if lich_su else None,
+                                    rang_buoc_do_kho=ho_so is None)
             except LichSuNhiemVuDaThayDoi:
                 continue
         raise LoiKhoNhiemVu("Có nhiều yêu cầu đồng thời, chưa lưu được nhiệm vụ; hãy thử lại")

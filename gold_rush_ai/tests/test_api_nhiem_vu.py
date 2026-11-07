@@ -309,3 +309,84 @@ def test_demo_quest_khong_tieu_quota_ke_ca_khi_gioi_han_khong(tmp_path, monkeypa
         assert tao(c).status_code == 200
     with sqlite3.connect(tmp_path / "quota.sqlite3") as conn:
         assert conn.execute("SELECT COUNT(*) FROM quota_ai").fetchone()[0] == 0
+
+
+def test_api_dung_ho_so_verified_khong_dung_nhan_do_kho_cu(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNhiemVu
+    from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
+    from core.nhat_ky import NhatKyVan
+    ctx = NguCanhNhiemVu(player_id="trusted", allowed_stage_ids=frozenset({1}), difficulty="easy",
+        ho_so=HoSoNhiemVu(level=8, recent_history=tuple(
+            NhatKyVan(ma_van=f"game-{i:04d}", phien_ban_app="1.3.0", giay=120,
+                      ket_qua="thang", diem=480) for i in range(3))))
+    with client(tmp_path, monkeypatch, demo=False, backend_context=ctx) as (c, _):
+        response = tao(c)
+        assert response.status_code == 200
+        assert response.json()["difficulty"] == "hard"
+        assert response.json()["context_source"] == "verified"
+        assert tao(c, level=1000).status_code == 422
+        assert tao(c, ho_so={"level":1000}).status_code == 422
+        assert tao(c, recent_history=[]).status_code == 422
+        assert tao(c, stage=2).status_code == 403
+
+
+def test_ho_so_backend_bi_sua_sai_tra_503_truoc_llm(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNhiemVu
+    from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
+    class KhongDuocGoi:
+        def sinh(self, **kw):
+            raise AssertionError("Hồ sơ sai không được gọi LLM")
+    ctx = NguCanhNhiemVu(player_id="trusted", allowed_stage_ids=frozenset({1}),
+                         ho_so=HoSoNhiemVu(level=1).model_copy(update={"level": True}))
+    with client(tmp_path, monkeypatch, demo=False, backend_context=ctx) as (c, app):
+        app.state.nhiem_vu.service.provider = KhongDuocGoi()
+        assert tao(c).status_code == 503
+
+
+def test_retry_api_ho_so_thay_doi_khong_goi_llm_hoac_tieu_quota_lan_hai(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNhiemVu, lay_ngu_canh_nguoi_choi
+    from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
+    from core.nhat_ky import NhatKyVan
+    class ProviderDem:
+        calls = 0
+        def sinh(self, *, system_prompt, user_prompt):
+            self.calls += 1
+            return json.dumps(json.loads(user_prompt)["quest"], ensure_ascii=False)
+    ctx = NguCanhNhiemVu(player_id="trusted", allowed_stage_ids=frozenset({1, 2}),
+        ho_so=HoSoNhiemVu(level=8, recent_history=tuple(
+            NhatKyVan(ma_van=f"game-{i:04d}", phien_ban_app="1.3.0", giay=120,
+                      ket_qua="thang", diem=480) for i in range(3))))
+    provider = ProviderDem()
+    with client(tmp_path, monkeypatch, demo=False, backend_context=ctx,
+                AI_QUEST_DAILY_LIMIT="1") as (c, app):
+        app.state.nhiem_vu.service.provider = provider
+        first = tao(c)
+        assert first.status_code == 200
+        assert first.json()["difficulty"] == "hard"
+        assert first.json()["generation_source"] == "llm"
+        ctx_moi = ctx.model_copy(update={"ho_so": HoSoNhiemVu(level=1)})
+        app.dependency_overrides[lay_ngu_canh_nguoi_choi] = lambda: ctx_moi
+        assert tao(c).json() == first.json()
+        assert tao(c, stage=2).status_code == 409
+        assert tao(c, headers={"Idempotency-Key": "request_2"}).status_code == 429
+        assert provider.calls == 1
+
+
+def test_hieu_suat_backend_mau_thuan_tra_503_khong_goi_provider(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNhiemVu
+    from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
+    from core.nhat_ky import NhatKyVan
+    class KhongDuocGoi:
+        def sinh(self, **kw):
+            raise AssertionError("Lịch sử mâu thuẫn không được gọi LLM")
+    nk = NhatKyVan(ma_van="game-0000", phien_ban_app="1.3.0", giay=120,
+                   ket_qua="thang", diem=480)
+    ctx = NguCanhNhiemVu(player_id="trusted", allowed_stage_ids=frozenset({1}),
+        ho_so=HoSoNhiemVu(level=8, recent_history=(nk, nk.model_copy(update={"ket_qua":"thua", "diem":0}))))
+    with client(tmp_path, monkeypatch, demo=False, backend_context=ctx) as (c, app):
+        app.state.nhiem_vu.service.provider = KhongDuocGoi()
+        response = tao(c)
+        assert response.status_code == 503
+        assert str(tmp_path) not in response.text
+    with sqlite3.connect(tmp_path / "quota.sqlite3") as conn:
+        assert conn.execute("SELECT COUNT(*) FROM quota_ai").fetchone()[0] == 0

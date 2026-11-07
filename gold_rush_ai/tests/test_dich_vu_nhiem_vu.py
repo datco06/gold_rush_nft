@@ -146,3 +146,52 @@ def test_same_key_da_luu_giua_lan_doc_cache_va_doc_lich_su(tmp_path):
             da_luu.set()
         assert gui_lai.result(timeout=10) == da_tao
     assert KhoNhiemVu(tep).lich_su("player_a", 2) == [da_tao]
+
+
+def ho_so(level, thang=True):
+    from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
+    from core.nhat_ky import NhatKyVan
+    return HoSoNhiemVu(level=level, recent_history=tuple(
+        NhatKyVan(ma_van=f"game-{i:04d}", phien_ban_app="1.3.0", man=2, ban_do="man_2.tmx",
+                  ket_qua="thang" if thang else "thua", giay=60, diem=60 if thang else 0)
+        for i in range(3)))
+
+
+def test_ca_nhan_hoa_thay_doi_muc_tieu_that_va_van_kha_thi(tmp_path):
+    from core.kiem_tra_nhiem_vu import kiem_tra_nhiem_vu
+    yeu = tao(service(tmp_path / "weak.sqlite3"), ho_so=ho_so(8, False))
+    gioi = tao(service(tmp_path / "strong.sqlite3"), ho_so=ho_so(8))
+    assert (yeu.difficulty, yeu.objective, yeu.target) == ("easy", "collect_coins", 1)
+    assert (gioi.difficulty, gioi.objective, gioi.target) == ("hard", "collect_coins", 3)
+    m, bd = context()
+    kiem_tra_nhiem_vu(yeu, m, bd)
+    kiem_tra_nhiem_vu(gioi, m, bd)
+    assert yeu.reward.gold == gioi.reward.gold == 0
+
+
+def test_retry_ca_nhan_hoa_giu_ket_qua_du_ho_so_da_doi(tmp_path):
+    tep = tmp_path / "quests.sqlite3"
+    cu = tao(service(tep), ho_so=ho_so(8))
+    class KhongDuocGoi:
+        def sinh(self, **kw):
+            raise AssertionError("Retry không được gọi LLM")
+    assert tao(service(tep, KhongDuocGoi()), ho_so=ho_so(1, False)) == cu
+    moi = tao(service(tep), "request_2", ho_so=ho_so(1, False))
+    assert moi.difficulty == "easy"
+    assert moi.id != cu.id
+
+
+def test_hai_snapshot_dong_thoi_cung_key_tra_mot_nhiem_vu(tmp_path):
+    from core.kho_nhiem_vu import KhoNhiemVu
+    tep = tmp_path / "quests.sqlite3"
+    barrier = Barrier(2)
+    class ProviderDongThoi:
+        def sinh(self, *, system_prompt, user_prompt):
+            barrier.wait(timeout=5)
+            return json.dumps(json.loads(user_prompt)["quest"], ensure_ascii=False)
+    cac_service = [service(tep, ProviderDongThoi()) for _ in range(2)]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        a = pool.submit(tao, cac_service[0], ho_so=ho_so(8))
+        b = pool.submit(tao, cac_service[1], ho_so=ho_so(1, False))
+        assert a.result(timeout=15) == b.result(timeout=15)
+    assert len(KhoNhiemVu(tep).lich_su("player_a", 2)) == 1

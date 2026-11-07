@@ -84,16 +84,16 @@ class KhoNhiemVu:
                            (player_id, request_id)).fetchone()
         if row is None:
             return None
-        if (row["stage_id"], row["do_kho"]) != (stage_id, do_kho):
+        if row["stage_id"] != stage_id or (do_kho is not None and row["do_kho"] != do_kho):
             raise XungDotYeuCauNhiemVu("Request ID đã được dùng cho màn hoặc độ khó khác")
         return self._doc(row)
 
     def lay_theo_yeu_cau(self, player_id: str, request_id: str, stage_id: int,
-                        do_kho: str) -> NhiemVu | None:
+                        do_kho: str | None) -> NhiemVu | None:
         _kiem_tra_id(player_id)
         _kiem_tra_id(request_id)
         _kiem_tra_man(stage_id)
-        if do_kho not in ("easy", "medium", "hard"):
+        if do_kho is not None and do_kho not in ("easy", "medium", "hard"):
             raise ValueError("Độ khó không được hỗ trợ")
         with self._ket_noi() as conn:
             return self._tim(conn, player_id, request_id, stage_id, do_kho)
@@ -109,13 +109,14 @@ class KhoNhiemVu:
             return [self._doc(row) for row in reversed(rows)]
 
     def luu(self, player_id: str, request_id: str, nhiem_vu: NhiemVu,
-            *, sau_nhiem_vu_id: str | None) -> NhiemVu:
+            *, sau_nhiem_vu_id: str | None, rang_buoc_do_kho: bool = True) -> NhiemVu:
         _kiem_tra_id(player_id)
         _kiem_tra_id(request_id)
         nv = NhiemVu.model_validate_json(nhiem_vu.model_dump_json())
         with self._ket_noi() as conn:
             conn.execute("BEGIN IMMEDIATE")
-            cu = self._tim(conn, player_id, request_id, nv.stage_id, nv.difficulty)
+            cu = self._tim(conn, player_id, request_id, nv.stage_id,
+                           nv.difficulty if rang_buoc_do_kho else None)
             if cu is not None:
                 return cu
             moi_nhat = conn.execute("""SELECT quest_id FROM nhiem_vu WHERE player_id = ? AND stage_id = ?

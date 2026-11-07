@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from core.ai_nhiem_vu import KhongCoNhiemVuPhuHop
+from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu, LoiHoSoNhiemVu
 from core.dich_vu_nhiem_vu import DichVuNhiemVu
 from core.kho_nhiem_vu import KhoNhiemVu, LoiKhoNhiemVu, XungDotYeuCauNhiemVu
 from core.luoi import BanDo, doc_tmx, kiem_tra_choi_duoc
@@ -34,6 +35,11 @@ class NguCanhNguoiChoi(BaseModel):
     allowed_stage_ids: frozenset[StageID] = frozenset()
     difficulty: Literal["easy", "medium", "hard"] = "easy"
     context_source: Literal["verified", "demo"] = "verified"
+
+
+class NguCanhNhiemVu(NguCanhNguoiChoi):
+    context_source: Literal["verified"] = "verified"
+    ho_so: HoSoNhiemVu
 
 
 class PhanHoiNhiemVu(NhiemVu):
@@ -118,7 +124,11 @@ def lay_ngu_canh_nguoi_choi(
     if ctx is not None:
         if not isinstance(ctx, NguCanhNguoiChoi):
             raise HTTPException(503, "Ngữ cảnh người chơi từ backend không hợp lệ")
-        return ctx
+        cls = NguCanhNhiemVu if isinstance(ctx, NguCanhNhiemVu) else NguCanhNguoiChoi
+        try:
+            return cls.model_validate(ctx.model_dump(warnings=False), strict=True)
+        except ValueError:
+            raise HTTPException(503, "Ngữ cảnh nhiệm vụ từ backend không hợp lệ") from None
     if not state.demo_enabled:
         raise HTTPException(503, "Chưa có ngữ cảnh người chơi đã xác minh")
     if x_demo_player is None:
@@ -145,12 +155,15 @@ def tao_nhiem_vu(
     service = state.demo_service if ctx.context_source == "demo" else state.service
     try:
         nv = service.tao(player_id=player_key, request_id=request_id, man=man,
-                         ban_do=state.ban_do[man.id], do_kho=ctx.difficulty)
+                         ban_do=state.ban_do[man.id], do_kho=ctx.difficulty,
+                         ho_so=ctx.ho_so if isinstance(ctx, NguCanhNhiemVu) else None)
     except VuotQuotaAI as e:
         raise HTTPException(429, "Đã hết lượt gọi AI trong ngày; hãy thử lại sau",
                             headers={"Retry-After": str(e.cho_lai_sau)}) from None
     except XungDotYeuCauNhiemVu:
         raise HTTPException(409, "Idempotency-Key đã được dùng cho yêu cầu khác") from None
+    except LoiHoSoNhiemVu:
+        raise HTTPException(503, "Hồ sơ nhiệm vụ từ backend không hợp lệ") from None
     except KhongCoNhiemVuPhuHop:
         raise HTTPException(422, "Không có nhiệm vụ khả thi hoặc mới cho màn này") from None
     except (LoiKhoNhiemVu, LoiQuotaAI):
