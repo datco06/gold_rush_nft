@@ -184,9 +184,15 @@ với payload trong `core/providers/llm.py` và `core/providers/anh_http.py`.
 
 Khi provider tắt/lỗi, nhiệm vụ dùng rule-based, ảnh dùng mẫu offline và trả đúng
 nhãn nguồn. Nhánh demo luôn dùng provider offline ngay cả khi cấu hình provider
-thật đã bật. Hiện chưa có quota theo người chơi và chưa ngăn gọi provider ảnh
-trùng khi request đồng thời; hoàn thiện các task này trước khi bật dịch vụ tính phí.
-Không có quota chỉ bằng việc đặt giới hạn sức chứa kho.
+thật đã bật. Tạo ảnh dùng khóa ghi SQLite: kiểm tra lại cache và sức chứa trước
+khi gọi provider, rồi lưu ảnh và key trong cùng transaction. Các yêu cầu tạo ảnh
+mới dùng chung database được xử lý lần lượt giữa các worker; chờ khóa quá 5 giây
+trả `503`, thử lại bằng cùng key. Cache còn hạn vẫn đọc được trong lúc tạo ảnh khác.
+Nếu tiến trình dừng hoặc transaction lỗi sau khi provider đã trả ảnh nhưng trước
+khi commit, retry vẫn có thể gọi provider lại; cơ chế này không bảo đảm chỉ tính
+phí một lần qua sự cố đó. Hiện chưa có quota theo người chơi cho ảnh/LLM; cần
+hoàn thiện task quota trước khi bật dịch vụ tính phí. Giới hạn sức chứa kho không
+thay thế quota.
 
 ### Contract cần phối hợp với backend/gameplay
 

@@ -128,12 +128,15 @@ class KhoAnh:
                         (SELECT 1 FROM anh_nhan_vat a WHERE a.image_id = yeu_cau_anh.image_id)""")
         return count
 
+    def _kiem_tra_suc_chua(self, conn: sqlite3.Connection) -> None:
+        if conn.execute("SELECT COUNT(*) FROM anh_nhan_vat").fetchone()[0] >= self.so_anh_toi_da:
+            raise KhoAnhDay("Kho ảnh đã đạt giới hạn, cần dọn ảnh hết hạn trước khi lưu thêm")
+
     def _ghi_anh(self, conn, metadata, png, checksum, bay_gio) -> None:
         het_han = bay_gio + self.han_luu_giay
         if not math.isfinite(het_han) or het_han <= bay_gio:
             raise ValueError("Th?i h?n ?nh kh?ng h?p l?")
-        if conn.execute("SELECT COUNT(*) FROM anh_nhan_vat").fetchone()[0] >= self.so_anh_toi_da:
-            raise KhoAnhDay("Kho ?nh ?? ??t gi?i h?n, c?n d?n ?nh h?t h?n tr??c khi l?u th?m")
+        self._kiem_tra_suc_chua(conn)
         conn.execute("""INSERT INTO anh_nhan_vat(image_id, payload, png, checksum, expires_at)
                         VALUES (?, ?, ?, ?, ?)""",
                      (metadata.image_id, metadata.model_dump_json(), png, checksum, het_han))
@@ -167,22 +170,27 @@ class KhoAnh:
             row = conn.execute(_SQL_YEU_CAU, (player_id, request_id)).fetchone()
         return self._cache(row, fingerprint, self._bay_gio())
 
-    def luu_theo_yeu_cau(self, player_id: str, request_id: str, yeu_cau: YeuCauTaoNhanVat,
-                         ket_qua: KetQuaTaoAnh) -> AnhNhanVat:
+    def tao_theo_yeu_cau(self, player_id: str, request_id: str, yeu_cau: YeuCauTaoNhanVat,
+                         sinh_anh: Callable[[], KetQuaTaoAnh]) -> AnhNhanVat:
         fingerprint = _fingerprint(player_id, request_id, yeu_cau)
-        metadata, png, checksum = self._chuan_bi_anh(ket_qua)
         with self._ket_noi() as conn:
             conn.execute("BEGIN IMMEDIATE")
-            row = conn.execute(_SQL_YEU_CAU, (player_id, request_id)).fetchone()
             bay_gio = self._bay_gio()
+            self._don(conn, bay_gio)
+            row = conn.execute(_SQL_YEU_CAU, (player_id, request_id)).fetchone()
             cu = self._cache(row, fingerprint, bay_gio)
             if cu is not None:
                 return cu
-            self._don(conn, bay_gio)
-            self._ghi_anh(conn, metadata, png, checksum, bay_gio)
+            self._kiem_tra_suc_chua(conn)
+            metadata, png, checksum = self._chuan_bi_anh(sinh_anh())
+            self._ghi_anh(conn, metadata, png, checksum, self._bay_gio())
             conn.execute("""INSERT INTO yeu_cau_anh(player_id, request_id, fingerprint, image_id)
                             VALUES (?, ?, ?, ?)""", (player_id, request_id, fingerprint, metadata.image_id))
         return metadata
+
+    def luu_theo_yeu_cau(self, player_id: str, request_id: str, yeu_cau: YeuCauTaoNhanVat,
+                         ket_qua: KetQuaTaoAnh) -> AnhNhanVat:
+        return self.tao_theo_yeu_cau(player_id, request_id, yeu_cau, lambda: ket_qua)
 
     def doc(self, image_id: str) -> tuple[AnhNhanVat, bytes] | None:
         if not isinstance(image_id, str) or re.fullmatch(r"img_[0-9a-f]{32}", image_id) is None:

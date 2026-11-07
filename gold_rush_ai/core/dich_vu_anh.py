@@ -17,5 +17,5 @@ class DichVuAnh:
         cu = self.kho.lay_theo_yeu_cau(player_id, request_id, yeu_cau)
         if cu is not None:
             return cu
-        ket_qua = tao_anh_nhan_vat(yeu_cau, demo_provider=self.demo_provider, provider=self.provider)
-        return self.kho.luu_theo_yeu_cau(player_id, request_id, yeu_cau, ket_qua)
+        return self.kho.tao_theo_yeu_cau(player_id, request_id, yeu_cau,
+            lambda: tao_anh_nhan_vat(yeu_cau, demo_provider=self.demo_provider, provider=self.provider))
