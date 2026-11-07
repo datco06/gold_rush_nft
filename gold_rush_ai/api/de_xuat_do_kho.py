@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from api.nhiem_vu import NguCanhNguoiChoi, StageID
+from api.ngu_canh_ai import lay_ban_chup_ai
+from core.ngu_canh_ai import BanChupNguoiChoiAI
 from core.ca_nhan_hoa_do_kho import DeXuatDoKho, de_xuat_do_kho
 from core.man_choi import ManChoi, doc
 from core.nhat_ky import NhatKyVan
@@ -82,12 +84,15 @@ def lay_trang_thai(request: Request) -> TrangThaiDeXuatDoKho:
     return state
 
 
-def lay_ngu_canh_de_xuat(
+async def lay_ngu_canh_de_xuat(
     request: Request,
     state: Annotated[TrangThaiDeXuatDoKho, Depends(lay_trang_thai)],
     x_demo_player: Annotated[str | None, Header(alias="X-Demo-Player", min_length=1, max_length=64,
                                                pattern=r"^[A-Za-z0-9_-]+$")] = None,
-) -> NguCanhDeXuatDoKho:
+) -> NguCanhDeXuatDoKho | BanChupNguoiChoiAI:
+    snapshot = await lay_ban_chup_ai(request)
+    if snapshot is not None:
+        return snapshot
     ctx = getattr(request.state, "ai_difficulty_context", None)
     if ctx is not None:
         if not isinstance(ctx, NguCanhDeXuatDoKho):
@@ -108,9 +113,15 @@ def lay_ngu_canh_de_xuat(
 @router.post("/de-xuat", response_model=PhanHoiDeXuatDoKho)
 def de_xuat(
     yc: YeuCauDeXuatDoKho,
-    ctx: Annotated[NguCanhDeXuatDoKho, Depends(lay_ngu_canh_de_xuat)],
+    ctx: Annotated[NguCanhDeXuatDoKho | BanChupNguoiChoiAI, Depends(lay_ngu_canh_de_xuat)],
     state: Annotated[TrangThaiDeXuatDoKho, Depends(lay_trang_thai)],
 ) -> PhanHoiDeXuatDoKho:
+    if isinstance(ctx, BanChupNguoiChoiAI):
+        ctx = NguCanhDeXuatDoKho(
+            nguoi_choi=NguCanhNguoiChoi(player_id=ctx.player_id,
+                allowed_stage_ids=ctx.allowed_stage_ids),
+            stage_id=yc.stage_id, lich_su=ctx.recent_history,
+            he_so_truoc=ctx.previous_speed_multipliers.get(yc.stage_id, 1.0))
     nguoi = ctx.nguoi_choi
     if (yc.stage_id != ctx.stage_id or yc.stage_id not in nguoi.allowed_stage_ids
             or (nguoi.context_source == "demo" and yc.stage_id != 1)):

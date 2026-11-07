@@ -13,6 +13,12 @@ URL = "/api/ai/nhan-vat/tao"
 HEADERS = {"X-Demo-Player": "demo_a", "Idempotency-Key": "request_1"}
 
 
+def nguoi_da_hoan_thanh(player_id):
+    from api.nhan_vat_ai import NguCanhAnhNhanVat
+    return NguCanhAnhNhanVat(player_id=player_id, allowed_stage_ids=frozenset(range(1, 7)),
+                             completed_stage_ids=frozenset(range(1, 7)))
+
+
 @contextmanager
 def client(tmp_path, monkeypatch, *, enabled=True, demo=True, context=None, **env):
     import config
@@ -108,10 +114,9 @@ def test_demo_tat_can_context_backend(tmp_path, monkeypatch):
 
 def test_context_backend_va_demo_khong_doc_cheo_namespace(tmp_path, monkeypatch):
     from api.nhan_vat_ai import lay_ngu_canh_anh
-    from api.nhiem_vu import NguCanhNguoiChoi
     with client(tmp_path, monkeypatch) as (c, app):
         demo = tao(c).json()
-        app.dependency_overrides[lay_ngu_canh_anh] = lambda: NguCanhNguoiChoi(player_id="demo_a")
+        app.dependency_overrides[lay_ngu_canh_anh] = lambda: nguoi_da_hoan_thanh("demo_a")
         verified = tao(c).json()
         assert verified["context_source"] == "verified"
         assert c.get(demo["image_url"]).status_code == 404
@@ -132,7 +137,6 @@ def test_demo_khong_goi_provider_model_ke_ca_khi_co_context_server(tmp_path, mon
 
 
 def test_ngu_canh_verified_co_the_noi_provider_da_cau_hinh(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi
     class ProviderGia:
         generation_source = "image_model"
         calls = 0
@@ -142,7 +146,7 @@ def test_ngu_canh_verified_co_the_noi_provider_da_cau_hinh(tmp_path, monkeypatch
                 image.save(buf, format="PNG")
                 return buf.getvalue()
     provider = ProviderGia()
-    with client(tmp_path, monkeypatch, demo=False, context=NguCanhNguoiChoi(player_id="real_player")) as (c, app):
+    with client(tmp_path, monkeypatch, demo=False, context=nguoi_da_hoan_thanh("real_player")) as (c, app):
         app.state.nhan_vat_ai.service.provider = provider
         a, b = tao(c), tao(c)
         assert a.status_code == b.status_code == 200
@@ -216,7 +220,6 @@ def test_config_noi_http_provider_vao_context_verified(tmp_path, monkeypatch):
     import httpx
     import api.nhan_vat_ai as module
     from core.providers.anh_http import provider_anh_tu_moi_truong
-    from api.nhiem_vu import NguCanhNguoiChoi
     calls = []
     with Image.new("RGBA", (1024, 1024), "red") as image, BytesIO() as buf:
         image.save(buf, format="PNG")
@@ -227,7 +230,7 @@ def test_config_noi_http_provider_vao_context_verified(tmp_path, monkeypatch):
         return httpx.Response(200, json={"data": [{"b64_json": encoded}]})
     with httpx.Client(transport=httpx.MockTransport(handler)) as upstream:
         monkeypatch.setattr(module, "provider_anh_tu_moi_truong", lambda: provider_anh_tu_moi_truong(client=upstream))
-        with client(tmp_path, monkeypatch, demo=False, context=NguCanhNguoiChoi(player_id="trusted"),
+        with client(tmp_path, monkeypatch, demo=False, context=nguoi_da_hoan_thanh("trusted"),
                     AI_IMAGE_ENABLED="true", AI_IMAGE_URL="https://image.example/v1/images/generations",
                     AI_IMAGE_MODEL="image-test", AI_IMAGE_API_KEY="secret-test") as (c, _):
             first, repeated = tao(c), tao(c)
@@ -261,14 +264,13 @@ def test_provider_http_loi_fallback_demo_co_nhan_va_retry_khong_goi_lai(tmp_path
     import httpx
     import api.nhan_vat_ai as module
     from core.providers.anh_http import provider_anh_tu_moi_truong
-    from api.nhiem_vu import NguCanhNguoiChoi
     calls = []
     def handler(request):
         calls.append(request)
         return httpx.Response(429, text="secret-test private-prompt")
     with httpx.Client(transport=httpx.MockTransport(handler)) as upstream:
         monkeypatch.setattr(module, "provider_anh_tu_moi_truong", lambda: provider_anh_tu_moi_truong(client=upstream))
-        with client(tmp_path, monkeypatch, demo=False, context=NguCanhNguoiChoi(player_id="trusted"),
+        with client(tmp_path, monkeypatch, demo=False, context=nguoi_da_hoan_thanh("trusted"),
                     AI_IMAGE_ENABLED="true", AI_IMAGE_URL="https://image.example/v1/images/generations", AI_IMAGE_MODEL="image-test") as (c, _):
             first, repeated = tao(c), tao(c)
             assert first.status_code == repeated.status_code == 200
@@ -289,7 +291,6 @@ def test_cau_hinh_provider_sai_van_cho_phep_demo_khong_lo_config(tmp_path, monke
 
 
 def test_quota_anh_tra_429_nhung_cache_va_nguoi_khac_van_dung_duoc(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi
     from api.nhan_vat_ai import lay_ngu_canh_anh
     class ProviderDem:
         generation_source = "image_model"
@@ -300,7 +301,7 @@ def test_quota_anh_tra_429_nhung_cache_va_nguoi_khac_van_dung_duoc(tmp_path, mon
                 image.save(buf, format="PNG")
                 return buf.getvalue()
     provider = ProviderDem()
-    ctx = NguCanhNguoiChoi(player_id="trusted")
+    ctx = nguoi_da_hoan_thanh("trusted")
     with client(tmp_path, monkeypatch, demo=False, context=ctx,
                 AI_IMAGE_DAILY_LIMIT="1") as (c, app):
         app.state.nhan_vat_ai.service.provider = provider
@@ -312,19 +313,18 @@ def test_quota_anh_tra_429_nhung_cache_va_nguoi_khac_van_dung_duoc(tmp_path, mon
         assert tao(c).json() == first.json()
         assert c.get(first.json()["image_url"]).status_code == 200
         assert provider.calls == 1
-        app.dependency_overrides[lay_ngu_canh_anh] = lambda: NguCanhNguoiChoi(player_id="other")
+        app.dependency_overrides[lay_ngu_canh_anh] = lambda: nguoi_da_hoan_thanh("other")
         assert tao(c).status_code == 200
         assert provider.calls == 2
 
 
 def test_quota_anh_hong_chan_provider_va_tra_503(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi
     class KhongDuocGoi:
         generation_source = "image_model"
         def sinh(self, **kw):
             raise AssertionError("Quota hỏng không được gọi provider")
     with client(tmp_path, monkeypatch, demo=False,
-                context=NguCanhNguoiChoi(player_id="trusted")) as (c, app):
+                context=nguoi_da_hoan_thanh("trusted")) as (c, app):
         app.state.nhan_vat_ai.service.provider = KhongDuocGoi()
         (tmp_path / "quota.sqlite3").write_bytes(b"broken quota")
         response = tao(c)
@@ -333,7 +333,6 @@ def test_quota_anh_hong_chan_provider_va_tra_503(tmp_path, monkeypatch):
 
 
 def test_quota_anh_khong_hoan_luot_khi_luu_ket_qua_that_bai(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi
     class ProviderDem:
         generation_source = "image_model"
         calls = 0
@@ -344,7 +343,7 @@ def test_quota_anh_khong_hoan_luot_khi_luu_ket_qua_that_bai(tmp_path, monkeypatc
                 return buf.getvalue()
     provider = ProviderDem()
     with client(tmp_path, monkeypatch, demo=False,
-                context=NguCanhNguoiChoi(player_id="trusted"), AI_IMAGE_DAILY_LIMIT="1") as (c, app):
+                context=nguoi_da_hoan_thanh("trusted"), AI_IMAGE_DAILY_LIMIT="1") as (c, app):
         app.state.nhan_vat_ai.service.provider = provider
         with sqlite3.connect(tmp_path / "images.sqlite3") as conn:
             conn.execute("""CREATE TRIGGER chan_luu BEFORE INSERT ON anh_nhan_vat
@@ -376,3 +375,15 @@ def test_demo_anh_khong_tieu_quota_ke_ca_khi_gioi_han_khong(tmp_path, monkeypatc
         assert tao(c).status_code == 200
     with sqlite3.connect(tmp_path / "quota.sqlite3") as conn:
         assert conn.execute("SELECT COUNT(*) FROM quota_ai").fetchone()[0] == 0
+
+
+def test_danh_tinh_verified_chua_co_tien_trinh_khong_du_quyen_tao_anh(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNguoiChoi
+    ctx = NguCanhNguoiChoi(player_id="trusted", allowed_stage_ids=frozenset(range(1, 7)))
+    class KhongDuocGoi:
+        generation_source = "image_model"
+        def sinh(self, **kw):
+            raise AssertionError("Chỉ danh tính không đủ quyền tạo ảnh")
+    with client(tmp_path, monkeypatch, demo=False, context=ctx) as (c, app):
+        app.state.nhan_vat_ai.service.provider = KhongDuocGoi()
+        assert tao(c).status_code == 403

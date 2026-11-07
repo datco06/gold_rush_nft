@@ -18,13 +18,14 @@ from core.kho_nhiem_vu import KhoNhiemVu, LoiKhoNhiemVu, XungDotYeuCauNhiemVu
 from core.luoi import BanDo, doc_tmx, kiem_tra_choi_duoc
 from core.man_choi import ManChoi, doc
 from core.nhiem_vu import NhiemVu, YeuCauTaoNhiemVu
+from core.ngu_canh_ai import StageID
+from api.ngu_canh_ai import lay_ban_chup_ai
 from core.providers.llm import provider_tu_moi_truong
 
 from core.quota_ai import KhoQuotaAI, LoiQuotaAI, VuotQuotaAI
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ai/nhiem-vu", tags=["AI nhiệm vụ"])
-StageID = Annotated[int, Field(strict=True, ge=1, le=1000)]
 
 
 class NguCanhNguoiChoi(BaseModel):
@@ -114,12 +115,16 @@ def lay_trang_thai(request: Request) -> TrangThaiNhiemVu:
     return state
 
 
-def lay_ngu_canh_nguoi_choi(
+async def lay_ngu_canh_nguoi_choi(
     request: Request,
     state: Annotated[TrangThaiNhiemVu, Depends(lay_trang_thai)],
     x_demo_player: Annotated[str | None, Header(alias="X-Demo-Player", min_length=1, max_length=64,
                                                pattern=r"^[A-Za-z0-9_-]+$")] = None,
 ) -> NguCanhNguoiChoi:
+    snapshot = await lay_ban_chup_ai(request)
+    if snapshot is not None:
+        return NguCanhNhiemVu(player_id=snapshot.player_id, allowed_stage_ids=snapshot.allowed_stage_ids,
+            ho_so=HoSoNhiemVu(level=snapshot.level, recent_history=snapshot.recent_history))
     ctx = getattr(request.state, "ai_quest_player", None)
     if ctx is not None:
         if not isinstance(ctx, NguCanhNguoiChoi):

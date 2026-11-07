@@ -9,7 +9,8 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Path, Request
 from fastapi.responses import Response
 
-from api.nhiem_vu import NguCanhNguoiChoi
+from api.nhiem_vu import NguCanhNguoiChoi, StageID
+from api.ngu_canh_ai import lay_ban_chup_ai
 from core.ai_nhan_vat import tao_anh_nhan_vat
 from core.dich_vu_anh import DichVuAnh
 from core.kho_anh import KhoAnh, LoiKhoAnh, XungDotYeuCauAnh
@@ -21,6 +22,11 @@ from core.quota_ai import KhoQuotaAI, LoiQuotaAI, VuotQuotaAI
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ai/nhan-vat", tags=["AI ảnh nhân vật"])
+
+
+class NguCanhAnhNhanVat(NguCanhNguoiChoi):
+    context_source: Literal["verified"] = "verified"
+    completed_stage_ids: frozenset[StageID] = frozenset()
 
 
 class PhanHoiAnhNhanVat(AnhNhanVat):
@@ -86,18 +92,23 @@ def lay_trang_thai(request: Request) -> TrangThaiNhanVatAI:
     return state
 
 
-def lay_ngu_canh_anh(
+async def lay_ngu_canh_anh(
     request: Request,
     state: Annotated[TrangThaiNhanVatAI, Depends(lay_trang_thai)],
     x_demo_player: Annotated[str | None, Header(alias="X-Demo-Player", min_length=1, max_length=64,
                                                pattern=r"^[A-Za-z0-9_-]+$")] = None,
 ) -> NguCanhNguoiChoi:
+    snapshot = await lay_ban_chup_ai(request)
+    if snapshot is not None:
+        return NguCanhAnhNhanVat(player_id=snapshot.player_id,
+            allowed_stage_ids=snapshot.allowed_stage_ids, completed_stage_ids=snapshot.completed_stage_ids)
     ctx = getattr(request.state, "ai_image_player", None)
     if ctx is not None:
         if not isinstance(ctx, NguCanhNguoiChoi):
             raise HTTPException(503, "Ngữ cảnh người chơi từ backend không hợp lệ")
+        cls = NguCanhAnhNhanVat if isinstance(ctx, NguCanhAnhNhanVat) else NguCanhNguoiChoi
         try:
-            return NguCanhNguoiChoi.model_validate(ctx.model_dump(warnings=False), strict=True)
+            return cls.model_validate(ctx.model_dump(warnings=False), strict=True)
         except ValueError:
             raise HTTPException(503, "Ngữ cảnh người chơi từ backend không hợp lệ") from None
     if not state.demo_enabled:
@@ -119,6 +130,11 @@ def tao_anh(
     request_id: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=64,
                                      pattern=r"^[A-Za-z0-9_-]+$")],
 ) -> PhanHoiAnhNhanVat:
+    if ctx.context_source == "verified" and (
+        not isinstance(ctx, NguCanhAnhNhanVat)
+        or not frozenset(range(1, 7)) <= ctx.completed_stage_ids
+    ):
+        raise HTTPException(403, "Cần hoàn thành đủ màn 1–6 để tạo ảnh nhân vật")
     service = state.demo_service if ctx.context_source == "demo" else state.service
     try:
         anh = service.tao(player_id=_player_key(ctx), request_id=request_id, yeu_cau=yc)

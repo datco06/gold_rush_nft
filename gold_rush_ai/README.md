@@ -218,22 +218,67 @@ provider vẫn mặc định tắt và chưa được kiểm chứng bằng dị
 
 ### Contract cần phối hợp với backend/gameplay
 
-Các giá trị sau phải do tầng backend đã xác minh đặt vào `request.state`,
-không lấy trực tiếp từ JSON hoặc header danh tính tự khai của Flutter:
+Module AI có điểm nhận snapshot chung tại `api/ngu_canh_ai.py`.
+Backend người 5 đăng ký nguồn bằng `gan_nguon_du_lieu_ai(app, lay_snapshot_ai)`
+trong lúc thiết lập app, với `app` và adapter đã có của backend. Hàm nguồn phải
+là async, nhận `fastapi.Request` và trả `core.ngu_canh_ai.BanChupNguoiChoiAI`
+hoặc `None` nếu chưa xác thực. Nguồn chịu trách nhiệm xác minh session/token,
+liên kết người chơi với dữ liệu đã lưu và cung cấp snapshot đúng chủ sở hữu;
+không được chỉ đọc rồi tin `player_id`/tiến trình do Flutter gửi.
+
+| Trường snapshot | Kiểu và ý nghĩa |
+|---|---|
+| `player_id` | ID đã xác minh, 1–64 ký tự ASCII chữ/số/`_`/`-` |
+| `level` | Cấp độ người chơi, số nguyên 1–1000 |
+| `allowed_stage_ids` | Frozenset các ID màn được phép, mỗi ID 1–1000 |
+| `completed_stage_ids` | Frozenset các màn đã hoàn thành, phải là tập con của màn được phép |
+| `recent_history` | Tuple tối đa 1000 `NhatKyVan` đã xác minh, đúng người, cũ đến mới |
+| `previous_speed_multipliers` | Dict ID màn → hệ số trước đó trong `0.8–1.15`; màn chưa có dùng `1.0` |
+
+Ví dụ **dữ liệu contract**, chưa phải nguồn xác thực thực tế:
+
+```python
+from core.ngu_canh_ai import BanChupNguoiChoiAI
+
+snapshot = BanChupNguoiChoiAI(
+    player_id="player_demo",
+    level=3,
+    allowed_stage_ids=frozenset({1, 2, 3}),
+    completed_stage_ids=frozenset({1, 2}),
+    recent_history=(),
+    previous_speed_multipliers={3: 1.0},
+)
+```
+
+Một nguồn cấp dữ liệu cho cả ba API: nhiệm vụ dùng level/lịch sử, đề xuất độ khó
+lọc lịch sử và lấy hệ số đúng stage trong request, ảnh dùng danh tính/tiến trình.
+Snapshot được kiểm tra lại ở mỗi request; dữ liệu trong JSON hoặc `X-Demo-Player`
+không thể ghi đè snapshot từ nguồn. Chưa đăng ký nguồn chung thì các context
+riêng cũ ở `request.state` vẫn được hỗ trợ:
 
 | Thuộc tính | Kiểu Python | Dữ liệu |
 |---|---|---|
-| `ai_quest_player` | `api.nhiem_vu.NguCanhNhiemVu` | `player_id`, `allowed_stage_ids` (frozenset), `ho_so` gồm level/lịch sử đã xác minh, `context_source="verified"` |
-| `ai_difficulty_context` | `api.de_xuat_do_kho.NguCanhDeXuatDoKho` | `nguoi_choi`, `stage_id`, `lich_su` (tuple `NhatKyVan`, cũ đến mới), `he_so_truoc` |
-| `ai_image_player` | `api.nhiem_vu.NguCanhNguoiChoi` | Danh tính đã xác minh; chưa có entitlement hoàn thành sáu màn |
+| `ai_quest_player` | `api.nhiem_vu.NguCanhNhiemVu` | Danh tính, màn được phép và `ho_so` đã xác minh |
+| `ai_difficulty_context` | `api.de_xuat_do_kho.NguCanhDeXuatDoKho` | `nguoi_choi`, `stage_id`, `lich_su`, `he_so_truoc` |
+| `ai_image_player` | `api.nhan_vat_ai.NguCanhAnhNhanVat` | Danh tính và `completed_stage_ids` đã xác minh |
 
-Đây là điểm nối đã có, chưa có middleware nguồn danh tính/tiến trình thật trong
-ứng dụng. Khi demo tắt mà chưa có context, API trả `503`, không tự tin dữ liệu
-Flutter. `X-Demo-Player` chỉ được dùng khi bật demo và không phải xác thực.
-Backend người 5 cung cấp danh tính, màn được phép, lịch sử đã xác minh và hệ số
-trước; module AI kiểm tra schema và tạo đề xuất. Độ khó cần ít nhất ba ván có
-kết quả, xét tối đa mười ván
-đúng màn/bản đồ, hệ số trong `0.8–1.15`, mỗi đề xuất thay đổi tối đa `0.05`.
+Khi nguồn chung đã đăng ký, nguồn này được ưu tiên hơn context cũ/demo:
+trả `None` → `401`; ném lỗi hoặc snapshot sai → `503`, không rơi về demo.
+Thời gian chờ mặc định 5 giây; hết hạn hủy coroutine và trả `503`.
+Có thể đặt `thoi_gian_cho` trong `(0, 60]` khi đăng ký; adapter cần dùng async I/O.
+Khi chưa có cả nguồn lẫn context riêng và demo tắt, API tiếp tục trả `503`.
+`X-Demo-Player` chỉ phân biệt phiên demo, không phải xác thực.
+
+POST tạo ảnh verified yêu cầu **đã hoàn thành đủ màn 1–6** trước khi đọc cache,
+gọi provider hay trừ quota. Chỉ mở khóa sáu màn, lặp lại một màn, hoàn thành
+sáu ID khác hoặc chỉ có danh tính đều chưa đủ: API trả `403`. Quyền được kiểm tra
+lại mỗi POST, kể cả retry. GET ảnh cũ chỉ kiểm tra đúng chủ sở hữu/hạn lưu, không
+đòi hoàn thành lại sáu màn. Nhánh demo vẫn chỉ dùng mẫu offline, không gọi model.
+
+Nguồn xác thực/kho tiến trình của người 5 chưa tồn tại trong checkout hiện tại;
+module AI cung cấp điểm nối và kiểm tra contract, chưa tự tạo hệ thống đăng nhập
+hay coi telemetry tự khai là tiến trình đã xác minh. `/api/health` báo các thành
+phần AI đã nạp, không chứng minh adapter dữ liệu thật đã được đăng ký.
 
 ### Hồ sơ cá nhân hóa nhiệm vụ
 
@@ -291,12 +336,13 @@ Nguồn danh tính, cấp độ, tiến trình và lịch sử thật cần nố
 Các màn hình/client Flutter nhận stage động được, nhưng entry menu hiện truyền
 màn `1`. Nhiệm vụ chưa được gameplay theo dõi hoàn thành; hệ số đề xuất chưa tự
 áp dụng vào gameplay. Preview ảnh có TTL, chưa phải kho nhân vật lâu dài,
-chưa có sprite sheet 4×4, chưa mở khóa theo sáu màn và chưa có nhân vật chơi được.
+chưa có sprite sheet 4×4 hoặc nhân vật chơi được; điều kiện tạo ảnh sáu màn đã có ở API.
 Các phần này cần phối hợp đúng chủ module; không liên quan tới mint/NFT.
 
 | Mã lỗi | Tình huống điển hình |
 |---|---|
-| `403` | Màn/danh tính không khớp ngữ cảnh đã cấp |
+| `401` | Nguồn chung xác định người chơi chưa được xác thực |
+| `403` | Màn/danh tính không khớp hoặc chưa hoàn thành đủ màn 1–6 để tạo ảnh |
 | `404` | Feature tắt, màn không tồn tại hoặc ảnh hết hạn/khác chủ sở hữu |
 | `409` | Key đã dùng cho dữ liệu khác |
 | `422` | Input/header sai, thiếu header demo hoặc không có nhiệm vụ phù hợp |
