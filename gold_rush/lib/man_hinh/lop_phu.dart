@@ -153,11 +153,15 @@ class ManHinhMenu extends StatelessWidget {
   }
 
   void _moDeXuatDoKho(BuildContext context) {
+    final manChoi = game.manHienTai.id;
     const demo = String.fromEnvironment('GOLD_RUSH_DIFFICULTY_DEMO_PLAYER');
     try {
       final api = MayChuDeXuatDoKho(maNguoiChoiDemo: demo.isEmpty ? null : demo);
       Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ManHinhDeXuatDoKho(mayChu: api, manChoi: 1),
+        builder: (_) => ManHinhDeXuatDoKho(
+          mayChu: api,
+          manChoi: manChoi,
+        ),
       ));
     } on ArgumentError {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -167,11 +171,15 @@ class ManHinhMenu extends StatelessWidget {
   }
 
   void _moNhiemVu(BuildContext context) {
+    final manChoi = game.manHienTai.id;
     const demo = String.fromEnvironment('GOLD_RUSH_QUEST_DEMO_PLAYER');
     try {
       final api = MayChuNhiemVu(maNguoiChoiDemo: demo.isEmpty ? null : demo);
       Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ManHinhNhiemVu(mayChu: api, manChoi: 1),
+        builder: (_) => ManHinhNhiemVu(
+          mayChu: api,
+          manChoi: manChoi,
+        ),
       ));
     } on ArgumentError {
       ScaffoldMessenger.of(context).showSnackBar(

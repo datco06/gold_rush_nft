@@ -333,8 +333,12 @@ Contract cũ `NguCanhNguoiChoi` vẫn hỗ trợ nhãn `difficulty` do backend c
 chưa cá nhân hóa theo hồ sơ; demo offline tiếp tục dùng contract cũ/màn 1.
 Nguồn danh tính, cấp độ, tiến trình và lịch sử thật cần nối ở task tích hợp backend.
 
-Các màn hình/client Flutter nhận stage động được, nhưng entry menu hiện truyền
-màn `1`. Nhiệm vụ chưa được gameplay theo dõi hoàn thành; hệ số đề xuất chưa tự
+Menu nhiệm vụ/đề xuất độ khó lấy `game.manHienTai.id` ngay lúc bấm mở AI,
+giữ màn đó trong route đang mở và lấy lại màn hiện tại khi mở route mới.
+Đây là màn đang chơi hoặc vừa chơi, không phải một màn mới chỉ được xem trong
+hộp chọn màn. Demo offline vẫn chỉ cấp quyền màn `1`; màn khác cần snapshot
+verified từ backend, nếu không API trả `403`, không tự đổi về màn 1.
+Nhiệm vụ chưa được gameplay theo dõi hoàn thành; hệ số đề xuất chưa tự
 áp dụng vào gameplay. Preview ảnh có TTL, chưa phải kho nhân vật lâu dài,
 chưa có sprite sheet 4×4 hoặc nhân vật chơi được; điều kiện tạo ảnh sáu màn đã có ở API.
 Các phần này cần phối hợp đúng chủ module; không liên quan tới mint/NFT.
