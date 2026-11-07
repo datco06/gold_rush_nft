@@ -19,8 +19,10 @@ abstract class NhanVat extends SpriteAnimationGroupComponent<HuongDi>
 
   /// Hộp dùng để kiểm tra va chạm với ĐỊA HÌNH (khác với hitbox va chạm giữa
   /// các nhân vật do Flame quản lý).
-  static final Vector2 hopChan =
-      Vector2(CauHinh.rongHopChan, CauHinh.caoHopChan);
+  static final Vector2 hopChan = Vector2(
+    CauHinh.rongHopChan,
+    CauHinh.caoHopChan,
+  );
 
   NhanVat({
     required this.banDo,
@@ -28,12 +30,12 @@ abstract class NhanVat extends SpriteAnimationGroupComponent<HuongDi>
     required Vector2 viTri,
     super.priority = 2,
   }) : super(
-          animations: hoatAnh,
-          current: HuongDi.xuong,
-          position: viTri,
-          size: Vector2.all(CauHinh.kichThuocO),
-          anchor: Anchor.center,
-        );
+         animations: hoatAnh,
+         current: HuongDi.xuong,
+         position: viTri,
+         size: Vector2.all(CauHinh.kichThuocO),
+         anchor: Anchor.center,
+       );
 
   /// Vẽ bóng TRƯỚC khi vẽ sprite.
   ///
@@ -98,8 +100,6 @@ abstract class NhanVat extends SpriteAnimationGroupComponent<HuongDi>
 
   /// Hitbox dùng cho va chạm GIỮA CÁC NHÂN VẬT (George ↔ quái, George ↔ xu).
   /// Nhỏ hơn sprite một chút để chạm nhau mới tính là trúng.
-  RectangleHitbox hopVaCham() => RectangleHitbox(
-        size: Vector2(10, 12),
-        position: Vector2(3, 3),
-      );
+  RectangleHitbox hopVaCham() =>
+      RectangleHitbox(size: Vector2(10, 12), position: Vector2(3, 3));
 }

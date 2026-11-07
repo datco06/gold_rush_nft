@@ -51,14 +51,17 @@ class BoGiaoDich {
   }) : _ngu = ngu ?? Future<void>.delayed;
 
   /// Mạng Hardhat cục bộ: app tự đề nghị thêm vào MetaMask nếu ví chưa có.
-  factory BoGiaoDich.choMang({required Vi vi, required int chainId, required String hopDong}) =>
-      BoGiaoDich(
-        vi: vi,
-        chainId: chainId,
-        hopDong: hopDong,
-        tenMang: chainId == 31337 ? 'Hardhat cục bộ' : null,
-        rpcUrl: chainId == 31337 ? 'http://127.0.0.1:8545' : null,
-      );
+  factory BoGiaoDich.choMang({
+    required Vi vi,
+    required int chainId,
+    required String hopDong,
+  }) => BoGiaoDich(
+    vi: vi,
+    chainId: chainId,
+    hopDong: hopDong,
+    tenMang: chainId == 31337 ? 'Hardhat cục bộ' : null,
+    rpcUrl: chainId == 31337 ? 'http://127.0.0.1:8545' : null,
+  );
 
   bool get dangGui => _dangGui;
 
@@ -68,7 +71,9 @@ class BoGiaoDich {
     await vi.chuyenMang(chainId, tenMang: tenMang, rpcUrl: rpcUrl);
     final sau = await vi.chainId();
     if (sau != chainId) {
-      throw LoiVi('Ví đang ở mạng $sau, game cần mạng $chainId. Chọn lại mạng trong MetaMask.');
+      throw LoiVi(
+        'Ví đang ở mạng $sau, game cần mạng $chainId. Chọn lại mạng trong MetaMask.',
+      );
     }
   }
 
@@ -104,8 +109,10 @@ class BoGiaoDich {
     BaoTienDo? baoTienDo,
   }) async {
     if (_dangGui) {
-      throw const LoiVi('Đang có một giao dịch chờ xác nhận — đợi xong rồi thử lại.',
-          loai: LoaiLoiVi.dangCho);
+      throw const LoiVi(
+        'Đang có một giao dịch chờ xác nhận — đợi xong rồi thử lại.',
+        loai: LoaiLoiVi.dangCho,
+      );
     }
     _dangGui = true;
     void bao(String s) => baoTienDo?.call(s);
@@ -134,7 +141,12 @@ class BoGiaoDich {
       }
 
       bao('Mở ${vi.ten}: xem phí rồi bấm Xác nhận — $moTa');
-      final ma = await vi.guiGiaoDich(tu: tu, toi: hopDong, duLieu: duLieu, gas: gas);
+      final ma = await vi.guiGiaoDich(
+        tu: tu,
+        toi: hopDong,
+        duLieu: duLieu,
+        gas: gas,
+      );
       bao('Đã gửi ${rutGon(ma)} — chờ vào khối…');
       return await _choXacNhan(ma, tu, duLieu, daXong);
     } finally {
@@ -169,7 +181,8 @@ class BoGiaoDich {
       }
       if (daXong != null && i.isOdd) {
         try {
-          if (await daXong()) return KetQuaGui.thanhCong; // giao dịch "tăng tốc" đã vào khối
+          if (await daXong())
+            return KetQuaGui.thanhCong; // giao dịch "tăng tốc" đã vào khối
         } on LoiVi {
           // bỏ qua, nhịp sau kiểm lại
         }
@@ -184,8 +197,9 @@ class BoGiaoDich {
   }
 }
 
-String rutGon(String hex) =>
-    hex.length > 12 ? '${hex.substring(0, 6)}…${hex.substring(hex.length - 4)}' : hex;
+String rutGon(String hex) => hex.length > 12
+    ? '${hex.substring(0, 6)}…${hex.substring(hex.length - 4)}'
+    : hex;
 
 /// wei → "0.000123" ETH (6 chữ số thập phân, đủ cho phí gas).
 String dinhDangEth(BigInt wei) {

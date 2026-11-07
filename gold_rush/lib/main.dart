@@ -87,8 +87,10 @@ class _ManHinhGameState extends State<ManHinhGame> {
               children: [
                 CircularProgressIndicator(color: CauHinh.mauChinh),
                 SizedBox(height: 16),
-                Text('Đang nạp Gold Rush...',
-                    style: TextStyle(color: CauHinh.mauChu)),
+                Text(
+                  'Đang nạp Gold Rush...',
+                  style: TextStyle(color: CauHinh.mauChu),
+                ),
               ],
             ),
           ),

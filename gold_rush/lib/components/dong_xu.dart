@@ -14,16 +14,14 @@ import 'hieu_ung.dart';
 class DongXu extends SpriteAnimationComponent with CollisionCallbacks {
   bool _daNhat = false;
 
-  DongXu({
-    required SpriteAnimation hoatAnh,
-    required Vector2 viTri,
-  }) : super(
-          animation: hoatAnh,
-          position: viTri,
-          size: Vector2.all(CauHinh.kichThuocO),
-          anchor: Anchor.center,
-          priority: 1,
-        );
+  DongXu({required SpriteAnimation hoatAnh, required Vector2 viTri})
+    : super(
+        animation: hoatAnh,
+        position: viTri,
+        size: Vector2.all(CauHinh.kichThuocO),
+        anchor: Anchor.center,
+        priority: 1,
+      );
 
   @override
   Future<void> onLoad() async {

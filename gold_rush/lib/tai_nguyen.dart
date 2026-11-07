@@ -37,8 +37,10 @@ class TaiNguyen {
     georgeTheoTep[georgeGoc.tepAnh] = george;
     for (final nv in bangNhanVat) {
       try {
-        georgeTheoTep[nv.tepAnh] =
-            _bonHuong(await Flame.images.load(nv.tepAnh), 0.12);
+        georgeTheoTep[nv.tepAnh] = _bonHuong(
+          await Flame.images.load(nv.tepAnh),
+          0.12,
+        );
       } catch (_) {
         // Chưa chạy cong-cu/sinh_nhan_vat.py: nhân vật đó dùng hình George gốc.
       }
@@ -67,15 +69,15 @@ class TaiNguyen {
   /// sheet: nhầm hàng thì nhân vật đi xuống mà hoạt ảnh lại quay lưng.
   Map<HuongDi, SpriteAnimation> _bonHuong(ui.Image anh, double buocThoiGian) {
     SpriteAnimation hang(int i) => SpriteAnimation.fromFrameData(
-          anh,
-          SpriteAnimationData.sequenced(
-            amount: 4,
-            amountPerRow: 4,
-            stepTime: buocThoiGian,
-            textureSize: Vector2.all(CauHinh.kichThuocO),
-            texturePosition: Vector2(0, i * CauHinh.kichThuocO),
-          ),
-        );
+      anh,
+      SpriteAnimationData.sequenced(
+        amount: 4,
+        amountPerRow: 4,
+        stepTime: buocThoiGian,
+        textureSize: Vector2.all(CauHinh.kichThuocO),
+        texturePosition: Vector2(0, i * CauHinh.kichThuocO),
+      ),
+    );
 
     return {
       HuongDi.xuong: hang(0),

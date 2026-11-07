@@ -5,7 +5,8 @@ class _ViKhongHoTro implements Vi {
   const _ViKhongHoTro();
 
   static const _loi = LoiVi(
-      'Bản này chỉ kết nối MetaMask trên trình duyệt. Hãy chạy: flutter run -d chrome');
+    'Bản này chỉ kết nối MetaMask trên trình duyệt. Hãy chạy: flutter run -d chrome',
+  );
 
   @override
   bool get coSan => false;
@@ -26,17 +27,25 @@ class _ViKhongHoTro implements Vi {
   Future<int> chainId() => Future.error(_loi);
 
   @override
-  Future<void> chuyenMang(int chainId, {String? tenMang, String? rpcUrl}) => Future.error(_loi);
+  Future<void> chuyenMang(int chainId, {String? tenMang, String? rpcUrl}) =>
+      Future.error(_loi);
 
   @override
-  Future<String> goi({required String toi, required String duLieu, String? tu}) => Future.error(_loi);
+  Future<String> goi({
+    required String toi,
+    required String duLieu,
+    String? tu,
+  }) => Future.error(_loi);
 
   @override
   Future<String> maHopDong(String diaChi) => Future.error(_loi);
 
   @override
-  Future<BigInt> uocLuongGas({required String tu, required String toi, required String duLieu}) =>
-      Future.error(_loi);
+  Future<BigInt> uocLuongGas({
+    required String tu,
+    required String toi,
+    required String duLieu,
+  }) => Future.error(_loi);
 
   @override
   Future<BigInt> giaGas() => Future.error(_loi);
@@ -50,8 +59,7 @@ class _ViKhongHoTro implements Vi {
     required String toi,
     required String duLieu,
     BigInt? gas,
-  }) =>
-      Future.error(_loi);
+  }) => Future.error(_loi);
 
   @override
   Future<BienLai?> bienLai(String maGiaoDich) => Future.error(_loi);

@@ -5,7 +5,9 @@ import 'package:gold_rush/man_choi.dart';
 
 /// man_choi.json là MỘT nguồn sự thật cho app, máy chủ và hợp đồng — phải khớp bản đồ thật.
 void main() {
-  final ds = ManChoi.docDanhSach(File('assets/tiles/man_choi.json').readAsStringSync());
+  final ds = ManChoi.docDanhSach(
+    File('assets/tiles/man_choi.json').readAsStringSync(),
+  );
 
   test('màn 1 là luyện tập; màn có cọc đều có giới hạn thời gian', () {
     expect(ds.first.id, 1);
@@ -20,7 +22,9 @@ void main() {
     for (final m in ds) {
       final tmx = File('assets/tiles/${m.tep}');
       expect(tmx.existsSync(), isTrue, reason: m.tep);
-      final soXu = RegExp(r'name="coin"').allMatches(tmx.readAsStringSync()).length;
+      final soXu = RegExp(r'name="coin"')
+          .allMatches(tmx.readAsStringSync())
+          .length;
       expect(soXu, m.soXu, reason: m.tep);
     }
   });

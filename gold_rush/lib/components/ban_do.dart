@@ -82,15 +82,19 @@ class BanDo {
     luoi = _dungLuoiChan(map.width, map.height);
     _docDiemXuatHien();
 
-    debugPrint('Bản đồ $tep: ${soCot}x$soHang ô, '
-        '${diemXuatHien.length} điểm xuất hiện');
+    debugPrint(
+      'Bản đồ $tep: ${soCot}x$soHang ô, '
+      '${diemXuatHien.length} điểm xuất hiện',
+    );
   }
 
   LuoiVaCham _dungLuoiChan(int cot, int hang) {
     final lop = _duLieuBanDo.getLayer<TileLayer>(CauHinh.lopVaCham);
     if (lop == null) {
-      debugPrint('CẢNH BÁO: không tìm thấy lớp "${CauHinh.lopVaCham}" '
-          'trong tệp .tmx — nhân vật sẽ đi xuyên mọi thứ.');
+      debugPrint(
+        'CẢNH BÁO: không tìm thấy lớp "${CauHinh.lopVaCham}" '
+        'trong tệp .tmx — nhân vật sẽ đi xuyên mọi thứ.',
+      );
       return LuoiVaCham.trong(cot, hang);
     }
 

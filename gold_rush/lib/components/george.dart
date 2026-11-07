@@ -2,6 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/services.dart';
 
 import '../am_thanh/am_thanh.dart';
+import '../chien_dau/sat_thuong.dart';
 import '../cau_hinh.dart';
 import 'ban_do.dart';
 import 'dong_xu.dart';
@@ -27,6 +28,12 @@ class George extends NhanVat with KeyboardHandler {
 
   int diem = 0;
   int mau = CauHinh.mauToiDa;
+
+  final HoiChieu _hoiDanh = HoiChieu(CauHinh.thoiGianHoiDanh);
+  int soKeDichDaHa = 0;
+
+  /// Người khác (nhật ký, UI) gắn vào đây để biết khi có mục tiêu bị hạ.
+  void Function(CoTheBiDanh)? khiHaMucTieu;
 
   /// Còn bao nhiêu giây bất tử sau khi trúng đòn.
   double _batTu = 0;
@@ -74,17 +81,27 @@ class George extends NhanVat with KeyboardHandler {
       _huongBanPhim.setZero();
       return false;
     }
+    if (event is KeyDownEvent) {
+      final k = event.logicalKey;
+      if (k == LogicalKeyboardKey.space || k == LogicalKeyboardKey.keyJ) {
+        tanCong();
+      }
+    }
 
     // Đọc từ keysPressed (tập phím ĐANG được giữ) chứ không đọc từ event.
     // Đọc từ event thì giữ phím sẽ chỉ chạy một lần, và bấm hai phím cùng lúc
     // để đi chéo sẽ không hoạt động.
-    final trai = keysPressed.contains(LogicalKeyboardKey.arrowLeft) ||
+    final trai =
+        keysPressed.contains(LogicalKeyboardKey.arrowLeft) ||
         keysPressed.contains(LogicalKeyboardKey.keyA);
-    final phai = keysPressed.contains(LogicalKeyboardKey.arrowRight) ||
+    final phai =
+        keysPressed.contains(LogicalKeyboardKey.arrowRight) ||
         keysPressed.contains(LogicalKeyboardKey.keyD);
-    final len = keysPressed.contains(LogicalKeyboardKey.arrowUp) ||
+    final len =
+        keysPressed.contains(LogicalKeyboardKey.arrowUp) ||
         keysPressed.contains(LogicalKeyboardKey.keyW);
-    final xuong = keysPressed.contains(LogicalKeyboardKey.arrowDown) ||
+    final xuong =
+        keysPressed.contains(LogicalKeyboardKey.arrowDown) ||
         keysPressed.contains(LogicalKeyboardKey.keyS);
 
     // Chú ý viết 1.0 / 0.0 chứ không phải 1 / 0: Vector2.x là double, và Dart
@@ -108,6 +125,7 @@ class George extends NhanVat with KeyboardHandler {
   @override
   void update(double dt) {
     super.update(dt);
+    _hoiDanh.troiQua(dt);
     if (!conSong || !dieuKhienDuoc) {
       datDangDi(false);
       return;
@@ -171,6 +189,39 @@ class George extends NhanVat with KeyboardHandler {
   }
 
   // ------------------------------------------------------------------
+  Vector2 get huongNhin => switch (current) {
+    HuongDi.trai => Vector2(-1, 0),
+    HuongDi.phai => Vector2(1, 0),
+    HuongDi.len => Vector2(0, -1),
+    _ => Vector2(0, 1),
+  };
+
+  bool tanCong() {
+    if (!conSong || !dieuKhienDuoc || !_hoiDanh.thu()) return false;
+    final huong = huongNhin;
+    final mucTieu =
+        parent?.children.whereType<CoTheBiDanh>().toList() ??
+        const <CoTheBiDanh>[];
+    for (final m in mucTieu) {
+      if (trongTamDanh(
+            tu: position,
+            huong: huong,
+            muc: m.viTriDanh,
+            tam: CauHinh.tamDanhCanChien,
+          ) &&
+          m.nhanSatThuong(CauHinh.satThuongGoc)) {
+        _khiHaMucTieu(m);
+      }
+    }
+    return true;
+  }
+
+  void _khiHaMucTieu(CoTheBiDanh m) {
+    soKeDichDaHa++;
+    khiHaMucTieu?.call(m);
+    khiChiSoDoi();
+  }
+
   // Va chạm
   // ------------------------------------------------------------------
   @override

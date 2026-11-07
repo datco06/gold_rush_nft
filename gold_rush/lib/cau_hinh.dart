@@ -69,6 +69,36 @@ class CauHinh {
   static const double rongHopChan = 10;
   static const double caoHopChan = 7;
 
+  // ---------- Chiến đấu, EXP, Boss (Người 2) ----------
+  static const int mauZombie = 30;
+  static const int mauSkeleton = 20;
+  static const int satThuongGoc = 10;
+  static const double thoiGianHoiDanh = 0.45;
+  static const double tamDanhCanChien = 28;
+
+  static const double tocDoDash = 300;
+  static const double banKinhNamCham = 64;
+  static const double tocDoNamCham = 120;
+
+  static const int expMoiKeDich = 10;
+  static const int expBoss = 100;
+
+  static const int mauBoss = 300;
+  static const double tocDoBoss = 38;
+  static const int satThuongBossCham = 20;
+  static const int satThuongDanBoss = 15;
+  static const int satThuongDienRong = 30;
+  static const double hoiBanBoss = 2.0;
+  static const double hoiChieuDienRong = 4.0;
+  static const double banKinhDienRong = 48;
+
+  static const double tiLeRoiExp = 0.35;
+  static const double tiLeRoiBinhMau = 0.2;
+  static const double thoiGianTonTaiVatPham = 10;
+
+  /// Bật Boss để thử: flutter run -d chrome --dart-define=GOLD_RUSH_BOSS=true
+  static const bool batBoss = bool.fromEnvironment('GOLD_RUSH_BOSS');
+
   // ---------- Màu sắc giao diện ----------
   static const Color mauChinh = Color(0xFFE3A008);
   static const Color mauNen = Color(0xFF1B2430);

@@ -48,7 +48,11 @@ class _Khung extends StatelessWidget {
                     color: CauHinh.mauChinh,
                     letterSpacing: 1.5,
                     shadows: [
-                      Shadow(color: Colors.black, offset: Offset(0, 3), blurRadius: 6),
+                      Shadow(
+                        color: Colors.black,
+                        offset: Offset(0, 3),
+                        blurRadius: 6,
+                      ),
                     ],
                   ),
                 ),
@@ -136,7 +140,8 @@ class ManHinhMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Khung(
       tieuDe: 'GOLD RUSH',
-      phuDe: 'George đi tìm vàng giữa vùng đất đầy zombie và bộ xương.\n'
+      phuDe:
+          'George đi tìm vàng giữa vùng đất đầy zombie và bộ xương.\n'
           'Nhặt hết số xu trên bản đồ trước khi hết máu — và trước khi hết giờ.',
       noiDung: [
         _Nut(
@@ -160,7 +165,11 @@ class ManHinhMenu extends StatelessWidget {
           'Điều khiển:  cần gạt ở góc dưới trái  ·  phím mũi tên hoặc W A S D\n'
           'chạm vào bản đồ để đi tới chỗ đó',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12.5, height: 1.6, color: Color(0xFF9FAEBC)),
+          style: TextStyle(
+            fontSize: 12.5,
+            height: 1.6,
+            color: Color(0xFF9FAEBC),
+          ),
         ),
       ],
     );
@@ -191,7 +200,10 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
             setState(() => AmThanh.batNhac = v);
             AmThanh.datBatNhac(v);
           },
-          title: const Text('Nhạc nền', style: TextStyle(color: CauHinh.mauChu)),
+          title: const Text(
+            'Nhạc nền',
+            style: TextStyle(color: CauHinh.mauChu),
+          ),
           subtitle: const Text(
             'Bản nhạc lặp 8 giây, sinh bằng mã nguồn',
             style: TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
@@ -201,8 +213,10 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
         SwitchListTile(
           value: AmThanh.batHieuUng,
           onChanged: (v) => setState(() => AmThanh.batHieuUng = v),
-          title: const Text('Hiệu ứng âm thanh',
-              style: TextStyle(color: CauHinh.mauChu)),
+          title: const Text(
+            'Hiệu ứng âm thanh',
+            style: TextStyle(color: CauHinh.mauChu),
+          ),
           subtitle: const Text(
             'Tiếng nhặt xu, bước chân, kẻ địch nổ',
             style: TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
@@ -215,8 +229,10 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
           onChanged: widget.game.doKho.moHinh == null
               ? null
               : (v) => setState(() => widget.game.doKho.batThichUng = v),
-          title: const Text('Độ khó thích ứng (AI)',
-              style: TextStyle(color: CauHinh.mauChu)),
+          title: const Text(
+            'Độ khó thích ứng (AI)',
+            style: TextStyle(color: CauHinh.mauChu),
+          ),
           subtitle: Text(
             widget.game.doKho.moHinh == null
                 ? 'Chưa có mô hình trong assets/models/'
@@ -263,13 +279,15 @@ class ManHinhTamDung extends StatelessWidget {
     if (!m.mienPhi && bd != null) {
       // Đồng hồ TRONG GAME dừng, nhưng máy chủ tính giờ THẬT: tạm dừng quá lâu là phiếu bị từ chối.
       final con = bd.add(m.hanNopNhatKy - _duPhong).difference(DateTime.now());
-      canhBao = '\nĐồng hồ trong game đã dừng, nhưng máy chủ tính giờ thật: '
+      canhBao =
+          '\nĐồng hồ trong game đã dừng, nhưng máy chủ tính giờ thật: '
           '${con.isNegative ? 'ĐÃ QUÁ hạn nộp — ván này sẽ không được trả vàng.' : 'còn ${dinhDangGiay(con.inSeconds)} để chơi xong.'}'
           '\nVề menu bây giờ là bỏ ván — MẤT ${m.coc} vàng cọc.';
     }
     return _Khung(
       tieuDe: 'TẠM DỪNG',
-      phuDe: 'Màn ${m.id} · ${m.ten}   ·   Điểm hiện tại: ${game.george?.diem ?? 0}$canhBao',
+      phuDe:
+          'Màn ${m.id} · ${m.ten}   ·   Điểm hiện tại: ${game.george?.diem ?? 0}$canhBao',
       noiDung: [
         _Nut(
           nhan: 'Chơi tiếp',
@@ -321,7 +339,9 @@ class ManHinhKetThuc extends StatelessWidget {
           : 'HOÀN THÀNH màn ${m.id}! Nhận lại ${m.coc} cọc + ${m.soXu} xu + ${m.thuong} thưởng.';
     } else {
       final vi = hetGio ? 'Hết giờ!' : 'George đã gục ngã giữa đường tìm vàng.';
-      phuDe = m.mienPhi ? vi : '$vi Không hoàn thành màn ${m.id} — mất ${m.coc} vàng cọc.';
+      phuDe = m.mienPhi
+          ? vi
+          : '$vi Không hoàn thành màn ${m.id} — mất ${m.coc} vàng cọc.';
     }
 
     return _Khung(
@@ -344,7 +364,10 @@ class ManHinhKetThuc extends StatelessWidget {
               _Dong('Xu đã nhặt', '${game.soXuDaNhat} / ${game.tongSoXu}'),
               if (!m.mienPhi) ...[
                 const SizedBox(height: 6),
-                _Dong('Vàng', thang ? '+${m.nhanVeKhiHoanThanh}' : '−${m.coc} (cọc)'),
+                _Dong(
+                  'Vàng',
+                  thang ? '+${m.nhanVeKhiHoanThanh}' : '−${m.coc} (cọc)',
+                ),
               ],
               const SizedBox(height: 6),
               _Dong('Điểm cao nhất', '${game.diemCaoNhat}'),
@@ -357,12 +380,18 @@ class ManHinhKetThuc extends StatelessWidget {
             child: Text(
               kq!.phieu!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFFC9D2DB), fontSize: 13, height: 1.45),
+              style: const TextStyle(
+                color: Color(0xFFC9D2DB),
+                fontSize: 13,
+                height: 1.45,
+              ),
             ),
           ),
         _Nut(
           nhan: m.mienPhi ? 'Chơi lại' : 'Chọn màn',
-          bieuTuong: m.mienPhi ? Icons.refresh_rounded : Icons.grid_view_rounded,
+          bieuTuong: m.mienPhi
+              ? Icons.refresh_rounded
+              : Icons.grid_view_rounded,
           chinh: true,
           khiBam: m.mienPhi ? () => game.batDauVanMoi() : game.moChonMan,
         ),
@@ -392,7 +421,10 @@ class _Dong extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(nhan, style: const TextStyle(color: Color(0xFFC9D2DB), fontSize: 14)),
+        Text(
+          nhan,
+          style: const TextStyle(color: Color(0xFFC9D2DB), fontSize: 14),
+        ),
         Text(
           giaTri,
           style: const TextStyle(

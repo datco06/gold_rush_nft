@@ -51,12 +51,18 @@ class KetQuaVan {
   /// Trạng thái phiếu vàng của ván (đang xin / đã có / không có) — cập nhật khi máy chủ trả lời.
   final String? phieu;
 
-  const KetQuaVan({required this.man, required this.thang, required this.xu, this.phieu});
+  const KetQuaVan({
+    required this.man,
+    required this.thang,
+    required this.xu,
+    this.phieu,
+  });
 
   /// Màn có cọc mà không hoàn thành → mất cọc.
   bool get matCoc => !man.mienPhi && !thang;
 
-  KetQuaVan voiPhieu(String p) => KetQuaVan(man: man, thang: thang, xu: xu, phieu: p);
+  KetQuaVan voiPhieu(String p) =>
+      KetQuaVan(man: man, thang: thang, xu: xu, phieu: p);
 }
 
 class GoldRushGame extends FlameGame
@@ -119,7 +125,10 @@ class GoldRushGame extends FlameGame
   /// Phiên ví dùng chung cho chọn màn, cửa hàng, màn kết thúc. null = chưa cấu hình máy chủ
   /// (`--dart-define=GOLD_RUSH_API=...`) → chỉ chơi được màn luyện tập, như bản gốc.
   late final PhienVi? phienVi = GuiNhatKy.daCauHinh
-      ? PhienVi(vi: taoViMacDinh(), mayChu: MayChuPhieu(mayChu: GuiNhatKy.mayChu))
+      ? PhienVi(
+          vi: taoViMacDinh(),
+          mayChu: MayChuPhieu(mayChu: GuiNhatKy.mayChu),
+        )
       : null;
 
   /// Kết quả ván vừa xong. ValueNotifier vì máy chủ trả lời KHÔNG ĐỒNG BỘ: màn kết thúc đang mở
@@ -198,15 +207,17 @@ class GoldRushGame extends FlameGame
   }
 
   TimDuong _dungTimDuong() => TimDuong(
-        soCot: banDo.soCot,
-        soHang: banDo.soHang,
-        biChan: banDo.luoi.biChanO,
-      );
+    soCot: banDo.soCot,
+    soHang: banDo.soHang,
+    biChan: banDo.luoi.biChanO,
+  );
 
   /// Nạp danh sách màn. Hỏng tệp → chỉ còn màn mặc định (bản đồ gốc), game vẫn chạy.
   Future<void> _napDanhSachMan() async {
     try {
-      danhSachMan = ManChoi.docDanhSach(await rootBundle.loadString('assets/tiles/man_choi.json'));
+      danhSachMan = ManChoi.docDanhSach(
+        await rootBundle.loadString('assets/tiles/man_choi.json'),
+      );
       manHienTai = danhSachMan.first;
     } catch (e) {
       debugPrint('Không nạp được man_choi.json ($e) — chỉ có màn mặc định.');
@@ -242,8 +253,9 @@ class GoldRushGame extends FlameGame
   Future<void> _napMoHinhDoKho() async {
     try {
       final chuoi = await rootBundle.loadString(tepMoHinhDoKho);
-      doKho.moHinh =
-          MoHinhDoKho.tuJson(jsonDecode(chuoi) as Map<String, dynamic>);
+      doKho.moHinh = MoHinhDoKho.tuJson(
+        jsonDecode(chuoi) as Map<String, dynamic>,
+      );
       debugPrint('Đã nạp mô hình độ khó ${doKho.moHinh!.phienBan}');
     } catch (e) {
       debugPrint('Không nạp được mô hình độ khó ($e) — dùng độ khó cố định.');
@@ -276,8 +288,9 @@ class GoldRushGame extends FlameGame
   void _capNhatZoom() {
     if (size.x <= 0) return;
     final z = size.x / (CauHinh.soONhinThayNgang * CauHinh.kichThuocO);
-    camera.viewfinder.zoom =
-        z.clamp(CauHinh.zoomToiThieu, CauHinh.zoomToiDa).toDouble();
+    camera.viewfinder.zoom = z
+        .clamp(CauHinh.zoomToiThieu, CauHinh.zoomToiDa)
+        .toDouble();
   }
 
   // ==================================================================
@@ -315,30 +328,31 @@ class GoldRushGame extends FlameGame
       switch (d.ten) {
         case 'coin':
           tongSoXu++;
-          _them(DongXu(
-            hoatAnh: taiNguyen.dongXu,
-            viTri: d.viTri.clone(),
-          ));
+          _them(DongXu(hoatAnh: taiNguyen.dongXu, viTri: d.viTri.clone()));
           break;
         case 'zombie':
-          _them(KeDich.zombie(
-            banDo: banDo,
-            hoatAnh: taiNguyen.zombie,
-            viTri: d.viTri.clone(),
-            viTriNguoiChoi: viTriNguoiChoi,
-            timDuong: timDuong,
-            heSoTocDo: heSoTocDo,
-          ));
+          _them(
+            KeDich.zombie(
+              banDo: banDo,
+              hoatAnh: taiNguyen.zombie,
+              viTri: d.viTri.clone(),
+              viTriNguoiChoi: viTriNguoiChoi,
+              timDuong: timDuong,
+              heSoTocDo: heSoTocDo,
+            ),
+          );
           break;
         case 'skeleton':
-          _them(KeDich.skeleton(
-            banDo: banDo,
-            hoatAnh: taiNguyen.skeleton,
-            viTri: d.viTri.clone(),
-            viTriNguoiChoi: viTriNguoiChoi,
-            timDuong: timDuong,
-            heSoTocDo: heSoTocDo,
-          ));
+          _them(
+            KeDich.skeleton(
+              banDo: banDo,
+              hoatAnh: taiNguyen.skeleton,
+              viTri: d.viTri.clone(),
+              viTriNguoiChoi: viTriNguoiChoi,
+              timDuong: timDuong,
+              heSoTocDo: heSoTocDo,
+            ),
+          );
           break;
       }
     }
@@ -346,7 +360,9 @@ class GoldRushGame extends FlameGame
     camera.follow(george!, snap: true);
 
     nhatKy.batDau(tongSoXu, maVanCoSan: maVan);
-    giayConLai = manHienTai.gioiHanGiay > 0 ? manHienTai.gioiHanGiay.toDouble() : null;
+    giayConLai = manHienTai.gioiHanGiay > 0
+        ? manHienTai.gioiHanGiay.toDouble()
+        : null;
     doKho.datLai();
     _mauTruoc = george!.mau;
     _diemTruoc = 0;
@@ -443,8 +459,10 @@ class GoldRushGame extends FlameGame
       banDo: banDo.tep, // bản đồ THỰC SỰ đã chơi
       man: manHienTai.id,
     );
-    debugPrint('Ván ${nk['ma_van']}: $ketQua, ${nk['giay']} giây, '
-        '${nhatKy.anhChup.length} ảnh chụp, ${nhatKy.suKien.length} sự kiện');
+    debugPrint(
+      'Ván ${nk['ma_van']}: $ketQua, ${nk['giay']} giây, '
+      '${nhatKy.anhChup.length} ảnh chụp, ${nhatKy.suKien.length} sự kiện',
+    );
     // Chụp lại NGAY: lúc máy chủ trả lời, người chơi có thể đã sang ván mới.
     final maVan = nhatKy.maVan;
     final man = manHienTai;
@@ -452,7 +470,8 @@ class GoldRushGame extends FlameGame
     var kq = KetQuaVan(man: man, thang: thang, xu: nhatKy.soXu);
     // Có phiếu khi: màn luyện tập nhặt được xu, hoặc màn có cọc HOÀN THÀNH.
     final coPhieu = man.mienPhi ? nhatKy.soXu > 0 : thang;
-    if (coPhieu && phienVi != null) kq = kq.voiPhieu('Đang gửi ván lên máy chủ trọng tài…');
+    if (coPhieu && phienVi != null)
+      kq = kq.voiPhieu('Đang gửi ván lên máy chủ trọng tài…');
     ketQuaVan.value = kq;
     if (!GuiNhatKy.daCauHinh) return;
     unawaited(_guiVaXinPhieu(nk, maVan, kq, coPhieu));
@@ -468,13 +487,16 @@ class GoldRushGame extends FlameGame
     final pv = phienVi;
     if (!coPhieu || pv == null) return;
     void datTrangThai(String p) {
-      if (!identical(ketQuaVan.value, kq)) return; // người chơi đã sang ván khác
+      if (!identical(ketQuaVan.value, kq))
+        return; // người chơi đã sang ván khác
       kq = kq.voiPhieu(p);
       ketQuaVan.value = kq;
     }
 
     if (!daGui) {
-      datTrangThai('Không gửi được ván lên máy chủ — ván này không đổi được thành vàng.');
+      datTrangThai(
+        'Không gửi được ván lên máy chủ — ván này không đổi được thành vàng.',
+      );
       return;
     }
     if (!pv.daKetNoi) {
@@ -483,10 +505,12 @@ class GoldRushGame extends FlameGame
       return;
     }
     final soVang = await pv.xinPhieuChoVan(maVan);
-    datTrangThai(soVang == null
-        ? 'Máy chủ không cấp phiếu: ${pv.thongBao ?? ''}'
-        : 'Đã có phiếu +$soVang vàng${kq.man.mienPhi ? '' : ' (+${kq.man.coc} cọc hoàn lại)'} '
-            '— nhận ở Cửa hàng hoặc tự gộp vào giao dịch vào màn tiếp theo.');
+    datTrangThai(
+      soVang == null
+          ? 'Máy chủ không cấp phiếu: ${pv.thongBao ?? ''}'
+          : 'Đã có phiếu +$soVang vàng${kq.man.mienPhi ? '' : ' (+${kq.man.coc} cọc hoàn lại)'} '
+                '— nhận ở Cửa hàng hoặc tự gộp vào giao dịch vào màn tiếp theo.',
+    );
   }
 
   void _docJoystick() {
@@ -551,9 +575,16 @@ class GoldRushGame extends FlameGame
 
   /// Chơi màn [m]. Màn có cọc: [maVan] và [ve] đã đăng ký với máy chủ (PhienVi.chuanBiMan).
   /// false = không nạp được bản đồ (màn đang chơi giữ nguyên).
-  Future<bool> choiMan(ManChoi m, {String? maVan, int ve = 0, DateTime? batDauThat}) async {
+  Future<bool> choiMan(
+    ManChoi m, {
+    String? maVan,
+    int ve = 0,
+    DateTime? batDauThat,
+  }) async {
     try {
-      await _doiBanDo(m); // đổi bản đồ TRƯỚC, rồi mới đổi màn — hai thứ luôn khớp nhau
+      await _doiBanDo(
+        m,
+      ); // đổi bản đồ TRƯỚC, rồi mới đổi màn — hai thứ luôn khớp nhau
     } catch (e) {
       debugPrint('Không đổi được bản đồ ${m.tep}: $e');
       return false;

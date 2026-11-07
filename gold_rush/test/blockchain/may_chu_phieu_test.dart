@@ -6,18 +6,29 @@ import 'package:gold_rush/blockchain/vi.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-MayChuPhieu voi(int ma, Object than, {void Function(http.Request)? xem}) => MayChuPhieu(
+MayChuPhieu voi(int ma, Object than, {void Function(http.Request)? xem}) =>
+    MayChuPhieu(
       mayChu: 'http://may-chu',
       client: MockClient((r) async {
         xem?.call(r);
-        return http.Response.bytes(utf8.encode(jsonEncode(than)), ma,
-            headers: {'content-type': 'application/json'});
+        return http.Response.bytes(
+          utf8.encode(jsonEncode(than)),
+          ma,
+          headers: {'content-type': 'application/json'},
+        );
       }),
     );
 
 const _vi = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
 final _phieu = {
-  'phieu': {'nguoiChoi': _vi, 'man': 2, 've': 1, 'soVang': 23, 'maVan': '0x${'d' * 64}', 'hanChot': 2000000000},
+  'phieu': {
+    'nguoiChoi': _vi,
+    'man': 2,
+    've': 1,
+    'soVang': 23,
+    'maVan': '0x${'d' * 64}',
+    'hanChot': 2000000000,
+  },
   'chu_ky': '0x${'1' * 130}',
 };
 
@@ -42,8 +53,11 @@ void main() {
 
   test('bắt đầu màn: gửi đúng thân, 409 mang mã để app mua vé mới', () async {
     late Map<String, dynamic> than;
-    await voi(201, {'da_bat_dau': true}, xem: (r) => than = jsonDecode(r.body) as Map<String, dynamic>)
-        .batDauMan(maVan: 'van-1', vi: _vi, man: 2, ve: 1);
+    await voi(
+      201,
+      {'da_bat_dau': true},
+      xem: (r) => than = jsonDecode(r.body) as Map<String, dynamic>,
+    ).batDauMan(maVan: 'van-1', vi: _vi, man: 2, ve: 1);
     expect(than, {'ma_van': 'van-1', 'vi': _vi, 'man': 2, 've': 1});
     await expectLater(
       voi(409, {'detail': 'x'}).batDauMan(maVan: 'v', vi: _vi, man: 2, ve: 1),
@@ -55,16 +69,27 @@ void main() {
     await expectLater(
       voi(422, {
         'detail': {
-          'ly_do': ['Màn 2 có cọc: chỉ trả vàng khi nhặt hết 18 xu (cọc đã mất)'],
+          'ly_do': [
+            'Màn 2 có cọc: chỉ trả vàng khi nhặt hết 18 xu (cọc đã mất)',
+          ],
         },
       }).xinPhieu(maVan: 'van-1', vi: _vi),
-      throwsA(isA<LoiVi>().having((e) => e.thongBao, 'tb', contains('nhặt hết 18 xu'))),
+      throwsA(
+        isA<LoiVi>().having(
+          (e) => e.thongBao,
+          'tb',
+          contains('nhặt hết 18 xu'),
+        ),
+      ),
     );
   });
 
   test('các mã lỗi của máy chủ thành câu đọc được', () async {
     for (final ma in [404, 409, 422, 429, 503, 500]) {
-      await expectLater(voi(ma, {'detail': 'x'}).xinPhieu(maVan: 'van-1', vi: _vi), throwsA(isA<LoiVi>()));
+      await expectLater(
+        voi(ma, {'detail': 'x'}).xinPhieu(maVan: 'van-1', vi: _vi),
+        throwsA(isA<LoiVi>()),
+      );
     }
   });
 

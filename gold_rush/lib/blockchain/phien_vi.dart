@@ -55,7 +55,8 @@ class PhienVi extends ChangeNotifier {
 
   /// Phiếu HOÀN THÀNH của đúng vé đang mở → vé đó đã "xong", vào màn mới không mất cọc.
   bool get veDangMoDaCoPhieu =>
-      ve.dangMo && phieuCho.any((p) => p.coCoc && p.phieu.ve == BigInt.from(ve.so));
+      ve.dangMo &&
+      phieuCho.any((p) => p.coCoc && p.phieu.ve == BigInt.from(ve.so));
 
   void _bao(String s, {bool loi = false}) {
     thongBao = s;
@@ -64,7 +65,11 @@ class PhienVi extends ChangeNotifier {
   }
 
   /// Chạy một thao tác: khoá nút, hiện tiến độ, đổi mọi lỗi thành dòng thông báo. null = lỗi.
-  Future<T?> _lam<T extends Object>(String dangLam, Future<T> Function() viec, {String? xong}) async {
+  Future<T?> _lam<T extends Object>(
+    String dangLam,
+    Future<T> Function() viec, {
+    String? xong,
+  }) async {
     if (dangXuLy) {
       _bao('Đang xử lý việc trước — đợi một chút.');
       return null;
@@ -89,7 +94,11 @@ class PhienVi extends ChangeNotifier {
   }
 
   /// Như [_lam] cho việc không trả giá trị. true = xong.
-  Future<bool> _lamViec(String dangLam, Future<void> Function() viec, {String? xong}) async =>
+  Future<bool> _lamViec(
+    String dangLam,
+    Future<void> Function() viec, {
+    String? xong,
+  }) async =>
       await _lam<bool>(dangLam, () async {
         await viec();
         return true;
@@ -100,20 +109,26 @@ class PhienVi extends ChangeNotifier {
   // Kết nối
   // ------------------------------------------------------------------
   Future<bool> ketNoi() => _lamViec('Đang kết nối ${vi.ten}…', () async {
-        if (!vi.coSan) {
-          throw const LoiVi('Chưa thấy MetaMask. Cài tiện ích MetaMask cho trình duyệt rồi tải lại trang.');
-        }
-        final ch = await mayChu.cauHinh();
-        final dc = await vi.ketNoi();
-        final bo = BoGiaoDich.choMang(vi: vi, chainId: ch.chainId, hopDong: ch.hopDong);
-        await bo.damBaoMang();
-        await bo.kiemHopDong();
-        cauHinh = ch;
-        diaChi = dc;
-        cuaHang = CuaHangChuoi(vi: vi, hopDong: ch.hopDong, bo: bo);
-        _ngheVi ??= vi.suKien.listen(_khiViDoi);
-        await _taiLaiNoi(); // gồm cả xin phiếu cho các ván chơi lúc chưa kết nối
-      }, xong: 'Đã kết nối.');
+    if (!vi.coSan) {
+      throw const LoiVi(
+        'Chưa thấy MetaMask. Cài tiện ích MetaMask cho trình duyệt rồi tải lại trang.',
+      );
+    }
+    final ch = await mayChu.cauHinh();
+    final dc = await vi.ketNoi();
+    final bo = BoGiaoDich.choMang(
+      vi: vi,
+      chainId: ch.chainId,
+      hopDong: ch.hopDong,
+    );
+    await bo.damBaoMang();
+    await bo.kiemHopDong();
+    cauHinh = ch;
+    diaChi = dc;
+    cuaHang = CuaHangChuoi(vi: vi, hopDong: ch.hopDong, bo: bo);
+    _ngheVi ??= vi.suKien.listen(_khiViDoi);
+    await _taiLaiNoi(); // gồm cả xin phiếu cho các ván chơi lúc chưa kết nối
+  }, xong: 'Đã kết nối.');
 
   /// Xin phiếu cho các ván còn treo. Chỉ bỏ ván khỏi danh sách khi xong hoặc bị từ chối DỨT KHOÁT
   /// (409 đã cấp ví khác, 422 không hợp lệ); lỗi mạng, 404 (nhật ký chưa tới), 429 → giữ lại, thử sau.
@@ -122,7 +137,8 @@ class PhienVi extends ChangeNotifier {
   Future<void> _xinCacPhieuCon(String dc) async {
     final bayGio = DateTime.now();
     if (_vanChuaXinPhieu.isEmpty ||
-        (_lanThuCuoi != null && bayGio.difference(_lanThuCuoi!) < const Duration(seconds: 30))) {
+        (_lanThuCuoi != null &&
+            bayGio.difference(_lanThuCuoi!) < const Duration(seconds: 30))) {
       return;
     }
     _lanThuCuoi = bayGio;
@@ -166,14 +182,20 @@ class PhienVi extends ChangeNotifier {
     switch (s) {
       case DoiTaiKhoan(:final taiKhoan):
         if (diaChi != null &&
-            (taiKhoan.isEmpty || taiKhoan.first.toLowerCase() != diaChi!.toLowerCase())) {
+            (taiKhoan.isEmpty ||
+                taiKhoan.first.toLowerCase() != diaChi!.toLowerCase())) {
           _ngatKetNoi();
-          _bao('Tài khoản trong ví đã đổi — bấm "Kết nối MetaMask" để tải ví mới.');
+          _bao(
+            'Tài khoản trong ví đã đổi — bấm "Kết nối MetaMask" để tải ví mới.',
+          );
         }
       case DoiMang(:final chainId):
         if (cauHinh != null && chainId != cauHinh!.chainId) {
-          _bao('Ví vừa chuyển sang mạng $chainId. Game sẽ xin chuyển lại mạng ${cauHinh!.chainId} '
-              'ở giao dịch tiếp theo.', loi: true);
+          _bao(
+            'Ví vừa chuyển sang mạng $chainId. Game sẽ xin chuyển lại mạng ${cauHinh!.chainId} '
+            'ở giao dịch tiếp theo.',
+            loi: true,
+          );
         } else if (daKetNoi && !dangXuLy) {
           unawaited(lamMoi());
         }
@@ -235,7 +257,8 @@ class PhienVi extends ChangeNotifier {
       return p.phieu.soVang;
     } on LoiVi catch (e) {
       // Lỗi tạm thời → nhớ lại, "Làm mới" hoặc lần đọc chuỗi sau sẽ xin tiếp.
-      if (e.ma != 409 && e.ma != 422 && !_vanChuaXinPhieu.contains(maVan)) _vanChuaXinPhieu.add(maVan);
+      if (e.ma != 409 && e.ma != 422 && !_vanChuaXinPhieu.contains(maVan))
+        _vanChuaXinPhieu.add(maVan);
       _bao(e.thongBao, loi: true);
       return null;
     } catch (e) {
@@ -250,7 +273,8 @@ class PhienVi extends ChangeNotifier {
 
   /// Có vé cùng màn đang mở mà máy chủ chưa ghi nhận ván nào → vào lại màn KHÔNG trừ thêm cọc.
   Future<bool> coTheDungLaiVe(ManChoi m) async {
-    if (diaChi == null || !ve.dangMo || ve.man != m.id || veDangMoDaCoPhieu) return false;
+    if (diaChi == null || !ve.dangMo || ve.man != m.id || veDangMoDaCoPhieu)
+      return false;
     try {
       return !await mayChu.veDaDung(vi: diaChi!, ve: ve.so);
     } catch (_) {
@@ -264,12 +288,13 @@ class PhienVi extends ChangeNotifier {
   // Giao dịch
   // ------------------------------------------------------------------
   Future<bool> nhanTatCa() => _lamViec('Chuẩn bị nhận vàng…', () async {
-        await _taiLaiNoi(); // phiếu mới ký lại, hạn mới
-        await cuaHang!.thucHien(diaChi: diaChi!, phieu: phieuCho, baoTienDo: _bao);
-        await _taiLaiNoi();
-      }, xong: 'Đã nhận vàng.');
+    await _taiLaiNoi(); // phiếu mới ký lại, hạn mới
+    await cuaHang!.thucHien(diaChi: diaChi!, phieu: phieuCho, baoTienDo: _bao);
+    await _taiLaiNoi();
+  }, xong: 'Đã nhận vàng.');
 
-  Future<bool> mua(NhanVatBan nv) => _lamViec('Chuẩn bị mua ${nv.ten}…', () async {
+  Future<bool> mua(NhanVatBan nv) =>
+      _lamViec('Chuẩn bị mua ${nv.ten}…', () async {
         await _taiLaiNoi();
         await cuaHang!.thucHien(
           diaChi: diaChi!,
@@ -294,13 +319,21 @@ class PhienVi extends ChangeNotifier {
             await mayChu.batDauMan(maVan: maVan, vi: dc, man: m.id, ve: ve.so);
             return (ve: ve.so, luc: luc);
           } on LoiVi catch (e) {
-            if (e.ma != 409) rethrow; // 409: vé đã dùng cho một ván → mua vé mới
+            if (e.ma != 409)
+              rethrow; // 409: vé đã dùng cho một ván → mua vé mới
           }
         }
-        await cuaHang!.thucHien(diaChi: dc, phieu: phieuCho, vaoMan: m.id, baoTienDo: _bao);
+        await cuaHang!.thucHien(
+          diaChi: dc,
+          phieu: phieuCho,
+          vaoMan: m.id,
+          baoTienDo: _bao,
+        );
         await _taiLaiNoi();
         if (!(ve.dangMo && ve.man == m.id)) {
-          throw LoiVi('Chưa thấy vé màn ${m.id} trên chuỗi — bấm "Làm mới" rồi thử lại.');
+          throw LoiVi(
+            'Chưa thấy vé màn ${m.id} trên chuỗi — bấm "Làm mới" rồi thử lại.',
+          );
         }
         _bao('Đăng ký bắt đầu với máy chủ…');
         final luc = DateTime.now();

@@ -8,12 +8,17 @@ import 'package:gold_rush/blockchain/abi.dart';
 /// (`gold_rush_ai/scripts/sinh_abi_mau.py` → `test/blockchain/abi_mau.json`).
 /// Bài kiểm thử Hardhat so CÙNG tệp này với viem → Dart = Python = viem.
 void main() {
-  final mau = jsonDecode(File('test/blockchain/abi_mau.json').readAsStringSync()) as Map<String, dynamic>;
+  final mau = jsonDecode(
+    File('test/blockchain/abi_mau.json').readAsStringSync(),
+  ) as Map<String, dynamic>;
   Map<String, dynamic> ca(String k) => mau[k] as Map<String, dynamic>;
 
   test('bộ chọn hàm khớp Python', () {
     final bc = ca('bo_chon');
-    expect(chonNhanVang, bc['nhanVang((address,uint256,uint256,uint256,bytes32,uint256),bytes)']);
+    expect(
+      chonNhanVang,
+      bc['nhanVang((address,uint256,uint256,uint256,bytes32,uint256),bytes)'],
+    );
     expect(chonVaoMan, bc['vaoMan(uint256)']);
     expect(chonMua, bc['mua(uint256)']);
     expect(chonMulticall, bc['multicall(bytes[])']);
@@ -26,7 +31,10 @@ void main() {
 
   test('nhanVang(phiếu màn có cọc, chữ ký) khớp Python — 356 byte', () {
     final m = ca('nhanVang');
-    final kq = maHoaNhanVang(PhieuVang.tuJson(m['phieu'] as Map<String, dynamic>), m['chu_ky'] as String);
+    final kq = maHoaNhanVang(
+      PhieuVang.tuJson(m['phieu'] as Map<String, dynamic>),
+      m['chu_ky'] as String,
+    );
     expect(kq, m['calldata']);
     expect((kq.length - 2) ~/ 2, 4 + 32 * 7 + 32 + 96);
   });
@@ -43,9 +51,15 @@ void main() {
     final b = ca('balanceOf');
     expect(maHoaBalanceOf(b['vi'] as String, b['id'] as int), b['calldata']);
     expect(maHoaGia(ca('gia')['nhan_vat'] as int), ca('gia')['calldata']);
-    expect(maHoaDaDoi(ca('daDoi')['ma_van'] as String), ca('daDoi')['calldata']);
+    expect(
+      maHoaDaDoi(ca('daDoi')['ma_van'] as String),
+      ca('daDoi')['calldata'],
+    );
     expect(maHoaVe(ca('ve')['vi'] as String), ca('ve')['calldata']);
-    expect(maHoaManChoi(ca('manChoi')['man'] as int), ca('manChoi')['calldata']);
+    expect(
+      maHoaManChoi(ca('manChoi')['man'] as int),
+      ca('manChoi')['calldata'],
+    );
   });
 
   test('giải mã ve(address) → (màn, số vé, cọc)', () {
@@ -74,6 +88,9 @@ void main() {
   test('đọc uint256 từ eth_call', () {
     expect(docUint256('0x${'0' * 63}7'), BigInt.from(7));
     expect(docUint256('0x'), BigInt.zero);
-    expect(docCacUint256('0x${'0' * 63}1${'0' * 63}2', 2), [BigInt.one, BigInt.two]);
+    expect(docCacUint256('0x${'0' * 63}1${'0' * 63}2', 2), [
+      BigInt.one,
+      BigInt.two,
+    ]);
   });
 }

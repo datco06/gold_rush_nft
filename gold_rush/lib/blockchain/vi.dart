@@ -8,7 +8,9 @@
 /// lượng gas, chờ xác nhận theo trạng thái…) nằm ở `giao_dich.dart` — kiểm thử được bằng một ví giả.
 library;
 
-import 'vi_khong_ho_tro.dart' if (dart.library.js_interop) 'vi_web.dart' as nen_tang;
+import 'vi_khong_ho_tro.dart'
+    if (dart.library.js_interop) 'vi_web.dart'
+    as nen_tang;
 
 /// Phân loại lỗi để giao diện phản ứng đúng (ví dụ: người chơi tự từ chối thì không hiện chữ đỏ).
 enum LoaiLoiVi {
@@ -38,7 +40,13 @@ class LoiVi implements Exception {
 
   final LoaiLoiVi loai;
 
-  const LoiVi(this.thongBao, {this.ma, this.duLieu, this.thongDiepGoc, this.loai = LoaiLoiVi.khac});
+  const LoiVi(
+    this.thongBao, {
+    this.ma,
+    this.duLieu,
+    this.thongDiepGoc,
+    this.loai = LoaiLoiVi.khac,
+  });
 
   bool get nguoiDungTuChoi => loai == LoaiLoiVi.tuChoi || ma == 4001;
 
@@ -96,7 +104,11 @@ abstract interface class Vi {
   /// Mã byte của hợp đồng (`eth_getCode`). "0x" = địa chỉ này KHÔNG có hợp đồng.
   Future<String> maHopDong(String diaChi);
 
-  Future<BigInt> uocLuongGas({required String tu, required String toi, required String duLieu});
+  Future<BigInt> uocLuongGas({
+    required String tu,
+    required String toi,
+    required String duLieu,
+  });
 
   Future<BigInt> giaGas();
 

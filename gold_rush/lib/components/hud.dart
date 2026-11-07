@@ -44,7 +44,9 @@ class Hud extends PositionComponent {
       fontSize: 17,
       fontWeight: FontWeight.w900,
       color: Color(0xFFFF6B5E),
-      shadows: [Shadow(color: Colors.black87, offset: Offset(0, 1), blurRadius: 2)],
+      shadows: [
+        Shadow(color: Colors.black87, offset: Offset(0, 1), blurRadius: 2),
+      ],
     ),
   );
 
@@ -53,7 +55,9 @@ class Hud extends PositionComponent {
       fontSize: 15,
       fontWeight: FontWeight.w700,
       color: CauHinh.mauChu,
-      shadows: [Shadow(color: Colors.black87, offset: Offset(0, 1), blurRadius: 2)],
+      shadows: [
+        Shadow(color: Colors.black87, offset: Offset(0, 1), blurRadius: 2),
+      ],
     ),
   );
 
@@ -105,7 +109,8 @@ class Hud extends PositionComponent {
     final con = layGiayConLai();
     _chuGio.text = con == null ? '' : '⏱ ${dinhDangGiay(con)}';
     final gap = con != null && con < 15;
-    if (gap != _gioGap) {                  // chỉ đổi kiểu chữ khi cần, không phải mỗi khung hình
+    if (gap != _gioGap) {
+      // chỉ đổi kiểu chữ khi cần, không phải mỗi khung hình
       _gioGap = gap;
       _chuGio.textRenderer = gap ? _kieuGioGap : _kieuChu;
     }
