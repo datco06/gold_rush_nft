@@ -10,3 +10,4 @@ artifacts/ban_do/
 # Model JSON sẵn có được theo dõi tại ../gold_rush/assets/models/.
 # Ảnh xem trước và metadata SQLite chỉ lưu local.
 data/anh_nhan_vat/
+data/quota_ai/

@@ -239,3 +239,73 @@ def test_router_da_dang_ky_trong_app_chung(tmp_path, monkeypatch):
     with TestClient(api.main.app) as c:
         assert tao(c).status_code == 200
         assert c.get("/api/health").json()["da_nap"]["nhiem_vu"] is True
+
+
+def test_quota_llm_tra_429_nhung_retry_cache_khong_tinh_them(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNguoiChoi
+    class ProviderDem:
+        calls = 0
+        def sinh(self, *, system_prompt, user_prompt):
+            self.calls += 1
+            return json.dumps(json.loads(user_prompt)["quest"], ensure_ascii=False)
+    provider = ProviderDem()
+    ctx = NguCanhNguoiChoi(player_id="trusted", allowed_stage_ids=frozenset({1}))
+    with client(tmp_path, monkeypatch, demo=False, backend_context=ctx,
+                AI_QUEST_DAILY_LIMIT="1") as (c, app):
+        app.state.nhiem_vu.service.provider = provider
+        first = tao(c)
+        assert first.status_code == 200
+        blocked = tao(c, headers={"Idempotency-Key": "request_2"})
+        assert blocked.status_code == 429
+        assert 1 <= int(blocked.headers["Retry-After"]) <= 86400
+        assert tao(c).json() == first.json()
+        assert provider.calls == 1
+
+
+def test_quota_llm_loi_provider_van_tinh_luot_va_giu_fallback(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNguoiChoi
+    from core.providers.llm import LoiProviderLLM
+    class ProviderLoi:
+        calls = 0
+        def sinh(self, **kw):
+            self.calls += 1
+            raise LoiProviderLLM("upstream unavailable")
+    provider = ProviderLoi()
+    ctx = NguCanhNguoiChoi(player_id="trusted", allowed_stage_ids=frozenset({1}))
+    with client(tmp_path, monkeypatch, demo=False, backend_context=ctx,
+                AI_QUEST_DAILY_LIMIT="1") as (c, app):
+        app.state.nhiem_vu.service.provider = provider
+        first = tao(c)
+        assert first.status_code == 200
+        assert first.json()["generation_source"] == "rule_based"
+        assert tao(c).json() == first.json()
+        assert tao(c, headers={"Idempotency-Key": "request_2"}).status_code == 429
+        assert provider.calls == 1
+
+
+@pytest.mark.parametrize("env", [
+    {"AI_QUEST_DAILY_LIMIT": "-1"}, {"AI_QUEST_DAILY_LIMIT": "bad"},
+    {"AI_QUEST_DAILY_LIMIT": "10001"}, {"AI_QUOTA_DB": ":memory:"},
+])
+def test_quota_llm_cau_hinh_sai_tra_503(tmp_path, monkeypatch, env):
+    with client(tmp_path, monkeypatch, **env) as (c, _):
+        assert tao(c).status_code == 503
+
+
+def test_quota_llm_hong_chan_provider_va_tra_503(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNguoiChoi
+    class KhongDuocGoi:
+        def sinh(self, **kw):
+            raise AssertionError("Quota hỏng không được gọi provider")
+    ctx = NguCanhNguoiChoi(player_id="trusted", allowed_stage_ids=frozenset({1}))
+    with client(tmp_path, monkeypatch, demo=False, backend_context=ctx) as (c, app):
+        app.state.nhiem_vu.service.provider = KhongDuocGoi()
+        (tmp_path / "quota.sqlite3").write_bytes(b"broken quota")
+        assert tao(c).status_code == 503
+
+
+def test_demo_quest_khong_tieu_quota_ke_ca_khi_gioi_han_khong(tmp_path, monkeypatch):
+    with client(tmp_path, monkeypatch, AI_QUEST_DAILY_LIMIT="0") as (c, _):
+        assert tao(c).status_code == 200
+    with sqlite3.connect(tmp_path / "quota.sqlite3") as conn:
+        assert conn.execute("SELECT COUNT(*) FROM quota_ai").fetchone()[0] == 0

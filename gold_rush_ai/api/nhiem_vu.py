@@ -19,6 +19,8 @@ from core.man_choi import ManChoi, doc
 from core.nhiem_vu import NhiemVu, YeuCauTaoNhiemVu
 from core.providers.llm import provider_tu_moi_truong
 
+from core.quota_ai import KhoQuotaAI, LoiQuotaAI, VuotQuotaAI
+
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ai/nhiem-vu", tags=["AI nhiệm vụ"])
 StageID = Annotated[int, Field(strict=True, ge=1, le=1000)]
@@ -82,9 +84,11 @@ def khoi_dong_nhiem_vu(app: FastAPI):
             provider = None
         tep = Path(os.environ.get("AI_QUEST_DB", config.DATA_DIR / "nhiem_vu" / "quests.sqlite3"))
         kho = KhoNhiemVu(tep)
-        state.service = DichVuNhiemVu(kho, provider=provider)
+        quota = KhoQuotaAI(os.environ.get("AI_QUOTA_DB", config.DATA_DIR / "quota_ai" / "quota.sqlite3"))
+        state.service = DichVuNhiemVu(kho, provider=provider, quota=quota,
+            gioi_han_ngay=int(os.environ.get("AI_QUEST_DAILY_LIMIT", "20")))
         state.demo_service = DichVuNhiemVu(kho)
-    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, ParseError, LoiKhoNhiemVu) as e:
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, ParseError, LoiKhoNhiemVu, LoiQuotaAI) as e:
         log.error("Không khởi động được API nhiệm vụ (%s)", type(e).__name__)
 
 
@@ -142,10 +146,13 @@ def tao_nhiem_vu(
     try:
         nv = service.tao(player_id=player_key, request_id=request_id, man=man,
                          ban_do=state.ban_do[man.id], do_kho=ctx.difficulty)
+    except VuotQuotaAI as e:
+        raise HTTPException(429, "Đã hết lượt gọi AI trong ngày; hãy thử lại sau",
+                            headers={"Retry-After": str(e.cho_lai_sau)}) from None
     except XungDotYeuCauNhiemVu:
         raise HTTPException(409, "Idempotency-Key đã được dùng cho yêu cầu khác") from None
     except KhongCoNhiemVuPhuHop:
         raise HTTPException(422, "Không có nhiệm vụ khả thi hoặc mới cho màn này") from None
-    except LoiKhoNhiemVu:
+    except (LoiKhoNhiemVu, LoiQuotaAI):
         raise HTTPException(503, "Không truy cập được kho nhiệm vụ; hãy thử lại") from None
     return PhanHoiNhiemVu(**nv.model_dump(), context_source=ctx.context_source)

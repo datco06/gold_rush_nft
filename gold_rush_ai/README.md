@@ -169,6 +169,9 @@ Chỉ bật feature flag chưa cấp danh tính hoặc quyền sử dụng cho n
 | `AI_IMAGE_DB` | `data/anh_nhan_vat/images.sqlite3` | Cache preview ảnh và quyền tải |
 | `AI_IMAGE_TTL_SECONDS` | `86400` | Hạn lưu ảnh, 1–31536000 giây |
 | `AI_IMAGE_MAX_IMAGES` | `200` | Sức chứa toàn kho, 1–10000 ảnh; không phải quota người chơi |
+| `AI_QUOTA_DB` | `data/quota_ai/quota.sqlite3` | Bộ đếm bền vững, file riêng với kho nhiệm vụ/ảnh |
+| `AI_IMAGE_DAILY_LIMIT` | `5` | Lượt gọi provider ảnh/người/ngày UTC, 0–10000 |
+| `AI_QUEST_DAILY_LIMIT` | `20` | Lượt gọi LLM nhiệm vụ/người/ngày UTC, 0–10000 |
 | `LLM_ENABLED` / `AI_IMAGE_ENABLED` | `false` | Bật riêng từng provider, độc lập với feature flag |
 | `LLM_CHAT_URL`, `LLM_MODEL`, `LLM_API_KEY` | Trống | Endpoint Chat Completions, model và khóa phía backend |
 | `AI_IMAGE_URL`, `AI_IMAGE_MODEL`, `AI_IMAGE_API_KEY` | Trống | Endpoint Images Generations, model và khóa phía backend |
@@ -190,9 +193,28 @@ mới dùng chung database được xử lý lần lượt giữa các worker; c
 trả `503`, thử lại bằng cùng key. Cache còn hạn vẫn đọc được trong lúc tạo ảnh khác.
 Nếu tiến trình dừng hoặc transaction lỗi sau khi provider đã trả ảnh nhưng trước
 khi commit, retry vẫn có thể gọi provider lại; cơ chế này không bảo đảm chỉ tính
-phí một lần qua sự cố đó. Hiện chưa có quota theo người chơi cho ảnh/LLM; cần
-hoàn thiện task quota trước khi bật dịch vụ tính phí. Giới hạn sức chứa kho không
-thay thế quota.
+phí một lần qua sự cố đó.
+
+Quota được trừ và commit trong database riêng ngay trước mỗi lượt gọi provider.
+Mặc định mỗi người có 5 lượt ảnh và 20 lượt LLM/ngày UTC; lượt ảnh và nhiệm vụ
+được đếm riêng, dùng danh tính đã xác minh do backend cấp. Ngày mới bắt đầu lúc
+00:00 UTC (07:00 giờ Việt Nam), không phải cửa sổ trượt 24 giờ. Bộ đếm giữ nguyên
+qua khởi động lại server và dùng chung giữa các worker trỏ cùng `AI_QUOTA_DB`.
+Đặt giới hạn `0` để chặn lượt gọi mới; cấu hình ngoài 0–10000 làm API chưa sẵn sàng.
+
+Hết quota trả `429` với header `Retry-After` (số giây tới ngày UTC tiếp theo),
+không gọi provider hoặc tự chuyển sang fallback để lách giới hạn. Đọc lại kết quả
+đã lưu bằng cùng key và tải ảnh còn hạn không bị tính thêm; key mới không làm
+mất số lượt đã dùng. Khi provider lỗi, trả JSON/ảnh sai hoặc lưu kết quả thất bại,
+lượt gọi đã thực hiện vẫn được tính, kể cả khi hệ thống trả mẫu dự phòng. Nếu
+retry sau lỗi mà chưa có kết quả cache, lần gọi provider tiếp theo tính một lượt
+mới. Bộ đếm/DB hỏng trả `503` và chặn provider, không âm thầm đặt lại quota.
+Demo offline hoặc provider tắt không tiêu quota model.
+
+Database quota không chứa prompt/API key và được Git bỏ qua. Không xóa/đổi file
+quota để khởi động lại dịch vụ vì sẽ mất bộ đếm. Quota là giới hạn số lượt theo
+người, không phải hạn mức chi phí tiền tệ hay tổng ngân sách toàn hệ thống;
+provider vẫn mặc định tắt và chưa được kiểm chứng bằng dịch vụ tính phí thật.
 
 ### Contract cần phối hợp với backend/gameplay
 
@@ -225,6 +247,7 @@ Các phần này cần phối hợp đúng chủ module; không liên quan tới
 | `404` | Feature tắt, màn không tồn tại hoặc ảnh hết hạn/khác chủ sở hữu |
 | `409` | Key đã dùng cho dữ liệu khác |
 | `422` | Input/header sai, thiếu header demo hoặc không có nhiệm vụ phù hợp |
+| `429` | Hết quota provider trong ngày; xem header `Retry-After` |
 | `503` | Chưa khởi tạo/context, lỗi kho hoặc chưa có ảnh hợp lệ |
 
 ## Chạy API baseline

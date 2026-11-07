@@ -39,6 +39,7 @@ def moi_truong_demo(goc: Mapping[str, str], thu_muc: Path, run_id: str) -> dict[
         "AI_QUEST_DEMO": "true", "AI_DIFFICULTY_DEMO": "true", "AI_IMAGE_DEMO": "true",
         "AI_QUEST_DB": str(thu_muc / "quests.sqlite3"),
         "AI_IMAGE_DB": str(thu_muc / "images.sqlite3"),
+        "AI_QUOTA_DB": str(thu_muc / "quota.sqlite3"),
         "AI_IMAGE_TTL_SECONDS": "86400", "AI_IMAGE_MAX_IMAGES": "200",
         "NHAT_KY_DIR": str(thu_muc / "nhat_ky"), "SO_PHIEU": str(thu_muc / "phieu.jsonl"),
         "SO_VE": str(thu_muc / "ve.jsonl"), "MAX_NHAT_KY_KB": "64",

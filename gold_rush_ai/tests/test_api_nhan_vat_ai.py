@@ -286,3 +286,93 @@ def test_cau_hinh_provider_sai_van_cho_phep_demo_khong_lo_config(tmp_path, monke
         assert tao(c).json()["generation_source"] == "demo"
     assert "Cấu hình provider ảnh" in caplog.text
     assert "secret-test" not in caplog.text
+
+
+def test_quota_anh_tra_429_nhung_cache_va_nguoi_khac_van_dung_duoc(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNguoiChoi
+    from api.nhan_vat_ai import lay_ngu_canh_anh
+    class ProviderDem:
+        generation_source = "image_model"
+        calls = 0
+        def sinh(self, **kw):
+            self.calls += 1
+            with Image.new("RGBA", (16, 16), "red") as image, BytesIO() as buf:
+                image.save(buf, format="PNG")
+                return buf.getvalue()
+    provider = ProviderDem()
+    ctx = NguCanhNguoiChoi(player_id="trusted")
+    with client(tmp_path, monkeypatch, demo=False, context=ctx,
+                AI_IMAGE_DAILY_LIMIT="1") as (c, app):
+        app.state.nhan_vat_ai.service.provider = provider
+        first = tao(c)
+        assert first.status_code == 200
+        blocked = tao(c, headers={"Idempotency-Key": "request_2"})
+        assert blocked.status_code == 429
+        assert 1 <= int(blocked.headers["Retry-After"]) <= 86400
+        assert tao(c).json() == first.json()
+        assert c.get(first.json()["image_url"]).status_code == 200
+        assert provider.calls == 1
+        app.dependency_overrides[lay_ngu_canh_anh] = lambda: NguCanhNguoiChoi(player_id="other")
+        assert tao(c).status_code == 200
+        assert provider.calls == 2
+
+
+def test_quota_anh_hong_chan_provider_va_tra_503(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNguoiChoi
+    class KhongDuocGoi:
+        generation_source = "image_model"
+        def sinh(self, **kw):
+            raise AssertionError("Quota hỏng không được gọi provider")
+    with client(tmp_path, monkeypatch, demo=False,
+                context=NguCanhNguoiChoi(player_id="trusted")) as (c, app):
+        app.state.nhan_vat_ai.service.provider = KhongDuocGoi()
+        (tmp_path / "quota.sqlite3").write_bytes(b"broken quota")
+        response = tao(c)
+        assert response.status_code == 503
+        assert str(tmp_path) not in response.text
+
+
+def test_quota_anh_khong_hoan_luot_khi_luu_ket_qua_that_bai(tmp_path, monkeypatch):
+    from api.nhiem_vu import NguCanhNguoiChoi
+    class ProviderDem:
+        generation_source = "image_model"
+        calls = 0
+        def sinh(self, **kw):
+            self.calls += 1
+            with Image.new("RGBA", (16, 16), "red") as image, BytesIO() as buf:
+                image.save(buf, format="PNG")
+                return buf.getvalue()
+    provider = ProviderDem()
+    with client(tmp_path, monkeypatch, demo=False,
+                context=NguCanhNguoiChoi(player_id="trusted"), AI_IMAGE_DAILY_LIMIT="1") as (c, app):
+        app.state.nhan_vat_ai.service.provider = provider
+        with sqlite3.connect(tmp_path / "images.sqlite3") as conn:
+            conn.execute("""CREATE TRIGGER chan_luu BEFORE INSERT ON anh_nhan_vat
+                            BEGIN SELECT RAISE(ABORT, 'write failed'); END""")
+        assert tao(c).status_code == 503
+        with sqlite3.connect(tmp_path / "images.sqlite3") as conn:
+            assert conn.execute("SELECT COUNT(*) FROM anh_nhan_vat").fetchone()[0] == 0
+            conn.execute("DROP TRIGGER chan_luu")
+        assert tao(c).status_code == 429
+        assert provider.calls == 1
+
+
+@pytest.mark.parametrize("env", [
+    {"AI_IMAGE_DAILY_LIMIT": "-1"}, {"AI_IMAGE_DAILY_LIMIT": "1.5"},
+    {"AI_IMAGE_DAILY_LIMIT": "10001"}, {"AI_QUOTA_DB": ":memory:"},
+])
+def test_quota_anh_cau_hinh_sai_tra_503(tmp_path, monkeypatch, env):
+    with client(tmp_path, monkeypatch, **env) as (c, _):
+        assert tao(c).status_code == 503
+
+
+def test_quota_anh_khong_cho_chung_file_voi_kho_anh(tmp_path, monkeypatch):
+    with client(tmp_path, monkeypatch, AI_QUOTA_DB=str(tmp_path / "images.sqlite3")) as (c, _):
+        assert tao(c).status_code == 503
+
+
+def test_demo_anh_khong_tieu_quota_ke_ca_khi_gioi_han_khong(tmp_path, monkeypatch):
+    with client(tmp_path, monkeypatch, AI_IMAGE_DAILY_LIMIT="0") as (c, _):
+        assert tao(c).status_code == 200
+    with sqlite3.connect(tmp_path / "quota.sqlite3") as conn:
+        assert conn.execute("SELECT COUNT(*) FROM quota_ai").fetchone()[0] == 0

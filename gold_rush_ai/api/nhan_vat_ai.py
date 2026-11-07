@@ -17,6 +17,8 @@ from core.nhan_vat_ai import AnhNhanVat, YeuCauTaoNhanVat
 from core.providers.anh import AnhMauOffline, LoiProviderAnh
 from core.providers.anh_http import provider_anh_tu_moi_truong
 
+from core.quota_ai import KhoQuotaAI, LoiQuotaAI, VuotQuotaAI
+
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ai/nhan-vat", tags=["AI ảnh nhân vật"])
 
@@ -59,10 +61,12 @@ def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
         except (ValueError, TypeError) as e:
             log.warning("Cấu hình provider ảnh không hợp lệ (%s); dùng mẫu demo", type(e).__name__)
             provider = None
-        state.service = DichVuAnh(kho, demo_provider=provider_demo, provider=provider)
+        quota = KhoQuotaAI(os.environ.get("AI_QUOTA_DB", config.DATA_DIR / "quota_ai" / "quota.sqlite3"))
+        state.service = DichVuAnh(kho, demo_provider=provider_demo, provider=provider, quota=quota,
+            gioi_han_ngay=int(os.environ.get("AI_IMAGE_DAILY_LIMIT", "5")))
         state.demo_service = DichVuAnh(kho, demo_provider=provider_demo)
         state.demo_enabled = demo in ("true", "1")
-    except (OSError, ValueError, TypeError, LoiKhoAnh, LoiProviderAnh) as e:
+    except (OSError, ValueError, TypeError, LoiKhoAnh, LoiProviderAnh, LoiQuotaAI) as e:
         log.error("Không khởi động được API ảnh nhân vật (%s)", type(e).__name__)
 
 
@@ -118,9 +122,12 @@ def tao_anh(
     service = state.demo_service if ctx.context_source == "demo" else state.service
     try:
         anh = service.tao(player_id=_player_key(ctx), request_id=request_id, yeu_cau=yc)
+    except VuotQuotaAI as e:
+        raise HTTPException(429, "Đã hết lượt gọi AI trong ngày; hãy thử lại sau",
+                            headers={"Retry-After": str(e.cho_lai_sau)}) from None
     except XungDotYeuCauAnh:
         raise HTTPException(409, "Idempotency-Key đã được dùng cho mô tả khác") from None
-    except (LoiKhoAnh, LoiProviderAnh, ValueError):
+    except (LoiKhoAnh, LoiProviderAnh, LoiQuotaAI, ValueError):
         raise HTTPException(503, "Chưa tạo được ảnh nhân vật hợp lệ; hãy thử lại sau") from None
     return PhanHoiAnhNhanVat(**anh.model_dump(), context_source=ctx.context_source)
 

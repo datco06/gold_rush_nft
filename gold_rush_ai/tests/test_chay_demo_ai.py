@@ -29,6 +29,7 @@ def test_moi_truong_demo_co_lap_khong_sua_env_nguoi_dung(tmp_path):
     assert goc["LLM_ENABLED"] == "true"
     assert goc["AI_IMAGE_DB"] == "real-images.sqlite3"
     assert env["PATH"] == "unchanged"
+    assert env["AI_QUOTA_DB"] == str(tmp_path / "quota.sqlite3")
     assert set(env["ENABLED"].split(",")) == {"nhiem_vu", "de_xuat_do_kho", "nhan_vat_ai"}
     assert env["LLM_ENABLED"] == env["AI_IMAGE_ENABLED"] == "false"
     assert env["AI_QUEST_DEMO"] == env["AI_DIFFICULTY_DEMO"] == env["AI_IMAGE_DEMO"] == "true"
