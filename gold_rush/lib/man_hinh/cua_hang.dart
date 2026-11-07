@@ -5,12 +5,7 @@ import '../blockchain/phien_vi.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 
-/// Lớp phủ "Cửa hàng nhân vật": kết nối MetaMask → nhận vàng → mua nhân vật.
-///
-/// Mọi trạng thái nằm trong [PhienVi] (dùng chung với màn hình chọn màn); mọi giao dịch đi qua
-/// `BoGiaoDich` (kiểm tra mạng, mô phỏng, gas, chờ xác nhận theo trạng thái). Mua nhân vật tự GỘP
-/// các phiếu đang chờ vào cùng giao dịch: có 8 vàng + phiếu 4 vàng vẫn mua được nhân vật giá 10
-/// bằng MỘT lần bấm Xác nhận.
+/// Cửa hàng dùng chung PhienVi với các giao diện khác.
 class ManHinhCuaHang extends StatelessWidget {
   final GoldRushGame game;
 
@@ -19,33 +14,66 @@ class ManHinhCuaHang extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pv = game.phienVi;
-    return Container(
+
+    return Material(
       color: CauHinh.mauNenMo,
-      alignment: Alignment.center,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: pv == null
-              ? _khung(context, const [
-                  Text(
-                    'Cần máy chủ gold_rush_ai: chạy game với '
-                    '--dart-define=GOLD_RUSH_API=http://localhost:8000',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFFFFB4A9)),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: SizedBox(
+                width: double.infinity,
+                child: Material(
+                  color: CauHinh.mauNen,
+                  elevation: 12,
+                  shadowColor: Colors.black54,
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: BorderSide(
+                      color: CauHinh.mauChinh.withValues(alpha: 0.35),
+                    ),
                   ),
-                ])
-              : ListenableBuilder(
-                  listenable: pv,
-                  builder: (context, _) => _khung(context, _noiDung(pv)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: pv == null
+                        ? _khung(context, const [
+                            Text(
+                              'Cần máy chủ gold_rush_ai: '
+                              'chạy game với '
+                              '--dart-define=GOLD_RUSH_API='
+                              'http://localhost:8000',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFFFFB4A9),
+                                height: 1.5,
+                              ),
+                            ),
+                          ])
+                        : ListenableBuilder(
+                            listenable: pv,
+                            builder: (context, _) =>
+                                _khung(context, _noiDung(pv)),
+                          ),
+                  ),
                 ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _khung(BuildContext context, List<Widget> giua) {
-    const chuPhu = TextStyle(color: Color(0xFF9FAEBC), fontSize: 13, height: 1.5);
+    const chuPhu = TextStyle(
+      color: Color(0xFF9FAEBC),
+      fontSize: 13,
+      height: 1.5,
+    );
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,12 +81,16 @@ class ManHinhCuaHang extends StatelessWidget {
         const Text(
           'CỬA HÀNG NHÂN VẬT',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: CauHinh.mauChinh),
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            color: CauHinh.mauChinh,
+          ),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Bản học tập trên mạng thử nghiệm: vàng và nhân vật không chuyển nhượng, '
-          'không quy đổi ra tiền.',
+          'Bản học tập trên mạng thử nghiệm: vàng và nhân vật '
+          'không chuyển nhượng, không quy đổi ra tiền.',
           textAlign: TextAlign.center,
           style: chuPhu,
         ),
@@ -72,6 +104,7 @@ class ManHinhCuaHang extends StatelessWidget {
 
   List<Widget> _noiDung(PhienVi pv) {
     final dc = pv.diaChi;
+
     return [
       if (!pv.daKetNoi)
         FilledButton.icon(
@@ -81,13 +114,19 @@ class ManHinhCuaHang extends StatelessWidget {
         )
       else ...[
         Text(
-          'Ví ${dc!.substring(0, 6)}…${dc.substring(dc.length - 4)}   ·   Vàng: ${pv.vang}',
+          'Ví ${dc!.substring(0, 6)}…'
+          '${dc.substring(dc.length - 4)}'
+          '   ·   Vàng: ${pv.vang}',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: CauHinh.mauChu, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            color: CauHinh.mauChu,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         if (pv.ve.dangMo)
           Text(
-            'Vé màn ${pv.ve.man} đang mở (cọc ${pv.ve.coc})'
+            'Vé màn ${pv.ve.man} đang mở '
+            '(cọc ${pv.ve.coc})'
             '${pv.veDangMoDaCoPhieu ? ' — đã hoàn thành, chờ nhận' : ''}',
             textAlign: TextAlign.center,
             style: const TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
@@ -97,21 +136,28 @@ class ManHinhCuaHang extends StatelessWidget {
           FilledButton.icon(
             onPressed: pv.dangXuLy ? null : pv.nhanTatCa,
             icon: const Icon(Icons.savings_outlined),
-            label: Text('Nhận ${pv.phieuCho.length} phiếu · +${pv.vangChoNhan} vàng'),
+            label: Text(
+              'Nhận ${pv.phieuCho.length} phiếu '
+              '· +${pv.vangChoNhan} vàng',
+            ),
           ),
         const SizedBox(height: 10),
         for (final nv in [georgeGoc, ...bangNhanVat])
           _DongNhanVat(
             nhanVat: nv,
-            gia: nv.id == 0 ? BigInt.zero : (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
+            gia: nv.id == 0
+                ? BigInt.zero
+                : (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
             daCo: nv.id == 0 || pv.daCo.contains(nv.id),
             dangDung: game.nhanVatDangDung == nv.tepAnh,
-            duVang: pv.vang + pv.vangChoNhan >= (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
+            duVang:
+                pv.vang + pv.vangChoNhan >=
+                (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
             banKhoa: pv.dangXuLy,
             khiMua: () => pv.mua(nv),
             khiDung: () {
               game.nhanVatDangDung = nv.tepAnh;
-              pv.veLai(); // vẽ lại danh sách (nhãn "Đang dùng")
+              pv.veLai();
             },
           ),
         const SizedBox(height: 6),
@@ -123,7 +169,8 @@ class ManHinhCuaHang extends StatelessWidget {
       ],
       if (pv.soVanChuaXinPhieu > 0 && !pv.daKetNoi)
         Text(
-          '${pv.soVanChuaXinPhieu} ván đang chờ: kết nối ví để xin phiếu vàng.',
+          '${pv.soVanChuaXinPhieu} ván đang chờ: '
+          'kết nối ví để xin phiếu vàng.',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
         ),
@@ -133,7 +180,9 @@ class ManHinhCuaHang extends StatelessWidget {
           pv.thongBao!,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: pv.thongBaoLaLoi ? const Color(0xFFFFB4A9) : const Color(0xFF9FAEBC),
+            color: pv.thongBaoLaLoi
+                ? const Color(0xFFFFB4A9)
+                : const Color(0xFF9FAEBC),
             fontSize: 13,
             height: 1.5,
           ),
@@ -167,16 +216,21 @@ class _DongNhanVat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Widget nut;
+
     if (dangDung) {
       nut = const Chip(label: Text('Đang dùng'));
     } else if (daCo) {
-      nut = OutlinedButton(onPressed: banKhoa ? null : khiDung, child: const Text('Dùng'));
+      nut = OutlinedButton(
+        onPressed: banKhoa ? null : khiDung,
+        child: const Text('Dùng'),
+      );
     } else {
       nut = FilledButton(
         onPressed: banKhoa || !duVang ? null : khiMua,
         child: Text('Mua · $gia vàng'),
       );
     }
+
     return Card(
       color: const Color(0x22FFFFFF),
       child: ListTile(
@@ -187,7 +241,6 @@ class _DongNhanVat extends StatelessWidget {
           fit: BoxFit.none,
           alignment: Alignment.topLeft,
           filterQuality: FilterQuality.none,
-          // Khung đầu tiên (16×16) của sprite sheet, phóng 2 lần.
           scale: 0.5,
           errorBuilder: (_, _, _) => const Icon(Icons.person),
         ),

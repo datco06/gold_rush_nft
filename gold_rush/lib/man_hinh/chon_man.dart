@@ -7,12 +7,17 @@ import '../gold_rush_game.dart';
 import '../man_choi.dart';
 import '../world_map/ban_do_the_gioi.dart';
 import '../world_map/nut_man_choi.dart';
+import '../world_map/tien_trinh_world_map.dart';
 
-/// Chọn màn qua World Map, giữ quy trình vào màn của game gốc.
+/// Chọn màn qua World Map.
+///
+/// Tiến trình được truyền từ bên ngoài.
+/// Widget không tự mở khóa màn hoặc lưu kết quả chơi.
 class ManHinhChonMan extends StatefulWidget {
   final GoldRushGame game;
+  final TienTrinhWorldMap? tienTrinh;
 
-  const ManHinhChonMan({super.key, required this.game});
+  const ManHinhChonMan({super.key, required this.game, this.tienTrinh});
 
   @override
   State<ManHinhChonMan> createState() => _ManHinhChonManState();
@@ -42,6 +47,7 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
 
   Widget _noiDung(PhienVi? pv) {
     final danhSach = game.danhSachMan;
+    final tienTrinh = widget.tienTrinh;
 
     if (danhSach.isEmpty) {
       return const Center(
@@ -57,19 +63,21 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
       );
     }
 
+    // Ưu tiên ô đang xem; khi mới mở, ưu tiên màn từ tiến trình.
+    final idUuTien = _idManDangChon ?? tienTrinh?.manHienTai;
     var manDangChon = danhSach.first;
 
     for (final man in danhSach) {
-      if (man.id == _idManDangChon) {
+      if (man.id == idUuTien) {
         manDangChon = man;
         break;
       }
     }
 
-    // Giữ quyền chọn màn như bản gốc.
-    // Chưa phải dữ liệu tiến trình mở khóa từ Backend.
+    // Chưa có tiến trình: giữ cách chọn màn của bản gốc.
     final trangThaiCacMan = <int, TrangThaiMan>{
-      for (final man in danhSach) man.id: TrangThaiMan.daMo,
+      for (final man in danhSach)
+        man.id: tienTrinh?.trangThaiCuaMan(man.id) ?? TrangThaiMan.daMo,
     };
 
     final banDo = BanDoTheGioi(
@@ -87,17 +95,28 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= 850) {
+        final namNgang = constraints.maxWidth > constraints.maxHeight;
+
+        final hienThiHaiCot =
+            constraints.maxWidth >= 850 ||
+            (namNgang && constraints.maxWidth >= 600);
+
+        if (hienThiHaiCot) {
+          final chieuRongThongTin = constraints.maxWidth >= 1000
+              ? 300.0
+              : 260.0;
+
           return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: banDo),
               const VerticalDivider(width: 1, color: MauGame.vien),
-              SizedBox(width: 300, child: thongTin),
+              SizedBox(width: chieuRongThongTin, child: thongTin),
             ],
           );
         }
 
+        // Màn hình hẹp: bản đồ trên, thông tin cuộn bên dưới.
         return Column(
           children: [
             Expanded(flex: 3, child: banDo),
@@ -109,7 +128,22 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
     );
   }
 
+  String _nhanTrangThai(TrangThaiMan trangThai) {
+    switch (trangThai) {
+      case TrangThaiMan.chuaMo:
+        return 'Chưa mở';
+      case TrangThaiMan.daMo:
+        return 'Đã mở';
+      case TrangThaiMan.hoanThanh:
+        return 'Đã hoàn thành';
+    }
+  }
+
   Widget _bangThongTin(PhienVi? pv, ManChoi man) {
+    final tienTrinh = widget.tienTrinh;
+    final trangThai = tienTrinh?.trangThaiCuaMan(man.id);
+    final duocVaoMan = tienTrinh?.daMoMan(man.id) ?? true;
+
     const chuPhu = TextStyle(color: MauGame.chuPhu, fontSize: 13, height: 1.5);
 
     return SingleChildScrollView(
@@ -132,13 +166,23 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
             style: chuPhu,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Tiến trình mở khóa chưa được kết nối. '
-            'Hiện giữ quyền chọn màn như phiên bản gốc.',
-            style: chuPhu,
-          ),
+          if (trangThai == null)
+            const Text(
+              'Tiến trình mở khóa chưa được kết nối. '
+              'Hiện giữ quyền chọn màn như phiên bản gốc.',
+              style: chuPhu,
+            )
+          else
+            Text(
+              'Trạng thái: ${_nhanTrangThai(trangThai)}',
+              style: const TextStyle(
+                color: MauGame.chinh,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           const SizedBox(height: 16),
-          _TheMan(game: game, man: man, pv: pv),
+          _TheMan(game: game, man: man, pv: pv, duocVaoMan: duocVaoMan),
           const SizedBox(height: 12),
           const Text(
             'Màn có cọc: vàng bị trừ khi xác nhận vào màn. '
@@ -151,7 +195,7 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
             const Text(
               'Chưa cấu hình máy chủ '
               '(--dart-define=GOLD_RUSH_API=…) — '
-              'chỉ chơi được màn luyện tập.',
+              'chỉ chơi được màn luyện tập đã mở.',
               style: chuPhu,
             )
           else if (!pv.daKetNoi)
@@ -190,21 +234,37 @@ class _TheMan extends StatelessWidget {
   final GoldRushGame game;
   final ManChoi man;
   final PhienVi? pv;
+  final bool duocVaoMan;
 
-  const _TheMan({required this.game, required this.man, required this.pv});
+  const _TheMan({
+    required this.game,
+    required this.man,
+    required this.pv,
+    required this.duocVaoMan,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = pv;
     final Widget nut;
+    String? lyDoKhongVaoDuoc;
 
     final banKhoa = (p?.dangXuLy ?? false) || (p?.dangHoi ?? false);
 
-    if (man.mienPhi) {
+    if (!duocVaoMan) {
+      nut = const FilledButton(onPressed: null, child: Text('Màn chưa mở'));
+      lyDoKhongVaoDuoc =
+          'Bạn có thể xem thông tin nhưng chưa được vào màn này. '
+          'Điều kiện mở khóa do hệ thống tiến trình cung cấp.';
+    } else if (man.mienPhi) {
       nut = FilledButton(
         onPressed: banKhoa ? null : () => _choiLuyenTap(p),
         child: const Text('Chơi'),
       );
+
+      if (banKhoa) {
+        lyDoKhongVaoDuoc = 'Vui lòng hoàn tất thao tác đang xử lý.';
+      }
     } else {
       final duVang =
           p != null &&
@@ -218,6 +278,17 @@ class _TheMan extends StatelessWidget {
             : () => _vaoManCoCoc(context, p),
         child: Text('Cọc ${man.coc}'),
       );
+
+      if (banKhoa) {
+        lyDoKhongVaoDuoc = 'Vui lòng hoàn tất thao tác đang xử lý.';
+      } else if (p == null) {
+        lyDoKhongVaoDuoc =
+            'Cần cấu hình máy chủ và kết nối ví để vào màn có cọc.';
+      } else if (!p.daKetNoi) {
+        lyDoKhongVaoDuoc = 'Hãy kết nối MetaMask để vào màn có cọc.';
+      } else if (!duVang) {
+        lyDoKhongVaoDuoc = 'Chưa đủ vàng để đặt cọc ${man.coc} vàng.';
+      }
     }
 
     return Card(
@@ -352,6 +423,17 @@ class _TheMan extends StatelessWidget {
             ],
             const SizedBox(height: 16),
             nut,
+            if (lyDoKhongVaoDuoc != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                lyDoKhongVaoDuoc,
+                style: const TextStyle(
+                  color: MauGame.chuPhu,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -359,12 +441,15 @@ class _TheMan extends StatelessWidget {
   }
 
   Future<void> _choiLuyenTap(PhienVi? p) async {
+    if (!duocVaoMan) return;
+
     if (!await game.choiMan(man)) {
       p?.baoLoi('Không nạp được bản đồ ${man.tep}.');
     }
   }
 
   Future<void> _vaoManCoCoc(BuildContext context, PhienVi p) async {
+    if (!duocVaoMan) return;
     if (!p.giuCho()) return;
 
     final bool? dongY;

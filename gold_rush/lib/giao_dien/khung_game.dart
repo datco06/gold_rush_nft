@@ -24,50 +24,76 @@ class KhungGame extends StatelessWidget {
     return Material(
       color: MauGame.nen,
       child: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: chieuRongToiDa),
-            child: Material(
-              color: MauGame.nen,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            tieuDe,
-                            style: const TextStyle(
-                              color: MauGame.chinh,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Khi cửa sổ tạm thu về kích thước rất nhỏ,
+            // chưa dựng tiêu đề và nội dung cần diện tích tương tác.
+            if (constraints.maxWidth < 240 || constraints.maxHeight < 160) {
+              return const SizedBox.expand();
+            }
+
+            final gon = constraints.maxHeight < 500;
+
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: chieuRongToiDa),
+                child: Material(
+                  color: MauGame.nen,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          gon ? 12 : 20,
+                          gon ? 0 : 8,
+                          gon ? 4 : 12,
+                          gon ? 0 : 8,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                tieuDe,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: MauGame.chinh,
+                                  fontSize: gon ? 20 : 24,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
+                            IconButton(
+                              tooltip: 'Quay lại Menu',
+                              onPressed: khiDong,
+                              color: MauGame.chu,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (phuDe != null)
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            gon ? 12 : 20,
+                            0,
+                            gon ? 12 : 20,
+                            gon ? 4 : 12,
+                          ),
+                          child: Text(
+                            phuDe!,
+                            maxLines: gon ? 1 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: MauGame.chuPhu),
                           ),
                         ),
-                        IconButton(
-                          tooltip: 'Quay lại Menu',
-                          onPressed: khiDong,
-                          color: MauGame.chu,
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                      ],
-                    ),
+                      Expanded(child: child),
+                    ],
                   ),
-                  if (phuDe != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                      child: Text(
-                        phuDe!,
-                        style: const TextStyle(color: MauGame.chuPhu),
-                      ),
-                    ),
-                  Expanded(child: child),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
