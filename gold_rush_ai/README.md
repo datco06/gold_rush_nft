@@ -146,6 +146,44 @@ xác minh. Nguồn nhiệm vụ là `rule_based`, `llm` hoặc `demo`; nguồn �
 `demo` hoặc `image_model`. Có adapter provider không có nghĩa provider thật
 đã được cấu hình hoặc kiểm chứng.
 
+### Kiểm thử client Flutter với backend HTTP thật
+
+Bộ kiểm thử `gold_rush/test/tich_hop/backend_ai_test.dart` dùng ba client/model
+Flutter thật để gọi FastAPI demo, không dùng MockClient. Các ca kiểm tra gồm
+schema nhiệm vụ/độ khó, retry giữ ID, từ chối màn ngoài quyền demo, tải và giải mã
+PNG 128×128, chống đọc ảnh chéo người chơi. Đây là kiểm thử contract demo,
+không phải nghiệm thu model trả phí hoặc nguồn đăng nhập thật.
+
+Terminal backend, từ `gold_rush_ai`:
+
+```powershell
+& .\.venv\Scripts\python.exe -B scripts/chay_demo_ai.py --port 8019
+```
+
+Terminal Flutter, sau khi đã cài Flutter và chạy `flutter pub get` cho checkout:
+
+```powershell
+Set-Location D:\Projects\gold_rush_nft\gold_rush
+$testApi = 'http://127.0.0.1:8019'
+$health = Invoke-WebRequest "$testApi/api/health" -UseBasicParsing
+$testRun = [string]$health.Headers['X-Demo-Run']
+if ($testRun -notmatch '^[0-9a-f]{32}$') { throw 'Cần server của chay_demo_ai.py' }
+flutter test --no-pub test/tich_hop/backend_ai_test.dart `
+  "--dart-define=GOLD_RUSH_AI_TEST_API=$testApi" `
+  "--dart-define=GOLD_RUSH_AI_TEST_RUN=$testRun"
+```
+
+Phải thấy `+3: All tests passed!`. Test chỉ chấp nhận loopback HTTP và đối chiếu
+`X-Demo-Run` trước khi gửi bất kỳ POST nào; sai run ID thì kiểm thử thất bại.
+Header này phân biệt phiên server demo, không phải token xác thực người chơi.
+Khi chạy `flutter test` thông thường, ba ca này được bỏ qua vì chưa bật hai
+biến trên. Chỉ truyền một biến sẽ làm kiểm thử lỗi, không âm thầm bỏ qua.
+
+Sau khi xong, `Ctrl+C` tại terminal backend để dừng và dọn database tạm.
+Kiểm thử này không nạp `GoldRushGame`/bản đồ, nên có thể kiểm chứng contract AI
+riêng trong khi lỗi `tileAt` của game còn chờ phối hợp xử lý.
+Kết quả và phạm vi bàn giao hiện tại: [docs/ban_giao_module_ai.md](docs/ban_giao_module_ai.md).
+
 ### Cấu hình chạy chung với backend
 
 Runner ở trên tự cấu hình mọi thứ cần cho demo. Nếu chạy Uvicorn thông thường,
