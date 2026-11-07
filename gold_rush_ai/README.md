@@ -64,7 +64,164 @@ API dùng `--env-file`; lệnh test/dashboard dùng CLI `python-dotenv` để n�
 Biến môi trường có sẵn được ưu tiên qua `--no-override` ở các lệnh dưới.
 Luôn chạy tại thư mục `gold_rush_ai` vì đường dẫn model trong `.env.example` là tương đối.
 
-## Chạy API
+## Demo ba chức năng AI của người 3
+
+Sau khi cài môi trường ở trên, chạy từ `gold_rush_ai`:
+
+```powershell
+& .\.venv\Scripts\python.exe -B scripts/chay_demo_ai.py --kiem-tra
+```
+
+Lệnh tự mở API tại `127.0.0.1:8000`, kiểm tra nhiệm vụ, đề xuất độ khó,
+ảnh PNG 128×128, retry và quyền tải ảnh; sau đó dừng server và xóa dữ liệu tạm.
+Kết quả đạt khi cả ba dòng kiểm tra có `OK` và lệnh trả mã thoát `0`.
+Nếu cổng đã được dùng, thêm `--port 8019`; script không dừng server khác.
+
+Để giữ API hoạt động trong lúc thử Flutter hoặc Swagger:
+
+```powershell
+& .\.venv\Scripts\python.exe -B scripts/chay_demo_ai.py --player demo_ai
+```
+
+Mở <http://127.0.0.1:8000/docs>. Dừng bằng `Ctrl+C` để dọn dữ liệu demo.
+Runner chỉ bật `nhiem_vu,de_xuat_do_kho,nhan_vat_ai`, dùng database tạm,
+không nạp `.env`, không sửa database thật và luôn tắt LLM/provider ảnh.
+Ảnh demo chọn từ tài nguyên mẫu có sẵn, không phải ảnh mới do model sinh ra.
+Đề xuất độ khó demo dùng lịch sử rỗng nên trả fallback trung tính, hệ số `1.0`.
+Nhiệm vụ và độ khó demo chỉ cho phép màn `1`.
+
+Ở terminal Flutter, dùng đúng địa chỉ và player mà runner in ra:
+
+```powershell
+Set-Location D:\Projects\gold_rush_nft\gold_rush
+flutter run -d chrome --web-port 5000 `
+  --dart-define=GOLD_RUSH_API=http://127.0.0.1:8000 `
+  --dart-define=GOLD_RUSH_QUEST_DEMO_PLAYER=demo_ai `
+  --dart-define=GOLD_RUSH_DIFFICULTY_DEMO_PLAYER=demo_ai `
+  --dart-define=GOLD_RUSH_IMAGE_DEMO_PLAYER=demo_ai
+```
+
+Lệnh Flutter cần nền tảng web đã được chuẩn bị và lỗi `TileLayer.tileAt`
+được giải quyết với người phụ trách bản đồ (xem phần Kết nối Flutter bên dưới).
+Chạy API thành công không chứng minh toàn bộ game build được.
+Ba mục AI có sẵn trong menu; nhiệm vụ và độ khó hiện là màn xem đề xuất,
+ảnh là preview tĩnh, chưa thay nhân vật điều khiển trong gameplay.
+Runner chỉ bind loopback; không dùng địa chỉ này từ thiết bị Android thật.
+
+### Thử API bằng PowerShell
+
+Giữ runner đang chạy. Các lệnh sau dùng player mặc định `demo_ai`:
+
+```powershell
+$base = 'http://127.0.0.1:8000'
+$headers = @{ 'X-Demo-Player' = 'demo_ai'; 'Idempotency-Key' = 'demo_quest_001' }
+Invoke-RestMethod "$base/api/ai/nhiem-vu/tao" -Method Post -Headers $headers `
+  -ContentType 'application/json' -Body '{"stage_id":1}'
+Invoke-RestMethod "$base/api/ai/do-kho/de-xuat" -Method Post -Headers $headers `
+  -ContentType 'application/json' -Body '{"stage_id":1}'
+
+$headers['Idempotency-Key'] = 'demo_image_001'
+$body = [Text.Encoding]::UTF8.GetBytes('{"description":"Thợ mỏ đội mũ vàng"}')
+$anh = Invoke-RestMethod "$base/api/ai/nhan-vat/tao" -Method Post -Headers $headers `
+  -ContentType 'application/json; charset=utf-8' -Body $body
+$anh
+$png = Invoke-WebRequest "$base$($anh.image_url)" -Headers $headers -UseBasicParsing
+$png.Headers['Content-Type']
+```
+
+`Idempotency-Key` bắt buộc cho POST tạo nhiệm vụ/ảnh: giữ cùng key và dữ liệu
+khi thử lại, tạo key mới khi bắt đầu yêu cầu mới. Player và key dùng 1–64 ký tự
+ASCII gồm chữ, số, `_`, `-`. GET ảnh phải gửi cùng ngữ cảnh người chơi như POST;
+chỉ mở URL ảnh trong tab khác sẽ không tự có header này.
+
+| Endpoint | Request | Kết quả chính |
+|---|---|---|
+| `POST /api/ai/nhiem-vu/tao` | `stage_id` | Nhiệm vụ, `context_source`, `generation_source` |
+| `POST /api/ai/do-kho/de-xuat` | `stage_id` | Mức khó, điểm hiệu suất, hệ số tốc độ, `source` |
+| `POST /api/ai/nhan-vat/tao` | `description` dài 1–500 ký tự | `image_id`, `image_url`, kích thước và nguồn ảnh |
+| `GET /api/ai/nhan-vat/anh/{image_id}` | Cùng danh tính với POST | `image/png`, RGBA tĩnh 128×128 |
+
+`context_source=demo` chỉ ngữ cảnh thử nghiệm; `verified` là ngữ cảnh do backend
+xác minh. Nguồn nhiệm vụ là `rule_based`, `llm` hoặc `demo`; nguồn ảnh là
+`demo` hoặc `image_model`. Có adapter provider không có nghĩa provider thật
+đã được cấu hình hoặc kiểm chứng.
+
+### Cấu hình chạy chung với backend
+
+Runner ở trên tự cấu hình mọi thứ cần cho demo. Nếu chạy Uvicorn thông thường,
+chỉnh `.env` đang dùng (lệnh Copy-Item ban đầu không ghi đè file đã tồn tại):
+
+```dotenv
+ENABLED=do_kho,tro_ly,ban_do,nhat_ky,vang,nhiem_vu,de_xuat_do_kho,nhan_vat_ai
+```
+
+Khởi động lại API sau khi đổi cấu hình. Kiểm tra `/api/health` phải có
+`da_nap.nhiem_vu`, `da_nap.de_xuat_do_kho`, `da_nap.nhan_vat_ai` đều là `true`.
+Flag `do_kho` phục vụ mô hình độ khó cũ; `de_xuat_do_kho` là API rule-based mới.
+Chỉ bật feature flag chưa cấp danh tính hoặc quyền sử dụng cho người chơi.
+
+| Biến môi trường | Mặc định | Vai trò |
+|---|---|---|
+| `AI_QUEST_DEMO` | `false` | Cho phép ngữ cảnh demo nhiệm vụ với `X-Demo-Player` |
+| `AI_DIFFICULTY_DEMO` | `false` | Cho phép ngữ cảnh demo đề xuất độ khó |
+| `AI_IMAGE_DEMO` | `false` | Cho phép ngữ cảnh demo tạo/tải ảnh |
+| `AI_QUEST_DB` | `data/nhiem_vu/quests.sqlite3` | Lưu nhiệm vụ và khóa retry |
+| `AI_IMAGE_DB` | `data/anh_nhan_vat/images.sqlite3` | Cache preview ảnh và quyền tải |
+| `AI_IMAGE_TTL_SECONDS` | `86400` | Hạn lưu ảnh, 1–31536000 giây |
+| `AI_IMAGE_MAX_IMAGES` | `200` | Sức chứa toàn kho, 1–10000 ảnh; không phải quota người chơi |
+| `LLM_ENABLED` / `AI_IMAGE_ENABLED` | `false` | Bật riêng từng provider, độc lập với feature flag |
+| `LLM_CHAT_URL`, `LLM_MODEL`, `LLM_API_KEY` | Trống | Endpoint Chat Completions, model và khóa phía backend |
+| `AI_IMAGE_URL`, `AI_IMAGE_MODEL`, `AI_IMAGE_API_KEY` | Trống | Endpoint Images Generations, model và khóa phía backend |
+| `LLM_TIMEOUT_SECONDS` / `AI_IMAGE_TIMEOUT_SECONDS` | `10` | Timeout HTTP từng thao tác, trong `(0, 60]` giây |
+
+Đường dẫn tương đối được tính từ thư mục chạy `gold_rush_ai`; mặc định database
+nằm dưới `config.DATA_DIR`. `.env`, database và `.venv` đều được Git bỏ qua.
+Chỉ đặt API key trong môi trường backend, không đưa vào Flutter hoặc Git.
+Endpoint phải là HTTP(S), không chứa thông tin đăng nhập, query hay fragment.
+Adapter LLM đọc `choices[0].message.content` chứa JSON; adapter ảnh cần đúng một
+`data[0].b64_json`, chưa hỗ trợ kết quả chỉ có URL. Cần chọn dịch vụ tương thích
+với payload trong `core/providers/llm.py` và `core/providers/anh_http.py`.
+
+Khi provider tắt/lỗi, nhiệm vụ dùng rule-based, ảnh dùng mẫu offline và trả đúng
+nhãn nguồn. Nhánh demo luôn dùng provider offline ngay cả khi cấu hình provider
+thật đã bật. Hiện chưa có quota theo người chơi và chưa ngăn gọi provider ảnh
+trùng khi request đồng thời; hoàn thiện các task này trước khi bật dịch vụ tính phí.
+Không có quota chỉ bằng việc đặt giới hạn sức chứa kho.
+
+### Contract cần phối hợp với backend/gameplay
+
+Các giá trị sau phải do tầng backend đã xác minh đặt vào `request.state`,
+không lấy trực tiếp từ JSON hoặc header danh tính tự khai của Flutter:
+
+| Thuộc tính | Kiểu Python | Dữ liệu |
+|---|---|---|
+| `ai_quest_player` | `api.nhiem_vu.NguCanhNguoiChoi` | `player_id`, `allowed_stage_ids` (frozenset), `difficulty`, `context_source="verified"` |
+| `ai_difficulty_context` | `api.de_xuat_do_kho.NguCanhDeXuatDoKho` | `nguoi_choi`, `stage_id`, `lich_su` (tuple `NhatKyVan`, cũ đến mới), `he_so_truoc` |
+| `ai_image_player` | `api.nhiem_vu.NguCanhNguoiChoi` | Danh tính đã xác minh; chưa có entitlement hoàn thành sáu màn |
+
+Đây là điểm nối đã có, chưa có middleware nguồn danh tính/tiến trình thật trong
+ứng dụng. Khi demo tắt mà chưa có context, API trả `503`, không tự tin dữ liệu
+Flutter. `X-Demo-Player` chỉ được dùng khi bật demo và không phải xác thực.
+Backend người 5 cung cấp danh tính, màn được phép, lịch sử đã xác minh và hệ số
+trước; module AI kiểm tra schema và tạo đề xuất. Quest hiện chưa nhận level và
+lịch sử hiệu suất. Độ khó cần ít nhất ba ván có kết quả, xét tối đa mười ván
+đúng màn/bản đồ, hệ số trong `0.8–1.15`, mỗi đề xuất thay đổi tối đa `0.05`.
+
+Các màn hình/client Flutter nhận stage động được, nhưng entry menu hiện truyền
+màn `1`. Nhiệm vụ chưa được gameplay theo dõi hoàn thành; hệ số đề xuất chưa tự
+áp dụng vào gameplay. Preview ảnh có TTL, chưa phải kho nhân vật lâu dài,
+chưa có sprite sheet 4×4, chưa mở khóa theo sáu màn và chưa có nhân vật chơi được.
+Các phần này cần phối hợp đúng chủ module; không liên quan tới mint/NFT.
+
+| Mã lỗi | Tình huống điển hình |
+|---|---|
+| `403` | Màn/danh tính không khớp ngữ cảnh đã cấp |
+| `404` | Feature tắt, màn không tồn tại hoặc ảnh hết hạn/khác chủ sở hữu |
+| `409` | Key đã dùng cho dữ liệu khác |
+| `422` | Input/header sai, thiếu header demo hoặc không có nhiệm vụ phù hợp |
+| `503` | Chưa khởi tạo/context, lỗi kho hoặc chưa có ảnh hợp lệ |
+
+## Chạy API baseline
 
 ```powershell
 Set-Location D:\Projects\gold_rush_nft\gold_rush_ai
@@ -104,7 +261,11 @@ Dừng từng server bằng `Ctrl+C` tại terminal tương ứng.
 & .\.venv\Scripts\python.exe scripts/kiem_tra_ban_do.py ../gold_rush/assets/tiles
 ```
 
-Baseline gồm 72 test Python; test API dùng dữ liệu tạm, không gửi giao dịch.
+Baseline Giai đoạn 1 ban đầu gồm 72 test Python. Rà soát ngày 07/11/2026 tại
+`08018c0` ghi nhận 610 test Python và 269 test Flutter đạt, ba API demo qua HTTP đạt;
+analyzer riêng các file AI mới không có lỗi. Đây là kết quả theo commit, không
+thay thế việc chạy lại kiểm thử sau thay đổi. Test API dùng dữ liệu tạm,
+không gửi giao dịch hoặc gọi provider trả phí.
 TestClient hiện có cảnh báo deprecation về HTTPX; ghi nhận trong biên bản Giai đoạn 1,
 chưa thay hàng loạt dependency chỉ để tắt cảnh báo.
 
