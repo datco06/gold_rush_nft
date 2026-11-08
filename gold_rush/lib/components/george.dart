@@ -1,15 +1,18 @@
+import 'dart:ui';
+
 import 'package:flame/components.dart';
 import 'package:flutter/services.dart';
 
 import '../am_thanh/am_thanh.dart';
-import '../chien_dau/sat_thuong.dart';
-import '../chien_dau/quan_ly_trang_bi.dart';
 import '../cau_hinh.dart';
+import '../chien_dau/ky_nang.dart';
+import '../chien_dau/quan_ly_trang_bi.dart';
+import '../chien_dau/sat_thuong.dart';
 import 'ban_do.dart';
+import 'dan_ban.dart';
 import 'dong_xu.dart';
 import 'ke_dich.dart';
 import 'nhan_vat.dart';
-import 'dan_ban.dart';
 
 /// Nhân vật chính.
 class George extends NhanVat with KeyboardHandler {
@@ -25,9 +28,12 @@ class George extends NhanVat with KeyboardHandler {
   final HoiChieu _hoiDanh = HoiChieu(CauHinh.thoiGianHoiDanh);
 
   final QuanLyTrangBi trangBi = QuanLyTrangBi();
+  final BoKyNang kyNang = BoKyNang();
+  final Vector2 _huongDash = Vector2.zero();
 
   int soKeDichDaHa = 0;
 
+  /// Người khác (nhật ký, UI) gắn vào đây để biết khi có mục tiêu bị hạ.
   void Function(CoTheBiDanh)? khiHaMucTieu;
 
   double _batTu = 0;
@@ -74,31 +80,38 @@ class George extends NhanVat with KeyboardHandler {
     if (event is KeyDownEvent) {
       final k = event.logicalKey;
 
-      // Đổi vũ khí bằng Q
-      if (k == LogicalKeyboardKey.keyQ) {
-        trangBi.doi();
+      // Tấn công: Space hoặc J
+      if (k == LogicalKeyboardKey.space || k == LogicalKeyboardKey.keyJ) {
+        dungKyNang(LoaiKyNang.attack);
       }
 
-      // Tấn công bằng Space hoặc J
-      if (k == LogicalKeyboardKey.space || k == LogicalKeyboardKey.keyJ) {
-        tanCong();
+      // Đổi vũ khí: Q
+      if (k == LogicalKeyboardKey.keyQ) trangBi.doi();
+
+      // Dash: Shift hoặc K
+      if (k == LogicalKeyboardKey.shiftLeft ||
+          k == LogicalKeyboardKey.shiftRight ||
+          k == LogicalKeyboardKey.keyK) {
+        dungKyNang(LoaiKyNang.dash);
       }
+
+      // Shield: L
+      if (k == LogicalKeyboardKey.keyL) dungKyNang(LoaiKyNang.shield);
+
+      // Magnet: M
+      if (k == LogicalKeyboardKey.keyM) dungKyNang(LoaiKyNang.magnet);
     }
 
-    final trai =
-        keysPressed.contains(LogicalKeyboardKey.arrowLeft) ||
+    final trai = keysPressed.contains(LogicalKeyboardKey.arrowLeft) ||
         keysPressed.contains(LogicalKeyboardKey.keyA);
 
-    final phai =
-        keysPressed.contains(LogicalKeyboardKey.arrowRight) ||
+    final phai = keysPressed.contains(LogicalKeyboardKey.arrowRight) ||
         keysPressed.contains(LogicalKeyboardKey.keyD);
 
-    final len =
-        keysPressed.contains(LogicalKeyboardKey.arrowUp) ||
+    final len = keysPressed.contains(LogicalKeyboardKey.arrowUp) ||
         keysPressed.contains(LogicalKeyboardKey.keyW);
 
-    final xuong =
-        keysPressed.contains(LogicalKeyboardKey.arrowDown) ||
+    final xuong = keysPressed.contains(LogicalKeyboardKey.arrowDown) ||
         keysPressed.contains(LogicalKeyboardKey.keyS);
 
     _huongBanPhim
@@ -110,6 +123,30 @@ class George extends NhanVat with KeyboardHandler {
     }
 
     return false;
+  }
+
+  // --------------------------------------------------
+  // KỸ NĂNG
+  // --------------------------------------------------
+
+  /// Cổng duy nhất cho phím và nút UI (Người 1).
+  bool dungKyNang(LoaiKyNang l) {
+    if (!conSong || !dieuKhienDuoc) return false;
+    switch (l) {
+      case LoaiKyNang.attack:
+        return tanCong();
+      case LoaiKyNang.dash:
+        return _dungDash();
+      default:
+        return kyNang.kich(l);
+    }
+  }
+
+  bool _dungDash() {
+    if (!kyNang.kich(LoaiKyNang.dash)) return false;
+    final h = _huongHienTai();
+    _huongDash.setFrom((h.x == 0 && h.y == 0) ? huongNhin : h.normalized());
+    return true;
   }
 
   // --------------------------------------------------
@@ -146,8 +183,7 @@ class George extends NhanVat with KeyboardHandler {
     }
 
     // Tấn công cận chiến
-    final mucTieu =
-        parent?.children.whereType<CoTheBiDanh>().toList() ??
+    final mucTieu = parent?.children.whereType<CoTheBiDanh>().toList() ??
         const <CoTheBiDanh>[];
 
     for (final m in mucTieu) {
@@ -174,10 +210,22 @@ class George extends NhanVat with KeyboardHandler {
     super.update(dt);
 
     _hoiDanh.troiQua(dt);
+    kyNang.troiQua(dt);
 
     if (!conSong || !dieuKhienDuoc) {
       datDangDi(false);
       return;
+    }
+
+    // Magnet: kéo xu trong bán kính về phía George.
+    if (kyNang.dangDung(LoaiKyNang.magnet)) {
+      final xu =
+          parent?.children.whereType<DongXu>().toList() ?? const <DongXu>[];
+      for (final x in xu) {
+        if (x.position.distanceTo(position) <= CauHinh.banKinhNamCham) {
+          x.keVe(position, dt);
+        }
+      }
     }
 
     if (_batTu > 0) {
@@ -188,6 +236,12 @@ class George extends NhanVat with KeyboardHandler {
       if (_batTu <= 0) {
         opacity = 1.0;
       }
+    }
+
+    // Dash: lướt theo hướng đã chốt, thuDiChuyen tự kiểm tra va chạm tường.
+    if (kyNang.dangDung(LoaiKyNang.dash)) {
+      datDangDi(thuDiChuyen(_huongDash * CauHinh.tocDoDash * dt));
+      return;
     }
 
     final huong = _huongHienTai();
@@ -214,6 +268,25 @@ class George extends NhanVat with KeyboardHandler {
       }
     } else {
       viTriDich = null;
+    }
+  }
+
+  // --------------------------------------------------
+  // VẼ (vòng khiên)
+  // --------------------------------------------------
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    if (kyNang.dangDung(LoaiKyNang.shield)) {
+      canvas.drawCircle(
+        Offset(size.x / 2, size.y / 2),
+        11,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = const Color(0xCC6EC1FF),
+      );
     }
   }
 
@@ -252,11 +325,11 @@ class George extends NhanVat with KeyboardHandler {
   // --------------------------------------------------
 
   Vector2 get huongNhin => switch (current) {
-    HuongDi.trai => Vector2(-1, 0),
-    HuongDi.phai => Vector2(1, 0),
-    HuongDi.len => Vector2(0, -1),
-    _ => Vector2(0, 1),
-  };
+        HuongDi.trai => Vector2(-1, 0),
+        HuongDi.phai => Vector2(1, 0),
+        HuongDi.len => Vector2(0, -1),
+        _ => Vector2(0, 1),
+      };
 
   // --------------------------------------------------
   // XỬ LÝ MỤC TIÊU BỊ HẠ
@@ -304,6 +377,9 @@ class George extends NhanVat with KeyboardHandler {
   // --------------------------------------------------
 
   void _nhanSatThuong() {
+    // Khiên chặn mọi đòn trong lúc đang bật.
+    if (kyNang.dangDung(LoaiKyNang.shield)) return;
+
     mau -= CauHinh.mauMatMoiLanTrung;
 
     if (mau < 0) {

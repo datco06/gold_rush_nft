@@ -1,3 +1,6 @@
+
+import 'dart:math';
+
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
@@ -6,35 +9,64 @@ import '../cau_hinh.dart';
 import 'hieu_ung.dart';
 
 /// Đồng xu quay tại chỗ, cộng điểm khi George chạm vào.
-///
-/// Chú ý cách xử lý lúc bị nhặt: component KHÔNG tự xoá mình ngay trong hàm
-/// xử lý va chạm mà đặt cờ `_daNhat` rồi mới gọi `removeFromParent()`.
-/// Sửa đổi cây component ngay giữa lúc Flame đang duyệt danh sách va chạm là
-/// nguồn gốc của những lỗi rất khó tái hiện.
-class DongXu extends SpriteAnimationComponent with CollisionCallbacks {
+class DongXu extends SpriteAnimationComponent
+    with CollisionCallbacks {
   bool _daNhat = false;
 
-  DongXu({required SpriteAnimation hoatAnh, required Vector2 viTri})
-    : super(
-        animation: hoatAnh,
-        position: viTri,
-        size: Vector2.all(CauHinh.kichThuocO),
-        anchor: Anchor.center,
-        priority: 1,
-      );
+  /// Nam châm kéo xu về phía George.
+  void keVe(Vector2 dich, double dt) {
+    if (_daNhat) return;
+
+    final den = dich - position;
+    final kc = den.length;
+
+    if (kc < 0.5) return;
+
+    position.add(
+      den / kc * min(kc, CauHinh.tocDoNamCham * dt),
+    );
+  }
+
+  DongXu({
+    required SpriteAnimation hoatAnh,
+    required Vector2 viTri,
+  }) : super(
+          animation: hoatAnh,
+          position: viTri,
+          size: Vector2.all(CauHinh.kichThuocO),
+          anchor: Anchor.center,
+          priority: 1,
+        );
 
   @override
   Future<void> onLoad() async {
-    // Hitbox tròn nhỏ hơn sprite: phải tới gần mới ăn được xu.
-    add(CircleHitbox(radius: 5, position: Vector2(3, 3)));
+    await super.onLoad();
+
+    // Hitbox nhỏ hơn sprite để tăng độ chính xác khi nhặt xu.
+    add(
+      CircleHitbox(
+        radius: 5,
+        position: Vector2(3, 3),
+      ),
+    );
   }
 
+  /// Nhặt đồng xu.
   void nhat() {
     if (_daNhat) return;
+
+    // Đánh dấu trước để tránh nhặt nhiều lần.
     _daNhat = true;
 
+    // Phát âm thanh.
     AmThanh.nhatDongXu();
-    parent?.add(HieuUngNhatXu(position.clone()));
+
+    // Tạo hiệu ứng nhặt xu.
+    parent?.add(
+      HieuUngNhatXu(position.clone()),
+    );
+
+    // Yêu cầu Flame loại bỏ component khỏi cây.
     removeFromParent();
   }
 }
