@@ -1,3 +1,4 @@
+import 'dart:math' show min;
 import 'dart:ui';
 
 import 'package:flame/components.dart';
@@ -8,6 +9,7 @@ import '../cau_hinh.dart';
 import '../chien_dau/ky_nang.dart';
 import '../chien_dau/quan_ly_trang_bi.dart';
 import '../chien_dau/sat_thuong.dart';
+import '../phat_trien/cap_do.dart';
 import 'ban_do.dart';
 import 'dan_ban.dart';
 import 'dong_xu.dart';
@@ -30,6 +32,12 @@ class George extends NhanVat with KeyboardHandler {
   final QuanLyTrangBi trangBi = QuanLyTrangBi();
   final BoKyNang kyNang = BoKyNang();
   final Vector2 _huongDash = Vector2.zero();
+
+  /// EXP và cấp độ. Tách riêng khỏi [diem] (điểm chỉ tăng khi nhặt xu).
+  final HoSoCapDo capDo = HoSoCapDo();
+
+  /// UI (Người 1) gắn vào đây để hiện thông báo lên cấp.
+  void Function(int capMoi)? khiLenCap;
 
   int soKeDichDaHa = 0;
 
@@ -100,6 +108,9 @@ class George extends NhanVat with KeyboardHandler {
 
       // Magnet: M
       if (k == LogicalKeyboardKey.keyM) dungKyNang(LoaiKyNang.magnet);
+
+      // Nâng cấp Dash bằng điểm kỹ năng: U (để demo)
+      if (k == LogicalKeyboardKey.keyU) nangKyNang(LoaiKyNang.dash);
     }
 
     final trai = keysPressed.contains(LogicalKeyboardKey.arrowLeft) ||
@@ -149,6 +160,26 @@ class George extends NhanVat with KeyboardHandler {
     return true;
   }
 
+  /// Tiêu 1 điểm kỹ năng để nâng cấp một kỹ năng.
+  bool nangKyNang(LoaiKyNang l) {
+    if (capDo.skillPoints <= 0 || !kyNang.nangCap(l)) return false;
+    capDo.skillPoints--;
+    return true;
+  }
+
+  // --------------------------------------------------
+  // EXP
+  // --------------------------------------------------
+
+  void _congExp(int exp) {
+    final len = capDo.congExp(exp);
+    if (len > 0) {
+      // Lên cấp thì hồi máu, không tăng máu tối đa (HUD tính tỉ lệ theo mauToiDa).
+      mau = min(CauHinh.mauToiDa, mau + 20 * len);
+      khiLenCap?.call(capDo.level);
+    }
+  }
+
   // --------------------------------------------------
   // TẤN CÔNG
   // --------------------------------------------------
@@ -165,6 +196,7 @@ class George extends NhanVat with KeyboardHandler {
     }
 
     final huong = huongNhin;
+    final sat = vk.satThuong + capDo.thuongSatThuong;
 
     // Tấn công tầm xa
     if (vk.tamXa) {
@@ -173,7 +205,7 @@ class George extends NhanVat with KeyboardHandler {
           banDo: banDo,
           viTri: position + huong * 8,
           huong: huong,
-          satThuong: vk.satThuong,
+          satThuong: sat,
           tamBay: vk.tamDanh,
           khiHaMucTieu: _khiHaMucTieu,
         ),
@@ -193,7 +225,7 @@ class George extends NhanVat with KeyboardHandler {
             muc: m.viTriDanh,
             tam: vk.tamDanh,
           ) &&
-          m.nhanSatThuong(vk.satThuong)) {
+          m.nhanSatThuong(sat)) {
         _khiHaMucTieu(m);
       }
     }
@@ -337,6 +369,7 @@ class George extends NhanVat with KeyboardHandler {
 
   void _khiHaMucTieu(CoTheBiDanh m) {
     soKeDichDaHa++;
+    _congExp(CauHinh.expMoiKeDich);
 
     khiHaMucTieu?.call(m);
 
