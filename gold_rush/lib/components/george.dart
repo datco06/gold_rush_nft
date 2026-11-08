@@ -1,4 +1,4 @@
-import 'dart:math' show min;
+import 'dart:math' show Random, min;
 import 'dart:ui';
 
 import 'package:flame/components.dart';
@@ -16,6 +16,7 @@ import 'dan_ban.dart';
 import 'dong_xu.dart';
 import 'ke_dich.dart';
 import 'nhan_vat.dart';
+import 'vat_pham_roi.dart';
 
 /// Nhân vật chính.
 class George extends NhanVat with KeyboardHandler {
@@ -44,6 +45,8 @@ class George extends NhanVat with KeyboardHandler {
 
   /// Người khác (nhật ký, UI) gắn vào đây để biết khi có mục tiêu bị hạ.
   void Function(CoTheBiDanh)? khiHaMucTieu;
+
+  final Random _rnd = Random();
 
   double _batTu = 0;
 
@@ -365,15 +368,36 @@ class George extends NhanVat with KeyboardHandler {
       };
 
   // --------------------------------------------------
-  // XỬ LÝ MỤC TIÊU BỊ HẠ
+  // XỬ LÝ MỤC TIÊU BỊ HẠ, VẬT PHẨM RƠI
   // --------------------------------------------------
 
   void _khiHaMucTieu(CoTheBiDanh m) {
     soKeDichDaHa++;
     _congExp(m is Boss ? CauHinh.expBoss : CauHinh.expMoiKeDich);
 
+    // Rơi vật phẩm theo bảng quy tắc. Không phải DongXu nên không đụng tới điều kiện thắng.
+    for (final p in BangRoi.chon(_rnd, laBoss: m is Boss)) {
+      parent?.add(
+        VatPhamRoi(
+          phanThuong: p,
+          viTri: m.viTriDanh +
+              Vector2(_rnd.nextDouble() * 8 - 4, _rnd.nextDouble() * 8 - 4),
+        ),
+      );
+    }
+
     khiHaMucTieu?.call(m);
 
+    khiChiSoDoi();
+  }
+
+  void _nhanPhanThuong(PhanThuong p) {
+    switch (p.loai) {
+      case LoaiVatPham.binhMau:
+        mau = min(CauHinh.mauToiDa, mau + p.giaTri);
+      case LoaiVatPham.cucExp:
+        _congExp(p.giaTri);
+    }
     khiChiSoDoi();
   }
 
@@ -394,6 +418,11 @@ class George extends NhanVat with KeyboardHandler {
 
       khiChiSoDoi();
 
+      return;
+    }
+
+    if (khac is VatPhamRoi) {
+      if (khac.nhat()) _nhanPhanThuong(khac.phanThuong);
       return;
     }
 
