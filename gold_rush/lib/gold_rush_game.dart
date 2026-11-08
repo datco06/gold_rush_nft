@@ -21,6 +21,7 @@ import 'blockchain/phien_vi.dart';
 import 'blockchain/vi.dart';
 import 'cau_hinh.dart';
 import 'components/ban_do.dart';
+import 'components/boss.dart';
 import 'components/dong_xu.dart';
 import 'components/george.dart';
 import 'components/hud.dart';
@@ -140,6 +141,10 @@ class GoldRushGame extends FlameGame
   George? george;
   JoystickComponent? joystick;
   Hud? hud;
+
+  /// Boss của ván hiện tại. null = không có Boss (mặc định; chỉ bật bằng
+  /// `--dart-define=GOLD_RUSH_BOSS=true`).
+  Boss? _boss;
 
   TrangThaiChoi trangThai = TrangThaiChoi.tamDung;
 
@@ -302,6 +307,7 @@ class GoldRushGame extends FlameGame
       c.removeFromParent();
     }
     _thanhPhanVan.clear();
+    _boss = null;
 
     soXuDaNhat = 0;
     tongSoXu = 0;
@@ -319,6 +325,9 @@ class GoldRushGame extends FlameGame
       khiChet: _khiGeorgeChet,
     );
     _them(george!);
+
+    // Đếm số mục tiêu George hạ được (quái và Boss) cho thống kê chiến đấu.
+    george!.khiHaMucTieu = (_) => nhatKy.ghiHaKeDich();
 
     Vector2 viTriNguoiChoi() => george?.position ?? Vector2.zero();
     // AI độ khó × hệ số của màn (màn càng sau kẻ địch càng nhanh)
@@ -357,6 +366,26 @@ class GoldRushGame extends FlameGame
       }
     }
 
+    // Boss chỉ xuất hiện khi chạy với --dart-define=GOLD_RUSH_BOSS=true,
+    // nên sáu màn gốc không thay đổi. Chưa có điểm 'boss' trong .tmx thì
+    // dùng tạm điểm skeleton đầu tiên (chắc chắn đi được).
+    if (CauHinh.batBoss) {
+      final diemBoss = banDo.diemXuatHien.firstWhere(
+        (d) => d.ten == 'boss',
+        orElse: () =>
+            banDo.diemXuatHien.firstWhere((d) => d.ten == 'skeleton'),
+      );
+      _boss = Boss(
+        banDo: banDo,
+        hoatAnh: taiNguyen.skeleton,
+        viTri: diemBoss.viTri.clone(),
+        viTriNguoiChoi: viTriNguoiChoi,
+        gayDame: (l) => george?.nhanSatThuong(l),
+        khiChet: _khiBossChet,
+      );
+      _them(_boss!);
+    }
+
     camera.follow(george!, snap: true);
 
     nhatKy.batDau(tongSoXu, maVanCoSan: maVan);
@@ -379,17 +408,33 @@ class GoldRushGame extends FlameGame
 
     // Ghi nhật ký: điểm tăng = vừa nhặt xu, máu giảm = vừa trúng đòn.
     if (g.diem > _diemTruoc) nhatKy.ghiNhatXu(g.position.x, g.position.y);
-    if (g.mau < _mauTruoc) nhatKy.ghiTrungDon(g.position.x, g.position.y);
+    if (g.mau < _mauTruoc) {
+      nhatKy.ghiTrungDon(g.position.x, g.position.y);
+      nhatKy.satThuongNhan += _mauTruoc - g.mau;
+    }
     _diemTruoc = g.diem;
     _mauTruoc = g.mau;
 
     final nhat = g.diem ~/ CauHinh.diemMoiDongXu;
     if (nhat != soXuDaNhat) {
       soXuDaNhat = nhat;
-      if (soXuDaNhat >= tongSoXu && tongSoXu > 0) {
-        _khiThangCuoc();
-      }
+      _kiemTraThang();
     }
+  }
+
+  bool get _bossConSong => _boss != null && _boss!.sucKhoe.conSong;
+
+  /// Thắng khi đủ xu VÀ không còn Boss. Không có Boss thì y hệt luồng cũ.
+  void _kiemTraThang() {
+    if (trangThai != TrangThaiChoi.dangChoi) return;
+    if (tongSoXu > 0 && soXuDaNhat >= tongSoXu && !_bossConSong) {
+      _khiThangCuoc();
+    }
+  }
+
+  void _khiBossChet(Boss b) {
+    nhatKy.bossDaHa = true;
+    _kiemTraThang();
   }
 
   void _khiGeorgeChet() {
@@ -451,6 +496,15 @@ class GoldRushGame extends FlameGame
     _vanDangDienRa = false;
     final g = george;
     if (g != null) nhatKy.chup(g.mau, CauHinh.mauToiDa);
+
+    // Thống kê chiến đấu: chỉ ghi log cục bộ, CHƯA gửi lên máy chủ
+    // (máy chủ chỉ nhận 3 loại sự kiện; chờ thống nhất với Người 5).
+    if (g != null) nhatKy.trangBi = g.trangBi.idDangTrang;
+    final thangVan = ketQua == 'thang';
+    debugPrint(
+      'Chiến đấu: ${nhatKy.thongKeChienDau(stageId: manHienTai.id, won: thangVan)}',
+    );
+
     final nk = nhatKy.thanhJson(
       ketQua: ketQua,
       diem: g?.diem ?? 0,
@@ -470,8 +524,9 @@ class GoldRushGame extends FlameGame
     var kq = KetQuaVan(man: man, thang: thang, xu: nhatKy.soXu);
     // Có phiếu khi: màn luyện tập nhặt được xu, hoặc màn có cọc HOÀN THÀNH.
     final coPhieu = man.mienPhi ? nhatKy.soXu > 0 : thang;
-    if (coPhieu && phienVi != null)
+    if (coPhieu && phienVi != null) {
       kq = kq.voiPhieu('Đang gửi ván lên máy chủ trọng tài…');
+    }
     ketQuaVan.value = kq;
     if (!GuiNhatKy.daCauHinh) return;
     unawaited(_guiVaXinPhieu(nk, maVan, kq, coPhieu));
@@ -487,8 +542,9 @@ class GoldRushGame extends FlameGame
     final pv = phienVi;
     if (!coPhieu || pv == null) return;
     void datTrangThai(String p) {
-      if (!identical(ketQuaVan.value, kq))
+      if (!identical(ketQuaVan.value, kq)) {
         return; // người chơi đã sang ván khác
+      }
       kq = kq.voiPhieu(p);
       ketQuaVan.value = kq;
     }
