@@ -5,6 +5,8 @@ import 'package:flame/components.dart';
 
 import '../chien_dau/sat_thuong.dart';
 import 'ban_do.dart';
+import 'boss.dart';
+import 'george.dart';
 import 'ke_dich.dart';
 
 class DanBan extends PositionComponent with CollisionCallbacks {
@@ -14,7 +16,16 @@ class DanBan extends PositionComponent with CollisionCallbacks {
   final Vector2 huong;
   final int satThuong;
   final double tamBay;
-  final void Function(CoTheBiDanh) khiHaMucTieu;
+
+  /// true = đạn của Boss (trúng George); false = mũi tên của người chơi.
+  final bool tuKeDich;
+
+  /// Đạn của Boss gọi hàm này khi trúng George (gắn vào George.nhanSatThuong).
+  final void Function(int)? gayDameNguoiChoi;
+
+  /// Mũi tên của người chơi gọi hàm này khi hạ được mục tiêu.
+  final void Function(CoTheBiDanh)? khiHaMucTieu;
+
   double _daBay = 0;
   bool _xong = false;
 
@@ -24,7 +35,9 @@ class DanBan extends PositionComponent with CollisionCallbacks {
     required Vector2 huong,
     required this.satThuong,
     required this.tamBay,
-    required this.khiHaMucTieu,
+    this.khiHaMucTieu,
+    this.tuKeDich = false,
+    this.gayDameNguoiChoi,
   }) : huong = huong.normalized(),
        super(
          position: viTri,
@@ -52,9 +65,21 @@ class DanBan extends PositionComponent with CollisionCallbacks {
   void onCollisionStart(Set<Vector2> diem, PositionComponent khac) {
     super.onCollisionStart(diem, khac);
     if (_xong) return;
-    if (khac is KeDich) {
+
+    // Đạn của Boss: chỉ quan tâm George, bỏ qua mọi thứ khác (kể cả Boss).
+    if (tuKeDich) {
+      if (khac is George) {
+        _huy();
+        gayDameNguoiChoi?.call(satThuong);
+      }
+      return;
+    }
+
+    // Mũi tên của người chơi: trúng quái hoặc Boss.
+    if (khac is KeDich || khac is Boss) {
       _huy();
-      if (khac.nhanSatThuong(satThuong)) khiHaMucTieu(khac);
+      final m = khac as CoTheBiDanh;
+      if (m.nhanSatThuong(satThuong)) khiHaMucTieu?.call(m);
     }
   }
 
@@ -69,7 +94,8 @@ class DanBan extends PositionComponent with CollisionCallbacks {
     canvas.drawCircle(
       const Offset(2, 2),
       2,
-      Paint()..color = const Color(0xFFFFE9A8),
+      Paint()
+        ..color = tuKeDich ? const Color(0xFFFF5A3C) : const Color(0xFFFFE9A8),
     );
   }
 }

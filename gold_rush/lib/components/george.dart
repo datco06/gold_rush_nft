@@ -11,6 +11,7 @@ import '../chien_dau/quan_ly_trang_bi.dart';
 import '../chien_dau/sat_thuong.dart';
 import '../phat_trien/cap_do.dart';
 import 'ban_do.dart';
+import 'boss.dart';
 import 'dan_ban.dart';
 import 'dong_xu.dart';
 import 'ke_dich.dart';
@@ -369,7 +370,7 @@ class George extends NhanVat with KeyboardHandler {
 
   void _khiHaMucTieu(CoTheBiDanh m) {
     soKeDichDaHa++;
-    _congExp(CauHinh.expMoiKeDich);
+    _congExp(m is Boss ? CauHinh.expBoss : CauHinh.expMoiKeDich);
 
     khiHaMucTieu?.call(m);
 
@@ -401,19 +402,30 @@ class George extends NhanVat with KeyboardHandler {
 
       khac.noTung();
 
-      _nhanSatThuong();
+      nhanSatThuong();
     }
+  }
+
+  /// Boss chạm vào George: gây sát thương mỗi khi hết thời gian bất tử.
+  /// Dùng onCollision (gọi mỗi khung hình khi đang chạm), không phải onCollisionStart.
+  @override
+  void onCollision(Set<Vector2> diemGiaoNhau, PositionComponent khac) {
+    super.onCollision(diemGiaoNhau, khac);
+    if (khac is Boss) nhanSatThuong(CauHinh.satThuongBossCham);
   }
 
   // --------------------------------------------------
   // NHẬN SÁT THƯƠNG
   // --------------------------------------------------
 
-  void _nhanSatThuong() {
+  /// Công khai để Boss và đạn của Boss gọi được.
+  void nhanSatThuong([int luong = CauHinh.mauMatMoiLanTrung]) {
+    if (!conSong || dangBatTu) return;
+
     // Khiên chặn mọi đòn trong lúc đang bật.
     if (kyNang.dangDung(LoaiKyNang.shield)) return;
 
-    mau -= CauHinh.mauMatMoiLanTrung;
+    mau -= luong;
 
     if (mau < 0) {
       mau = 0;
