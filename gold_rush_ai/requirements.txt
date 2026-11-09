@@ -10,3 +10,12 @@ streamlit>=1.50
 requests
 httpx
 pytest
+
+# Database tài khoản: SQLAlchemy 2.0 đồng bộ + migration (SQLite dùng sqlite3 có sẵn).
+# Pin các dependency Auth để kiểm tra cùng môi trường Python 3.14.1 hiện tại.
+SQLAlchemy==2.0.57
+alembic==1.20.1
+
+# Xác minh chữ ký EIP-191/personal_sign cho ví EOA, không cần RPC.
+eth-account==0.14.0
+# Chưa thêm siwe==4.4.0: metadata yêu cầu eth-account<0.14; đánh giá parser ở bước SIWE.
