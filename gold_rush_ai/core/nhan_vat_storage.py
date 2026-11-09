@@ -463,6 +463,7 @@ class KhoNhanVat:
         transaction_hash: str,
         *,
         nguoi_yeu_cau: NguoiChoiXacThuc,
+        trang_thai: str = "pending",
     ) -> ThongTinNhanVat:
         """Quy trình Backend ghi nhận giao dịch đăng ký on-chain.
 
@@ -475,6 +476,8 @@ class KhoNhanVat:
             raise ValueError("ID nhân vật không hợp lệ")
         if not isinstance(transaction_hash, str) or not re.fullmatch(r"^0x[0-9a-fA-F]{64}$", transaction_hash):
             raise ValueError("Transaction hash không hợp lệ (cần 0x kèm 64 ký tự hex)")
+        if trang_thai not in ("not_registered", "pending", "registered", "failed"):
+            raise ValueError(f"Trạng thái onchain không hợp lệ: {trang_thai}")
 
         tx_lower = transaction_hash.lower()
 
@@ -504,14 +507,72 @@ class KhoNhanVat:
             try:
                 conn.execute(
                     """UPDATE nhan_vat
-                       SET onchain_status = 'pending', transaction_hash = ?
+                       SET onchain_status = ?, transaction_hash = ?
                        WHERE character_id = ?""",
-                    (tx_lower, character_id),
+                    (trang_thai, tx_lower, character_id),
                 )
             except sqlite3.IntegrityError:
                 raise GiaoDichDaDuocSuDung(
                     f"Mã giao dịch {transaction_hash} đã được sử dụng cho một nhân vật khác"
                 ) from None
+
+            updated = conn.execute(
+                "SELECT * FROM nhan_vat WHERE character_id = ?", (character_id,)
+            ).fetchone()
+            return self._row_to_model(updated)
+
+    def cap_nhat_trang_thai_onchain(
+        self,
+        character_id: str,
+        trang_thai: str,
+        *,
+        transaction_hash: str | None = None,
+        nguoi_yeu_cau: NguoiChoiXacThuc | None = None,
+    ) -> ThongTinNhanVat:
+        """Cập nhật onchain_status ('pending', 'registered', 'failed') cho nhân vật."""
+        if not isinstance(character_id, str) or not re.fullmatch(r"^char_[0-9a-f]{32}$", character_id):
+            raise ValueError("ID nhân vật không hợp lệ")
+        if trang_thai not in ("not_registered", "pending", "registered", "failed"):
+            raise ValueError(f"Trạng thái onchain không hợp lệ: {trang_thai}")
+
+        with self._giao_dich() as conn:
+            row = conn.execute(
+                "SELECT * FROM nhan_vat WHERE character_id = ?", (character_id,)
+            ).fetchone()
+            if row is None:
+                raise NhanVatKhongTonTai("Nhân vật không tồn tại")
+
+            if nguoi_yeu_cau is not None:
+                if (
+                    row["owner_user_id"] != nguoi_yeu_cau.user_id
+                    and row["verified_wallet_address"].lower() != nguoi_yeu_cau.wallet_address.lower()
+                ):
+                    raise LoiQuyenTruyCapNhanVat("Không có quyền cập nhật nhân vật này")
+
+            if transaction_hash is not None:
+                tx_lower = transaction_hash.lower()
+                trung = conn.execute(
+                    "SELECT character_id FROM nhan_vat WHERE transaction_hash = ? AND character_id != ?",
+                    (tx_lower, character_id),
+                ).fetchone()
+                if trung is not None:
+                    raise GiaoDichDaDuocSuDung(
+                        f"Mã giao dịch {transaction_hash} đã được sử dụng cho nhân vật {trung['character_id']}"
+                    )
+                try:
+                    conn.execute(
+                        "UPDATE nhan_vat SET onchain_status = ?, transaction_hash = ? WHERE character_id = ?",
+                        (trang_thai, tx_lower, character_id),
+                    )
+                except sqlite3.IntegrityError:
+                    raise GiaoDichDaDuocSuDung(
+                        f"Mã giao dịch {transaction_hash} đã được sử dụng cho một nhân vật khác"
+                    ) from None
+            else:
+                conn.execute(
+                    "UPDATE nhan_vat SET onchain_status = ? WHERE character_id = ?",
+                    (trang_thai, character_id),
+                )
 
             updated = conn.execute(
                 "SELECT * FROM nhan_vat WHERE character_id = ?", (character_id,)

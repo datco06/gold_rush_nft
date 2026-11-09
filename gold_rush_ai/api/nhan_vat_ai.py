@@ -14,6 +14,11 @@ from fastapi.responses import Response
 from api.nhiem_vu import NguCanhNguoiChoi, StageID
 from api.ngu_canh_ai import lay_ban_chup_ai
 from core.ai_nhan_vat import tao_anh_nhan_vat
+from core.blockchain_verifier import (
+    BlockchainVerifier,
+    TrangThaiXacMinhBlockchain,
+    tao_blockchain_verifier_tu_moi_truong,
+)
 from core.dich_vu_anh import DichVuAnh
 from core.kho_anh import KhoAnh, LoiKhoAnh, XungDotYeuCauAnh
 from core.nhan_vat_ai import AnhNhanVat, YeuCauTaoNhanVat
@@ -63,6 +68,7 @@ class TrangThaiNhanVatAI:
     kho_nhan_vat: KhoNhanVat | None = None
     service: DichVuAnh | None = None
     demo_service: DichVuAnh | None = None
+    blockchain_verifier: BlockchainVerifier | None = None
 
 
 def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
@@ -94,6 +100,8 @@ def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
             so_nhan_vat_toi_da=max_total_chars,
             so_nhan_vat_moi_nguoi=max_user_chars,
         )
+
+        state.blockchain_verifier = tao_blockchain_verifier_tu_moi_truong()
 
         try:
             provider = provider_anh_tu_moi_truong()
@@ -446,18 +454,67 @@ def xac_minh_onchain(
     player: Annotated[NguoiChoiXacThuc, Depends(lay_nguoi_choi_xac_thuc)],
     state: Annotated[TrangThaiNhanVatAI, Depends(lay_trang_thai)],
 ) -> ThongTinNhanVat:
-    """Cập nhật trạng thái giao dịch đăng ký on-chain dựa trên transaction_hash hợp lệ."""
+    """Xác minh và cập nhật trạng thái giao dịch đăng ký on-chain bằng Ethereum JSON-RPC verifier.
+
+    Quy trình:
+    1. Kiểm tra quyền sở hữu và sự tồn tại của nhân vật.
+    2. Nếu nhân vật đã registered với chính transaction_hash này -> trả về ngay (idempotent).
+    3. Ghi nhận giao dịch vào DB với trạng thái pending ban đầu (bảo vệ chống replay qua uq_nhan_vat_tx_hash).
+    4. Nếu chưa cấu hình RPC: fail-closed, lưu pending, KHÔNG đánh dấu registered.
+    5. Thực hiện xác minh JSON-RPC BÊN NGOÀI SQLite write transaction (tránh giữ DB write lock khi gọi mạng).
+    6. Cập nhật trạng thái sau khi có kết quả xác minh:
+       - registered: nếu xác minh thành công.
+       - failed: nếu transaction revert, sai hợp đồng, hoặc event log không khớp.
+       - pending: nếu transaction đang ở mempool, chưa đủ confirmations hoặc lỗi mạng RPC tạm thời.
+    """
     if state.kho_nhan_vat is None:
         raise HTTPException(503, "Kho lưu trữ nhân vật chưa sẵn sàng")
+
+    # 1. Kiểm tra tồn tại và quyền sở hữu trước (read-only, không giữ SQLite write lock)
     try:
-        return state.kho_nhan_vat.xac_nhan_giao_dich_onchain(
-            character_id, yc.transaction_hash, nguoi_yeu_cau=player
-        )
+        nhan_vat = state.kho_nhan_vat.doc_nhan_vat(character_id, nguoi_yeu_cau=player)
     except NhanVatKhongTonTai:
         raise HTTPException(404, "Nhân vật không tồn tại") from None
     except LoiQuyenTruyCapNhanVat:
         raise HTTPException(403, "Không có quyền cập nhật nhân vật này") from None
+
+    # Nếu nhân vật đã registered với chính tx_hash này, trả về ngay (idempotent)
+    if nhan_vat.onchain_status == "registered" and nhan_vat.transaction_hash == yc.transaction_hash.lower():
+        return nhan_vat
+
+    # 2. Ghi nhận giao dịch vào DB với trạng thái pending ban đầu (bảo vệ chống replay)
+    try:
+        nhan_vat = state.kho_nhan_vat.xac_nhan_giao_dich_onchain(
+            character_id, yc.transaction_hash, nguoi_yeu_cau=player, trang_thai="pending"
+        )
     except GiaoDichDaDuocSuDung as e:
         raise HTTPException(409, str(e)) from None
     except (LoiKhoNhanVat, ValueError):
         raise HTTPException(503, "Không thể cập nhật trạng thái giao dịch on-chain") from None
+
+    # 3. Kiểm tra verifier đã được cấu hình RPC chưa
+    verifier = getattr(state, "blockchain_verifier", None)
+    if verifier is None or not verifier.da_cau_hinh():
+        # Chưa cấu hình RPC: Fail-closed, giữ trạng thái pending, không tự động xác nhận registered
+        return nhan_vat
+
+    # 4. Thực hiện xác minh RPC BÊN NGOÀI SQLite transaction (tránh lock CSDL khi chờ mạng)
+    ket_qua = verifier.xac_minh_giao_dich(
+        character_id=character_id,
+        character_hash=nhan_vat.character_hash,
+        owner_wallet=nhan_vat.verified_wallet_address,
+        transaction_hash=yc.transaction_hash,
+    )
+
+    # 5. Cập nhật trạng thái sau xác minh
+    if ket_qua.trang_thai == TrangThaiXacMinhBlockchain.REGISTERED:
+        return state.kho_nhan_vat.cap_nhat_trang_thai_onchain(
+            character_id, "registered", nguoi_yeu_cau=player
+        )
+    elif ket_qua.trang_thai == TrangThaiXacMinhBlockchain.FAILED:
+        return state.kho_nhan_vat.cap_nhat_trang_thai_onchain(
+            character_id, "failed", nguoi_yeu_cau=player
+        )
+    else:
+        # PENDING hoặc RPC_ERROR: Giữ nguyên pending, không biến lỗi tạm thời thành failed
+        return nhan_vat

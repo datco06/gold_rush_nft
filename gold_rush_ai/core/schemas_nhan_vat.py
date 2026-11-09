@@ -59,7 +59,7 @@ class ThongTinNhanVat(_Schema):
     generation_source: Literal["demo", "image_model"]
     created_at: str = Field(min_length=19, max_length=35)
     character_status: Literal["active", "archived"] = "active"
-    onchain_status: Literal["not_registered", "pending", "registered"] = "not_registered"
+    onchain_status: Literal["not_registered", "pending", "registered", "failed"] = "not_registered"
     transaction_hash: str | None = Field(default=None, pattern=r"^0x[0-9a-fA-F]{64}$")
     name: str | None = Field(default=None, max_length=50)
 
@@ -89,6 +89,6 @@ class DuLieuChuanBiOnchain(_Schema):
     owner_wallet: str
     character_hash_bytes32: str = Field(pattern=r"^0x[0-9a-f]{64}$")
     raw_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    onchain_status: Literal["not_registered", "pending", "registered"]
+    onchain_status: Literal["not_registered", "pending", "registered", "failed"]
     chain_id: int
     registry_contract: str | None = None
