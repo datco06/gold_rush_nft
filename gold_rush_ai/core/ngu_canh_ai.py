@@ -15,6 +15,8 @@ class BanChupNguoiChoiAI(HoSoNhiemVu):
     allowed_stage_ids: frozenset[StageID] = frozenset()
     completed_stage_ids: frozenset[StageID] = frozenset()
     previous_speed_multipliers: dict[StageID, HeSoTocDo] = Field(default_factory=dict, max_length=1000)
+    user_id: str | None = Field(default=None, min_length=1, max_length=64)
+    wallet_address: str | None = Field(default=None, pattern=r"^0x[0-9a-fA-F]{40}$")
 
     @model_validator(mode="after")
     def kiem_tra_tien_trinh(self) -> Self:

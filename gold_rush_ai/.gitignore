@@ -11,3 +11,4 @@ artifacts/ban_do/
 # Ảnh xem trước và metadata SQLite chỉ lưu local.
 data/anh_nhan_vat/
 data/quota_ai/
+data/nhan_vat/

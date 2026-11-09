@@ -27,3 +27,9 @@ BAN_DO_DIR = Path(os.environ.get("BAN_DO_DIR", APP_FLUTTER / "assets" / "tiles")
 SO_PHIEU = Path(os.environ.get("SO_PHIEU", DATA_DIR / "phieu" / "da_cap.jsonl"))
 SO_VE = Path(os.environ.get("SO_VE", DATA_DIR / "phieu" / "ve_da_bat_dau.jsonl"))
 MAN_CHOI = Path(os.environ.get("MAN_CHOI", BAN_DO_DIR / "man_choi.json"))   # dùng chung với app + Ignition
+
+# Lưu trữ nhân vật AI bền vững (tách biệt khỏi preview cache có TTL)
+AI_CHARACTER_DB = Path(os.environ.get("AI_CHARACTER_DB", DATA_DIR / "nhan_vat" / "characters.sqlite3"))
+AI_MAX_CHARACTERS_PER_USER = int(os.environ.get("AI_MAX_CHARACTERS_PER_USER", "20"))
+AI_MAX_CHARACTERS_TOTAL = int(os.environ.get("AI_MAX_CHARACTERS_TOTAL", "10000"))
+HOP_DONG_DANG_KY_NHAN_VAT = os.environ.get("HOP_DONG_DANG_KY_NHAN_VAT", "")

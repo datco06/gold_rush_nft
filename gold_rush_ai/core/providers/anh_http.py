@@ -10,7 +10,7 @@ from typing import Literal
 
 import httpx
 
-from .anh import LoiProviderAnh
+from .anh import LoiProviderAnh, NhaCungCapAnh
 
 _GIOI_HAN_JSON = 8 * 1024 * 1024
 _GIOI_HAN_ANH = 5 * 1024 * 1024
@@ -101,13 +101,17 @@ class ImagesGenerationsAnh:
 
 def provider_anh_tu_moi_truong(
     moi_truong: Mapping[str, str] | None = None, *, client: httpx.Client | None = None,
-) -> ImagesGenerationsAnh | None:
+) -> NhaCungCapAnh | None:
     env = os.environ if moi_truong is None else moi_truong
     bat = env.get("AI_IMAGE_ENABLED", "false").strip().lower()
     if bat in ("false", "0", ""):
         return None
     if bat not in ("true", "1"):
         raise ValueError("AI_IMAGE_ENABLED phải là true hoặc false")
+    provider_type = env.get("AI_IMAGE_PROVIDER", "").strip().lower()
+    if provider_type == "gemini" or (env.get("GEMINI_API_KEY") and not env.get("AI_IMAGE_URL")):
+        from .gemini_anh import gemini_provider_tu_moi_truong
+        return gemini_provider_tu_moi_truong(env, client=client)
     try:
         timeout = float(env.get("AI_IMAGE_TIMEOUT_SECONDS", "10"))
     except ValueError:
