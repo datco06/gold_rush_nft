@@ -1,9 +1,19 @@
+import 'dart:async';
+
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'cau_hinh.dart';
+import 'am_thanh/am_thanh.dart';
+import 'auth/app_platform_stub.dart'
+    if (dart.library.js_interop) 'auth/app_platform_web.dart'
+    as platform;
+import 'auth/auth_api_client.dart';
+import 'auth/auth_controller.dart';
+import 'auth/ui/auth_gate.dart';
+import 'blockchain/vi.dart';
 import 'gold_rush_game.dart';
 import 'man_hinh/chon_man.dart';
 import 'man_hinh/cua_hang.dart';
@@ -27,8 +37,38 @@ Future<void> main() async {
   runApp(const UngDungGoldRush());
 }
 
-class UngDungGoldRush extends StatelessWidget {
+class UngDungGoldRush extends StatefulWidget {
   const UngDungGoldRush({super.key});
+
+  @override
+  State<UngDungGoldRush> createState() => _UngDungGoldRushState();
+}
+
+class _UngDungGoldRushState extends State<UngDungGoldRush> {
+  late final platform.MetamaskSiweWeb _wallet;
+  late final AuthController _auth;
+
+  @override
+  void initState() {
+    super.initState();
+    _wallet = platform.MetamaskSiweWeb();
+    _auth = AuthController.web(
+      wallet: _wallet,
+      api: AuthApiClient(
+        baseUrl: const String.fromEnvironment(
+          'GOLD_RUSH_API',
+          defaultValue: 'http://localhost:8000',
+        ),
+      ),
+      disposeDependencies: true,
+    );
+  }
+
+  @override
+  void dispose() {
+    _auth.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,13 +84,20 @@ class UngDungGoldRush extends StatelessWidget {
         ),
         scaffoldBackgroundColor: CauHinh.mauNen,
       ),
-      home: const ManHinhGame(),
+      home: AuthGate(
+        controller: _auth,
+        retainGameDuringSessionCheck: true,
+        authenticatedBuilder: (_) => ManHinhGame(auth: _auth, wallet: _wallet),
+      ),
     );
   }
 }
 
 class ManHinhGame extends StatefulWidget {
-  const ManHinhGame({super.key});
+  const ManHinhGame({super.key, required this.auth, required this.wallet});
+
+  final AuthController auth;
+  final platform.MetamaskSiweWeb wallet;
 
   @override
   State<ManHinhGame> createState() => _ManHinhGameState();
@@ -61,11 +108,59 @@ class _ManHinhGameState extends State<ManHinhGame> {
   ///
   /// Tạo ngay trong build là lỗi kinh điển: mỗi lần widget vẽ lại, một bản
   /// game mới ra đời, toàn bộ tài nguyên nạp lại và ván chơi bị đặt lại từ đầu.
-  late final GoldRushGame _game = GoldRushGame();
+  late final ({Vi vi, void Function() dispose}) _wallet;
+  late final GoldRushGame _game;
+  bool _resumeAfterCheck = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _wallet = platform.createGameWallet(widget.wallet);
+    _game = GoldRushGame(vi: _wallet.vi);
+    widget.auth.addListener(_lockImmediately);
+  }
+
+  void _lockImmediately() {
+    if (!widget.auth.canEnterGame) {
+      _resumeAfterCheck =
+          _resumeAfterCheck ||
+          (!_game.paused && widget.auth.status == AuthStatus.checkingSession);
+      _game.pauseEngine();
+      unawaited(AmThanh.tamDungNhac());
+    } else if (_resumeAfterCheck) {
+      _resumeAfterCheck = false;
+      _game.resumeEngine();
+      unawaited(AmThanh.tiepTucNhac());
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.auth.removeListener(_lockImmediately);
+    _game.pauseEngine();
+    _game.phienVi?.dispose();
+    _wallet.dispose();
+    unawaited(AmThanh.dungNhacNen());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 42,
+        title: Text(
+          widget.auth.user?.username ?? 'Gold Rush',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () => unawaited(widget.auth.logout()),
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('ĐĂNG XUẤT'),
+          ),
+        ],
+      ),
       body: GameWidget<GoldRushGame>(
         game: _game,
         // autofocus để nhận sự kiện bàn phím ngay, không phải bấm vào game trước.
@@ -87,8 +182,10 @@ class _ManHinhGameState extends State<ManHinhGame> {
               children: [
                 CircularProgressIndicator(color: CauHinh.mauChinh),
                 SizedBox(height: 16),
-                Text('Đang nạp Gold Rush...',
-                    style: TextStyle(color: CauHinh.mauChu)),
+                Text(
+                  'Đang nạp Gold Rush...',
+                  style: TextStyle(color: CauHinh.mauChu),
+                ),
               ],
             ),
           ),

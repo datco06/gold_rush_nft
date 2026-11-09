@@ -61,9 +61,11 @@ class KetQuaVan {
 
 class GoldRushGame extends FlameGame
     with HasCollisionDetection, HasKeyboardHandlerComponents {
-  GoldRushGame._(this.theGioi) : super(world: theGioi);
+  GoldRushGame._(this.theGioi, this._vi) : super(world: theGioi);
 
-  factory GoldRushGame() => GoldRushGame._(TheGioi());
+  factory GoldRushGame({Vi? vi}) => GoldRushGame._(TheGioi(), vi);
+
+  final Vi? _vi;
 
   final TheGioi theGioi;
 
@@ -119,7 +121,7 @@ class GoldRushGame extends FlameGame
   /// Phiên ví dùng chung cho chọn màn, cửa hàng, màn kết thúc. null = chưa cấu hình máy chủ
   /// (`--dart-define=GOLD_RUSH_API=...`) → chỉ chơi được màn luyện tập, như bản gốc.
   late final PhienVi? phienVi = GuiNhatKy.daCauHinh
-      ? PhienVi(vi: taoViMacDinh(), mayChu: MayChuPhieu(mayChu: GuiNhatKy.mayChu))
+      ? PhienVi(vi: _vi ?? taoViMacDinh(), mayChu: MayChuPhieu(mayChu: GuiNhatKy.mayChu))
       : null;
 
   /// Kết quả ván vừa xong. ValueNotifier vì máy chủ trả lời KHÔNG ĐỒNG BỘ: màn kết thúc đang mở
