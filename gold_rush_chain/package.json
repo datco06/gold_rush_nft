@@ -6,7 +6,9 @@
   "scripts": {
     "test": "hardhat test",
     "node": "hardhat node",
-    "abi": "node scripts/xuat-abi.mjs"
+    "abi": "node scripts/xuat-abi.mjs",
+    "abi:registry": "node scripts/xuat-abi-character-registry.mjs",
+    "deploy:registry:local": "node scripts/deploy-localhost.mjs"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.7",
