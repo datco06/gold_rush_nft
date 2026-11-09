@@ -7,10 +7,11 @@ import '../man_choi.dart';
 enum TrangThaiMan { chuaMo, daMo, hoanThanh }
 
 /// Một ô màn chơi trên World Map.
-class NutManChoi extends StatelessWidget {
+class NutManChoi extends StatefulWidget {
   final ManChoi man;
   final TrangThaiMan trangThai;
   final bool dangChon;
+  final bool gon;
   final ValueChanged<ManChoi> khiChon;
 
   const NutManChoi({
@@ -19,139 +20,132 @@ class NutManChoi extends StatelessWidget {
     required this.trangThai,
     required this.khiChon,
     this.dangChon = false,
+    this.gon = false,
   });
 
-  String get _nhanTrangThai {
-    switch (trangThai) {
-      case TrangThaiMan.chuaMo:
-        return 'Chưa mở';
-      case TrangThaiMan.daMo:
-        return 'Đã mở';
-      case TrangThaiMan.hoanThanh:
-        return 'Hoàn thành';
-    }
-  }
+  @override
+  State<NutManChoi> createState() => _NutManChoiState();
+}
 
-  IconData get _bieuTuongDiaHinh {
-    switch (man.id) {
-      case 1:
-        return Icons.grass_rounded;
-      case 2:
-        return Icons.park_rounded;
-      case 3:
-        return Icons.terrain_rounded;
-      case 4:
-        return Icons.forest_rounded;
-      case 5:
-        return Icons.eco_rounded;
-      case 6:
-        return Icons.diamond_outlined;
-      default:
-        return Icons.place_outlined;
-    }
-  }
+class _NutManChoiState extends State<NutManChoi> {
+  bool _hover = false;
+
+  String get _trangThai => switch (widget.trangThai) {
+    TrangThaiMan.chuaMo => 'Chưa mở',
+    TrangThaiMan.daMo => 'Đã mở',
+    TrangThaiMan.hoanThanh => 'Hoàn thành',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final biKhoa = trangThai == TrangThaiMan.chuaMo;
-    final daHoanThanh = trangThai == TrangThaiMan.hoanThanh;
-    final mauNoiDung = biKhoa ? MauGame.chuPhu : MauGame.chinh;
-
-    return SizedBox(
-      width: 160,
+    final locked = widget.trangThai == TrangThaiMan.chuaMo;
+    final completed = widget.trangThai == TrangThaiMan.hoanThanh;
+    final active = widget.dangChon || _hover;
+    final gold = locked ? const Color(0xFFC4C5B5) : const Color(0xFFF1CF7A);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
       child: Semantics(
-        selected: dangChon,
-        child: Material(
-          color: MauGame.nen,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: dangChon ? MauGame.chinh : MauGame.vien,
-              width: dangChon ? 3 : 1,
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            // Chạm chỉ xem thông tin, không thực hiện giao dịch.
-            onTap: () => khiChon(man),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 48,
-                    height: 36,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (man.id == 5)
-                          CustomPaint(
-                            size: const Size(30, 30),
-                            painter: _BieuTuongDauLau(mau: mauNoiDung),
-                          )
-                        else
-                          Icon(_bieuTuongDiaHinh, color: mauNoiDung, size: 30),
-                        if (biKhoa || daHoanThanh)
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: MauGame.nen,
-                                shape: BoxShape.circle,
+        button: true,
+        selected: widget.dangChon,
+        label: 'Màn ${widget.man.id}, ${widget.man.ten}, $_trangThai',
+        child: Tooltip(
+          message: '${widget.man.ten} · $_trangThai',
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => widget.khiChon(widget.man),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: widget.gon ? 32 : 40,
+                  height: widget.gon ? 32 : 40,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _HuyHieu(active: active, gold: gold),
+                          child: Center(
+                            child: Text.rich(
+                              TextSpan(
+                                text: widget.gon ? '' : 'Màn ',
+                                style: const TextStyle(fontSize: 9),
+                                children: [
+                                  TextSpan(
+                                    text: '${widget.man.id}',
+                                    style: TextStyle(
+                                      fontSize: widget.gon ? 16 : 18,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
                               ),
+                              style: TextStyle(color: gold, height: 1),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (locked || completed)
+                        Positioned(
+                          right: -3,
+                          top: -2,
+                          child: DecoratedBox(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF25382A),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(2),
                               child: Icon(
-                                biKhoa
+                                locked
                                     ? Icons.lock_rounded
                                     : Icons.check_circle_rounded,
-                                size: 16,
-                                color: mauNoiDung,
+                                color: gold,
+                                size: 13,
                               ),
                             ),
                           ),
-                      ],
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 1),
+                if (!widget.gon)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 2,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Màn ${man.id}',
-                    style: TextStyle(
-                      color: mauNoiDung,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+                    decoration: BoxDecoration(
+                      color: const Color(0xCA1B281F),
+                      border: active
+                          ? Border(bottom: BorderSide(color: gold, width: 2))
+                          : null,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    man.ten,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: MauGame.chu,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _nhanTrangThai,
-                    style: const TextStyle(color: MauGame.chuPhu, fontSize: 12),
-                  ),
-                  if (dangChon) ...[
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Đang chọn',
+                    child: Text(
+                      widget.man.ten,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: MauGame.chinh,
-                        fontSize: 12,
+                        color: const Color(0xFFF3EACD),
+                        fontSize: widget.gon ? 11 : 12,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ],
-                ],
-              ),
+                  ),
+                if (!widget.gon)
+                  Text(
+                    _trangThai,
+                    style: const TextStyle(
+                      color: MauGame.chu,
+                      fontSize: 9,
+                      shadows: [Shadow(color: Colors.black, blurRadius: 3)],
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -160,41 +154,55 @@ class NutManChoi extends StatelessWidget {
   }
 }
 
-/// Đầu lâu dạng pixel cho màn Thung lũng xương.
-class _BieuTuongDauLau extends CustomPainter {
-  final Color mau;
-
-  const _BieuTuongDauLau({required this.mau});
+class _HuyHieu extends CustomPainter {
+  final bool active;
+  final Color gold;
+  _HuyHieu({required this.active, required this.gold});
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Vẽ trên lưới 30 × 30, co giãn theo kích thước nhận được.
-    canvas.save();
-    canvas.scale(size.width / 30, size.height / 30);
-
-    final but = Paint()
-      ..color = mau
-      ..isAntiAlias = false;
-
-    canvas.drawRect(const Rect.fromLTWH(6, 3, 18, 3), but);
-    canvas.drawRect(const Rect.fromLTWH(3, 6, 24, 15), but);
-    canvas.drawRect(const Rect.fromLTWH(8, 21, 14, 6), but);
-
-    final butToi = Paint()
-      ..color = MauGame.nen
-      ..isAntiAlias = false;
-
-    canvas.drawRect(const Rect.fromLTWH(7, 10, 6, 6), butToi);
-    canvas.drawRect(const Rect.fromLTWH(17, 10, 6, 6), butToi);
-    canvas.drawRect(const Rect.fromLTWH(13, 17, 4, 3), butToi);
-    canvas.drawRect(const Rect.fromLTWH(11, 23, 2, 4), butToi);
-    canvas.drawRect(const Rect.fromLTWH(17, 23, 2, 4), butToi);
-
-    canvas.restore();
+    final c = size.center(Offset.zero);
+    Path diamond(double inset) => Path()
+      ..moveTo(c.dx, inset)
+      ..lineTo(size.width - inset, c.dy)
+      ..lineTo(c.dx, size.height - inset)
+      ..lineTo(inset, c.dy)
+      ..close();
+    if (active) {
+      canvas.drawPath(
+        diamond(1),
+        Paint()
+          ..color = gold.withValues(alpha: 0.3)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5,
+      );
+    }
+    canvas.drawPath(
+      diamond(4).shift(const Offset(0, 2)),
+      Paint()..color = const Color(0xAA101910),
+    );
+    canvas.drawPath(
+      diamond(4),
+      Paint()
+        ..color = active ? const Color(0xFF45533A) : const Color(0xFF25382A),
+    );
+    canvas.drawPath(
+      diamond(4),
+      Paint()
+        ..color = gold
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = active ? 2 : 1.2,
+    );
+    canvas.drawPath(
+      diamond(8),
+      Paint()
+        ..color = gold.withValues(alpha: 0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _BieuTuongDauLau oldDelegate) {
-    return oldDelegate.mau != mau;
-  }
+  bool shouldRepaint(_HuyHieu oldDelegate) =>
+      oldDelegate.active != active || oldDelegate.gold != gold;
 }

@@ -20,6 +20,7 @@ dependencies:
   # Gửi nhật ký ván chơi về máy chủ gold_rush_ai (lib/ai/gui_nhat_ky.dart).
   # Đối chiếu pub.dev ngày 09/10/2026: bản mới nhất 1.6.0.
   http: ^1.6.0
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +32,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/world_map/
     - assets/tiles/
     - assets/audio/
     # Mô hình AI chạy trên máy (tệp nhỏ, < vài MB). Mô hình lớn để ở máy chủ.

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../blockchain/phien_vi.dart';
-import '../giao_dien/khung_game.dart';
 import '../giao_dien/mau_game.dart';
 import '../gold_rush_game.dart';
 import '../man_choi.dart';
@@ -16,8 +15,14 @@ import '../world_map/tien_trinh_world_map.dart';
 class ManHinhChonMan extends StatefulWidget {
   final GoldRushGame game;
   final TienTrinhWorldMap? tienTrinh;
+  final String? loiLuuTienTrinh;
 
-  const ManHinhChonMan({super.key, required this.game, this.tienTrinh});
+  const ManHinhChonMan({
+    super.key,
+    required this.game,
+    this.tienTrinh,
+    this.loiLuuTienTrinh,
+  });
 
   @override
   State<ManHinhChonMan> createState() => _ManHinhChonManState();
@@ -32,16 +37,76 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
   Widget build(BuildContext context) {
     final pv = game.phienVi;
 
-    return KhungGame(
-      tieuDe: 'WORLD MAP',
-      chieuRongToiDa: double.infinity,
-      khiDong: game.dongChonMan,
-      child: pv == null
-          ? _noiDung(null)
-          : ListenableBuilder(
-              listenable: pv,
-              builder: (context, _) => _noiDung(pv),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFBFA16B),
+            foregroundColor: const Color(0xFF242B20),
+            minimumSize: const Size.fromHeight(44),
+            textStyle: TextStyle(
+              fontFamily: Theme.of(context).textTheme.labelLarge?.fontFamily,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
             ),
+            shape: const BeveledRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(4)),
+            ),
+          ),
+        ),
+      ),
+      child: Material(
+        color: const Color(0xFF18261F),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                height: 48,
+                padding: const EdgeInsets.only(left: 16, right: 6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF202D24),
+                  border: Border(bottom: BorderSide(color: Color(0xFF6C6747))),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.explore_outlined,
+                      size: 20,
+                      color: Color(0xFFCBB583),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'WORLD MAP',
+                      style: TextStyle(
+                        color: Color(0xFFE7D9B2),
+                        fontSize: 16,
+                        letterSpacing: 3,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'Quay lại Menu',
+                      onPressed: game.dongChonMan,
+                      color: const Color(0xFFD3C5A4),
+                      iconSize: 20,
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: pv == null
+                    ? _noiDung(null)
+                    : ListenableBuilder(
+                        listenable: pv,
+                        builder: (context, _) => _noiDung(pv),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -103,8 +168,8 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
 
         if (hienThiHaiCot) {
           final chieuRongThongTin = constraints.maxWidth >= 1000
-              ? 300.0
-              : 260.0;
+              ? 280.0
+              : 256.0;
 
           return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -119,9 +184,15 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
         // Màn hình hẹp: bản đồ trên, thông tin cuộn bên dưới.
         return Column(
           children: [
-            Expanded(flex: 3, child: banDo),
+            SizedBox(
+              height: (constraints.maxWidth / (1465 / 980) + 36).clamp(
+                0.0,
+                constraints.maxHeight * 0.58,
+              ),
+              child: banDo,
+            ),
             const Divider(height: 1, color: MauGame.vien),
-            Expanded(flex: 2, child: thongTin),
+            Expanded(child: thongTin),
           ],
         );
       },
@@ -144,86 +215,91 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
     final trangThai = tienTrinh?.trangThaiCuaMan(man.id);
     final duocVaoMan = tienTrinh?.daMoMan(man.id) ?? true;
 
-    const chuPhu = TextStyle(color: MauGame.chuPhu, fontSize: 13, height: 1.5);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'THÔNG TIN MÀN',
-            style: TextStyle(
-              color: MauGame.chinh,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Chạm ô trên bản đồ để xem thông tin. '
-            'Việc xem thông tin không trừ vàng.',
-            style: chuPhu,
-          ),
-          const SizedBox(height: 8),
-          if (trangThai == null)
+    const chuPhu = TextStyle(
+      color: Color(0xFFC6C3A7),
+      fontSize: 11,
+      height: 1.5,
+    );
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Color(0xFF283329),
+        border: Border(left: BorderSide(color: Color(0xFF7E7655))),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             const Text(
-              'Tiến trình mở khóa chưa được kết nối. '
-              'Hiện giữ quyền chọn màn như phiên bản gốc.',
-              style: chuPhu,
-            )
-          else
-            Text(
-              'Trạng thái: ${_nhanTrangThai(trangThai)}',
-              style: const TextStyle(
-                color: MauGame.chinh,
-                fontSize: 13,
+              'ĐỊA ĐIỂM ĐANG CHỌN',
+              style: TextStyle(
+                color: Color(0xFFAFA980),
+                fontSize: 10,
+                letterSpacing: 2,
                 fontWeight: FontWeight.w700,
               ),
             ),
-          const SizedBox(height: 16),
-          _TheMan(game: game, man: man, pv: pv, duocVaoMan: duocVaoMan),
-          const SizedBox(height: 12),
-          const Text(
-            'Màn có cọc: vàng bị trừ khi xác nhận vào màn. '
-            'Hoàn thành hợp lệ sẽ nhận lại cọc + xu + thưởng; '
-            'chết, hết giờ hoặc bỏ ván sẽ mất cọc.',
-            style: chuPhu,
-          ),
-          const SizedBox(height: 16),
-          if (pv == null)
-            const Text(
-              'Chưa cấu hình máy chủ '
-              '(--dart-define=GOLD_RUSH_API=…) — '
-              'chỉ chơi được màn luyện tập đã mở.',
-              style: chuPhu,
-            )
-          else if (!pv.daKetNoi)
-            FilledButton.icon(
-              onPressed: pv.dangXuLy || pv.dangHoi ? null : pv.ketNoi,
-              icon: const Icon(Icons.account_balance_wallet_outlined),
-              label: const Text('Kết nối MetaMask'),
-            )
-          else
-            Text(
-              'Vàng: ${pv.vang}'
-              '${pv.phieuCho.isEmpty ? '' : '\nChờ nhận: ${pv.vangChoNhan} (tự gộp vào giao dịch)'}',
-              style: chuPhu,
-            ),
-          if (pv != null && (pv.thongBao ?? '').isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(
-              pv.thongBao!,
-              style: TextStyle(
-                color: pv.thongBaoLaLoi
-                    ? Theme.of(context).colorScheme.error
-                    : MauGame.chu,
-                fontSize: 13,
-                height: 1.5,
+            _TheMan(game: game, man: man, pv: pv, duocVaoMan: duocVaoMan),
+            const SizedBox(height: 12),
+            if (trangThai != null)
+              Text('Trạng thái: ${_nhanTrangThai(trangThai)}', style: chuPhu)
+            else
+              const Text(
+                'Tiến trình mở khóa chưa được kết nối. '
+                'Hiện giữ quyền chọn màn như phiên bản gốc.',
+                style: chuPhu,
               ),
-            ),
+            if (tienTrinh != null) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Thắng để mở màn kế tiếp. Tiến trình được lưu trên máy.',
+                style: chuPhu,
+              ),
+            ],
+            if (widget.loiLuuTienTrinh != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                widget.loiLuuTienTrinh!,
+                style: chuPhu.copyWith(color: const Color(0xFFF2C77C)),
+              ),
+            ],
+            const SizedBox(height: 10),
+            if (pv == null)
+              const Text(
+                'Màn có cọc cần cấu hình máy chủ và kết nối ví.',
+                style: chuPhu,
+              )
+            else if (!pv.daKetNoi)
+              FilledButton.icon(
+                onPressed: pv.dangXuLy || pv.dangHoi ? null : pv.ketNoi,
+                icon: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 17,
+                ),
+                label: const Text('Kết nối MetaMask'),
+              )
+            else
+              Text(
+                'Vàng: ${pv.vang}'
+                '${pv.phieuCho.isEmpty ? '' : '\nChờ nhận: ${pv.vangChoNhan} (tự gộp vào giao dịch)'}',
+                style: chuPhu,
+              ),
+            if (pv != null && (pv.thongBao ?? '').isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                pv.thongBao!,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.5,
+                  color: pv.thongBaoLaLoi
+                      ? Theme.of(context).colorScheme.error
+                      : const Color(0xFFE6DEC7),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -254,8 +330,8 @@ class _TheMan extends StatelessWidget {
     if (!duocVaoMan) {
       nut = const FilledButton(onPressed: null, child: Text('Màn chưa mở'));
       lyDoKhongVaoDuoc =
-          'Bạn có thể xem thông tin nhưng chưa được vào màn này. '
-          'Điều kiện mở khóa do hệ thống tiến trình cung cấp.';
+          'Hoàn thành màn trước để mở khóa màn này. '
+          'Tiến trình được lưu trên máy.';
     } else if (man.mienPhi) {
       nut = FilledButton(
         onPressed: banKhoa ? null : () => _choiLuyenTap(p),
@@ -291,152 +367,113 @@ class _TheMan extends StatelessWidget {
       }
     }
 
-    return Card(
-      color: const Color(0x22FFFFFF),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  backgroundColor: man.mienPhi
-                      ? const Color(0xFF2E7D32)
-                      : MauGame.chinh,
-                  foregroundColor: MauGame.chuTrenVang,
-                  child: Text(
-                    '${man.id}',
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        man.ten,
-                        style: const TextStyle(
-                          color: MauGame.chu,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        man.mienPhi ? 'Màn luyện tập' : 'Màn có đặt cọc',
-                        style: const TextStyle(
-                          color: MauGame.chuPhu,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'ĐỘ KHÓ',
-              style: TextStyle(
-                color: MauGame.chuPhu,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Semantics(
-              label: 'Độ khó ${man.sao} trên 5',
-              child: ExcludeSemantics(
-                child: Text(
-                  '${'★' * man.sao}${'☆' * (5 - man.sao)}',
-                  style: const TextStyle(
-                    color: MauGame.chinh,
-                    fontSize: 22,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              man.moTa,
-              style: const TextStyle(
-                color: MauGame.chuPhu,
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14),
-              child: Divider(height: 1, color: MauGame.vien),
-            ),
-            _DongThongSoMan(
-              bieuTuong: Icons.monetization_on_outlined,
-              nhan: 'Cần thu thập',
-              giaTri: '${man.soXu} xu',
-            ),
-            _DongThongSoMan(
-              bieuTuong: Icons.timer_outlined,
-              nhan: 'Thời gian',
-              giaTri: man.gioiHanGiay == 0
-                  ? 'Không giới hạn'
-                  : dinhDangGiay(man.gioiHanGiay),
-            ),
-            _DongThongSoMan(
-              bieuTuong: Icons.account_balance_wallet_outlined,
-              nhan: 'Đặt cọc',
-              giaTri: man.mienPhi ? 'Miễn phí' : '${man.coc} vàng',
-            ),
-            if (!man.mienPhi) ...[
-              _DongThongSoMan(
-                bieuTuong: Icons.card_giftcard_outlined,
-                nhan: 'Thưởng thêm',
-                giaTri: '${man.thuong} vàng',
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: MauGame.chinh.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: MauGame.chinh.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Text(
-                  'Hoàn thành hợp lệ: nhận '
-                  '${man.nhanVeKhiHoanThanh} vàng\n'
-                  'Gồm ${man.coc} hoàn cọc + '
-                  '${man.soXu} từ xu + '
-                  '${man.thuong} thưởng.',
-                  style: const TextStyle(
-                    color: MauGame.chu,
-                    fontSize: 12,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            nut,
-            if (lyDoKhongVaoDuoc != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                lyDoKhongVaoDuoc,
-                style: const TextStyle(
-                  color: MauGame.chuPhu,
-                  fontSize: 12,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'MÀN ${man.id.toString().padLeft(2, '0')}',
+          style: const TextStyle(
+            color: Color(0xFFC7A76A),
+            fontSize: 11,
+            letterSpacing: 2,
+          ),
         ),
-      ),
+        const SizedBox(height: 6),
+        Text(
+          man.ten,
+          style: const TextStyle(
+            color: Color(0xFFF1E4C4),
+            fontSize: 26,
+            height: 1.15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          man.chiChoiLocal
+              ? 'Màn phiêu lưu local'
+              : man.mienPhi
+              ? 'Màn luyện tập'
+              : 'Màn có đặt cọc',
+          style: const TextStyle(color: Color(0xFFB5BE9A), fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        Semantics(
+          label: 'Độ khó ${man.sao} trên 5',
+          child: ExcludeSemantics(
+            child: Text(
+              '${'★' * man.sao}${'☆' * (5 - man.sao)}',
+              style: const TextStyle(
+                color: Color(0xFFD1B777),
+                fontSize: 18,
+                letterSpacing: 3,
+              ),
+            ),
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Divider(height: 1, color: Color(0xFF6B7053)),
+        ),
+        _DongThongSoMan(
+          bieuTuong: Icons.monetization_on_outlined,
+          nhan: 'Cần thu thập',
+          giaTri: '${man.soXu} xu',
+        ),
+        _DongThongSoMan(
+          bieuTuong: Icons.timer_outlined,
+          nhan: 'Thời gian',
+          giaTri: man.gioiHanGiay == 0
+              ? 'Không giới hạn'
+              : dinhDangGiay(man.gioiHanGiay),
+        ),
+        _DongThongSoMan(
+          bieuTuong: Icons.account_balance_wallet_outlined,
+          nhan: 'Đặt cọc',
+          giaTri: man.mienPhi ? 'Miễn phí' : '${man.coc} vàng',
+        ),
+        if (!man.mienPhi)
+          _DongThongSoMan(
+            bieuTuong: Icons.card_giftcard_outlined,
+            nhan: 'Thưởng thêm',
+            giaTri: '${man.thuong} vàng',
+          ),
+        const SizedBox(height: 14),
+        nut,
+        if (lyDoKhongVaoDuoc != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            lyDoKhongVaoDuoc,
+            style: const TextStyle(
+              color: Color(0xFFCCB891),
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
+        Text(
+          man.moTa,
+          style: const TextStyle(
+            color: Color(0xFFD0CFB3),
+            fontSize: 12,
+            height: 1.5,
+          ),
+        ),
+        if (!man.mienPhi) ...[
+          const SizedBox(height: 10),
+          Text(
+            'Hoàn thành hợp lệ: ${man.nhanVeKhiHoanThanh} vàng '
+            '= ${man.coc} hoàn cọc + ${man.soXu} xu + ${man.thuong} thưởng. '
+            'Chết, hết giờ hoặc bỏ ván sẽ mất cọc.',
+            style: const TextStyle(
+              color: Color(0xFFB6B997),
+              fontSize: 11,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ],
     );
   }
 

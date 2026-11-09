@@ -29,6 +29,7 @@ import 'dieu_khien/nut_tam_dung.dart';
 import 'man_choi.dart';
 import 'tai_nguyen.dart';
 import 'the_gioi.dart';
+import 'world_map/luu_tien_trinh.dart';
 
 /// Tên các lớp phủ giao diện.
 class LopPhu {
@@ -71,6 +72,7 @@ class GoldRushGame extends FlameGame
 
   final TheGioi theGioi;
   final TaiNguyen taiNguyen = TaiNguyen();
+  final BoTienTrinhWorldMap tienTrinhWorldMap = BoTienTrinhWorldMap();
 
   late BanDo banDo;
 
@@ -136,6 +138,7 @@ class GoldRushGame extends FlameGame
     await AmThanh.napTruoc();
 
     await _napDanhSachMan();
+    await tienTrinhWorldMap.nap(danhSachMan);
 
     banDo = await _layBanDo(manHienTai.tep);
     theGioi.add(banDo.thanhPhan);
@@ -192,8 +195,9 @@ class GoldRushGame extends FlameGame
 
   Future<void> _napDanhSachMan() async {
     try {
-      danhSachMan = ManChoi.docDanhSach(
+      danhSachMan = ManChoi.docBoManChoi(
         await rootBundle.loadString('assets/tiles/man_choi.json'),
+        await rootBundle.loadString('assets/tiles/man_mo_rong.json'),
       );
       manHienTai = danhSachMan.first;
     } catch (e) {
@@ -387,6 +391,9 @@ class GoldRushGame extends FlameGame
   }
 
   void _khiThangCuoc() {
+    if (_vanDangDienRa) {
+      unawaited(tienTrinhWorldMap.ghiNhanThang(manHienTai.id));
+    }
     trangThai = TrangThaiChoi.thang;
     _ketThucVan();
   }
@@ -471,7 +478,8 @@ class GoldRushGame extends FlameGame
 
     var kq = KetQuaVan(man: man, thang: thang, xu: nhatKy.soXu);
 
-    final coPhieu = man.mienPhi ? nhatKy.soXu > 0 : thang;
+    final coPhieu =
+        !man.chiChoiLocal && (man.mienPhi ? nhatKy.soXu > 0 : thang);
 
     if (coPhieu && phienVi != null) {
       kq = kq.voiPhieu('Đang gửi ván lên máy chủ trọng tài…');
@@ -479,7 +487,7 @@ class GoldRushGame extends FlameGame
 
     ketQuaVan.value = kq;
 
-    if (!GuiNhatKy.daCauHinh) return;
+    if (man.chiChoiLocal || !GuiNhatKy.daCauHinh) return;
 
     unawaited(_guiVaXinPhieu(nk, maVan, kq, coPhieu));
   }
@@ -594,6 +602,7 @@ class GoldRushGame extends FlameGame
     int ve = 0,
     DateTime? batDauThat,
   }) async {
+    if (!tienTrinhWorldMap.duocChoi(m.id)) return false;
     try {
       await _doiBanDo(m);
     } catch (e) {
@@ -611,6 +620,10 @@ class GoldRushGame extends FlameGame
   }
 
   void batDauVanMoi({String? maVan}) {
+    if (!tienTrinhWorldMap.duocChoi(manHienTai.id)) {
+      moChonMan();
+      return;
+    }
     if (!manHienTai.mienPhi && maVan == null) {
       moChonMan();
       return;

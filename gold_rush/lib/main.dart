@@ -72,7 +72,14 @@ class _ManHinhGameState extends State<ManHinhGame> {
           LopPhu.tamDung: (_, game) => ManHinhTamDung(game: game),
           LopPhu.ketThuc: (_, game) => ManHinhKetThuc(game: game),
           LopPhu.cuaHang: (_, game) => ManHinhCuaHang(game: game),
-          LopPhu.chonMan: (_, game) => ManHinhChonMan(game: game),
+          LopPhu.chonMan: (_, game) => ListenableBuilder(
+            listenable: game.tienTrinhWorldMap,
+            builder: (context, _) => ManHinhChonMan(
+              game: game,
+              tienTrinh: game.tienTrinhWorldMap.tienTrinh,
+              loiLuuTienTrinh: game.tienTrinhWorldMap.loi,
+            ),
+          ),
           LopPhu.khoDo: (_, game) => _KhoDoTrongGame(game: game),
         },
         loadingBuilder: (_) => const ColoredBox(
