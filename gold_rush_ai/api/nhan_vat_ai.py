@@ -19,6 +19,12 @@ from core.blockchain_verifier import (
     TrangThaiXacMinhBlockchain,
     tao_blockchain_verifier_tu_moi_truong,
 )
+from core.character_voucher import (
+    DichVuVoucherNhanVat,
+    LoiCauHinhVoucher,
+    LoiVoucher,
+    tao_dich_vu_voucher_tu_moi_truong,
+)
 from core.dich_vu_anh import DichVuAnh
 from core.kho_anh import KhoAnh, LoiKhoAnh, XungDotYeuCauAnh
 from core.nhan_vat_ai import AnhNhanVat, YeuCauTaoNhanVat
@@ -40,6 +46,7 @@ from core.schemas_nhan_vat import (
     DuLieuChuanBiOnchain,
     KetQuaKiemTraHash,
     NguoiChoiXacThuc,
+    PhanHoiKyVoucher,
     ThongTinNhanVat,
     YeuCauLuuNhanVat,
     YeuCauXacNhanOnchain,
@@ -69,6 +76,7 @@ class TrangThaiNhanVatAI:
     service: DichVuAnh | None = None
     demo_service: DichVuAnh | None = None
     blockchain_verifier: BlockchainVerifier | None = None
+    voucher_service: DichVuVoucherNhanVat | None = None
 
 
 def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
@@ -102,6 +110,7 @@ def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
         )
 
         state.blockchain_verifier = tao_blockchain_verifier_tu_moi_truong()
+        state.voucher_service = tao_dich_vu_voucher_tu_moi_truong()
 
         try:
             provider = provider_anh_tu_moi_truong()
@@ -445,6 +454,65 @@ def chuan_bi_onchain_nhan_vat(
         )
     except (LoiKhoNhanVat, ValueError):
         raise HTTPException(503, "Chưa chuẩn bị được dữ liệu on-chain") from None
+
+
+@router.post("/{character_id}/ky-voucher", response_model=PhanHoiKyVoucher)
+def ky_voucher_nhan_vat(
+    character_id: Annotated[str, Path(min_length=37, max_length=37, pattern=r"^char_[0-9a-f]{32}$")],
+    player: Annotated[NguoiChoiXacThuc, Depends(lay_nguoi_choi_xac_thuc)],
+    state: Annotated[TrangThaiNhanVatAI, Depends(lay_trang_thai)],
+) -> PhanHoiKyVoucher:
+    """Cấp và ký phiếu CharacterVoucher theo chuẩn EIP-712 cho ví người chơi.
+
+    Quy tắc bảo mật:
+    - Yêu cầu xác thực SIWE đáng tin cậy (fail-closed, demo bị từ chối 401).
+    - Kiểm tra quyền sở hữu nhân vật (chỉ chính chủ mới được nhận voucher, vi phạm trả 403).
+    - Đối soát toàn vẹn SHA-256 của ảnh PNG trong SQLite (sai lệch trả 500).
+    - Ngăn chặn cấp voucher khi nhân vật đã registered (trả 409).
+    - Ngăn chặn xung đột khi nhân vật đang có giao dịch on-chain pending (trả 409).
+    - Tự động sinh nonce 32 bytes ngẫu nhiên và deadline từ server (ngăn client tự đặt).
+    - Ký EIP-712 bằng khóa bí mật Backend Signer (bảo vệ an toàn, không trả khóa).
+    """
+    if state.kho_nhan_vat is None:
+        raise HTTPException(503, "Kho lưu trữ nhân vật chưa sẵn sàng")
+    if state.voucher_service is None or not state.voucher_service.da_cau_hinh():
+        raise HTTPException(503, "Dịch vụ cấp voucher EIP-712 chưa được cấu hình đầy đủ (fail-closed)")
+
+    # 1. Kiểm tra tồn tại và phân quyền sở hữu
+    try:
+        nhan_vat = state.kho_nhan_vat.doc_nhan_vat(character_id, nguoi_yeu_cau=player)
+    except NhanVatKhongTonTai:
+        raise HTTPException(404, "Nhân vật không tồn tại") from None
+    except LoiQuyenTruyCapNhanVat:
+        raise HTTPException(403, "Không có quyền yêu cầu voucher cho nhân vật này") from None
+
+    # 2. Kiểm tra trạng thái on-chain hiện tại
+    if nhan_vat.onchain_status == "registered":
+        raise HTTPException(409, "Nhân vật đã được đăng ký on-chain thành công, không thể cấp thêm voucher")
+    if nhan_vat.onchain_status == "pending":
+        raise HTTPException(409, "Nhân vật đang có giao dịch on-chain đang chờ xử lý")
+
+    # 3. Đối soát tính toàn vẹn SHA-256 từ ảnh PNG trong database
+    try:
+        kt_hash = state.kho_nhan_vat.kiem_tra_hash(character_id)
+        if not kt_hash.is_valid:
+            raise HTTPException(500, "Dữ liệu ảnh nhân vật bị sai lệch tính toàn vẹn SHA-256")
+    except (LoiKhoNhanVat, ValueError):
+        raise HTTPException(500, "Không thể kiểm tra tính toàn vẹn của ảnh nhân vật")
+
+    # 4. Ký EIP-712 và trả về dữ liệu chuẩn
+    try:
+        return state.voucher_service.tao_va_ky_voucher(
+            character_id=character_id,
+            character_hash=nhan_vat.character_hash,
+            owner_wallet=nhan_vat.verified_wallet_address,
+        )
+    except LoiCauHinhVoucher as e:
+        raise HTTPException(503, str(e)) from None
+    except LoiVoucher as e:
+        raise HTTPException(400, str(e)) from None
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from None
 
 
 @router.post("/{character_id}/xac-minh-onchain", response_model=ThongTinNhanVat)

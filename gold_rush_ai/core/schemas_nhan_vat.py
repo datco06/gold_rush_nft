@@ -92,3 +92,34 @@ class DuLieuChuanBiOnchain(_Schema):
     onchain_status: Literal["not_registered", "pending", "registered", "failed"]
     chain_id: int
     registry_contract: str | None = None
+
+
+class EIP712DomainInfo(_Schema):
+    """Thông tin Domain Separator của CharacterRegistry theo chuẩn EIP-712."""
+    name: str = "CharacterRegistry"
+    version: str = "1"
+    chainId: int
+    verifyingContract: str = Field(pattern=r"^0x[0-9a-fA-F]{40}$")
+
+
+class CharacterVoucherMessage(_Schema):
+    """Nội dung thông điệp CharacterVoucher cần ký theo EIP-712."""
+    characterId: str = Field(min_length=37, max_length=37, pattern=r"^char_[0-9a-f]{32}$")
+    characterHash: str = Field(min_length=66, max_length=66, pattern=r"^0x[0-9a-f]{64}$")
+    owner: str = Field(pattern=r"^0x[0-9a-fA-F]{40}$")
+    nonce: str = Field(min_length=66, max_length=66, pattern=r"^0x[0-9a-fA-F]{64}$")
+    deadline: int
+
+
+class PhanHoiKyVoucher(_Schema):
+    """Dữ liệu trả về khi Backend AI ký thành công voucher EIP-712 cho MetaMask."""
+    domain: EIP712DomainInfo
+    types: dict[str, list[dict[str, str]]]
+    primaryType: Literal["CharacterVoucher"] = "CharacterVoucher"
+    message: CharacterVoucherMessage
+    signature: str = Field(min_length=132, max_length=132, pattern=r"^0x[0-9a-fA-F]{130}$")
+    signerAddress: str = Field(pattern=r"^0x[0-9a-fA-F]{40}$")
+    contractAddress: str = Field(pattern=r"^0x[0-9a-fA-F]{40}$")
+    chainId: int
+    deadline: int
+
