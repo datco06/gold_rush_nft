@@ -2,6 +2,11 @@
 
 Chạy:  uvicorn api.main:app --reload --port 8000      (tài liệu tương tác: /docs)
 
+Auth bắt buộc có AUTH_CSRF_SECRET hợp lệ và Database đã migrate bằng Alembic.
+Chỉ lifespan đọc cấu hình/mở DB; import module không tạo Engine hoặc schema.
+Năm route Auth được mount khi startup thành công, /api/me nằm ngoài /auth.
+Các API v1.3 bên dưới CHƯA được gắn kiểm tra phiên/quyền sở hữu ván.
+
 | Method | Endpoint               | Việc                                                       |
 |--------|------------------------|------------------------------------------------------------|
 | GET    | /api/health            | trạng thái, thành phần nào đã nạp                           |
@@ -33,8 +38,17 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
+from alembic.config import Config as AlembicConfig
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import inspect, select
+from starlette.responses import JSONResponse
 
-from config import (BAN_DO_DIR, CHAIN_ID, CORS_ORIGINS, ENABLED, HOP_DONG_CUA_HANG, KB_DIR, MAN_CHOI,
+from auth.config import AuthConfigError, load_auth_config
+from auth.database import create_auth_engine, create_session_factory
+from auth.models import Base
+from auth.router import create_auth_router
+from config import (BAN_DO_DIR, CHAIN_ID, ENABLED, HOP_DONG_CUA_HANG, KB_DIR, MAN_CHOI,
                     MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU, SO_VE, TRONG_TAI_KHOA)
 from core import do_kho, man_choi, nhat_ky, sinh_ban_do, trong_tai
 from core.eth_ky import dia_chi_tu_khoa
@@ -44,10 +58,74 @@ from core.tro_ly import TroLy
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("api")
 STATE: dict = {}
+_BACKEND_DIRECTORY = Path(__file__).resolve().parents[1]
+
+
+class _LifespanCORSMiddleware:
+    """Use the validated startup snapshot, without loading secrets on import.
+
+    Starlette constructs middleware before entering lifespan. Delegate HTTP to
+    its standard CORSMiddleware once AuthConfig is available; refresh the cache
+    for a later lifespan. No requests are served without a successful startup.
+    """
+
+    def __init__(self, app):
+        self.app = app
+        self._config = None
+        self._cors = None
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        config = getattr(scope["app"].state, "auth_config", None)
+        if config is None:
+            response = JSONResponse(
+                status_code=503,
+                content={"detail": {"code": "AUTH_UNAVAILABLE", "message": "Auth chưa khởi tạo thành công."}},
+                headers={"Cache-Control": "no-store"},
+            )
+            await response(scope, receive, send)
+            return
+        if config is not self._config:
+            self._cors = CORSMiddleware(
+                self.app, allow_origins=list(config.cors_origins), allow_credentials=True,
+                allow_methods=["GET", "POST", "OPTIONS"],
+                allow_headers=["Content-Type", "X-CSRF-Token", "X-Gold-Rush-Auth"],
+            )
+            self._config = config
+        await self._cors(scope, receive, send)
+
+
+def _check_auth_database(engine):
+    """Read schema/revision only; never create a DB, tables or run migrations."""
+    try:
+        if engine.dialect.name == "sqlite":
+            database = engine.url.database
+            if database in (None, "", ":memory:") or not Path(database).is_file():
+                raise ValueError("Auth requires an existing migrated database.")
+        expected = set(ScriptDirectory.from_config(
+            AlembicConfig(str(_BACKEND_DIRECTORY / "alembic.ini")),
+        ).get_heads())
+        with engine.connect() as connection:
+            tables = set(inspect(connection).get_table_names())
+            if not expected or not (set(Base.metadata.tables) | {"alembic_version"}) <= tables:
+                raise ValueError("Auth schema is missing.")
+            if set(MigrationContext.configure(connection).get_current_heads()) != expected:
+                raise ValueError("Auth schema revision is not current.")
+            # Also detect missing columns without reading any account data.
+            for table in Base.metadata.sorted_tables:
+                connection.execute(select(table).limit(0)).close()
+    except Exception:
+        # Driver/SQL exceptions can include connection strings or credentials.
+        raise RuntimeError(
+            "AUTH_DATABASE_NOT_READY: kiểm tra AUTH_DATABASE_URL, driver, quyền truy cập "
+            "và schema; chạy Alembic upgrade head riêng trước khi khởi động."
+        ) from None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def _game_lifespan(app: FastAPI):
     # Nạp MỘT LẦN lúc khởi động; một thành phần lỗi không làm sập cả server
     if "do_kho" in ENABLED:
         try:
@@ -66,12 +144,56 @@ async def lifespan(app: FastAPI):
             STATE["tro_ly"] = TroLy(KB_DIR)
         except (OSError, ValueError) as e:
             log.error("không nạp được kho tri thức %s: %s", KB_DIR, e)
-    yield
-    STATE.clear()
+    try:
+        yield
+    finally:
+        STATE.clear()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        config = load_auth_config()
+    except AuthConfigError as error:
+        # AuthConfigError names the field, never the supplied secret/URL.
+        raise RuntimeError(f"AUTH_CONFIG_INVALID: {error}") from None
+    try:
+        options = {"base_directory": _BACKEND_DIRECTORY} if config.database_url.startswith("sqlite") else {}
+        engine = create_auth_engine(config, **options)
+    except Exception:
+        raise RuntimeError("AUTH_DATABASE_NOT_READY: kiểm tra AUTH_DATABASE_URL và driver đồng bộ đã cài.") from None
+    mounted = []
+    try:
+        _check_auth_database(engine)
+        factory = create_session_factory(engine)
+        router = create_auth_router(config, factory)
+        previous = {id(route) for route in app.router.routes}
+        # Router already owns /api, including GET /api/me: no extra prefix.
+        app.include_router(router)
+        mounted = [route for route in app.router.routes if id(route) not in previous]
+        app.openapi_schema = None
+        app.state.auth_engine = engine
+        app.state.auth_session_factory = factory
+        app.state.auth_config = config
+        async with _game_lifespan(app):
+            yield
+    finally:
+        # TestClient may enter the same app more than once. Do not retain a
+        # router bound to a disposed Engine, or accumulate duplicate routes.
+        mounted_ids = {id(route) for route in mounted}
+        app.router.routes[:] = [route for route in app.router.routes if id(route) not in mounted_ids]
+        app.openapi_schema = None
+        for name in ("auth_config", "auth_session_factory", "auth_engine"):
+            if hasattr(app.state, name):
+                delattr(app.state, name)
+        try:
+            engine.dispose()
+        except Exception:
+            raise RuntimeError("AUTH_DATABASE_SHUTDOWN_FAILED: không đóng được Engine Auth.") from None
 
 
 app = FastAPI(title="Gold Rush AI API", version="1.0.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(_LifespanCORSMiddleware)
 
 
 @app.middleware("http")
