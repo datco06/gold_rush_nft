@@ -22,7 +22,7 @@ EXP_CO_BAN_MOI_CAP = 100
 def tinh_cap_va_exp(tong_exp: int) -> dict[str, int]:
     """Tính cấp độ hiện tại, exp dư trong cấp hiện tại, và exp cần để lên cấp kế."""
     if tong_exp < 0:
-        tong_exp = 0
+        raise ValueError("EXP không được âm")
     cap = 1
     con_lai = tong_exp
     while True:
@@ -44,20 +44,28 @@ def lay_hoac_tao_nguoi_choi(
     wallet_address: str | None = None,
     ten_hien_thi: str = "",
 ) -> dict[str, Any]:
-    """Lấy thông tin người chơi, nếu chưa có thì tạo mới kèm tiến trình khởi đầu."""
+    """Lấy thông tin người chơi, nếu chưa có thì tạo mới kèm tiến trình khởi đầu.
+
+    Bảo mật:
+    - Không tự động liên kết hai tài khoản khác nhau khi trùng ví.
+    - Một ví chỉ thuộc về duy nhất một player_id đã xác thực.
+    """
+    if not player_id or not isinstance(player_id, str):
+        raise ValueError("player_id không hợp lệ")
+
     cur = conn.cursor()
     vi = wallet_address.lower() if isinstance(wallet_address, str) and wallet_address.strip() else None
     ten = ten_hien_thi if isinstance(ten_hien_thi, str) else ""
 
-    # Tìm theo player_id hoặc theo ví
+    # Kiểm tra xem ví đã được người chơi khác liên kết chưa
     if vi:
-        cur.execute("SELECT * FROM players WHERE wallet_address = ?", (vi,))
-        p = cur.fetchone()
-        if p:
-            player_id = p["player_id"]
-    else:
-        cur.execute("SELECT * FROM players WHERE player_id = ?", (player_id,))
-        p = cur.fetchone()
+        cur.execute("SELECT player_id FROM players WHERE wallet_address = ?", (vi,))
+        p_vi = cur.fetchone()
+        if p_vi and p_vi["player_id"] != player_id:
+            raise ValueError(f"Địa chỉ ví '{vi}' đã được liên kết với tài khoản khác ({p_vi['player_id']}).")
+
+    cur.execute("SELECT * FROM players WHERE player_id = ?", (player_id,))
+    p = cur.fetchone()
 
     gio = bay_gio_iso()
     if p is None:
@@ -67,7 +75,7 @@ def lay_hoac_tao_nguoi_choi(
                VALUES (?, ?, ?, ?, ?)""",
             (player_id, vi, ten or player_id, gio, gio),
         )
-        # Tạo tiến trình ban đầu
+        # Tạo tiến trình ban đầu: Màn 1 mở, cấp 1, kiếm gỗ, nhân vật george
         cur.execute(
             """INSERT INTO player_progress
                (player_id, level, exp, unlocked_stage_ids, completed_stage_ids,
@@ -87,7 +95,11 @@ def lay_hoac_tao_nguoi_choi(
             (player_id, gio),
         )
     else:
-        # Cập nhật thời gian đăng nhập & ví (nếu có bổ sung)
+        # Nếu tài khoản đã có ví nhưng ví gửi lên khác -> từ chối
+        if vi and p["wallet_address"] and p["wallet_address"].lower() != vi:
+            raise ValueError(f"Tài khoản {player_id} đã được liên kết với ví khác ({p['wallet_address']}).")
+
+        # Cập nhật thời gian đăng nhập & ví (nếu trước đó chưa có)
         if vi and not p["wallet_address"]:
             cur.execute(
                 "UPDATE players SET wallet_address = ?, last_login = ? WHERE player_id = ?",
@@ -143,7 +155,9 @@ def lay_tien_trinh(conn: sqlite3.Connection, player_id: str) -> dict[str, Any] |
 
 def cong_exp(conn: sqlite3.Connection, player_id: str, exp_cong: int) -> dict[str, Any]:
     """Cộng EXP cho người chơi, cập nhật lại level tương ứng."""
-    if exp_cong <= 0:
+    if exp_cong < 0:
+        raise ValueError("Lượng EXP cộng không được âm")
+    if exp_cong == 0:
         return lay_tien_trinh(conn, player_id)
 
     cur = conn.cursor()
@@ -165,23 +179,37 @@ def cong_exp(conn: sqlite3.Connection, player_id: str, exp_cong: int) -> dict[st
     return lay_tien_trinh(conn, player_id)
 
 
-def mo_khoa_man(conn: sqlite3.Connection, player_id: str, stage_id: int) -> dict[str, Any]:
-    """Mở khóa một màn chơi cụ thể cho người chơi."""
+def mo_khoa_man(conn: sqlite3.Connection, player_id: str, stage_id: int, so_man_toi_da: int = 6) -> dict[str, Any]:
+    """Mở khóa một màn chơi cụ thể cho người chơi.
+
+    Quy tắc:
+    - Chỉ chấp nhận stage_id từ 1 đến 6.
+    - Màn 1 luôn được phép mở.
+    - Màn N (N > 1) chỉ được mở nếu màn N - 1 đã hoàn thành.
+    """
+    if not isinstance(stage_id, int) or stage_id < 1 or stage_id > so_man_toi_da:
+        raise ValueError(f"Màn {stage_id} không hợp lệ. Chỉ chấp nhận các màn từ 1 đến {so_man_toi_da}.")
+
     cur = conn.cursor()
-    cur.execute("SELECT unlocked_stage_ids FROM player_progress WHERE player_id = ?", (player_id,))
+    cur.execute("SELECT unlocked_stage_ids, completed_stage_ids FROM player_progress WHERE player_id = ?", (player_id,))
     row = cur.fetchone()
     if row is None:
         raise ValueError(f"Không tìm thấy người chơi {player_id}")
 
-    ds = set(json.loads(row["unlocked_stage_ids"]))
-    if stage_id not in ds:
-        ds.add(stage_id)
+    unlocked = set(json.loads(row["unlocked_stage_ids"]))
+    completed = set(json.loads(row["completed_stage_ids"]))
+
+    if stage_id > 1 and (stage_id - 1) not in completed:
+        raise ValueError(f"Không thể mở màn {stage_id} khi chưa hoàn thành màn {stage_id - 1}.")
+
+    if stage_id not in unlocked:
+        unlocked.add(stage_id)
         gio = bay_gio_iso()
         cur.execute(
             """UPDATE player_progress
                SET unlocked_stage_ids = ?, updated_at = ?
                WHERE player_id = ?""",
-            (json.dumps(sorted(list(ds))), gio, player_id),
+            (json.dumps(sorted(list(unlocked))), gio, player_id),
         )
     return lay_tien_trinh(conn, player_id)
 
@@ -190,10 +218,27 @@ def hoan_thanh_man(
     conn: sqlite3.Connection,
     player_id: str,
     stage_id: int,
-    exp_thuong: int = 50,
+    evidence_id: str,
     so_man_toi_da: int = 6,
 ) -> dict[str, Any]:
-    """Ghi nhận hoàn thành màn chơi, tự động mở khóa màn kế tiếp và cộng EXP thưởng."""
+    """Ghi nhận hoàn thành màn chơi an toàn, chống replay và mở khóa màn kế tiếp.
+
+    Quy tắc nghiệp vụ:
+    - Bắt buộc phải có evidence_id hợp lệ (Zero-Trust, không chấp nhận None hay rỗng).
+    - Chỉ chấp nhận 6 màn Gameplay chính (1 <= stage_id <= 6).
+    - Màn phải đã được mở khóa trước đó (không tự hợp thức hóa màn chưa mở).
+    - Hoàn thành lần đầu: cộng EXP đầy đủ (50 EXP) và tự mở khóa màn kế tiếp.
+    - Chơi lại (Replay): thưởng EXP giới hạn (10 EXP), có trần giới hạn chống cày cuốc vô hạn.
+    - Idempotency & Concurrency: ghi nhận vào `stage_rewards` với ràng buộc UNIQUE(evidence_id).
+      Cùng một bằng chứng không thể nhận thưởng hai lần hoặc bị dùng chéo giữa các tài khoản.
+    """
+    if not evidence_id or not isinstance(evidence_id, str) or not evidence_id.strip():
+        raise ValueError("Bắt buộc phải có evidence_id (bằng chứng hợp lệ) để ghi nhận hoàn thành màn.")
+    evidence_id = evidence_id.strip()
+
+    if not isinstance(stage_id, int) or stage_id < 1 or stage_id > so_man_toi_da:
+        raise ValueError(f"Màn {stage_id} không hợp lệ. Chỉ chấp nhận các màn từ 1 đến {so_man_toi_da}.")
+
     cur = conn.cursor()
     cur.execute(
         "SELECT unlocked_stage_ids, completed_stage_ids, exp FROM player_progress WHERE player_id = ?",
@@ -206,20 +251,46 @@ def hoan_thanh_man(
     unlocked = set(json.loads(row["unlocked_stage_ids"]))
     completed = set(json.loads(row["completed_stage_ids"]))
 
-    # Màn phải đã mở thì mới được hoàn thành
+    # Màn phải đã mở thì mới được phép hoàn thành (tuyệt đối không tự thêm vào unlocked)
     if stage_id not in unlocked:
-        unlocked.add(stage_id)
+        raise ValueError(f"Màn {stage_id} chưa được mở khóa.")
 
-    completed.add(stage_id)
+    # Chống replay bằng chứng: kiểm tra xem evidence_id đã được sử dụng ở bất kỳ đâu chưa
+    cur.execute("SELECT player_id FROM stage_rewards WHERE evidence_id = ?", (evidence_id,))
+    da_dung = cur.fetchone()
+    if da_dung is not None:
+        raise ValueError(f"Bằng chứng '{evidence_id}' đã được sử dụng.")
 
-    # Mở khóa màn kế tiếp nếu chưa vượt quá số màn tối đa
-    man_ke = stage_id + 1
-    if man_ke <= so_man_toi_da:
-        unlocked.add(man_ke)
-
-    tong_exp_moi = row["exp"] + exp_thuong
-    cap_moi = tinh_cap_va_exp(tong_exp_moi)["level"]
     gio = bay_gio_iso()
+    la_lan_dau = stage_id not in completed
+
+    # Chính sách EXP do Server quyết định, client không được tự ý can thiệp
+    if la_lan_dau:
+        exp_cong = 50
+        completed.add(stage_id)
+        man_ke = stage_id + 1
+        if man_ke <= so_man_toi_da:
+            unlocked.add(man_ke)
+    else:
+        # Chơi lại: thưởng EXP tượng trưng (10 EXP) và kẹp trần tối đa 3 lần replay có EXP
+        cur.execute(
+            "SELECT COUNT(*) FROM stage_rewards WHERE player_id = ? AND stage_id = ?",
+            (player_id, stage_id),
+        )
+        so_lan_replay = cur.fetchone()[0]
+        exp_cong = 10 if so_lan_replay < 4 else 0
+
+    try:
+        cur.execute(
+            """INSERT INTO stage_rewards (evidence_id, player_id, stage_id, exp_awarded, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (evidence_id, player_id, stage_id, exp_cong, gio),
+        )
+    except sqlite3.IntegrityError:
+        raise ValueError(f"Bằng chứng '{evidence_id}' đã được sử dụng.")
+
+    tong_exp_moi = row["exp"] + exp_cong
+    cap_moi = tinh_cap_va_exp(tong_exp_moi)["level"]
 
     cur.execute(
         """UPDATE player_progress

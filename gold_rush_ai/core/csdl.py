@@ -76,12 +76,25 @@ CREATE TABLE IF NOT EXISTS match_results (
     giay REAL NOT NULL DEFAULT 0.0,
     hop_le INTEGER NOT NULL DEFAULT 1,
     ly_do_tu_choi TEXT DEFAULT '',
+    is_verified INTEGER NOT NULL DEFAULT 0,
+    verified_by TEXT DEFAULT '',
+    verified_wallet TEXT DEFAULT '',
     created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS stage_rewards (
+    evidence_id TEXT PRIMARY KEY,
+    player_id TEXT NOT NULL,
+    stage_id INTEGER NOT NULL,
+    exp_awarded INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_inventory_player ON inventory(player_id);
 CREATE INDEX IF NOT EXISTS idx_quests_player_status ON quests(player_id, status);
 CREATE INDEX IF NOT EXISTS idx_match_player ON match_results(player_id);
+CREATE INDEX IF NOT EXISTS idx_stage_rewards_player ON stage_rewards(player_id);
 """
 
 
@@ -102,9 +115,15 @@ def ket_noi(duong_dan: Path | str | None = None) -> sqlite3.Connection:
 
 @contextmanager
 def lay_csdl(duong_dan: Path | str | None = None) -> Generator[sqlite3.Connection, None, None]:
-    """Context manager tự động commit và đóng kết nối an toàn."""
+    """Context manager tự động commit, rollback và quản lý transaction an toàn.
+
+    Sử dụng BEGIN IMMEDIATE để bảo đảm tuần tự hóa các thao tác ghi đồng thời,
+    ngăn ngừa lost updates, race conditions và lock escalation deadlocks.
+    """
     conn = ket_noi(duong_dan)
     try:
+        if not conn.in_transaction:
+            conn.execute("BEGIN IMMEDIATE")
         yield conn
         conn.commit()
     except Exception:
@@ -115,7 +134,17 @@ def lay_csdl(duong_dan: Path | str | None = None) -> Generator[sqlite3.Connectio
 
 
 def khoi_tao_csdl(duong_dan: Path | str | None = None) -> None:
-    """Khởi tạo toàn bộ các bảng trong CSDL nếu chưa có."""
+    """Khởi tạo toàn bộ các bảng trong CSDL nếu chưa có, hỗ trợ migration an toàn."""
     with lay_csdl(duong_dan) as conn:
         conn.executescript(SCHEMA_SQL)
+        # Migration an toàn cho bảng match_results nếu cơ sở dữ liệu cũ chưa có các cột mới
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(match_results)")
+        cols = {row[1] for row in cur.fetchall()}
+        if "is_verified" not in cols:
+            cur.execute("ALTER TABLE match_results ADD COLUMN is_verified INTEGER NOT NULL DEFAULT 0")
+        if "verified_by" not in cols:
+            cur.execute("ALTER TABLE match_results ADD COLUMN verified_by TEXT DEFAULT ''")
+        if "verified_wallet" not in cols:
+            cur.execute("ALTER TABLE match_results ADD COLUMN verified_wallet TEXT DEFAULT ''")
 

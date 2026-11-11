@@ -76,3 +76,27 @@ def sinh_ban_do_theo_seed(
         "chi_so": kq["chi_so"],
     }
 
+
+@router.get("/pool/{ten_tep}")
+def lay_ban_do_trong_pool(ten_tep: str):
+    """Lấy nội dung tệp .tmx trong pool an toàn, chống Path Traversal."""
+    from pathlib import Path
+    tep_an_toan = Path(ten_tep).name
+    if tep_an_toan != ten_tep or ".." in ten_tep or "/" in ten_tep or "\\" in ten_tep:
+        raise HTTPException(400, "Tên tệp không hợp lệ hoặc có dấu hiệu Path Traversal")
+    if not tep_an_toan.endswith(".tmx"):
+        raise HTTPException(400, "Chỉ chấp nhận tệp định dạng .tmx")
+
+    duong_dan = (BAN_DO_DIR / tep_an_toan).resolve()
+    try:
+        if not duong_dan.is_relative_to(BAN_DO_DIR.resolve()) or not duong_dan.is_file():
+            raise HTTPException(404, f"Không tìm thấy bản đồ '{ten_tep}'")
+    except (ValueError, RuntimeError):
+        raise HTTPException(400, "Đường dẫn không hợp lệ")
+
+    return Response(
+        duong_dan.read_text(encoding="utf-8"),
+        media_type="application/xml",
+        headers={"Content-Disposition": f'inline; filename="{tep_an_toan}"'},
+    )
+

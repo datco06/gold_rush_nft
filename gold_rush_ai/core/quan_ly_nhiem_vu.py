@@ -14,7 +14,7 @@ from typing import Any
 
 from .csdl import bay_gio_iso
 from .kho_do import them_vat_pham
-from .tien_trinh import cong_exp, lay_tien_trinh
+from .tien_trinh import cong_exp, lay_hoac_tao_nguoi_choi, lay_tien_trinh
 
 # Danh sách các loại mục tiêu hợp lệ mà hệ thống game hỗ trợ
 MUC_TIEU_HOP_LE = {
@@ -84,6 +84,52 @@ def tao_nhiem_vu(
          reward_exp, reward_gold, items_str, gio, expires_at),
     )
     return lay_chi_tiet_nhiem_vu(conn, qid)
+
+
+def tao_nhiem_vu_ai_noi_bo(
+    conn: sqlite3.Connection,
+    player_id: str,
+    title: str,
+    description: str,
+    target_type: str,
+    target_count: int = 1,
+    reward_exp: int = 50,
+    expires_at: str | None = None,
+) -> dict[str, Any]:
+    """Tạo nhiệm vụ AI từ dịch vụ server nội bộ (chống farming, tuân thủ server policy).
+
+    Quy tắc an toàn:
+    - target_type bắt buộc nằm trong allowlist: hoan_thanh_man, nhat_xu, choi_khong_trung_don, toc_do.
+    - Không cấp quyền tùy tiện cho client HTTP bên ngoài.
+    - Server policy áp trần cứng: tối đa 50 EXP, 0 gold on-chain, 0 item ngoài chính sách.
+    - Tối đa 3 nhiệm vụ active (status = 'dang_lam') cho mỗi người chơi.
+    """
+    if target_type not in MUC_TIEU_HOP_LE:
+        raise ValueError(f"Mục tiêu '{target_type}' không hợp lệ. Cho phép: {list(MUC_TIEU_HOP_LE.keys())}")
+
+    lay_hoac_tao_nguoi_choi(conn, player_id)
+
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM quests WHERE player_id = ? AND status = 'dang_lam'", (player_id,))
+    if cur.fetchone()[0] >= 3:
+        raise ValueError("Người chơi đã đạt giới hạn tối đa 3 nhiệm vụ đang làm.")
+
+    # Server policy: trần 50 EXP, không gold on-chain, không items
+    exp_ap_tran = min(max(0, reward_exp), 50)
+
+    return tao_nhiem_vu(
+        conn,
+        player_id=player_id,
+        title=title,
+        description=description,
+        target_type=target_type,
+        target_count=target_count,
+        reward_exp=exp_ap_tran,
+        reward_gold=0,
+        reward_items=[],
+        quest_type="ai_generated",
+        expires_at=expires_at,
+    )
 
 
 def lay_chi_tiet_nhiem_vu(conn: sqlite3.Connection, quest_id: str) -> dict[str, Any] | None:
@@ -206,21 +252,30 @@ def nhan_thuong(
     player_id: str,
     quest_id: str,
 ) -> dict[str, Any]:
-    """Nhận phần thưởng nhiệm vụ khi đã đạt trạng thái 'hoan_thanh'.
+    """Nhận phần thưởng nhiệm vụ khi đã đạt trạng thái 'hoan_thanh' (Atomic, chống race condition).
 
-    Tự động cộng EXP và thêm vật phẩm vào kho đồ.
+    Tự động cộng EXP và thêm vật phẩm vào kho đồ trong cùng transaction.
     """
-    q = lay_chi_tiet_nhiem_vu(conn, quest_id)
-    if q is None or q["player_id"] != player_id:
-        raise ValueError(f"Không tìm thấy nhiệm vụ {quest_id} cho người chơi {player_id}")
-
-    if q["status"] == "da_nhan":
-        raise ValueError("Nhiệm vụ này đã nhận thưởng rồi")
-    if q["status"] != "hoan_thanh":
+    cur = conn.cursor()
+    # Thực hiện UPDATE nguyên tử có điều kiện: chỉ đổi status nếu đúng player_id và status đang là 'hoan_thanh'
+    cur.execute(
+        """UPDATE quests SET status = 'da_nhan'
+           WHERE quest_id = ? AND player_id = ? AND status = 'hoan_thanh'""",
+        (quest_id, player_id),
+    )
+    if cur.rowcount == 0:
+        # Kiểm tra nguyên nhân thất bại để trả thông báo chuẩn xác
+        cur.execute("SELECT status, player_id FROM quests WHERE quest_id = ?", (quest_id,))
+        r = cur.fetchone()
+        if r is None or r["player_id"] != player_id:
+            raise ValueError(f"Không tìm thấy nhiệm vụ {quest_id} cho người chơi {player_id}")
+        if r["status"] == "da_nhan":
+            raise ValueError("Nhiệm vụ này đã nhận thưởng rồi")
         raise ValueError("Nhiệm vụ chưa hoàn thành, không thể nhận thưởng")
 
-    cur = conn.cursor()
-    cur.execute("UPDATE quests SET status = 'da_nhan' WHERE quest_id = ?", (quest_id,))
+    q = lay_chi_tiet_nhiem_vu(conn, quest_id)
+    if q is None:
+        raise ValueError(f"Không tìm thấy nhiệm vụ {quest_id}")
 
     # Cộng EXP
     if q["reward_exp"] > 0:

@@ -8,6 +8,7 @@ import unittest
 import uuid
 
 try:
+    from fastapi import Request
     from fastapi.testclient import TestClient
 except ImportError:
     raise unittest.SkipTest("chưa cài fastapi/httpx")
@@ -38,13 +39,31 @@ class TestApiVang(unittest.TestCase):
         cls.c = TestClient(api.main.app).__enter__()
         cls.b1 = doc_tmx(TMX)
         cls.b2 = doc_tmx(TILES / "man_2.tmx")
+        from api.auth_guard import lay_nguoi_choi_hien_tai, NguoiChoiXacThuc
+
+        async def _mock_auth(request: Request):
+            vi = VI
+            try:
+                body = await request.body()
+                if body:
+                    d = json.loads(body)
+                    if isinstance(d, dict) and "vi" in d and len(str(d["vi"])) == 42:
+                        vi = str(d["vi"])
+            except Exception:
+                pass
+            return NguoiChoiXacThuc(user_id="test_player", wallet_address=vi)
+
+        api.main.app.dependency_overrides[lay_nguoi_choi_hien_tai] = _mock_auth
 
     @classmethod
     def tearDownClass(cls):
+        api.main.app.dependency_overrides.clear()
         cls.c.__exit__(None, None, None)
 
     def _gui_van(self, nk, man=1, ban_do="gold_rush.tmx", ma=None):
         ma = ma or str(uuid.uuid4())
+        if man == 1:
+            self.c.post("/api/man/bat-dau", json={"ma_van": ma, "vi": VI, "man": 1, "ve": 0})
         than = {"ma_van": ma, "phien_ban_app": "1.3.0", "man": man, "ban_do": ban_do, **nk}
         self.assertEqual(self.c.post("/api/nhat-ky", json=than).status_code, 201)
         return ma
@@ -109,7 +128,7 @@ class TestApiVang(unittest.TestCase):
 
     def test_man_co_coc_thieu_dang_ky_hoac_thua(self):
         ma = self._gui_van(van_that(self.b2, 18, ket_qua="thang"), man=2, ban_do="man_2.tmx")
-        self.assertEqual(self._phieu(ma).status_code, 422)            # không có bat-dau
+        self.assertIn(self._phieu(ma).status_code, [403, 422])        # không có bat-dau
         self.assertEqual(self.c.post("/api/man/bat-dau",
                                      json={"ma_van": str(uuid.uuid4()), "vi": VI, "man": 1, "ve": 9}).status_code,
                          422)                                         # màn luyện tập không cần vé

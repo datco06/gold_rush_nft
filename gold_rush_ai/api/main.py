@@ -24,24 +24,25 @@ import json
 import logging
 import sys
 import time
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # import được config, core khi chạy uvicorn
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from config import (BAN_DO_DIR, CHAIN_ID, CORS_ORIGINS, ENABLED, HOP_DONG_CUA_HANG, KB_DIR, MAN_CHOI,
                     MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU, SO_VE, TRONG_TAI_KHOA)
+from api.auth_guard import kiem_tra_csrf_va_origin, lay_nguoi_choi_hien_tai, NguoiChoiXacThuc
 from core import do_kho, man_choi, nhat_ky, sinh_ban_do, trong_tai
 from core.csdl import khoi_tao_csdl, lay_csdl
 from core.eth_ky import dia_chi_tu_khoa
 from core.luoi import doc_tmx
 from core.quan_ly_nhiem_vu import cap_nhat_tien_do
-from core.tien_trinh import hoan_thanh_man
 from core.tro_ly import TroLy
 
 from api.ban_do_moi import router as ban_do_router
@@ -133,45 +134,43 @@ async def nhan_nhat_ky(request: Request):
         return {"da_luu": True, "ma_van": nk.ma_van, "trung": True}
     nhat_ky.luu(nk, NHAT_KY_DIR)
 
-    # Tích hợp cập nhật tiến trình & nhiệm vụ nếu nhật ký có kèm player_id
-    if nk.player_id:
-        try:
-            with lay_csdl() as conn:
-                so_xu_nhat = len([e for e in nk.su_kien if e.loai == "nhat_xu"])
-                so_trung_don = len([e for e in nk.su_kien if e.loai == "trung_don"])
+    # Lưu dữ liệu trận đấu vào CSDL phục vụ đối soát trọng tài và thống kê
+    # Telemetry KHÔNG tự động cấp EXP, mở khóa màn hay ghi nhận nhiệm vụ nếu chưa qua xác thực SIWE
+    try:
+        with lay_csdl() as conn:
+            so_xu_nhat = len([e for e in nk.su_kien if e.loai == "nhat_xu"])
+            so_trung_don = len([e for e in nk.su_kien if e.loai == "trung_don"])
 
-                # Kiểm tra hợp lệ bằng trọng tài nếu có màn và bản đồ
-                hop_le = 0
-                ly_do = ""
-                tep_tmx = BAN_DO_DIR / Path(nk.ban_do).name
-                if tep_tmx.exists():
-                    try:
-                        m_info = _cac_man().get(nk.man) if "vang" in ENABLED and "man_choi" in STATE else None
-                        kd = trong_tai.kiem_dinh(nk.model_dump(), doc_tmx(tep_tmx), m_info)
-                        hop_le = 1 if kd.hop_le else 0
-                        ly_do = "; ".join(kd.ly_do)
-                    except Exception as e_kd:
-                        ly_do = f"Lỗi kiểm định: {e_kd}"
+            # Kiểm tra hợp lệ bằng trọng tài nếu có màn và bản đồ
+            hop_le = 0
+            ly_do = ""
+            tep_tmx = BAN_DO_DIR / Path(nk.ban_do).name
+            if tep_tmx.exists():
+                try:
+                    m_info = _cac_man().get(nk.man) if "vang" in ENABLED and "man_choi" in STATE else None
+                    kd = trong_tai.kiem_dinh(nk.model_dump(), doc_tmx(tep_tmx), m_info)
+                    hop_le = 1 if kd.hop_le else 0
+                    ly_do = "; ".join(kd.ly_do)
+                except Exception as e_kd:
+                    ly_do = f"Lỗi kiểm định: {e_kd}"
 
-                conn.execute(
-                    """INSERT OR REPLACE INTO match_results
-                       (ma_van, player_id, man, seed, ket_qua, so_xu, giay, hop_le, ly_do_tu_choi, created_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
-                    (nk.ma_van, nk.player_id, nk.man, None, nk.ket_qua, so_xu_nhat, nk.giay, hop_le, ly_do),
-                )
-
-                # Cập nhật nhiệm vụ nhặt xu
-                if so_xu_nhat > 0:
-                    cap_nhat_tien_do(conn, nk.player_id, "nhat_xu", so_xu_nhat)
-
-                # Nếu thắng và hợp lệ: tự động mở khóa màn tiếp theo, cộng exp, hoàn thành nhiệm vụ
-                if hop_le and nk.ket_qua == "thang":
-                    hoan_thanh_man(conn, nk.player_id, stage_id=nk.man)
-                    cap_nhat_tien_do(conn, nk.player_id, "hoan_thanh_man", 1)
-                    if so_trung_don == 0:
-                        cap_nhat_tien_do(conn, nk.player_id, "choi_khong_trung_don", 1)
-        except Exception as e:
-            log.warning("Lỗi cập nhật tiến trình cho ván %s: %s", nk.ma_van, e)
+            player_id_ghi = nk.player_id or "anonymous"
+            conn.execute(
+                """INSERT INTO match_results
+                   (ma_van, player_id, man, seed, ket_qua, so_xu, giay, hop_le, ly_do_tu_choi, is_verified, verified_by, verified_wallet, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'telemetry_unverified', '', datetime('now'))
+                   ON CONFLICT(ma_van) DO UPDATE SET
+                       man = excluded.man,
+                       ket_qua = excluded.ket_qua,
+                       so_xu = excluded.so_xu,
+                       giay = excluded.giay,
+                       hop_le = excluded.hop_le,
+                       ly_do_tu_choi = excluded.ly_do_tu_choi
+                   WHERE match_results.is_verified = 0""",
+                (nk.ma_van, player_id_ghi, nk.man, None, nk.ket_qua, so_xu_nhat, nk.giay, hop_le, ly_do),
+            )
+    except Exception as e:
+        log.warning("Lỗi ghi nhận kết quả ván %s: %s", nk.ma_van, e)
 
     return {"da_luu": True, "ma_van": nk.ma_van}
 
@@ -270,28 +269,56 @@ DIA_CHI = r"^0x[0-9a-fA-F]{40}$"
 
 
 class YeuCauBatDau(BaseModel):
-    ma_van: str = Field(min_length=8, max_length=64, pattern=MA_VAN)
-    vi: str = Field(min_length=42, max_length=42, pattern=DIA_CHI)
+    ma_van: str | None = Field(default=None, min_length=8, max_length=64, pattern=MA_VAN)
+    vi: str | None = Field(default=None, min_length=42, max_length=42, pattern=DIA_CHI)
     man: int = Field(ge=1, le=1000)
-    ve: int = Field(ge=1)
+    ve: int = Field(default=0, ge=0)
 
 
 @app.post("/api/man/bat-dau", status_code=201)
-def bat_dau_man(yc: YeuCauBatDau):
-    """App gọi NGAY TRƯỚC khi thả George vào màn có cọc, sau khi giao dịch vaoMan đã vào khối.
+async def bat_dau_man(
+    yc: YeuCauBatDau,
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """App gọi NGAY TRƯỚC khi thả George vào màn (cả màn có cọc và màn miễn phí).
 
-    Máy chủ không đọc chuỗi: nếu vé là bịa thì phiếu cấp ra cũng bị hợp đồng từ chối (SaiVe).
+    Bảo mật & Phân quyền:
+    - Bắt buộc phiên đăng nhập SIWE hợp lệ (Fail-Closed, 401 nếu chưa xác thực).
+    - Lấy danh tính ví từ phiên SIWE; nếu body gửi kèm `vi`, bắt buộc phải khớp (403 nếu sai khác).
+    - Mutation qua cookie phiên bắt buộc kiểm tra Origin và CSRF token (403 nếu thiếu hoặc sai).
+    - Với màn có cọc: yêu cầu vé hợp lệ (ve >= 1) từ giao dịch vaoMan on-chain.
+    - Với màn miễn phí: cho phép đăng ký vé bắt đầu ván (ve = 0) để ràng buộc danh tính ví với mã ván,
+      ngăn chặn nguy cơ chiếm đoạt phiếu (voucher hijacking) và gian lận. Truyền ve > 0 vào màn miễn phí sẽ bị từ chối 422.
+    - Không cho phép đăng ký lại mã ván đã tồn tại trong SoVe (409 Conflict).
+    - Nếu client không truyền mã ván, server sinh ngẫu nhiên an toàn bằng UUID v4.
     """
+    kiem_tra_csrf_va_origin(request, player)
+
+    vi_xac_thuc = player.wallet_address
+    if yc.vi and yc.vi.lower() != vi_xac_thuc.lower():
+        raise HTTPException(403, "Địa chỉ ví yêu cầu không khớp với phiên đăng nhập SIWE")
+
     m = _cac_man().get(yc.man)
     if m is None:
         raise HTTPException(404, f"Không có màn {yc.man}")
+
     if m.mien_phi:
-        raise HTTPException(422, f"Màn {yc.man} là màn luyện tập, không cần vé")
+        if yc.ve > 0:
+            raise HTTPException(422, f"Màn {yc.man} là màn luyện tập, không cần vé")
+        ve_ghi = 0
+    else:
+        if yc.ve < 1:
+            raise HTTPException(422, f"Màn {yc.man} là màn có cọc, yêu cầu số vé hợp lệ (ve >= 1)")
+        ve_ghi = yc.ve
+
+    ma_van_ghi = yc.ma_van if yc.ma_van else f"van-{uuid.uuid4().hex}"
+
     try:
-        trong_tai.SoVe(SO_VE).bat_dau(yc.ma_van, yc.vi, yc.man, yc.ve)
+        trong_tai.SoVe(SO_VE).bat_dau(ma_van_ghi, vi_xac_thuc, yc.man, ve_ghi)
     except ValueError as e:
         raise HTTPException(409, str(e))
-    return {"da_bat_dau": True, "gioi_han_giay": m.gioi_han_giay}
+    return {"da_bat_dau": True, "ma_van": ma_van_ghi, "vi": vi_xac_thuc, "gioi_han_giay": m.gioi_han_giay}
 
 
 @app.get("/api/man/ve")
@@ -302,7 +329,7 @@ def ve_da_dung(vi: str = Query(min_length=42, max_length=42, pattern=DIA_CHI), v
 
 class YeuCauPhieu(BaseModel):
     ma_van: str = Field(min_length=8, max_length=64, pattern=MA_VAN)
-    vi: str = Field(min_length=42, max_length=42, pattern=DIA_CHI)
+    vi: str | None = Field(default=None, min_length=42, max_length=42, pattern=DIA_CHI)
 
 
 def _ky(khoa: bytes, ban_ghi: dict) -> dict:
@@ -311,16 +338,41 @@ def _ky(khoa: bytes, ban_ghi: dict) -> dict:
 
 
 @app.post("/api/vang/phieu")
-def cap_phieu(yc: YeuCauPhieu):
+async def cap_phieu(
+    yc: YeuCauPhieu,
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """Cấp phiếu nhận vàng EIP-712 sau khi trọng tài kiểm định ván chơi.
+
+    Bảo mật:
+    - Bắt buộc phiên đăng nhập SIWE hợp lệ (Fail-Closed, 401 nếu chưa xác thực).
+    - Ví được lấy từ phiên SIWE; nếu body gửi kèm `vi`, bắt buộc phải khớp (403 nếu sai khác).
+    - Mutation qua cookie bắt buộc kiểm tra Origin và CSRF token.
+    - Chặn Voucher Hijacking: nếu ván đã đăng ký vé cho ví khác trong SoVe -> 403 Forbidden.
+    - Ký lại phiếu cũ: chỉ cho phép đúng chủ sở hữu ví của phiếu cũ đó.
+    - Chỉ cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực an toàn qua SIWE.
+    """
+    kiem_tra_csrf_va_origin(request, player)
+
+    vi_xac_thuc = player.wallet_address
+    if yc.vi and yc.vi.lower() != vi_xac_thuc.lower():
+        raise HTTPException(403, "Địa chỉ ví yêu cầu không khớp với phiên đăng nhập SIWE")
+
     khoa = _khoa_trong_tai()
     cac_man = _cac_man()
     so = trong_tai.SoPhieu(SO_PHIEU)
+    so_ve = trong_tai.SoVe(SO_VE)
+
+    # 1. Nhánh xin ký lại: Chỉ ký lại phiếu ĐÃ TỒN TẠI trong SoPhieu và ĐÚNG chủ sở hữu ví
+    # Tuyệt đối không tạo phiếu mới, không cấp thêm vàng
     cu = so.lay(yc.ma_van)
-    if cu is not None:                                       # xin lại: ký lại đúng nội dung, hạn mới
-        if cu["vi"].lower() != yc.vi.lower():
+    if cu is not None:
+        if cu["vi"].lower() != vi_xac_thuc.lower():
             raise HTTPException(409, "Ván này đã cấp phiếu cho một ví khác")
         return _ky(khoa, cu)
 
+    # 2. Đọc nhật ký ván chơi từ telemetry store
     van = next((v for v in nhat_ky.doc_tat_ca(NHAT_KY_DIR) if v["ma_van"] == yc.ma_van), None)
     if van is None:
         raise HTTPException(404, "Không có nhật ký của ván này (app đã gửi /api/nhat-ky chưa?)")
@@ -333,22 +385,62 @@ def cap_phieu(yc: YeuCauPhieu):
     if not tep_ban_do.exists():
         raise HTTPException(422, f"Máy chủ không có bản đồ {m.tep}")
 
+    # 3. Bắt buộc ván phải có ticket trong SoVe trước khi phát Voucher mới cho BẤT KỲ màn nào (kể cả màn 1)
+    # Fail-closed tuyệt đối: Nếu thiếu ticket -> từ chối (403 cho màn miễn phí, 422 cho màn có cọc)
+    bd = so_ve.lay_theo_van(yc.ma_van)
+    if bd is None:
+        if m.mien_phi:
+            raise HTTPException(403, "Ván chơi chưa được đăng ký bắt đầu (thiếu ticket SoVe)")
+        else:
+            raise HTTPException(422, {"ly_do": ["Ván màn có cọc chưa được đăng ký bắt đầu với ví này"]})
+
+    # 4. Nếu ví trong ticket khác ví SIWE xác thực -> từ chối 403 Forbidden (chống Voucher Hijacking)
+    if bd["vi"].lower() != vi_xac_thuc.lower():
+        log.warning("Voucher Hijacking bị chặn: Ván %s thuộc ví %s, nhưng ví %s xin phiếu",
+                    yc.ma_van, bd["vi"], vi_xac_thuc)
+        raise HTTPException(403, "Ván chơi này đã được đăng ký bắt đầu cho một địa chỉ ví khác")
+
+    # 5. Bắt buộc màn trong ticket khớp chính xác màn trong nhật ký
+    if bd["man"] != m.id:
+        raise HTTPException(422, f"Màn trong đăng ký ticket ({bd['man']}) không khớp màn nhật ký ({m.id})")
+
+    # 6. Kiểm định ván và quy tắc vé theo loại màn
     kq = trong_tai.kiem_dinh(van, doc_tmx(tep_ban_do), m)
     ly_do = list(kq.ly_do)
     ve = 0
-    if not m.mien_phi:
-        bd = trong_tai.SoVe(SO_VE).lay_theo_van(yc.ma_van)
-        if bd is None or bd["vi"].lower() != yc.vi.lower() or bd["man"] != m.id:
-            ly_do.append("Ván màn có cọc chưa được đăng ký bắt đầu với ví này")
+
+    if m.mien_phi:
+        # Với màn miễn phí, ticket.ve bắt buộc phải bằng 0
+        if bd.get("ve", 0) != 0:
+            ly_do.append(f"Màn {m.id} là màn miễn phí, ticket.ve phải bằng 0 (nhận {bd.get('ve')})")
+        ve = 0
+    else:
+        # Với màn có cọc, ticket.ve bắt buộc >= 1 và giữ kiểm tra đồng hồ/luật cọc
+        if bd.get("ve", 0) < 1:
+            ly_do.append(f"Màn {m.id} là màn có cọc, ticket.ve phải >= 1 (nhận {bd.get('ve')})")
         else:
             ly_do += trong_tai.kiem_dong_ho(bd, van, m)
             ve = bd["ve"]
+
     if ly_do:
         log.warning("từ chối phiếu %s: %s", yc.ma_van, ly_do)
         raise HTTPException(422, {"ly_do": ly_do})
-    if so.vang_hom_nay(yc.vi) + kq.so_vang > trong_tai.VANG_TOI_DA_MOI_NGAY:
+    if so.vang_hom_nay(vi_xac_thuc) + kq.so_vang > trong_tai.VANG_TOI_DA_MOI_NGAY:
         raise HTTPException(429, f"Ví đã nhận đủ {trong_tai.VANG_TOI_DA_MOI_NGAY} vàng hôm nay")
-    so.ghi(yc.ma_van, yc.vi, kq.so_vang, m.id, ve)
+    so.ghi(yc.ma_van, vi_xac_thuc, kq.so_vang, m.id, ve)
+
+    # BẢO MẬT: Chỉ cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực an toàn qua SIWE và SoVe
+    try:
+        with lay_csdl() as conn:
+            conn.execute(
+                """UPDATE match_results
+                   SET is_verified = 1, verified_by = 'referee_voucher', verified_wallet = ?
+                   WHERE ma_van = ?""",
+                (vi_xac_thuc.lower(), yc.ma_van),
+            )
+    except Exception as e_mr:
+        log.warning("Không thể cập nhật match_results verified: %s", e_mr)
+
     return _ky(khoa, so.lay(yc.ma_van))
 
 
