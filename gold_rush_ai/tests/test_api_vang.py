@@ -55,9 +55,17 @@ class TestApiVang(unittest.TestCase):
 
         api.main.app.dependency_overrides[lay_nguoi_choi_hien_tai] = _mock_auth
 
+        class MockTicketVerifier:
+            def xac_minh_ve_hop_le_de_vao_man(self, vi: str, man_yeu_cau: int, so_ve_yeu_cau: int):
+                return {"man": man_yeu_cau, "so": so_ve_yeu_cau, "coc": 100}
+
+        api.main.app.state.onchain_ticket_verifier = MockTicketVerifier()
+
     @classmethod
     def tearDownClass(cls):
         api.main.app.dependency_overrides.clear()
+        if hasattr(api.main.app.state, "onchain_ticket_verifier"):
+            delattr(api.main.app.state, "onchain_ticket_verifier")
         cls.c.__exit__(None, None, None)
 
     def _gui_van(self, nk, man=1, ban_do="gold_rush.tmx", ma=None):

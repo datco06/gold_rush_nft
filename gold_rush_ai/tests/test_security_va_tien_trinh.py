@@ -103,6 +103,12 @@ class TestSecurityVaTienTrinhRound2(unittest.TestCase):
         config.SO_VE = self.so_ve_path
         main.SO_VE = self.so_ve_path
 
+        class MockTicketVerifier:
+            def xac_minh_ve_hop_le_de_vao_man(self, vi: str, man_yeu_cau: int, so_ve_yeu_cau: int):
+                return {"man": man_yeu_cau, "so": so_ve_yeu_cau, "coc": 100}
+
+        app.state.onchain_ticket_verifier = MockTicketVerifier()
+
         self.client = TestClient(app)
 
         self.user_a = NguoiChoiXacThuc(
@@ -126,6 +132,8 @@ class TestSecurityVaTienTrinhRound2(unittest.TestCase):
         app.dependency_overrides.clear()
         if hasattr(app.state, "internal_ai_service"):
             delattr(app.state, "internal_ai_service")
+        if hasattr(app.state, "onchain_ticket_verifier"):
+            delattr(app.state, "onchain_ticket_verifier")
 
     # =========================================================================
     # NHÓM 1: AUTHENTICATION, ORIGIN & CSRF (Fail-Closed)

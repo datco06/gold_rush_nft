@@ -44,6 +44,13 @@ from core.eth_ky import dia_chi_tu_khoa
 from core.luoi import doc_tmx
 from core.quan_ly_nhiem_vu import cap_nhat_tien_do
 from core.tro_ly import TroLy
+from core.xac_minh_ve_onchain import (
+    XacMinhVeOnchain,
+    LoiCauHinhVe,
+    LoiKetNoiRPC,
+    LoiVeKhongHopLe,
+    LoiXacMinhVe,
+)
 
 from api.ban_do_moi import router as ban_do_router
 from api.kho_do import router as kho_do_router
@@ -311,6 +318,29 @@ async def bat_dau_man(
         if yc.ve < 1:
             raise HTTPException(422, f"Màn {yc.man} là màn có cọc, yêu cầu số vé hợp lệ (ve >= 1)")
         ve_ghi = yc.ve
+
+        # 1. Chống replay số vé đã bắt đầu
+        if trong_tai.SoVe(SO_VE).da_dung(vi_xac_thuc, yc.ve):
+            raise HTTPException(409, f"Vé {yc.ve} của ví {vi_xac_thuc} đã được dùng cho ván chơi khác")
+
+        # 2. Xác minh trạng thái vé on-chain qua RPC tin cậy (Fail-Closed)
+        verifier = getattr(request.app.state, "onchain_ticket_verifier", None)
+        if verifier is None:
+            verifier = XacMinhVeOnchain()
+        try:
+            verifier.xac_minh_ve_hop_le_de_vao_man(vi_xac_thuc, yc.man, yc.ve)
+        except LoiCauHinhVe as e:
+            log.warning("Lỗi cấu hình xác minh vé on-chain: %s", e)
+            raise HTTPException(503, f"Hệ thống xác minh blockchain chưa sẵn sàng: {e.message}") from None
+        except LoiKetNoiRPC as e:
+            log.warning("Lỗi kết nối RPC khi xác minh vé on-chain: %s", e)
+            raise HTTPException(503, f"Không thể kết nối RPC xác minh vé on-chain: {e.message}") from None
+        except LoiVeKhongHopLe as e:
+            log.info("Vé cọc on-chain không hợp lệ: %s", e)
+            raise HTTPException(422, f"Vé cọc on-chain không hợp lệ: {e.message}") from None
+        except Exception as e:
+            log.error("Lỗi bất ngờ khi xác minh vé on-chain: %s", e)
+            raise HTTPException(503, f"Lỗi xác minh vé on-chain (Fail-Closed): {e}") from None
 
     ma_van_ghi = yc.ma_van if yc.ma_van else f"van-{uuid.uuid4().hex}"
 
