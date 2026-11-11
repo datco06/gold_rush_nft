@@ -6,11 +6,10 @@ import 'package:flutter/services.dart';
 
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
-import '../chien_dau/ky_nang.dart';
+import '../chien_dau/ki_nang.dart';
 import '../chien_dau/quan_ly_trang_bi.dart';
 import '../chien_dau/sat_thuong.dart';
 import '../phat_trien/cap_do.dart';
-import 'ban_do.dart';
 import 'boss.dart';
 import 'dan_ban.dart';
 import 'dong_xu.dart';
@@ -371,7 +370,10 @@ class George extends NhanVat with KeyboardHandler {
   // XỬ LÝ MỤC TIÊU BỊ HẠ, VẬT PHẨM RƠI
   // --------------------------------------------------
 
+  final Set<CoTheBiDanh> _mucTieuDaTinhHa = {};
+
   void _khiHaMucTieu(CoTheBiDanh m) {
+    if (!_mucTieuDaTinhHa.add(m)) return;
     soKeDichDaHa++;
     _congExp(m is Boss ? CauHinh.expBoss : CauHinh.expMoiKeDich);
 
@@ -406,41 +408,43 @@ class George extends NhanVat with KeyboardHandler {
   // --------------------------------------------------
 
   @override
-  void onCollisionStart(Set<Vector2> diemGiaoNhau, PositionComponent khac) {
-    super.onCollisionStart(diemGiaoNhau, khac);
+  void onCollisionStart(
+    Set<Vector2> intersectionPoints,
+    PositionComponent other,
+  ) {
+    super.onCollisionStart(intersectionPoints, other);
 
     if (!conSong) return;
 
-    if (khac is DongXu) {
-      khac.nhat();
-
-      diem += CauHinh.diemMoiDongXu;
-
-      khiChiSoDoi();
-
+    if (other is DongXu) {
+      if (other.nhat()) {
+        diem += CauHinh.diemMoiDongXu;
+        khiChiSoDoi();
+      }
       return;
     }
 
-    if (khac is VatPhamRoi) {
-      if (khac.nhat()) _nhanPhanThuong(khac.phanThuong);
+    if (other is VatPhamRoi) {
+      if (other.nhat()) _nhanPhanThuong(other.phanThuong);
       return;
     }
 
-    if (khac is KeDich) {
+    if (other is KeDich) {
       if (dangBatTu) return;
-
-      khac.noTung();
-
-      nhanSatThuong();
+      if (other.noTung()) {
+        nhanSatThuong();
+      }
     }
   }
 
   /// Boss chạm vào George: gây sát thương mỗi khi hết thời gian bất tử.
   /// Dùng onCollision (gọi mỗi khung hình khi đang chạm), không phải onCollisionStart.
   @override
-  void onCollision(Set<Vector2> diemGiaoNhau, PositionComponent khac) {
-    super.onCollision(diemGiaoNhau, khac);
-    if (khac is Boss) nhanSatThuong(CauHinh.satThuongBossCham);
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollision(intersectionPoints, other);
+    if (other is Boss && !other.daChet) {
+      nhanSatThuong(CauHinh.satThuongBossCham);
+    }
   }
 
   // --------------------------------------------------

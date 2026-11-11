@@ -62,6 +62,25 @@ class TaiNguyen {
     joystickNum = Sprite(await Flame.images.load('joystick_num.png'));
   }
 
+  /// Khởi tạo hoạt ảnh giả từ một `ui.Image` trong bộ nhớ để chạy kiểm thử nhanh.
+  void napTuAnhGia(ui.Image anh) {
+    george = _bonHuong(anh, 0.12);
+    georgeTheoTep[georgeGoc.tepAnh] = george;
+    zombie = _bonHuong(anh, 0.18);
+    skeleton = _bonHuong(anh, 0.14);
+    dongXu = SpriteAnimation.fromFrameData(
+      anh,
+      SpriteAnimationData.sequenced(
+        amount: 1,
+        amountPerRow: 1,
+        stepTime: 0.09,
+        textureSize: Vector2.all(CauHinh.kichThuocO),
+      ),
+    );
+    joystickNen = Sprite(anh);
+    joystickNum = Sprite(anh);
+  }
+
   /// Cắt một sprite sheet 4 hàng × 4 cột thành bốn hoạt ảnh theo hướng.
   ///
   /// `texturePosition` là góc trên-trái của hàng cần cắt. Hàng thứ `i` bắt đầu

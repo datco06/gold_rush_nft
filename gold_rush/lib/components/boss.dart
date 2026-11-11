@@ -41,9 +41,10 @@ class Boss extends NhanVat implements CoTheBiDanh {
     required this.viTriNguoiChoi,
     required this.gayDame,
     this.khiChet,
-  });
+  }) : super(size: Vector2.all(24));
 
   PhaseBoss get phase => _phase;
+  bool get daChet => _daChet;
 
   @override
   Vector2 get viTriDanh => position;
@@ -56,16 +57,21 @@ class Boss extends NhanVat implements CoTheBiDanh {
 
   @override
   Future<void> onLoad() async {
-    size = Vector2.all(24);
+    await super.onLoad();
     add(RectangleHitbox(size: Vector2(18, 20), position: Vector2(3, 3)));
   }
 
   @override
   bool nhanSatThuong(int luong) {
-    if (_daChet) return false;
+    if (_daChet || luong <= 0) return false;
     sucKhoe.nhan(luong);
-    if (sucKhoe.conSong) return false;
+    if (sucKhoe.conSong) {
+      final phaseMoi = xacDinhPhase(sucKhoe.hien, sucKhoe.toiDa);
+      if (phaseMoi != _phase) _vaoPhase(phaseMoi);
+      return false;
+    }
     _daChet = true;
+    _gongChieu = 0;
     parent?.add(HieuUngNoKeDich(position.clone(), const Color(0xFFFFD84D)));
     khiChet?.call(this);
     removeFromParent();
@@ -125,10 +131,12 @@ class Boss extends NhanVat implements CoTheBiDanh {
   }
 
   void _ban(Vector2 huong) {
+    if (_daChet) return;
+    final h = (huong.x == 0 && huong.y == 0) ? Vector2(0, 1) : huong;
     parent?.add(DanBan(
       banDo: banDo,
       viTri: position.clone(),
-      huong: huong,
+      huong: h,
       satThuong: CauHinh.satThuongDanBoss,
       tamBay: 140,
       tuKeDich: true,
@@ -137,6 +145,7 @@ class Boss extends NhanVat implements CoTheBiDanh {
   }
 
   void _tungChieuDienRong() {
+    if (_daChet) return;
     parent?.add(HieuUngNoKeDich(position.clone(), const Color(0xFFFF5A3C)));
     if (position.distanceTo(viTriNguoiChoi()) <= CauHinh.banKinhDienRong) {
       gayDame(CauHinh.satThuongDienRong);

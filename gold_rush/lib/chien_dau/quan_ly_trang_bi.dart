@@ -20,6 +20,12 @@ class QuanLyTrangBi {
     return true;
   }
 
+  /// Đặt lại về vũ khí chính khi bắt đầu ván mới.
+  void datLai() {
+    _dungPhu = false;
+  }
+
   /// Dùng cho trường equipment_ids trong kết quả ván.
   List<String> get idDangTrang => [chinh.id, if (phu != null) phu!.id];
 }
+

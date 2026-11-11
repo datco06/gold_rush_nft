@@ -62,6 +62,20 @@ class BanDo {
 
   BanDo._(this.tep);
 
+  /// Tạo `BanDo` nhẹ dùng cho kiểm thử đơn vị/tích hợp không cần nạp tệp `.tmx`.
+  @visibleForTesting
+  factory BanDo.gia({
+    required LuoiVaCham luoi,
+    List<DiemXuatHien> diemXuatHien = const [],
+    String tep = 'gold_rush.tmx',
+  }) {
+    final b = BanDo._(tep)
+      ..thanhPhan = Component()
+      ..luoi = luoi;
+    b.diemXuatHien.addAll(diemXuatHien);
+    return b;
+  }
+
   Future<void> _nap() async {
     // Tham số thứ hai là kích thước MỖI Ô KHI VẼ RA MÀN HÌNH. Để đúng bằng
     // kích thước ô trong tệp .tmx thì bản đồ hiển thị đúng tỉ lệ gốc; việc
@@ -89,21 +103,22 @@ class BanDo {
   }
 
   LuoiVaCham _dungLuoiChan(int cot, int hang) {
-    final lop = _duLieuBanDo.getLayer<TileLayer>(CauHinh.lopVaCham);
-    if (lop == null) {
+    final lop = _duLieuBanDo.getLayer<Layer>(CauHinh.lopVaCham);
+    if (lop is! TileLayer) {
       debugPrint(
-        'CẢNH BÁO: không tìm thấy lớp "${CauHinh.lopVaCham}" '
+        'CẢNH BÁO: không tìm thấy lớp ô "${CauHinh.lopVaCham}" '
         'trong tệp .tmx — nhân vật sẽ đi xuyên mọi thứ.',
       );
       return LuoiVaCham.trong(cot, hang);
     }
 
+    final duLieuO = lop.tileData;
     final chan = List.generate(
       hang,
       (y) => List<bool>.generate(cot, (x) {
-        // tileAt trả về null khi ra ngoài phạm vi; Gid.tile == 0 là ô trống.
-        final gid = lop.tileAt(x, y);
-        return gid != null && gid.tile != 0;
+        if (duLieuO == null || y >= duLieuO.length) return false;
+        final hangO = duLieuO[y];
+        return x < hangO.length && hangO[x].tile != 0;
       }),
     );
     return LuoiVaCham(chan);

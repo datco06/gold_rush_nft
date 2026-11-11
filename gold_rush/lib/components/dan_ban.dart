@@ -62,13 +62,16 @@ class DanBan extends PositionComponent with CollisionCallbacks {
   }
 
   @override
-  void onCollisionStart(Set<Vector2> diem, PositionComponent khac) {
-    super.onCollisionStart(diem, khac);
+  void onCollisionStart(
+    Set<Vector2> intersectionPoints,
+    PositionComponent other,
+  ) {
+    super.onCollisionStart(intersectionPoints, other);
     if (_xong) return;
 
     // Đạn của Boss: chỉ quan tâm George, bỏ qua mọi thứ khác (kể cả Boss).
     if (tuKeDich) {
-      if (khac is George) {
+      if (other is George) {
         _huy();
         gayDameNguoiChoi?.call(satThuong);
       }
@@ -76,9 +79,9 @@ class DanBan extends PositionComponent with CollisionCallbacks {
     }
 
     // Mũi tên của người chơi: trúng quái hoặc Boss.
-    if (khac is KeDich || khac is Boss) {
+    if (other is KeDich || other is Boss) {
       _huy();
-      final m = khac as CoTheBiDanh;
+      final m = other as CoTheBiDanh;
       if (m.nhanSatThuong(satThuong)) khiHaMucTieu?.call(m);
     }
   }

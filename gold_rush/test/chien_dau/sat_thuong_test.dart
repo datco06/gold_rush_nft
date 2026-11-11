@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flame/components.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/chien_dau/sat_thuong.dart';

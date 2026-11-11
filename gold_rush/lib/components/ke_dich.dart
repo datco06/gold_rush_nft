@@ -81,8 +81,8 @@ class KeDich extends NhanVat implements CoTheBiDanh {
     int mauToiDa = CauHinh.mauZombie,
     this.timDuong,
     double Function()? heSoTocDo,
-  }) : heSoTocDo = heSoTocDo ?? _mot;
-       sucKhoe = SucKhoe(mauToiDa); 
+  }) : heSoTocDo = heSoTocDo ?? _mot,
+       sucKhoe = SucKhoe(mauToiDa);
 
   static double _mot() => 1.0;
 
@@ -351,9 +351,11 @@ class KeDich extends NhanVat implements CoTheBiDanh {
   @override
   Vector2 get viTriDanh => position;
 
+  bool get daNo => _daNo;
+
   @override
   bool nhanSatThuong(int luong) {
-    if (_daNo) return false;
+    if (_daNo || luong <= 0) return false;
     sucKhoe.nhan(luong);
     if (sucKhoe.conSong) return false;
     noTung();
@@ -361,13 +363,14 @@ class KeDich extends NhanVat implements CoTheBiDanh {
   }
 
   // ------------------------------------------------------------------
-  /// Kẻ địch lao trúng George thì tự nổ và biến mất.
-  void noTung() {
-    if (_daNo) return;
+  /// Kẻ địch lao trúng George thì tự nổ và biến mất. Trả về true nếu nổ lần đầu.
+  bool noTung() {
+    if (_daNo) return false;
     _daNo = true;
 
     AmThanh.keDichNo();
     parent?.add(HieuUngNoKeDich(position.clone(), mauVunNo));
     removeFromParent();
+    return true;
   }
 }

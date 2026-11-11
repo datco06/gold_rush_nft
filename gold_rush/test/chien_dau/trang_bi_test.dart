@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-
-import '../../lib/chien_dau/quan_ly_trang_bi.dart';
-import '../../lib/chien_dau/vu_khi.dart';
+import 'package:gold_rush/chien_dau/quan_ly_trang_bi.dart';
+import 'package:gold_rush/chien_dau/vu_khi.dart';
 
 void main() {
   test('đổi qua lại giữa kiếm và cung', () {
@@ -15,7 +14,7 @@ void main() {
 
     t.doi();
 
-    expect(t.hienTai.loai, VuKhi.kiem);
+    expect(t.hienTai.loai, LoaiVuKhi.kiem);
   });
 
   test('không có ô phụ thì không đổi được', () {

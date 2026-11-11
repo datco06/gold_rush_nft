@@ -51,9 +51,9 @@ class DongXu extends SpriteAnimationComponent
     );
   }
 
-  /// Nhặt đồng xu.
-  void nhat() {
-    if (_daNhat) return;
+  /// Nhặt đồng xu. Trả về true nếu lần gọi này thật sự nhặt được.
+  bool nhat() {
+    if (_daNhat) return false;
 
     // Đánh dấu trước để tránh nhặt nhiều lần.
     _daNhat = true;
@@ -68,5 +68,6 @@ class DongXu extends SpriteAnimationComponent
 
     // Yêu cầu Flame loại bỏ component khỏi cây.
     removeFromParent();
+    return true;
   }
 }

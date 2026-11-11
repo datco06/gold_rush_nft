@@ -28,12 +28,13 @@ abstract class NhanVat extends SpriteAnimationGroupComponent<HuongDi>
     required this.banDo,
     required Map<HuongDi, SpriteAnimation> hoatAnh,
     required Vector2 viTri,
+    Vector2? size,
     super.priority = 2,
   }) : super(
          animations: hoatAnh,
          current: HuongDi.xuong,
          position: viTri,
-         size: Vector2.all(CauHinh.kichThuocO),
+         size: size ?? Vector2.all(CauHinh.kichThuocO),
          anchor: Anchor.center,
        );
 

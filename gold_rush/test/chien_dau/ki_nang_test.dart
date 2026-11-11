@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gold_rush/chien_dau/ky_nang.dart';
+import 'package:gold_rush/chien_dau/ki_nang.dart';
 
 void main() {
   test('thời gian hồi chặn dùng liên tiếp', () {
