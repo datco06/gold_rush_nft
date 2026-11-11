@@ -115,7 +115,7 @@ class Hud extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    final khung = Rect.fromLTWH(_le, _le, _rongThanh, _caoThanh);
+    final khung = const Rect.fromLTWH(_le, _le, _rongThanh, _caoThanh);
     final bo = RRect.fromRectAndRadius(khung, const Radius.circular(6));
 
     canvas.drawRRect(bo, Paint()..color = CauHinh.mauMauNen);

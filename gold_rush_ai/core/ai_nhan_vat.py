@@ -30,6 +30,7 @@ def tao_anh_nhan_vat(
     *,
     demo_provider: NhaCungCapAnh,
     provider: NhaCungCapAnh | None = None,
+    cho_phep_fallback: bool = True,
 ) -> KetQuaTaoAnh:
     if not isinstance(yeu_cau, YeuCauTaoNhanVat):
         raise ValueError("Cần YeuCauTaoNhanVat hợp lệ")
@@ -43,6 +44,9 @@ def tao_anh_nhan_vat(
             raw = provider.sinh(system_prompt=SYSTEM_PROMPT, user_prompt=user_prompt)
             png = chuan_hoa_anh(raw)
         except (LoiProviderAnh, LoiAnhKhongHopLe, TimeoutError) as e:
+            if not cho_phep_fallback:
+                # Chế độ Live: không âm thầm fallback sang demo khi người dùng yêu cầu AI thật
+                raise
             log.warning("Provider ảnh không khả dụng (%s); dùng mẫu demo", type(e).__name__)
         else:
             return KetQuaTaoAnh(png=png, generation_source=nguon)

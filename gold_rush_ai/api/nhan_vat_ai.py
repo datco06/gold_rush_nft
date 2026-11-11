@@ -61,6 +61,7 @@ class NguCanhAnhNhanVat(NguCanhNguoiChoi):
     completed_stage_ids: frozenset[StageID] = frozenset()
     user_id: str | None = None
     wallet_address: str | None = None
+    progress_verified: bool = True
 
 
 class PhanHoiAnhNhanVat(AnhNhanVat):
@@ -117,9 +118,16 @@ def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
         except (ValueError, TypeError) as e:
             log.warning("Cấu hình provider ảnh không hợp lệ (%s); dùng mẫu demo", type(e).__name__)
             provider = None
+        fallback_demo = os.environ.get("AI_IMAGE_FALLBACK_DEMO", "true").strip().lower() in ("true", "1")
         quota = KhoQuotaAI(os.environ.get("AI_QUOTA_DB", config.DATA_DIR / "quota_ai" / "quota.sqlite3"))
-        state.service = DichVuAnh(kho, demo_provider=provider_demo, provider=provider, quota=quota,
-            gioi_han_ngay=int(os.environ.get("AI_IMAGE_DAILY_LIMIT", "5")))
+        state.service = DichVuAnh(
+            kho,
+            demo_provider=provider_demo,
+            provider=provider,
+            quota=quota,
+            gioi_han_ngay=int(os.environ.get("AI_IMAGE_DAILY_LIMIT", "5")),
+            cho_phep_fallback=fallback_demo,
+        )
         state.demo_service = DichVuAnh(kho, demo_provider=provider_demo)
         state.demo_enabled = demo in ("true", "1")
     except (OSError, ValueError, TypeError, LoiKhoAnh, LoiKhoNhanVat, LoiProviderAnh, LoiQuotaAI) as e:
@@ -148,6 +156,60 @@ async def lay_ngu_canh_anh(
     x_demo_player: Annotated[str | None, Header(alias="X-Demo-Player", min_length=1, max_length=64,
                                                pattern=r"^[A-Za-z0-9_-]+$")] = None,
 ) -> NguCanhNguoiChoi:
+    # 1. Nếu có phiên SIWE đã đăng nhập qua ai_auth_source
+    auth_source = getattr(request.app.state, "ai_auth_source", None)
+    if auth_source is not None and not x_demo_player:
+        try:
+            player = await auth_source(request)
+            if player is not None:
+                # 1.1 Thử lấy snapshot tiến trình từ nguồn xác thực đáng tin cậy (ai_player_source)
+                snapshot = None
+                try:
+                    snapshot = await lay_ban_chup_ai(request)
+                except HTTPException:
+                    raise
+                except Exception:
+                    snapshot = None
+
+                if snapshot is not None:
+                    return NguCanhAnhNhanVat(
+                        player_id=player.user_id,
+                        allowed_stage_ids=snapshot.allowed_stage_ids,
+                        completed_stage_ids=snapshot.completed_stage_ids,
+                        user_id=player.user_id,
+                        wallet_address=player.wallet_address,
+                        progress_verified=True,
+                    )
+
+                # 1.2 Test context server-side (dành riêng cho test fixture, không tin client header/body)
+                test_ctx = (
+                    getattr(request.state, "ai_image_player", None)
+                    or getattr(request.app.state, "ai_image_player", None)
+                )
+                if isinstance(test_ctx, NguCanhAnhNhanVat):
+                    return NguCanhAnhNhanVat(
+                        player_id=player.user_id,
+                        allowed_stage_ids=test_ctx.allowed_stage_ids,
+                        completed_stage_ids=test_ctx.completed_stage_ids,
+                        user_id=player.user_id,
+                        wallet_address=player.wallet_address,
+                        progress_verified=test_ctx.progress_verified,
+                    )
+
+                # 1.3 Người chơi SIWE thật nhưng chưa có nguồn tiến trình -> fail-closed (progress_verified=False)
+                return NguCanhAnhNhanVat(
+                    player_id=player.user_id,
+                    allowed_stage_ids=frozenset(),
+                    completed_stage_ids=frozenset(),
+                    user_id=player.user_id,
+                    wallet_address=player.wallet_address,
+                    progress_verified=False,
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
     snapshot = await lay_ban_chup_ai(request)
     if snapshot is not None:
         return NguCanhAnhNhanVat(
@@ -156,16 +218,25 @@ async def lay_ngu_canh_anh(
             completed_stage_ids=snapshot.completed_stage_ids,
             user_id=getattr(snapshot, "user_id", None),
             wallet_address=getattr(snapshot, "wallet_address", None),
+            progress_verified=True,
         )
-    ctx = getattr(request.state, "ai_image_player", None)
+    ctx = getattr(request.state, "ai_image_player", None) or getattr(request.app.state, "ai_image_player", None)
     if ctx is not None:
         if not isinstance(ctx, NguCanhNguoiChoi):
             raise HTTPException(503, "Ngữ cảnh người chơi từ backend không hợp lệ")
-        cls = NguCanhAnhNhanVat if isinstance(ctx, NguCanhAnhNhanVat) else NguCanhNguoiChoi
-        try:
-            return cls.model_validate(ctx.model_dump(warnings=False), strict=True)
-        except ValueError:
-            raise HTTPException(503, "Ngữ cảnh người chơi từ backend không hợp lệ") from None
+        if isinstance(ctx, NguCanhAnhNhanVat):
+            try:
+                return NguCanhAnhNhanVat.model_validate(ctx.model_dump(warnings=False), strict=True)
+            except ValueError:
+                raise HTTPException(503, "Ngữ cảnh người chơi từ backend không hợp lệ") from None
+        if ctx.context_source == "demo":
+            return ctx
+        return NguCanhAnhNhanVat(
+            player_id=ctx.player_id,
+            allowed_stage_ids=ctx.allowed_stage_ids,
+            completed_stage_ids=frozenset(),
+            progress_verified=True,
+        )
     if not state.demo_enabled:
         raise HTTPException(503, "Chưa có ngữ cảnh người chơi đã xác minh")
     if x_demo_player is None:
@@ -177,17 +248,18 @@ async def lay_nguoi_choi_xac_thuc(request: Request) -> NguoiChoiXacThuc:
     """Xác thực người chơi fail-closed dựa trên phiên SIWE backend.
 
     Quy định bảo mật:
-    - Không tin client khai báo ví trong request body/query.
+    - Không tin client khai báo ví trong request body/query hay custom header.
     - Không cấp quyền cho phiên demo (X-Demo-Player bị từ chối 401).
     - Không tự động tạo user giả.
     - Chỉ chấp nhận phiên có user_id và ví Ethereum hợp lệ (0x...).
+    - Nếu có cấu hình ai_auth_source (từ SIWE AuthService), bắt buộc kiểm tra phiên thật.
+    - Fail-closed khi session không hợp lệ, hết hạn, thu hồi hoặc DB bận.
     """
-    # 1. State direct injection (middleware hoặc adapter)
-    ctx = getattr(request.state, "ai_auth_user", None)
-    if isinstance(ctx, NguoiChoiXacThuc):
-        return ctx
+    # 0. Chặn đứng các yêu cầu demo
+    if request.headers.get("X-Demo-Player"):
+        raise HTTPException(401, "Tài khoản demo không có quyền quản lý nhân vật chính thức.")
 
-    # 2. Hook nguồn xác thực SIWE chuyên biệt (nếu module Auth đăng ký)
+    # 1. Hook nguồn xác thực SIWE chuyên biệt (nếu module Auth đăng ký)
     auth_source = getattr(request.app.state, "ai_auth_source", None)
     if auth_source is not None:
         try:
@@ -197,10 +269,17 @@ async def lay_nguoi_choi_xac_thuc(request: Request) -> NguoiChoiXacThuc:
                 if not isinstance(user, NguoiChoiXacThuc):
                     raise HTTPException(503, "Dữ liệu xác thực người chơi từ backend không hợp lệ")
                 return NguoiChoiXacThuc.model_validate(user.model_dump(warnings=False), strict=True)
+            # Không có session cookie hợp lệ -> 401
+            raise HTTPException(401, "Yêu cầu đăng nhập ví MetaMask qua phiên SIWE đã xác minh")
         except HTTPException:
             raise
         except Exception:
             raise HTTPException(503, "Hệ thống xác thực tạm thời không sẵn sàng") from None
+
+    # 2. State direct injection (chỉ dùng cho standalone test fixtures khi chưa gắn Auth)
+    ctx = getattr(request.state, "ai_auth_user", None)
+    if isinstance(ctx, NguoiChoiXacThuc):
+        return ctx
 
     # 3. Snapshot người chơi chung (lay_ban_chup_ai)
     snapshot = await lay_ban_chup_ai(request)
@@ -238,6 +317,87 @@ async def lay_nguoi_choi_xac_thuc(request: Request) -> NguoiChoiXacThuc:
     raise HTTPException(401, "Yêu cầu đăng nhập ví MetaMask qua phiên SIWE đã xác minh")
 
 
+def kiem_tra_csrf_va_origin(request: Request) -> None:
+    """Bảo vệ CSRF và Origin cho các thao tác thay đổi dữ liệu hoặc cấp quyền nhạy cảm.
+
+    Quy định bảo mật:
+    - Nếu ứng dụng có cấu hình Auth (state.auth_service & state.auth_config):
+      1. Origin: Bắt buộc có chính xác 1 header Origin, phải nằm trong auth_config.cors_origins.
+      2. Session: Bắt buộc có cookie gr_session hợp lệ, chưa hết hạn, chưa thu hồi.
+      3. CSRF: Bắt buộc có header X-CSRF-Token khớp với HMAC SHA-256 của gr_session.
+    - Phân biệt rõ ràng mã lỗi:
+      + Thiếu/sai Origin: HTTP 403 ORIGIN_FORBIDDEN
+      + Thiếu cookie phiên: HTTP 401 SESSION_REQUIRED
+      + Phiên không hợp lệ/hết hạn: HTTP 401 SESSION_INVALID / SESSION_EXPIRED
+      + Thiếu/sai CSRF Token: HTTP 403 CSRF_INVALID
+    """
+    auth_service = getattr(request.app.state, "auth_service", None)
+    auth_config = getattr(request.app.state, "auth_config", None)
+    if auth_service is None or auth_config is None:
+        return
+
+    # 1. Kiểm tra Origin
+    origins = request.headers.getlist("origin")
+    if len(origins) != 1:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "ORIGIN_FORBIDDEN", "message": "Origin không được phép."},
+        )
+    orig = origins[0]
+    if not orig or orig == "null" or orig not in auth_config.cors_origins:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "ORIGIN_FORBIDDEN", "message": "Origin không được phép."},
+        )
+
+    # 2. Kiểm tra Cookie phiên gr_session
+    token = request.cookies.get("gr_session")
+    if not token or not re.fullmatch(r"[0-9a-f]{64}", token):
+        raise HTTPException(
+            status_code=401,
+            detail={"code": "SESSION_REQUIRED", "message": "Bạn cần đăng nhập để tiếp tục."},
+        )
+
+    # Kiểm tra tính hợp lệ của session với database
+    try:
+        from auth.service import AuthServiceError
+        auth_service.get_authenticated_session(token)
+    except AuthServiceError as e:
+        if e.code == "SESSION_REVOKED":
+            raise HTTPException(
+                status_code=401,
+                detail={"code": "SESSION_REVOKED", "message": "Phiên đăng nhập đã bị thu hồi."},
+            )
+        elif e.code == "SESSION_EXPIRED":
+            raise HTTPException(
+                status_code=401,
+                detail={"code": "SESSION_EXPIRED", "message": "Phiên đăng nhập đã hết hạn."},
+            )
+        elif e.code in ("DATABASE_BUSY", "DATABASE_ERROR"):
+            raise HTTPException(
+                status_code=503,
+                detail={"code": "AUTH_UNAVAILABLE", "message": "Hệ thống xác thực tạm thời không sẵn sàng."},
+            )
+        else:
+            raise HTTPException(
+                status_code=401,
+                detail={"code": "SESSION_INVALID", "message": "Phiên đăng nhập không hợp lệ."},
+            )
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "AUTH_UNAVAILABLE", "message": "Hệ thống xác thực tạm thời không sẵn sàng."},
+        )
+
+    # 3. Kiểm tra CSRF Token
+    csrf_tokens = request.headers.getlist("x-csrf-token")
+    if len(csrf_tokens) != 1 or not csrf_tokens[0] or not auth_service.verify_csrf_token(token, csrf_tokens[0]):
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "CSRF_INVALID", "message": "CSRF token bị thiếu hoặc không hợp lệ."},
+        )
+
+
 def _player_key(ctx: NguCanhNguoiChoi) -> str:
     return sha256(f"{ctx.context_source}:{ctx.player_id}".encode("ascii")).hexdigest()
 
@@ -252,11 +412,18 @@ def tao_anh(
     request_id: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=64,
                                      pattern=r"^[A-Za-z0-9_-]+$")],
 ) -> PhanHoiAnhNhanVat:
-    if ctx.context_source == "verified" and (
-        not isinstance(ctx, NguCanhAnhNhanVat)
-        or not frozenset(range(1, 7)) <= ctx.completed_stage_ids
-    ):
-        raise HTTPException(403, "Cần hoàn thành đủ màn 1–6 để tạo ảnh nhân vật")
+    if ctx.context_source == "verified":
+        if not isinstance(ctx, NguCanhAnhNhanVat) or not ctx.progress_verified:
+            raise HTTPException(
+                status_code=503,
+                detail="Không thể xác minh tiến trình chơi của người chơi. Dịch vụ tiến trình chưa sẵn sàng.",
+            )
+        if not frozenset(range(1, 7)) <= ctx.completed_stage_ids:
+            so_man = len(ctx.completed_stage_ids & frozenset(range(1, 7)))
+            raise HTTPException(
+                status_code=403,
+                detail=f"Cần hoàn thành đủ màn 1–6 để tạo ảnh nhân vật (hiện tại: {so_man}/6 màn).",
+            )
     service = state.demo_service if ctx.context_source == "demo" else state.service
     try:
         anh = service.tao(player_id=_player_key(ctx), request_id=request_id, yeu_cau=yc)
@@ -265,7 +432,10 @@ def tao_anh(
                             headers={"Retry-After": str(e.cho_lai_sau)}) from None
     except XungDotYeuCauAnh:
         raise HTTPException(409, "Idempotency-Key đã được dùng cho mô tả khác") from None
-    except (LoiKhoAnh, LoiProviderAnh, LoiQuotaAI, ValueError):
+    except LoiProviderAnh as e:
+        log.warning("Lỗi provider ảnh: %s", str(e))
+        raise HTTPException(503, str(e)) from None
+    except (LoiKhoAnh, LoiQuotaAI, ValueError):
         raise HTTPException(503, "Chưa tạo được ảnh nhân vật hợp lệ; hãy thử lại sau") from None
     return PhanHoiAnhNhanVat(**anh.model_dump(), context_source=ctx.context_source)
 
@@ -288,7 +458,7 @@ def lay_anh(
 
 # ---------- Endpoint mới: Lưu trữ nhân vật bền vững & Quản lý sở hữu ----------
 
-@router.post("/luu", response_model=ThongTinNhanVat, status_code=201)
+@router.post("/luu", response_model=ThongTinNhanVat, status_code=201, dependencies=[Depends(kiem_tra_csrf_va_origin)])
 async def luu_nhan_vat(
     yc: YeuCauLuuNhanVat,
     player: Annotated[NguoiChoiXacThuc, Depends(lay_nguoi_choi_xac_thuc)],
@@ -456,7 +626,7 @@ def chuan_bi_onchain_nhan_vat(
         raise HTTPException(503, "Chưa chuẩn bị được dữ liệu on-chain") from None
 
 
-@router.post("/{character_id}/ky-voucher", response_model=PhanHoiKyVoucher)
+@router.post("/{character_id}/ky-voucher", response_model=PhanHoiKyVoucher, dependencies=[Depends(kiem_tra_csrf_va_origin)])
 def ky_voucher_nhan_vat(
     character_id: Annotated[str, Path(min_length=37, max_length=37, pattern=r"^char_[0-9a-f]{32}$")],
     player: Annotated[NguoiChoiXacThuc, Depends(lay_nguoi_choi_xac_thuc)],
@@ -515,7 +685,7 @@ def ky_voucher_nhan_vat(
         raise HTTPException(422, str(e)) from None
 
 
-@router.post("/{character_id}/xac-minh-onchain", response_model=ThongTinNhanVat)
+@router.post("/{character_id}/xac-minh-onchain", response_model=ThongTinNhanVat, dependencies=[Depends(kiem_tra_csrf_va_origin)])
 def xac_minh_onchain(
     character_id: Annotated[str, Path(min_length=37, max_length=37, pattern=r"^char_[0-9a-f]{32}$")],
     yc: YeuCauXacNhanOnchain,

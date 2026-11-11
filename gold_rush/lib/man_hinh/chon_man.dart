@@ -17,9 +17,14 @@ class ManHinhChonMan extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pv = game.phienVi;
-    final noiDung = pv == null
-        ? _danhSach(context, null)
-        : ListenableBuilder(listenable: pv, builder: (context, _) => _danhSach(context, pv));
+    final listenables = <Listenable>[
+      ?pv,
+      game.tienTrinh,
+    ];
+    final noiDung = ListenableBuilder(
+      listenable: Listenable.merge(listenables),
+      builder: (context, _) => _danhSach(context, pv),
+    );
     return Container(
       color: CauHinh.mauNenMo,
       alignment: Alignment.center,
@@ -80,6 +85,8 @@ class ManHinhChonMan extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 12),
+        _TheTienTrinh(game: game),
+        const SizedBox(height: 6),
         for (final m in game.danhSachMan) _TheMan(game: game, man: m, pv: pv),
         const SizedBox(height: 14),
         OutlinedButton(onPressed: game.dongChonMan, child: const Text('Đóng')),
@@ -119,6 +126,8 @@ class _TheMan extends StatelessWidget {
       man.gioiHanGiay == 0 ? 'không giới hạn giờ' : '⏱ ${dinhDangGiay(man.gioiHanGiay)}',
       if (!man.mienPhi) 'hoàn thành: +${man.nhanVeKhiHoanThanh} vàng',
     ].join('  ·  ');
+    final daHoanThanh = game.tienTrinh.daHoanThanhMan(man.id);
+    final dangChoi = game.manHienTai.id == man.id;
     return Card(
       color: const Color(0x22FFFFFF),
       child: ListTile(
@@ -127,9 +136,39 @@ class _TheMan extends StatelessWidget {
           foregroundColor: const Color(0xFF241A05),
           child: Text('${man.id}', style: const TextStyle(fontWeight: FontWeight.w900)),
         ),
-        title: Text(
-          '${man.ten}   ${'★' * man.sao}${'☆' * (5 - man.sao)}',
-          style: const TextStyle(color: CauHinh.mauChu, fontWeight: FontWeight.w700),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${man.ten}   ${'★' * man.sao}${'☆' * (5 - man.sao)}',
+                style: const TextStyle(color: CauHinh.mauChu, fontWeight: FontWeight.w700),
+              ),
+            ),
+            if (daHoanThanh)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E7D32),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  '✓ ĐÃ XONG',
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              )
+            else if (dangChoi)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1565C0),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'ĐANG CHƠI',
+                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+          ],
         ),
         subtitle: Text(
           '${man.moTa}\n$thongSo',
@@ -194,6 +233,76 @@ class _TheMan extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(dungLai ? 'Vào màn' : 'Đặt cọc ${man.coc}'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TheTienTrinh extends StatelessWidget {
+  final GoldRushGame game;
+
+  const _TheTienTrinh({required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = game.tienTrinh;
+    final total = tt.totalCompleted;
+    final unlocked = tt.isCharacterUnlocked;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: unlocked ? const Color(0x332E7D32) : const Color(0x33263238),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: unlocked ? const Color(0xFF4CAF50) : const Color(0x44FFFFFF),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            unlocked ? Icons.verified_rounded : Icons.military_tech_rounded,
+            color: unlocked ? const Color(0xFF4CAF50) : CauHinh.mauChinh,
+            size: 26,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'TIẾN TRÌNH: $total/6 MÀN HOÀN THÀNH',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  unlocked
+                      ? '🎉 Đã mở khóa tính năng Tạo nhân vật AI!'
+                      : (tt.dangTai
+                          ? 'Đang đồng bộ tiến trình với máy chủ…'
+                          : 'Hoàn thành đủ 6 màn để mở khóa chức năng Tạo nhân vật AI.'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: unlocked ? const Color(0xFF81C784) : const Color(0xFF9FAEBC),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (tt.dangTai)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 18),
+              tooltip: 'Làm mới tiến trình',
+              onPressed: () => tt.taiTienTrinh(),
+            ),
         ],
       ),
     );

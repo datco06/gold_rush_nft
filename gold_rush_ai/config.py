@@ -49,3 +49,6 @@ AI_CHARACTER_SIGNER_PRIVATE_KEY = os.environ.get("AI_CHARACTER_SIGNER_PRIVATE_KE
 AI_CHARACTER_AUTHORIZED_SIGNER = os.environ.get("AI_CHARACTER_AUTHORIZED_SIGNER", "")
 AI_CHARACTER_VOUCHER_TTL_SECONDS = int(os.environ.get("AI_CHARACTER_VOUCHER_TTL_SECONDS", "1800"))
 AI_CHARACTER_VOUCHER_ENABLED = os.environ.get("AI_CHARACTER_VOUCHER_ENABLED", "true").lower() in ("true", "1")
+
+# Lưu trữ tiến trình màn chơi (1-6) gắn với SIWE Auth (Fail-Closed)
+AI_PROGRESS_DB = Path(os.environ.get("AI_PROGRESS_DB", DATA_DIR / "progress" / "progress.sqlite3"))

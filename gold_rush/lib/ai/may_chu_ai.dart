@@ -30,6 +30,20 @@ class KetQuaApiAi {
   });
 }
 
+class KetQuaApiAiList {
+  final List<dynamic>? danhSach;
+  final Map<String, dynamic>? duLieuLoi;
+  final LoiApiAi? loi;
+  final int? maHttp;
+
+  const KetQuaApiAiList._({
+    this.danhSach,
+    this.duLieuLoi,
+    this.loi,
+    this.maHttp,
+  });
+}
+
 class MayChuAi {
   final Uri? _mayChu;
   final String? _maNguoiChoiDemo;
@@ -53,6 +67,8 @@ class MayChuAi {
     }
   }
 
+  Uri? get mayChu => _mayChu;
+
   Future<KetQuaApiAi> postJson(
     String duongDan, {
     required Map<String, Object> body,
@@ -65,22 +81,84 @@ class MayChuAi {
       headers: headers,
       gioiHanByte: 65536,
     );
-    if (kq.loi != null) return kq;
-    try {
-      final json = jsonDecode(utf8.decode(kq.bytes!));
-      if (json is! Map<String, dynamic>) {
-        throw const FormatException('Phản hồi AI phải là object');
-      }
-      return KetQuaApiAi._(duLieu: json, maHttp: kq.maHttp);
-    } on FormatException {
+    Map<String, dynamic>? json;
+    if (kq.bytes != null && kq.bytes!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(utf8.decode(kq.bytes!));
+        if (decoded is Map<String, dynamic>) json = decoded;
+      } catch (_) {}
+    }
+    if (kq.loi != null) {
+      return KetQuaApiAi._(loi: kq.loi, maHttp: kq.maHttp, duLieu: json);
+    }
+    if (json == null) {
       return const KetQuaApiAi._(loi: LoiApiAi.phanHoiKhongHopLe);
     }
+    return KetQuaApiAi._(duLieu: json, maHttp: kq.maHttp);
   }
 
   Future<KetQuaApiAi> getBytes(
     String duongDan, {
     Map<String, String> headers = const {},
   }) => _goi('GET', duongDan, headers: headers, gioiHanByte: 1024 * 1024);
+
+  Future<KetQuaApiAi> getJson(
+    String duongDan, {
+    Map<String, String> headers = const {},
+  }) async {
+    final kq = await _goi(
+      'GET',
+      duongDan,
+      headers: headers,
+      gioiHanByte: 65536,
+    );
+    Map<String, dynamic>? json;
+    if (kq.bytes != null && kq.bytes!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(utf8.decode(kq.bytes!));
+        if (decoded is Map<String, dynamic>) json = decoded;
+      } catch (_) {}
+    }
+    if (kq.loi != null) {
+      return KetQuaApiAi._(loi: kq.loi, maHttp: kq.maHttp, duLieu: json);
+    }
+    if (json == null) {
+      return const KetQuaApiAi._(loi: LoiApiAi.phanHoiKhongHopLe);
+    }
+    return KetQuaApiAi._(duLieu: json, maHttp: kq.maHttp);
+  }
+
+  /// Gọi GET đọc phản hồi kiểu JSON Array (`[...]`).
+  Future<KetQuaApiAiList> getJsonList(
+    String duongDan, {
+    Map<String, String> headers = const {},
+  }) async {
+    final kq = await _goi(
+      'GET',
+      duongDan,
+      headers: headers,
+      gioiHanByte: 65536,
+    );
+    if (kq.loi != null) {
+      Map<String, dynamic>? jsonLoi;
+      if (kq.bytes != null && kq.bytes!.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(utf8.decode(kq.bytes!));
+          if (decoded is Map<String, dynamic>) jsonLoi = decoded;
+        } catch (_) {}
+      }
+      return KetQuaApiAiList._(loi: kq.loi, maHttp: kq.maHttp, duLieuLoi: jsonLoi);
+    }
+    try {
+      final json = jsonDecode(utf8.decode(kq.bytes!));
+      if (json is! List) {
+        throw const FormatException('Phản hồi AI phải là JSON Array');
+      }
+      return KetQuaApiAiList._(danhSach: json, maHttp: kq.maHttp);
+    } on FormatException {
+      return const KetQuaApiAiList._(loi: LoiApiAi.phanHoiKhongHopLe);
+    }
+  }
 
   Future<KetQuaApiAi> _goi(
     String method,

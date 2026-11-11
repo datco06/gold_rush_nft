@@ -143,7 +143,12 @@ class ManHinhMenu extends StatelessWidget {
     try {
       final api = MayChuNhanVat(maNguoiChoiDemo: demo.isEmpty ? null : demo);
       Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ManHinhAnhNhanVat(mayChu: api),
+        builder: (_) => ManHinhAnhNhanVat(
+          mayChu: api,
+          authController: game.auth,
+          vi: game.phienVi?.vi,
+          tienTrinhController: game.tienTrinh,
+        ),
       ));
     } on ArgumentError {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -419,6 +424,13 @@ class ManHinhKetThuc extends StatelessWidget {
               ],
               const SizedBox(height: 6),
               _Dong('Điểm cao nhất', '${game.diemCaoNhat}'),
+              if (game.auth?.canEnterGame == true) ...[
+                const SizedBox(height: 6),
+                _Dong(
+                  'Tiến trình AI',
+                  '${game.tienTrinh.totalCompleted}/6 màn${game.tienTrinh.isCharacterUnlocked ? ' (Mở khóa AI)' : ''}',
+                ),
+              ],
             ],
           ),
         ),

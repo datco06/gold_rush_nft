@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
-import 'ban_do.dart';
 import 'dong_xu.dart';
 import 'ke_dich.dart';
 import 'nhan_vat.dart';
