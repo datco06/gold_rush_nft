@@ -30,3 +30,7 @@
 # File xuất mã nguồn để phân tích
 GoldRush_CauTruc.txt
 GoldRush_Source.txt
+
+# Local runtime databases & localhost deployments
+gold_rush_ai/data/
+gold_rush_chain/deployments/localhost-*.json
