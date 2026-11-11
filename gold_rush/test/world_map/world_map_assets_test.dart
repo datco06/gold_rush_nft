@@ -26,6 +26,7 @@ void main() {
   setUpAll(() async {
     // Đọc asset bundle thật và dữ liệu level thật, không tạo tiến trình mẫu.
     await TaiNguyenWorldMap.nap();
+    await TaiNguyenWorldMap.napAnhGeorge();
     cacMan = ManChoi.docBoManChoi(
       await rootBundle.loadString('assets/tiles/man_choi.json'),
       await rootBundle.loadString('assets/tiles/man_mo_rong.json'),
@@ -257,6 +258,63 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(transform.value, isNot(beforePan));
+
+        if (output != null) {
+          Future<void> chupThem(String tenTep) async {
+            await tester.runAsync(() async {
+              final boundary =
+                  key.currentContext!.findRenderObject()!
+                      as RenderRepaintBoundary;
+              final image = await boundary.toImage(pixelRatio: 1);
+              try {
+                final bytes = await image.toByteData(
+                  format: ui.ImageByteFormat.png,
+                );
+                await File(
+                  '$output/$tenTep',
+                ).writeAsBytes(bytes!.buffer.asUint8List());
+              } finally {
+                image.dispose();
+              }
+            });
+          }
+
+          // 1. Chụp George nổi bật tại vùng Làng / Rừng khi zoom vào George:
+          await tester.tap(find.byTooltip('Định vị George'));
+          await tester.pumpAndSettle();
+          await chupThem('world-map-zoom-lang-rung.png');
+
+          // 2. Chụp góc nhìn zoom gần vùng Núi lửa / Đền cổ:
+          const scaleZoom = 0.88;
+          final dichNuiLua = BoCucWorldMap.tinhDichChuyenTapTrungDiem(
+            diemTheGioi: const Offset(2340, 780),
+            tiLe: scaleZoom,
+            kichThuocKhung: view.size,
+          );
+          transform.value = Matrix4.identity()
+            ..setEntry(0, 0, scaleZoom)
+            ..setEntry(1, 1, scaleZoom)
+            ..setEntry(2, 2, scaleZoom)
+            ..setEntry(0, 3, dichNuiLua.dx)
+            ..setEntry(1, 3, dichNuiLua.dy);
+          await tester.pumpAndSettle();
+          await chupThem('world-map-zoom-nuilua-denco.png');
+
+          // 3. Chụp góc nhìn zoom gần vùng Mỏ vàng / Kho báu trung tâm:
+          final dichMoVang = BoCucWorldMap.tinhDichChuyenTapTrungDiem(
+            diemTheGioi: const Offset(1440, 840),
+            tiLe: scaleZoom,
+            kichThuocKhung: view.size,
+          );
+          transform.value = Matrix4.identity()
+            ..setEntry(0, 0, scaleZoom)
+            ..setEntry(1, 1, scaleZoom)
+            ..setEntry(2, 2, scaleZoom)
+            ..setEntry(0, 3, dichMoVang.dx)
+            ..setEntry(1, 3, dichMoVang.dy);
+          await tester.pumpAndSettle();
+          await chupThem('world-map-zoom-movang-khobau.png');
+        }
       }
       await tester.pumpWidget(const SizedBox.shrink());
     });

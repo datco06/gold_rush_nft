@@ -5,6 +5,7 @@ import '../giao_dien/mau_game.dart';
 import '../gold_rush_game.dart';
 import '../man_choi.dart';
 import '../world_map/ban_do_the_gioi.dart';
+import '../world_map/canh_quan_world_map.dart';
 import '../world_map/nut_man_choi.dart';
 import '../world_map/tien_trinh_world_map.dart';
 
@@ -185,10 +186,10 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
         return Column(
           children: [
             SizedBox(
-              height: (constraints.maxWidth / (1465 / 980) + 36).clamp(
-                0.0,
-                constraints.maxHeight * 0.58,
-              ),
+              height:
+                  (constraints.maxWidth / BoCucWorldMap.kichThuoc.aspectRatio +
+                          36)
+                      .clamp(0.0, constraints.maxHeight * 0.58),
               child: banDo,
             ),
             const Divider(height: 1, color: MauGame.vien),
@@ -367,15 +368,17 @@ class _TheMan extends StatelessWidget {
       }
     }
 
+    final vung = BoCucWorldMap.vungCuaMan(man.id);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'MÀN ${man.id.toString().padLeft(2, '0')}',
+          'MÀN ${man.id.toString().padLeft(2, '0')} · ${vung.ten.toUpperCase()}',
           style: const TextStyle(
             color: Color(0xFFC7A76A),
             fontSize: 11,
-            letterSpacing: 2,
+            letterSpacing: 1.5,
           ),
         ),
         const SizedBox(height: 6),
@@ -391,10 +394,10 @@ class _TheMan extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           man.chiChoiLocal
-              ? 'Màn phiêu lưu local'
+              ? 'Màn phiêu lưu local · ${vung.diaDanh}'
               : man.mienPhi
-              ? 'Màn luyện tập'
-              : 'Màn có đặt cọc',
+              ? 'Màn luyện tập · ${vung.diaDanh}'
+              : 'Màn có đặt cọc · ${vung.diaDanh}',
           style: const TextStyle(color: Color(0xFFB5BE9A), fontSize: 12),
         ),
         const SizedBox(height: 12),
