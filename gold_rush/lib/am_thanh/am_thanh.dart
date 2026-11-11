@@ -28,12 +28,7 @@ class AmThanh {
   /// Không nạp trước thì lần phát đầu tiên bị trễ rõ rệt, nghe như game giật.
   static Future<void> napTruoc() async {
     try {
-      await FlameAudio.audioCache.loadAll([
-        _dongXu,
-        _vaCham,
-        _buocChan,
-        _nhacNen,
-      ]);
+      await FlameAudio.audioCache.loadAll([_dongXu, _vaCham, _buocChan, _nhacNen]);
     } catch (e) {
       debugPrint('Không nạp được âm thanh: $e');
     }

@@ -45,11 +45,7 @@ class ManHinhCuaHang extends StatelessWidget {
   }
 
   Widget _khung(BuildContext context, List<Widget> giua) {
-    const chuPhu = TextStyle(
-      color: Color(0xFF9FAEBC),
-      fontSize: 13,
-      height: 1.5,
-    );
+    const chuPhu = TextStyle(color: Color(0xFF9FAEBC), fontSize: 13, height: 1.5);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,11 +53,7 @@ class ManHinhCuaHang extends StatelessWidget {
         const Text(
           'CỬA HÀNG NHÂN VẬT',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            color: CauHinh.mauChinh,
-          ),
+          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: CauHinh.mauChinh),
         ),
         const SizedBox(height: 6),
         const Text(
@@ -91,10 +83,7 @@ class ManHinhCuaHang extends StatelessWidget {
         Text(
           'Ví ${dc!.substring(0, 6)}…${dc.substring(dc.length - 4)}   ·   Vàng: ${pv.vang}',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: CauHinh.mauChu,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(color: CauHinh.mauChu, fontWeight: FontWeight.w700),
         ),
         if (pv.ve.dangMo)
           Text(
@@ -108,22 +97,16 @@ class ManHinhCuaHang extends StatelessWidget {
           FilledButton.icon(
             onPressed: pv.dangXuLy ? null : pv.nhanTatCa,
             icon: const Icon(Icons.savings_outlined),
-            label: Text(
-              'Nhận ${pv.phieuCho.length} phiếu · +${pv.vangChoNhan} vàng',
-            ),
+            label: Text('Nhận ${pv.phieuCho.length} phiếu · +${pv.vangChoNhan} vàng'),
           ),
         const SizedBox(height: 10),
         for (final nv in [georgeGoc, ...bangNhanVat])
           _DongNhanVat(
             nhanVat: nv,
-            gia: nv.id == 0
-                ? BigInt.zero
-                : (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
+            gia: nv.id == 0 ? BigInt.zero : (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
             daCo: nv.id == 0 || pv.daCo.contains(nv.id),
             dangDung: game.nhanVatDangDung == nv.tepAnh,
-            duVang:
-                pv.vang + pv.vangChoNhan >=
-                (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
+            duVang: pv.vang + pv.vangChoNhan >= (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
             banKhoa: pv.dangXuLy,
             khiMua: () => pv.mua(nv),
             khiDung: () {
@@ -150,9 +133,7 @@ class ManHinhCuaHang extends StatelessWidget {
           pv.thongBao!,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: pv.thongBaoLaLoi
-                ? const Color(0xFFFFB4A9)
-                : const Color(0xFF9FAEBC),
+            color: pv.thongBaoLaLoi ? const Color(0xFFFFB4A9) : const Color(0xFF9FAEBC),
             fontSize: 13,
             height: 1.5,
           ),
@@ -189,10 +170,7 @@ class _DongNhanVat extends StatelessWidget {
     if (dangDung) {
       nut = const Chip(label: Text('Đang dùng'));
     } else if (daCo) {
-      nut = OutlinedButton(
-        onPressed: banKhoa ? null : khiDung,
-        child: const Text('Dùng'),
-      );
+      nut = OutlinedButton(onPressed: banKhoa ? null : khiDung, child: const Text('Dùng'));
     } else {
       nut = FilledButton(
         onPressed: banKhoa || !duVang ? null : khiMua,

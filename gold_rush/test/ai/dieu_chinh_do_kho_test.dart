@@ -8,14 +8,14 @@ import 'package:gold_rush/ai/mo_hinh_do_kho.dart';
 class MoHinhGia extends MoHinhDoKho {
   final double p;
   MoHinhGia(this.p)
-    : super(
-        phienBan: 'gia',
-        dacTrung: MoHinhDoKho.dacTrungHoTro,
-        trungBinh: List.filled(5, 0.0),
-        doLech: List.filled(5, 1.0),
-        heSo: List.filled(5, 0.0),
-        chan: 0.0,
-      );
+      : super(
+          phienBan: 'gia',
+          dacTrung: MoHinhDoKho.dacTrungHoTro,
+          trungBinh: List.filled(5, 0.0),
+          doLech: List.filled(5, 1.0),
+          heSo: List.filled(5, 0.0),
+          chan: 0.0,
+        );
 
   @override
   double duDoan(List<double> x) => p;

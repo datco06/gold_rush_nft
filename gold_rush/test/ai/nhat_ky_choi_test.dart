@@ -58,21 +58,18 @@ void main() {
     expect(nk.maVan, isNot(a));
   });
 
-  test(
-    'màn có cọc: dùng mã ván đã đăng ký với máy chủ, ghi id màn và bản đồ',
-    () {
-      final ma = nk.sinhMaVan();
-      nk.batDau(18, maVanCoSan: ma);
-      expect(nk.maVan, ma);
-      final j = nk.thanhJson(
-        ketQua: 'thang',
-        diem: 360,
-        phienBanApp: '1.3.0',
-        doKhoThichUng: false,
-        banDo: 'man_2.tmx',
-        man: 2,
-      );
-      expect([j['ma_van'], j['man'], j['ban_do']], [ma, 2, 'man_2.tmx']);
-    },
-  );
+  test('màn có cọc: dùng mã ván đã đăng ký với máy chủ, ghi id màn và bản đồ', () {
+    final ma = nk.sinhMaVan();
+    nk.batDau(18, maVanCoSan: ma);
+    expect(nk.maVan, ma);
+    final j = nk.thanhJson(
+      ketQua: 'thang',
+      diem: 360,
+      phienBanApp: '1.3.0',
+      doKhoThichUng: false,
+      banDo: 'man_2.tmx',
+      man: 2,
+    );
+    expect([j['ma_van'], j['man'], j['ban_do']], [ma, 2, 'man_2.tmx']);
+  });
 }

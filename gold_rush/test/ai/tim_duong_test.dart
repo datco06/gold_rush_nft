@@ -6,21 +6,17 @@ import 'package:gold_rush/ai/tim_duong.dart';
 /// Các ca dưới đây dịch NGUYÊN VĂN từ `gold_rush_ai/tests/test_core.py`
 /// (lớp TestTimDuong): bản Dart và bản Python phải cho cùng kết quả.
 TimDuong luoi(List<String> dong) => TimDuong(
-  soCot: dong.first.length,
-  soHang: dong.length,
-  biChan: (c, h) => dong[h][c] == '#',
-);
+      soCot: dong.first.length,
+      soHang: dong.length,
+      biChan: (c, h) => dong[h][c] == '#',
+    );
 
 O o(int c, int h) => (cot: c, hang: h);
 
 void main() {
   test('đường thẳng', () {
-    expect(luoi(['.....']).tim(o(0, 0), o(4, 0)), [
-      o(1, 0),
-      o(2, 0),
-      o(3, 0),
-      o(4, 0),
-    ]);
+    expect(luoi(['.....']).tim(o(0, 0), o(4, 0)),
+        [o(1, 0), o(2, 0), o(3, 0), o(4, 0)]);
   });
 
   test('đầu trùng đích → danh sách rỗng', () {
@@ -28,14 +24,22 @@ void main() {
   });
 
   test('vòng qua tường theo đường ngắn nhất', () {
-    final b = luoi(['.....', '.###.', '.....']);
+    final b = luoi([
+      '.....',
+      '.###.',
+      '.....',
+    ]);
     final d = b.tim(o(0, 1), o(4, 1))!;
     expect(d.length, 6);
     expect(d.every((x) => !b.biChan(x.cot, x.hang)), isTrue);
   });
 
   test('không có đường → null', () {
-    final b = luoi(['..#..', '..#..', '..#..']);
+    final b = luoi([
+      '..#..',
+      '..#..',
+      '..#..',
+    ]);
     expect(b.tim(o(0, 0), o(4, 0)), isNull);
   });
 

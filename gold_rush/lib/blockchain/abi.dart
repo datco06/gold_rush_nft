@@ -56,13 +56,13 @@ class PhieuVang {
   });
 
   factory PhieuVang.tuJson(Map<String, dynamic> j) => PhieuVang(
-    nguoiChoi: j['nguoiChoi'] as String,
-    man: BigInt.from(j['man'] as int),
-    ve: BigInt.from(j['ve'] as int),
-    soVang: BigInt.from(j['soVang'] as int),
-    maVan: j['maVan'] as String,
-    hanChot: BigInt.from(j['hanChot'] as int),
-  );
+        nguoiChoi: j['nguoiChoi'] as String,
+        man: BigInt.from(j['man'] as int),
+        ve: BigInt.from(j['ve'] as int),
+        soVang: BigInt.from(j['soVang'] as int),
+        maVan: j['maVan'] as String,
+        hanChot: BigInt.from(j['hanChot'] as int),
+      );
 }
 
 /// Vé vào màn đang mở của một ví (`ve(address)` trên hợp đồng). `so == 0`: không có vé.
@@ -151,8 +151,7 @@ String maHoaVaoMan(int man) => '0x$chonVaoMan${_tuInt(man)}';
 
 String maHoaMua(int nhanVat) => '0x$chonMua${_tuInt(nhanVat)}';
 
-String maHoaBalanceOf(String vi, int id) =>
-    '0x$chonBalanceOf${tuDiaChi(vi)}${_tuInt(id)}';
+String maHoaBalanceOf(String vi, int id) => '0x$chonBalanceOf${tuDiaChi(vi)}${_tuInt(id)}';
 
 String maHoaGia(int nhanVat) => '0x$chonGia${_tuInt(nhanVat)}';
 
@@ -167,9 +166,7 @@ List<BigInt> docCacUint256(String ketQua, int soTu) {
   final h = boOx(ketQua);
   return [
     for (var i = 0; i < soTu; i++)
-      (i + 1) * 64 <= h.length
-          ? BigInt.parse(h.substring(i * 64, (i + 1) * 64), radix: 16)
-          : BigInt.zero,
+      (i + 1) * 64 <= h.length ? BigInt.parse(h.substring(i * 64, (i + 1) * 64), radix: 16) : BigInt.zero,
   ];
 }
 

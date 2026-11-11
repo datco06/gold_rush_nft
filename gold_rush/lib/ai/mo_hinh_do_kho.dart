@@ -30,9 +30,7 @@ class MoHinhDoKho {
   }) {
     final n = dacTrung.length;
     if (trungBinh.length != n || doLech.length != n || heSo.length != n) {
-      throw FormatException(
-        'Mô hình $phienBan: số phần tử các mảng không khớp',
-      );
+      throw FormatException('Mô hình $phienBan: số phần tử các mảng không khớp');
     }
   }
 
@@ -52,13 +50,10 @@ class MoHinhDoKho {
 
     final dt = (j['dac_trung'] as List).cast<String>();
     if (dt.length != dacTrungHoTro.length ||
-        !List.generate(
-          dt.length,
-          (i) => dt[i] == dacTrungHoTro[i],
-        ).every((dung) => dung)) {
+        !List.generate(dt.length, (i) => dt[i] == dacTrungHoTro[i])
+            .every((dung) => dung)) {
       throw FormatException(
-        'Mô hình cần đặc trưng $dt, app này chỉ tính được $dacTrungHoTro',
-      );
+          'Mô hình cần đặc trưng $dt, app này chỉ tính được $dacTrungHoTro');
     }
     return MoHinhDoKho(
       phienBan: j['phien_ban'] as String,

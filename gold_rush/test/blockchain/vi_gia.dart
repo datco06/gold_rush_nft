@@ -36,18 +36,12 @@ class ViGia implements Vi {
   int soLanHoiBienLai = 0;
 
   ViGia({List<String>? taiKhoan, this.mang = 31337})
-    : danhSachTaiKhoan = taiKhoan ?? [viThu];
+      : danhSachTaiKhoan = taiKhoan ?? [viThu];
 
-  void datSo(String calldata, BigInt giaTri) =>
-      ketQuaGoi[calldata] = '0x${tu(giaTri)}';
+  void datSo(String calldata, BigInt giaTri) => ketQuaGoi[calldata] = '0x${tu(giaTri)}';
 
-  void datVe(
-    String vi, {
-    required int man,
-    required int so,
-    required int coc,
-  }) => ketQuaGoi[maHoaVe(vi)] =
-      '0x${tu(BigInt.from(man))}${tu(BigInt.from(so))}${tu(BigInt.from(coc))}';
+  void datVe(String vi, {required int man, required int so, required int coc}) =>
+      ketQuaGoi[maHoaVe(vi)] = '0x${tu(BigInt.from(man))}${tu(BigInt.from(so))}${tu(BigInt.from(coc))}';
 
   @override
   bool get coSan => true;
@@ -68,21 +62,13 @@ class ViGia implements Vi {
   Future<int> chainId() async => mang;
 
   @override
-  Future<void> chuyenMang(
-    int chainId, {
-    String? tenMang,
-    String? rpcUrl,
-  }) async {
+  Future<void> chuyenMang(int chainId, {String? tenMang, String? rpcUrl}) async {
     soLanChuyenMang++;
     mang = mangSauKhiChuyen ?? chainId;
   }
 
   @override
-  Future<String> goi({
-    required String toi,
-    required String duLieu,
-    String? tu,
-  }) async {
+  Future<String> goi({required String toi, required String duLieu, String? tu}) async {
     if (tu != null && loiMoPhong != null) throw loiMoPhong!;
     return ketQuaGoi[duLieu] ?? '0x${'0' * 192}';
   }
@@ -91,11 +77,7 @@ class ViGia implements Vi {
   Future<String> maHopDong(String diaChi) async => maByte;
 
   @override
-  Future<BigInt> uocLuongGas({
-    required String tu,
-    required String toi,
-    required String duLieu,
-  }) async {
+  Future<BigInt> uocLuongGas({required String tu, required String toi, required String duLieu}) async {
     if (loiMoPhong != null) throw loiMoPhong!;
     return gas;
   }
@@ -123,15 +105,12 @@ class ViGia implements Vi {
   @override
   Future<BienLai?> bienLai(String maGiaoDich) async {
     final i = soLanHoiBienLai++;
-    return bienLaiLanLuot[i < bienLaiLanLuot.length
-        ? i
-        : bienLaiLanLuot.length - 1];
+    return bienLaiLanLuot[i < bienLaiLanLuot.length ? i : bienLaiLanLuot.length - 1];
   }
 }
 
 /// Bộ giao dịch chạy NHANH trong test: không ngủ thật.
-BoGiaoDich boThu(ViGia vi, {Duration choToiDa = const Duration(seconds: 6)}) =>
-    BoGiaoDich(
+BoGiaoDich boThu(ViGia vi, {Duration choToiDa = const Duration(seconds: 6)}) => BoGiaoDich(
       vi: vi,
       chainId: 31337,
       hopDong: hopDongThu,

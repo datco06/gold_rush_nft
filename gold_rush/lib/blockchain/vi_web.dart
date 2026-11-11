@@ -95,10 +95,7 @@ class _ViWeb implements Vi {
           _cacVi.add((_chuoi(ct.info.name), _chuoi(ct.info.rdns), ct.provider));
         }).toJS,
       );
-      globalContext.callMethod(
-        'dispatchEvent'.toJS,
-        _SuKienDom('eip6963:requestProvider'),
-      );
+      globalContext.callMethod('dispatchEvent'.toJS, _SuKienDom('eip6963:requestProvider'));
     } catch (_) {
       // Trình duyệt quá cũ: còn window.ethereum.
     }
@@ -135,9 +132,7 @@ class _ViWeb implements Vi {
         'accountsChanged',
         ((JSAny? ds) {
           final l = ds.dartify();
-          _suKien.add(
-            DoiTaiKhoan(l is List ? [for (final x in l) '$x'] : const []),
-          );
+          _suKien.add(DoiTaiKhoan(l is List ? [for (final x in l) '$x'] : const []));
         }).toJS,
       );
       p.dangKy(
@@ -171,21 +166,16 @@ class _ViWeb implements Vi {
   Future<Object?> _hoi(String phuongThuc, [List<Object?> thamSo = const []]) {
     final eth = _nhaCungCap;
     if (eth == null) {
-      return Future.error(
-        const LoiVi(
-          'Chưa cài MetaMask. Cài tiện ích MetaMask cho trình duyệt rồi tải lại trang.',
-        ),
-      );
+      return Future.error(const LoiVi(
+          'Chưa cài MetaMask. Cài tiện ích MetaMask cho trình duyệt rồi tải lại trang.'));
     }
     final xong = Completer<Object?>();
     try {
       eth
-          .request(
-            _YeuCau(
-              method: phuongThuc,
-              params: thamSo.jsify()! as JSArray<JSAny?>,
-            ),
-          )
+          .request(_YeuCau(
+            method: phuongThuc,
+            params: thamSo.jsify()! as JSArray<JSAny?>,
+          ))
           .then(
             ((JSAny? kq) => xong.complete(kq.dartify())).toJS,
             ((JSAny? loi) => xong.completeError(_dichLoi(loi))).toJS,
@@ -212,8 +202,7 @@ class _ViWeb implements Vi {
   @override
   Future<String> ketNoi() async {
     final ds = await _hoi('eth_requestAccounts');
-    if (ds is! List || ds.isEmpty)
-      throw const LoiVi('Ví không trả về tài khoản nào.');
+    if (ds is! List || ds.isEmpty) throw const LoiVi('Ví không trả về tài khoản nào.');
     return '${ds.first}';
   }
 
@@ -227,11 +216,7 @@ class _ViWeb implements Vi {
   Future<int> chainId() async => _hex(await _hoi('eth_chainId')).toInt();
 
   @override
-  Future<void> chuyenMang(
-    int chainId, {
-    String? tenMang,
-    String? rpcUrl,
-  }) async {
+  Future<void> chuyenMang(int chainId, {String? tenMang, String? rpcUrl}) async {
     final hex = '0x${chainId.toRadixString(16)}';
     try {
       await _hoi('wallet_switchEthereumChain', [
@@ -239,8 +224,7 @@ class _ViWeb implements Vi {
       ]);
     } on LoiVi catch (e) {
       // 4902 chuẩn; một số bản MetaMask di động trả -32603 kèm "Unrecognized chain".
-      final chuaCo =
-          e.loai == LoaiLoiVi.chuaCoMang ||
+      final chuaCo = e.loai == LoaiLoiVi.chuaCoMang ||
           (e.thongDiepGoc ?? '').toLowerCase().contains('unrecognized chain');
       if (!chuaCo || rpcUrl == null) rethrow;
       await _hoi('wallet_addEthereumChain', [
@@ -255,11 +239,7 @@ class _ViWeb implements Vi {
   }
 
   @override
-  Future<String> goi({
-    required String toi,
-    required String duLieu,
-    String? tu,
-  }) async {
+  Future<String> goi({required String toi, required String duLieu, String? tu}) async {
     final kq = await _hoi('eth_call', [
       {if (tu != null) 'from': tu, 'to': toi, 'data': duLieu},
       'latest',
@@ -274,22 +254,16 @@ class _ViWeb implements Vi {
   }
 
   @override
-  Future<BigInt> uocLuongGas({
-    required String tu,
-    required String toi,
-    required String duLieu,
-  }) async => _hex(
-    await _hoi('eth_estimateGas', [
-      {'from': tu, 'to': toi, 'data': duLieu},
-    ]),
-  );
+  Future<BigInt> uocLuongGas({required String tu, required String toi, required String duLieu}) async =>
+      _hex(await _hoi('eth_estimateGas', [
+        {'from': tu, 'to': toi, 'data': duLieu},
+      ]));
 
   @override
   Future<BigInt> giaGas() async => _hex(await _hoi('eth_gasPrice'));
 
   @override
-  Future<BigInt> soDu(String diaChi) async =>
-      _hex(await _hoi('eth_getBalance', [diaChi, 'latest']));
+  Future<BigInt> soDu(String diaChi) async => _hex(await _hoi('eth_getBalance', [diaChi, 'latest']));
 
   @override
   Future<String> guiGiaoDich({
@@ -300,12 +274,7 @@ class _ViWeb implements Vi {
   }) async {
     // Đặt giới hạn gas (đã cộng biên an toàn); giá gas để MetaMask tự đề xuất (EIP-1559).
     final kq = await _hoi('eth_sendTransaction', [
-      {
-        'from': tu,
-        'to': toi,
-        'data': duLieu,
-        if (gas != null) 'gas': _hexCua(gas),
-      },
+      {'from': tu, 'to': toi, 'data': duLieu, if (gas != null) 'gas': _hexCua(gas)},
     ]);
     if (kq is! String) throw const LoiVi('Ví không trả về mã giao dịch.');
     return kq;
@@ -317,9 +286,7 @@ class _ViWeb implements Vi {
     if (kq is! Map) return null;
     return BienLai(
       thanhCong: kq['status'] == '0x1',
-      soKhoi: kq['blockNumber'] is String
-          ? _hex(kq['blockNumber']).toInt()
-          : null,
+      soKhoi: kq['blockNumber'] is String ? _hex(kq['blockNumber']).toInt() : null,
     );
   }
 }

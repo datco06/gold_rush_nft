@@ -13,7 +13,7 @@ class NutTamDung extends PositionComponent with TapCallbacks {
   bool _dangBam = false;
 
   NutTamDung({required this.khiBam})
-    : super(size: Vector2.all(38), priority: 101);
+      : super(size: Vector2.all(38), priority: 101);
 
   /// Tự bám vào góc trên bên phải mỗi khi kích thước màn hình đổi.
   ///
@@ -46,18 +46,11 @@ class NutTamDung extends PositionComponent with TapCallbacks {
     final khung = Rect.fromLTWH(0, 0, size.x, size.y);
     canvas.drawRRect(
       RRect.fromRectAndRadius(khung, const Radius.circular(10)),
-      Paint()
-        ..color = _dangBam ? const Color(0xAA000000) : const Color(0x66000000),
+      Paint()..color = _dangBam ? const Color(0xAA000000) : const Color(0x66000000),
     );
 
     final son = Paint()..color = const Color(0xFFF2F4F7);
-    canvas.drawRect(
-      Rect.fromLTWH(size.x * 0.32, size.y * 0.27, 4, size.y * 0.46),
-      son,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(size.x * 0.56, size.y * 0.27, 4, size.y * 0.46),
-      son,
-    );
+    canvas.drawRect(Rect.fromLTWH(size.x * 0.32, size.y * 0.27, 4, size.y * 0.46), son);
+    canvas.drawRect(Rect.fromLTWH(size.x * 0.56, size.y * 0.27, 4, size.y * 0.46), son);
   }
 }

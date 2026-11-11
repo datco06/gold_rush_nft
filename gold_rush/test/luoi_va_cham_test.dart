@@ -22,7 +22,11 @@ void main() {
   }
 
   group('biChanTaiDiem', () {
-    final luoi = tuChuoi(['....', '.##.', '....']);
+    final luoi = tuChuoi([
+      '....',
+      '.##.',
+      '....',
+    ]);
 
     test('ô trống thì không chặn', () {
       expect(luoi.biChanTaiDiem(o * 0.5, o * 0.5), isFalse);
@@ -54,7 +58,11 @@ void main() {
   });
 
   group('diDuoc', () {
-    final luoi = tuChuoi(['.....', '..#..', '.....']);
+    final luoi = tuChuoi([
+      '.....',
+      '..#..',
+      '.....',
+    ]);
     final hop = Vector2(10, 7); // đúng kích thước hộp chân của nhân vật
 
     test('đứng giữa ô trống thì đi được', () {
@@ -69,11 +77,7 @@ void main() {
       // Tâm nằm ở ô trống bên trái tường, nhưng mép phải của hộp (rộng 10)
       // thò sang ô tường.
       final tam = Vector2(o * 2 - 3, o * 1.5); // tường bắt đầu ở x = 32
-      expect(
-        luoi.biChanTaiDiem(tam.x, tam.y),
-        isFalse,
-        reason: 'tâm ở ô trống',
-      );
+      expect(luoi.biChanTaiDiem(tam.x, tam.y), isFalse, reason: 'tâm ở ô trống');
       expect(luoi.diDuoc(tam, hop), isFalse, reason: 'mép phải chạm tường');
     });
 
@@ -88,7 +92,13 @@ void main() {
   });
 
   group('nhinThay', () {
-    final luoi = tuChuoi(['.....', '.....', '..#..', '.....', '.....']);
+    final luoi = tuChuoi([
+      '.....',
+      '.....',
+      '..#..',
+      '.....',
+      '.....',
+    ]);
 
     Vector2 tamO(int cx, int cy) => Vector2(cx * o + o / 2, cy * o + o / 2);
 
@@ -131,7 +141,10 @@ void main() {
   });
 
   group('biChanO (cổng cho bộ tìm đường A*)', () {
-    final luoi = tuChuoi(['.#', '..']);
+    final luoi = tuChuoi([
+      '.#',
+      '..',
+    ]);
 
     test('đọc đúng theo (cột, hàng)', () {
       expect(luoi.biChanO(1, 0), isTrue);

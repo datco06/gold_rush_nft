@@ -52,17 +52,17 @@ class ManChoi {
   int get nhanVeKhiHoanThanh => coc + soXu + thuong;
 
   factory ManChoi.tuJson(Map<String, dynamic> j) => ManChoi(
-    id: j['id'] as int,
-    ten: j['ten'] as String,
-    moTa: j['mo_ta'] as String,
-    tep: j['tep'] as String,
-    gioiHanGiay: j['gioi_han_giay'] as int,
-    heSoKeDich: (j['he_so_ke_dich'] as num).toDouble(),
-    coc: j['coc'] as int,
-    thuong: j['thuong'] as int,
-    soXu: j['so_xu'] as int,
-    sao: j['sao'] as int,
-  );
+        id: j['id'] as int,
+        ten: j['ten'] as String,
+        moTa: j['mo_ta'] as String,
+        tep: j['tep'] as String,
+        gioiHanGiay: j['gioi_han_giay'] as int,
+        heSoKeDich: (j['he_so_ke_dich'] as num).toDouble(),
+        coc: j['coc'] as int,
+        thuong: j['thuong'] as int,
+        soXu: j['so_xu'] as int,
+        sao: j['sao'] as int,
+      );
 
   /// Màn mặc định khi chưa nạp được tệp JSON: bản đồ gốc, luyện tập — game vẫn chơi được.
   static const ManChoi macDinh = ManChoi(
@@ -82,11 +82,9 @@ class ManChoi {
   static List<ManChoi> docDanhSach(String noiDung) {
     final j = jsonDecode(noiDung) as Map<String, dynamic>;
     final ds = [
-      for (final m in j['man'] as List<dynamic>)
-        ManChoi.tuJson(m as Map<String, dynamic>),
+      for (final m in j['man'] as List<dynamic>) ManChoi.tuJson(m as Map<String, dynamic>),
     ]..sort((a, b) => a.id.compareTo(b.id));
-    if (ds.isEmpty)
-      throw const FormatException('man_choi.json không có màn nào');
+    if (ds.isEmpty) throw const FormatException('man_choi.json không có màn nào');
     return ds;
   }
 }

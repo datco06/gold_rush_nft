@@ -20,58 +20,58 @@ Vector2 _huongNgauNhien(double lucToiThieu, double lucToiDa) {
 /// hết vòng đời, nên không cần dọn dẹp thủ công.
 class HieuUngNhatXu extends ParticleSystemComponent {
   HieuUngNhatXu(Vector2 viTri)
-    : super(
-        position: viTri,
-        priority: 3,
-        particle: Particle.generate(
-          count: 12,
-          lifespan: 0.55,
-          generator: (i) => AcceleratedParticle(
-            speed: _huongNgauNhien(24, 64),
-            acceleration: Vector2(0, 90), // rơi xuống như tàn pháo hoa
-            child: ComputedParticle(
-              renderer: (canvas, hat) {
-                // hat.progress chạy từ 0 đến 1 -> hạt mờ và nhỏ dần.
-                final mo = (1 - hat.progress).clamp(0.0, 1.0);
-                final son = Paint()
-                  ..color = const Color(0xFFFFD84D).withValues(alpha: mo);
-                canvas.drawCircle(Offset.zero, 1.6 * mo + 0.4, son);
-              },
+      : super(
+          position: viTri,
+          priority: 3,
+          particle: Particle.generate(
+            count: 12,
+            lifespan: 0.55,
+            generator: (i) => AcceleratedParticle(
+              speed: _huongNgauNhien(24, 64),
+              acceleration: Vector2(0, 90), // rơi xuống như tàn pháo hoa
+              child: ComputedParticle(
+                renderer: (canvas, hat) {
+                  // hat.progress chạy từ 0 đến 1 -> hạt mờ và nhỏ dần.
+                  final mo = (1 - hat.progress).clamp(0.0, 1.0);
+                  final son = Paint()
+                    ..color = const Color(0xFFFFD84D).withValues(alpha: mo);
+                  canvas.drawCircle(Offset.zero, 1.6 * mo + 0.4, son);
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 }
 
 /// Vụ nổ khi kẻ địch lao vào George rồi tự huỷ.
 class HieuUngNoKeDich extends ParticleSystemComponent {
   HieuUngNoKeDich(Vector2 viTri, Color mau)
-    : super(
-        position: viTri,
-        priority: 3,
-        particle: Particle.generate(
-          count: 22,
-          lifespan: 0.7,
-          generator: (i) => AcceleratedParticle(
-            speed: _huongNgauNhien(30, 110),
-            acceleration: Vector2(0, 60),
-            child: ComputedParticle(
-              renderer: (canvas, hat) {
-                final mo = (1 - hat.progress).clamp(0.0, 1.0);
-                final son = Paint()..color = mau.withValues(alpha: mo);
-                canvas.drawRect(
-                  Rect.fromCenter(
-                    center: Offset.zero,
-                    width: 2.2 * mo + 0.6,
-                    height: 2.2 * mo + 0.6,
-                  ),
-                  son,
-                );
-              },
+      : super(
+          position: viTri,
+          priority: 3,
+          particle: Particle.generate(
+            count: 22,
+            lifespan: 0.7,
+            generator: (i) => AcceleratedParticle(
+              speed: _huongNgauNhien(30, 110),
+              acceleration: Vector2(0, 60),
+              child: ComputedParticle(
+                renderer: (canvas, hat) {
+                  final mo = (1 - hat.progress).clamp(0.0, 1.0);
+                  final son = Paint()..color = mau.withValues(alpha: mo);
+                  canvas.drawRect(
+                    Rect.fromCenter(
+                      center: Offset.zero,
+                      width: 2.2 * mo + 0.6,
+                      height: 2.2 * mo + 0.6,
+                    ),
+                    son,
+                  );
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 }
 
 /// Bóng đổ dưới chân nhân vật (Chương 9 — hiệu ứng lớp).

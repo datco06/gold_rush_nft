@@ -23,12 +23,13 @@ class LuoiVaCham {
   final int soHang;
 
   LuoiVaCham(this._chan)
-    : soHang = _chan.length,
-      soCot = _chan.isEmpty ? 0 : _chan.first.length;
+      : soHang = _chan.length,
+        soCot = _chan.isEmpty ? 0 : _chan.first.length;
 
   /// Lưới trống hoàn toàn, dùng khi tệp .tmx thiếu lớp va chạm.
-  factory LuoiVaCham.trong(int cot, int hang) =>
-      LuoiVaCham(List.generate(hang, (_) => List<bool>.filled(cot, false)));
+  factory LuoiVaCham.trong(int cot, int hang) => LuoiVaCham(
+        List.generate(hang, (_) => List<bool>.filled(cot, false)),
+      );
 
   /// Ô (cột, hàng) có chặn không. Ngoài bản đồ coi như chặn.
   ///

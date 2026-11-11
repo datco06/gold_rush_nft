@@ -19,19 +19,13 @@ class ManHinhChonMan extends StatelessWidget {
     final pv = game.phienVi;
     final noiDung = pv == null
         ? _danhSach(context, null)
-        : ListenableBuilder(
-            listenable: pv,
-            builder: (context, _) => _danhSach(context, pv),
-          );
+        : ListenableBuilder(listenable: pv, builder: (context, _) => _danhSach(context, pv));
     return Container(
       color: CauHinh.mauNenMo,
       alignment: Alignment.center,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: noiDung,
-        ),
+        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 520), child: noiDung),
       ),
     );
   }
@@ -45,11 +39,7 @@ class ManHinhChonMan extends StatelessWidget {
         const Text(
           'CHỌN MÀN',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w900,
-            color: CauHinh.mauChinh,
-          ),
+          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: CauHinh.mauChinh),
         ),
         const SizedBox(height: 6),
         const Text(
@@ -76,10 +66,7 @@ class ManHinhChonMan extends StatelessWidget {
             'Vàng: ${pv.vang}'
             '${pv.phieuCho.isEmpty ? '' : '  ·  chờ nhận ${pv.vangChoNhan} (tự gộp vào giao dịch)'}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: CauHinh.mauChu,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(color: CauHinh.mauChu, fontWeight: FontWeight.w700),
           ),
         if (pv != null && (pv.thongBao ?? '').isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -87,9 +74,7 @@ class ManHinhChonMan extends StatelessWidget {
             pv.thongBao!,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: pv.thongBaoLaLoi
-                  ? const Color(0xFFFFB4A9)
-                  : const Color(0xFF9FAEBC),
+              color: pv.thongBaoLaLoi ? const Color(0xFFFFB4A9) : const Color(0xFF9FAEBC),
               fontSize: 13,
             ),
           ),
@@ -114,22 +99,14 @@ class _TheMan extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = pv;
     final Widget nut;
-    final banKhoa =
-        (p?.dangXuLy ?? false) ||
-        (p?.dangHoi ??
-            false); // đang chuẩn bị màn có cọc: không cho mở ván khác chen vào
+    final banKhoa = (p?.dangXuLy ?? false) || (p?.dangHoi ?? false); // đang chuẩn bị màn có cọc: không cho mở ván khác chen vào
     if (man.mienPhi) {
-      nut = FilledButton(
-        onPressed: banKhoa ? null : () => _choiLuyenTap(p),
-        child: const Text('Chơi'),
-      );
+      nut = FilledButton(onPressed: banKhoa ? null : () => _choiLuyenTap(p), child: const Text('Chơi'));
     } else {
       // Đủ vàng, HOẶC có vé cùng màn đang mở (có thể dùng lại không mất thêm cọc)
-      final duVang =
-          p != null &&
+      final duVang = p != null &&
           p.daKetNoi &&
-          (p.vang + p.vangChoNhan >= BigInt.from(man.coc) ||
-              (p.ve.dangMo && p.ve.man == man.id));
+          (p.vang + p.vangChoNhan >= BigInt.from(man.coc) || (p.ve.dangMo && p.ve.man == man.id));
       nut = FilledButton(
         onPressed: (p == null || !p.daKetNoi || banKhoa || !duVang)
             ? null
@@ -139,38 +116,24 @@ class _TheMan extends StatelessWidget {
     }
     final thongSo = [
       '${man.soXu} xu',
-      man.gioiHanGiay == 0
-          ? 'không giới hạn giờ'
-          : '⏱ ${dinhDangGiay(man.gioiHanGiay)}',
+      man.gioiHanGiay == 0 ? 'không giới hạn giờ' : '⏱ ${dinhDangGiay(man.gioiHanGiay)}',
       if (!man.mienPhi) 'hoàn thành: +${man.nhanVeKhiHoanThanh} vàng',
     ].join('  ·  ');
     return Card(
       color: const Color(0x22FFFFFF),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: man.mienPhi
-              ? const Color(0xFF2E7D32)
-              : CauHinh.mauChinh,
+          backgroundColor: man.mienPhi ? const Color(0xFF2E7D32) : CauHinh.mauChinh,
           foregroundColor: const Color(0xFF241A05),
-          child: Text(
-            '${man.id}',
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
+          child: Text('${man.id}', style: const TextStyle(fontWeight: FontWeight.w900)),
         ),
         title: Text(
           '${man.ten}   ${'★' * man.sao}${'☆' * (5 - man.sao)}',
-          style: const TextStyle(
-            color: CauHinh.mauChu,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(color: CauHinh.mauChu, fontWeight: FontWeight.w700),
         ),
         subtitle: Text(
           '${man.moTa}\n$thongSo',
-          style: const TextStyle(
-            color: Color(0xFF9FAEBC),
-            fontSize: 12,
-            height: 1.4,
-          ),
+          style: const TextStyle(color: Color(0xFF9FAEBC), fontSize: 12, height: 1.4),
         ),
         isThreeLine: true,
         trailing: nut,
@@ -179,8 +142,7 @@ class _TheMan extends StatelessWidget {
   }
 
   Future<void> _choiLuyenTap(PhienVi? p) async {
-    if (!await game.choiMan(man))
-      p?.baoLoi('Không nạp được bản đồ ${man.tep}.');
+    if (!await game.choiMan(man)) p?.baoLoi('Không nạp được bản đồ ${man.tep}.');
   }
 
   Future<void> _vaoManCoCoc(BuildContext context, PhienVi p) async {
@@ -196,10 +158,8 @@ class _TheMan extends StatelessWidget {
     final kq = await p.chuanBiMan(man, maVan);
     if (kq == null) return; // lỗi đã hiện trên màn hình (pv.thongBao)
     if (!await game.choiMan(man, maVan: maVan, ve: kq.ve, batDauThat: kq.luc)) {
-      p.baoLoi(
-        'Không mở được màn ${man.id}. Vé số ${kq.ve} đã đăng ký với máy chủ nên cọc của vé '
-        'này không lấy lại được — báo giảng viên kèm thông báo lỗi trong console.',
-      );
+      p.baoLoi('Không mở được màn ${man.id}. Vé số ${kq.ve} đã đăng ký với máy chủ nên cọc của vé '
+          'này không lấy lại được — báo giảng viên kèm thông báo lỗi trong console.');
     }
   }
 
@@ -211,8 +171,7 @@ class _TheMan extends StatelessWidget {
       return false;
     }
     final dungLai = await p.coTheDungLaiVe(man);
-    final veCungManDaDung =
-        p.ve.dangMo && p.ve.man == man.id && !p.veDangMoDaCoPhieu && !dungLai;
+    final veCungManDaDung = p.ve.dangMo && p.ve.man == man.id && !p.veDangMoDaCoPhieu && !dungLai;
     final boVeCu = p.ve.dangMo && p.ve.man != man.id && !p.veDangMoDaCoPhieu;
     if (!context.mounted) return false;
     return showDialog<bool>(
@@ -230,10 +189,7 @@ class _TheMan extends StatelessWidget {
           'Vàng chỉ dùng trong game, không chuyển nhượng, không quy đổi ra tiền.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Thôi'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Thôi')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(dungLai ? 'Vào màn' : 'Đặt cọc ${man.coc}'),
