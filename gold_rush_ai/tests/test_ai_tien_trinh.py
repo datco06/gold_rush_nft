@@ -25,7 +25,7 @@ from alembic.config import Config as AlembicConfig
 
 from api.auth_adapter import tich_hop_auth_vao_app
 from api.nhan_vat_ai import khoi_dong_nhan_vat_ai, router as router_nhan_vat_ai
-from api.tien_trinh import khoi_dong_tien_trinh, router as router_tien_trinh
+from api.ai_tien_trinh import khoi_dong_tien_trinh, router as router_tien_trinh
 from auth.config import AuthConfig
 from auth.database import create_auth_engine, create_session_factory
 from auth.router import create_auth_router

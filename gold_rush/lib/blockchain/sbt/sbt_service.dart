@@ -485,6 +485,10 @@ class _ViTheoDoi implements Vi {
   }
 
   @override
+  Future<String> kyThongDiep({required String diaChi, required String thongDiep}) =>
+      goc.kyThongDiep(diaChi: diaChi, thongDiep: thongDiep);
+
+  @override
   Future<BienLai?> bienLai(String maGiaoDich) async {
     await baoVe();
     final result = await goc.bienLai(maGiaoDich);

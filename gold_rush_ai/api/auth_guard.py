@@ -23,16 +23,7 @@ import config
 log = logging.getLogger("api.auth_guard")
 
 
-class NguoiChoiXacThuc(BaseModel):
-    """Thông tin người chơi đã được xác thực qua phiên SIWE hợp lệ."""
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    user_id: str = Field(..., min_length=1, max_length=64, description="Mã người chơi đã xác thực")
-    wallet_address: str = Field(
-        ...,
-        pattern=r"^0x[0-9a-fA-F]{40}$",
-        description="Địa chỉ ví Ethereum đã xác thực",
-    )
+from core.schemas_nhan_vat import NguoiChoiXacThuc
 
 
 async def lay_nguoi_choi_hien_tai(request: Request) -> NguoiChoiXacThuc:

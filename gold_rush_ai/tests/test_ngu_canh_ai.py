@@ -29,7 +29,7 @@ def snapshot(player="player_a", completed=frozenset(range(1, 7)), **kw):
 def client(tmp_path, monkeypatch, source, *, demo=False, source_timeout=5):
     import config
     from api.ngu_canh_ai import gan_nguon_du_lieu_ai
-    from api.nhiem_vu import khoi_dong_nhiem_vu, router as quests
+    from api.ai_nhiem_vu import khoi_dong_nhiem_vu, router as quests
     from api.de_xuat_do_kho import khoi_dong_de_xuat_do_kho, router as difficulty
     from api.nhan_vat_ai import khoi_dong_nhan_vat_ai, router as images
     monkeypatch.setattr(config, "ENABLED", {"nhiem_vu", "de_xuat_do_kho", "nhan_vat_ai"})

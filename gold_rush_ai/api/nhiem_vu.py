@@ -7,6 +7,15 @@ from typing import Annotated, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from api.ai_nhiem_vu import (
+    NguCanhNguoiChoi,
+    NguCanhNhiemVu,
+    PhanHoiNhiemVu,
+    StageID,
+    khoi_dong_nhiem_vu,
+    lay_ngu_canh_nguoi_choi,
+    nhiem_vu_da_nap,
+)
 from api.auth_guard import NguoiChoiXacThuc, kiem_tra_csrf_va_origin, lay_nguoi_choi_hien_tai
 from core.csdl import lay_csdl
 from core.quan_ly_nhiem_vu import (

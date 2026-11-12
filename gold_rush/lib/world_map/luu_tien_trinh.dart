@@ -56,6 +56,18 @@ class BoTienTrinhWorldMap extends ChangeNotifier {
 
   bool duocChoi(int id) => _daTai && !_daDong && tienTrinh.daMoMan(id);
 
+  @visibleForTesting
+  void khoiTaoChoKiemThu(List<int> ids, {Set<int>? hoanThanh}) {
+    _thuTu = List.unmodifiable(ids);
+    _hoanThanh.clear();
+    if (hoanThanh != null) {
+      _hoanThanh.addAll(hoanThanh);
+    } else {
+      _hoanThanh.addAll(ids);
+    }
+    _daTai = true;
+  }
+
   Future<void> nap(List<ManChoi> cacMan) => _dangNap ??= _nap(cacMan);
 
   Future<void> _nap(List<ManChoi> cacMan) async {

@@ -117,7 +117,7 @@ def tao_auth_adapter(
             )
 
         user_id = str(me.user.id)
-        player = NguoiChoiXacThuc(user_id=user_id, wallet_address=wallet)
+        player = NguoiChoiXacThuc(user_id=user_id, wallet_address=wallet, username=getattr(me.user, "username", None))
 
         # Lưu thông tin đã xác thực vào request.state để dùng trong request hiện tại
         request.state.ai_auth_user = player

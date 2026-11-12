@@ -269,6 +269,10 @@ class GoldRushGame extends FlameGame
     banDo = banDoDau;
     theGioi.add(banDo.thanhPhan);
     timDuong = _dungTimDuong();
+    final ids = (danhSachMan != null && danhSachMan.isNotEmpty)
+        ? danhSachMan.map((m) => m.id).toList()
+        : [1, 2, 3, 4, 5, 6];
+    tienTrinhWorldMap.khoiTaoChoKiemThu(ids);
   }
 
   Future<void> _napDanhSachMan() async {
@@ -637,7 +641,6 @@ class GoldRushGame extends FlameGame
       return;
     }
 
-    if (!pv.daKetNoi) {
     if (!pv.daKetNoi) {
       if (auth?.canEnterGame == true) {
         await pv.ketNoi();

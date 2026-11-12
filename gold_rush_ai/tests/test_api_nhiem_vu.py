@@ -16,7 +16,7 @@ HEADERS = {"Idempotency-Key": "request_1", "X-Demo-Player": "demo_player"}
 @contextmanager
 def client(tmp_path, monkeypatch, *, enabled=True, demo=True, backend_context=None, **env):
     import config
-    from api.nhiem_vu import khoi_dong_nhiem_vu, router
+    from api.ai_nhiem_vu import khoi_dong_nhiem_vu, router
 
     monkeypatch.setattr(config, "ENABLED", {"nhiem_vu"} if enabled else set())
     monkeypatch.setattr(config, "MAN_CHOI", TILES / "man_choi.json")
@@ -43,7 +43,7 @@ def tao(c, stage=1, headers=None, **body):
 
 
 def test_demo_tra_quest_hop_le_voi_nhan_ngu_canh_ro_rang(tmp_path, monkeypatch):
-    from api.nhiem_vu import PhanHoiNhiemVu
+    from api.ai_nhiem_vu import PhanHoiNhiemVu
 
     with client(tmp_path, monkeypatch) as (c, _):
         r = tao(c)
@@ -107,7 +107,7 @@ def test_khong_co_context_that_va_demo_tat_tra_503(tmp_path, monkeypatch):
 
 
 def test_context_backend_xac_minh_quyet_dinh_man_va_do_kho(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi, lay_ngu_canh_nguoi_choi
+    from api.ai_nhiem_vu import NguCanhNguoiChoi, lay_ngu_canh_nguoi_choi
 
     with client(tmp_path, monkeypatch, demo=False) as (c, app):
         app.dependency_overrides[lay_ngu_canh_nguoi_choi] = lambda: NguCanhNguoiChoi(
@@ -121,7 +121,7 @@ def test_context_backend_xac_minh_quyet_dinh_man_va_do_kho(tmp_path, monkeypatch
 
 
 def test_cung_request_doi_man_duoc_phep_tra_409(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi, lay_ngu_canh_nguoi_choi
+    from api.ai_nhiem_vu import NguCanhNguoiChoi, lay_ngu_canh_nguoi_choi
 
     with client(tmp_path, monkeypatch) as (c, app):
         app.dependency_overrides[lay_ngu_canh_nguoi_choi] = lambda: NguCanhNguoiChoi(
@@ -131,7 +131,7 @@ def test_cung_request_doi_man_duoc_phep_tra_409(tmp_path, monkeypatch):
 
 
 def test_man_duoc_context_cho_phep_nhung_khong_ton_tai_tra_404(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi, lay_ngu_canh_nguoi_choi
+    from api.ai_nhiem_vu import NguCanhNguoiChoi, lay_ngu_canh_nguoi_choi
 
     with client(tmp_path, monkeypatch) as (c, app):
         app.dependency_overrides[lay_ngu_canh_nguoi_choi] = lambda: NguCanhNguoiChoi(
@@ -160,7 +160,7 @@ def test_loi_kho_tra_503_khong_lo_duong_dan(tmp_path, monkeypatch):
 def test_manifest_hong_khong_lam_sap_app(tmp_path, monkeypatch):
     with client(tmp_path, monkeypatch) as (c, app):
         import config
-        from api.nhiem_vu import khoi_dong_nhiem_vu
+        from api.ai_nhiem_vu import khoi_dong_nhiem_vu
         monkeypatch.setattr(config, "MAN_CHOI", tmp_path / "missing.json")
         khoi_dong_nhiem_vu(app)
         assert tao(c).status_code == 503
@@ -170,7 +170,7 @@ def test_manifest_hong_khong_lam_sap_app(tmp_path, monkeypatch):
                                  {"so_xu": 24.0}, {"gioi_han_giay": "0"}, {"gioi_han_giay": -1}])
 def test_manifest_sai_kieu_hoac_mien_gia_tri_phai_tat_component(tmp_path, monkeypatch, sai):
     import config
-    from api.nhiem_vu import khoi_dong_nhiem_vu, nhiem_vu_da_nap
+    from api.ai_nhiem_vu import khoi_dong_nhiem_vu, nhiem_vu_da_nap
 
     data = json.loads((TILES / "man_choi.json").read_text(encoding="utf-8"))
     data["man"][0].update(sai)
@@ -189,7 +189,7 @@ def test_llm_config_sai_van_co_the_chay_offline(tmp_path, monkeypatch):
 
 
 def test_context_tu_middleware_noi_duoc_llm_va_luu_ket_qua(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi
+    from api.ai_nhiem_vu import NguCanhNguoiChoi
 
     class ProviderNoiDung:
         def sinh(self, *, system_prompt, user_prompt):
@@ -208,7 +208,7 @@ def test_context_tu_middleware_noi_duoc_llm_va_luu_ket_qua(tmp_path, monkeypatch
 
 
 def test_demo_va_verified_khong_chung_namespace_lich_su(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi, lay_ngu_canh_nguoi_choi
+    from api.ai_nhiem_vu import NguCanhNguoiChoi, lay_ngu_canh_nguoi_choi
 
     with client(tmp_path, monkeypatch) as (c, app):
         demo = tao(c).json()
@@ -242,7 +242,7 @@ def test_router_da_dang_ky_trong_app_chung(tmp_path, monkeypatch):
 
 
 def test_quota_llm_tra_429_nhung_retry_cache_khong_tinh_them(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi
+    from api.ai_nhiem_vu import NguCanhNguoiChoi
     class ProviderDem:
         calls = 0
         def sinh(self, *, system_prompt, user_prompt):
@@ -263,7 +263,7 @@ def test_quota_llm_tra_429_nhung_retry_cache_khong_tinh_them(tmp_path, monkeypat
 
 
 def test_quota_llm_loi_provider_van_tinh_luot_va_giu_fallback(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi
+    from api.ai_nhiem_vu import NguCanhNguoiChoi
     from core.providers.llm import LoiProviderLLM
     class ProviderLoi:
         calls = 0
@@ -293,7 +293,7 @@ def test_quota_llm_cau_hinh_sai_tra_503(tmp_path, monkeypatch, env):
 
 
 def test_quota_llm_hong_chan_provider_va_tra_503(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNguoiChoi
+    from api.ai_nhiem_vu import NguCanhNguoiChoi
     class KhongDuocGoi:
         def sinh(self, **kw):
             raise AssertionError("Quota hỏng không được gọi provider")
@@ -312,7 +312,7 @@ def test_demo_quest_khong_tieu_quota_ke_ca_khi_gioi_han_khong(tmp_path, monkeypa
 
 
 def test_api_dung_ho_so_verified_khong_dung_nhan_do_kho_cu(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNhiemVu
+    from api.ai_nhiem_vu import NguCanhNhiemVu
     from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
     from core.nhat_ky import NhatKyVan
     ctx = NguCanhNhiemVu(player_id="trusted", allowed_stage_ids=frozenset({1}), difficulty="easy",
@@ -331,7 +331,7 @@ def test_api_dung_ho_so_verified_khong_dung_nhan_do_kho_cu(tmp_path, monkeypatch
 
 
 def test_ho_so_backend_bi_sua_sai_tra_503_truoc_llm(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNhiemVu
+    from api.ai_nhiem_vu import NguCanhNhiemVu
     from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
     class KhongDuocGoi:
         def sinh(self, **kw):
@@ -344,7 +344,7 @@ def test_ho_so_backend_bi_sua_sai_tra_503_truoc_llm(tmp_path, monkeypatch):
 
 
 def test_retry_api_ho_so_thay_doi_khong_goi_llm_hoac_tieu_quota_lan_hai(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNhiemVu, lay_ngu_canh_nguoi_choi
+    from api.ai_nhiem_vu import NguCanhNhiemVu, lay_ngu_canh_nguoi_choi
     from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
     from core.nhat_ky import NhatKyVan
     class ProviderDem:
@@ -373,7 +373,7 @@ def test_retry_api_ho_so_thay_doi_khong_goi_llm_hoac_tieu_quota_lan_hai(tmp_path
 
 
 def test_hieu_suat_backend_mau_thuan_tra_503_khong_goi_provider(tmp_path, monkeypatch):
-    from api.nhiem_vu import NguCanhNhiemVu
+    from api.ai_nhiem_vu import NguCanhNhiemVu
     from core.ca_nhan_hoa_nhiem_vu import HoSoNhiemVu
     from core.nhat_ky import NhatKyVan
     class KhongDuocGoi:
