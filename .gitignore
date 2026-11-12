@@ -40,3 +40,4 @@ GoldRush_Source.txt
 # Local runtime databases & localhost deployments
 gold_rush_ai/data/
 gold_rush_chain/deployments/localhost-*.json
+gold_rush_chain/ignition/deployments/chain-31337/
