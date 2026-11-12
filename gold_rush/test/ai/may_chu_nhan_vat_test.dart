@@ -95,6 +95,55 @@ void main() {
     }
   });
 
+  test('tải ảnh nhân vật đã lưu qua endpoint chính thức', () async {
+    final png = await pngMau();
+    late http.Request requestDaGui;
+    final api = MayChuNhanVat(
+      mayChu: 'http://localhost:8000/base/',
+      client: MockClient((request) async {
+        requestDaGui = request;
+        return http.Response.bytes(
+          png,
+          200,
+          headers: {'content-type': 'image/png; charset=binary'},
+        );
+      }),
+    );
+    const characterId = 'char_0123456789abcdef0123456789abcdef';
+
+    final ketQua = await api.taiAnhDaLuu(characterId);
+
+    expect(ketQua.thanhCong, isTrue);
+    expect(ketQua.png, orderedEquals(png));
+    expect(
+      requestDaGui.url.toString(),
+      'http://localhost:8000/base/api/ai/nhan-vat/$characterId/anh',
+    );
+    expect(requestDaGui.method, 'GET');
+    expect(requestDaGui.headers['Accept'], 'image/png');
+  });
+
+  test('ảnh đã lưu sai định dạng không làm UI nhận dữ liệu hỏng', () async {
+    final api = MayChuNhanVat(
+      mayChu: 'http://localhost',
+      client: MockClient(
+        (_) async => http.Response.bytes(
+          Uint8List.fromList([1, 2, 3, 4]),
+          200,
+          headers: {'content-type': 'image/png'},
+        ),
+      ),
+    );
+
+    final ketQua = await api.taiAnhDaLuu(
+      'char_0123456789abcdef0123456789abcdef',
+    );
+
+    expect(ketQua.thanhCong, isFalse);
+    expect(ketQua.png, isNull);
+    expect(ketQua.loi, LoiAnhNhanVat.phanHoiKhongHopLe);
+  });
+
   test('chế độ backend không tự gắn danh tính demo', () async {
     final api = MayChuNhanVat(
       mayChu: 'https://example.test',

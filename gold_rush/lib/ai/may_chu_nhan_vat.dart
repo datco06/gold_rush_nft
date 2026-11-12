@@ -18,6 +18,9 @@ class KetQuaAnhNhanVat {
 
   const KetQuaAnhNhanVat._({this.anh, this.png, this.loi, this.maHttp});
 
+  const KetQuaAnhNhanVat.thatBai(LoiAnhNhanVat loi, {int? maHttp})
+    : this._(loi: loi, maHttp: maHttp);
+
   bool get coTheThuLai =>
       loi == LoiAnhNhanVat.hetThoiGian ||
       loi == LoiAnhNhanVat.ketNoi ||
@@ -41,7 +44,12 @@ class KetQuaAuthChallenge {
   final LoiAnhNhanVat? loi;
   final int? maHttp;
 
-  const KetQuaAuthChallenge({this.challengeId, this.message, this.loi, this.maHttp});
+  const KetQuaAuthChallenge({
+    this.challengeId,
+    this.message,
+    this.loi,
+    this.maHttp,
+  });
 }
 
 class KetQuaAuthVerify {
@@ -50,7 +58,12 @@ class KetQuaAuthVerify {
   final int? maHttp;
   final String? thongBao;
 
-  const KetQuaAuthVerify({this.nguoiDung, this.loi, this.maHttp, this.thongBao});
+  const KetQuaAuthVerify({
+    this.nguoiDung,
+    this.loi,
+    this.maHttp,
+    this.thongBao,
+  });
 }
 
 class KetQuaLuuNhanVat {
@@ -59,7 +72,12 @@ class KetQuaLuuNhanVat {
   final int? maHttp;
   final String? chiTietLoi;
 
-  const KetQuaLuuNhanVat({this.nhanVat, this.loi, this.maHttp, this.chiTietLoi});
+  const KetQuaLuuNhanVat({
+    this.nhanVat,
+    this.loi,
+    this.maHttp,
+    this.chiTietLoi,
+  });
 
   bool get thanhCong => nhanVat != null;
 }
@@ -80,6 +98,16 @@ class KetQuaDanhSachNhanVat {
   bool get thanhCong => loi == null;
 }
 
+class KetQuaPngNhanVat {
+  final Uint8List? png;
+  final LoiAnhNhanVat? loi;
+  final int? maHttp;
+
+  const KetQuaPngNhanVat({this.png, this.loi, this.maHttp});
+
+  bool get thanhCong => png != null && loi == null;
+}
+
 class KetQuaKyVoucher {
   final PhanHoiKyVoucherModel? phieu;
   final LoiAnhNhanVat? loi;
@@ -97,7 +125,12 @@ class KetQuaXacMinhOnchain {
   final int? maHttp;
   final String? chiTietLoi;
 
-  const KetQuaXacMinhOnchain({this.nhanVat, this.loi, this.maHttp, this.chiTietLoi});
+  const KetQuaXacMinhOnchain({
+    this.nhanVat,
+    this.loi,
+    this.maHttp,
+    this.chiTietLoi,
+  });
 
   bool get thanhCong => nhanVat != null;
 }
@@ -185,7 +218,9 @@ class MayChuNhanVat {
       }
       final png = kq.bytes!;
       _kiemTraHeader(png, anh);
-      final codec = await ui.instantiateImageCodec(png);
+      final codec = await ui
+          .instantiateImageCodec(png)
+          .timeout(const Duration(seconds: 5));
       try {
         if (codec.frameCount != 1) {
           throw const FormatException('Preview cần ảnh tĩnh');
@@ -205,6 +240,52 @@ class MayChuNhanVat {
       return KetQuaAnhNhanVat._(anh: anh, png: png, maHttp: kq.maHttp);
     } on Exception {
       return const KetQuaAnhNhanVat._(loi: LoiAnhNhanVat.phanHoiKhongHopLe);
+    }
+  }
+
+  /// Tải PNG bền vững của một nhân vật đã lưu. Endpoint tự kiểm tra chủ sở hữu
+  /// bằng phiên SIWE; client không nhận đường dẫn filesystem hay token trong URL.
+  Future<KetQuaPngNhanVat> taiAnhDaLuu(String characterId) async {
+    if (!RegExp(r'^char_[0-9a-f]{32}$').hasMatch(characterId)) {
+      return const KetQuaPngNhanVat(loi: LoiAnhNhanVat.yeuCauKhongHopLe);
+    }
+    final kq = await _api.getBytes(
+      '/api/ai/nhan-vat/$characterId/anh',
+      headers: const {'Accept': 'image/png'},
+    );
+    if (kq.loi != null) {
+      return KetQuaPngNhanVat(loi: kq.loi, maHttp: kq.maHttp);
+    }
+    try {
+      if (kq.contentType?.split(';').first.trim().toLowerCase() !=
+          'image/png') {
+        throw const FormatException('Phản hồi ảnh cần image/png');
+      }
+      final png = kq.bytes!;
+      _kiemTraPng128(png);
+      final codec = await ui
+          .instantiateImageCodec(png)
+          .timeout(const Duration(seconds: 5));
+      try {
+        if (codec.frameCount != 1) {
+          throw const FormatException('Ảnh nhân vật cần là ảnh tĩnh');
+        }
+        final frame = await codec.getNextFrame().timeout(
+          const Duration(seconds: 5),
+        );
+        try {
+          if (frame.image.width != 128 || frame.image.height != 128) {
+            throw const FormatException('Kích thước ảnh nhân vật không hợp lệ');
+          }
+        } finally {
+          frame.image.dispose();
+        }
+      } finally {
+        codec.dispose();
+      }
+      return KetQuaPngNhanVat(png: png, maHttp: kq.maHttp);
+    } on Exception {
+      return const KetQuaPngNhanVat(loi: LoiAnhNhanVat.phanHoiKhongHopLe);
     }
   }
 
@@ -281,7 +362,10 @@ class MayChuNhanVat {
         maHttp: kq.maHttp,
       );
     }
-    return KetQuaAuthVerify(maHttp: kq.maHttp, thongBao: 'Cần đăng ký tài khoản');
+    return KetQuaAuthVerify(
+      maHttp: kq.maHttp,
+      thongBao: 'Cần đăng ký tài khoản',
+    );
   }
 
   /// Đăng xuất phiên hiện tại qua `POST /api/auth/logout`.
@@ -289,9 +373,7 @@ class MayChuNhanVat {
     final kq = await _api.postJson(
       '/api/auth/logout',
       body: {},
-      headers: {
-        'X-CSRF-Token': ?csrfToken,
-      },
+      headers: {'X-CSRF-Token': ?csrfToken},
     );
     return kq.loi == null || kq.maHttp == 200 || kq.maHttp == 204;
   }
@@ -317,16 +399,15 @@ class MayChuNhanVat {
     final kq = await _api.postJson(
       '/api/ai/nhan-vat/luu',
       body: {'image_id': imageId, 'name': tenTrimmed},
-      headers: {
-        'X-CSRF-Token': ?csrfToken,
-      },
+      headers: {'X-CSRF-Token': ?csrfToken},
     );
 
     if (kq.loi != null) {
       return KetQuaLuuNhanVat(
         loi: kq.loi,
         maHttp: kq.maHttp,
-        chiTietLoi: _trichXuatThongBaoLoi(kq.duLieu) ??
+        chiTietLoi:
+            _trichXuatThongBaoLoi(kq.duLieu) ??
             (kq.maHttp == 403
                 ? 'CSRF token không hợp lệ hoặc đã hết hạn.'
                 : null),
@@ -361,7 +442,9 @@ class MayChuNhanVat {
       final danhSach = <ThongTinNhanVat>[];
       for (final item in rawList) {
         if (item is! Map<String, dynamic>) {
-          return const KetQuaDanhSachNhanVat(loi: LoiAnhNhanVat.phanHoiKhongHopLe);
+          return const KetQuaDanhSachNhanVat(
+            loi: LoiAnhNhanVat.phanHoiKhongHopLe,
+          );
         }
         danhSach.add(ThongTinNhanVat.tuJson(item));
       }
@@ -395,9 +478,7 @@ class MayChuNhanVat {
     final kq = await _api.postJson(
       '/api/ai/nhan-vat/$characterId/ky-voucher',
       body: {},
-      headers: {
-        'X-CSRF-Token': ?csrfToken,
-      },
+      headers: {'X-CSRF-Token': ?csrfToken},
     );
 
     if (kq.loi != null) {
@@ -433,9 +514,7 @@ class MayChuNhanVat {
     final kq = await _api.postJson(
       '/api/ai/nhan-vat/$characterId/xac-minh-onchain',
       body: {'transaction_hash': cleanTx},
-      headers: {
-        'X-CSRF-Token': ?csrfToken,
-      },
+      headers: {'X-CSRF-Token': ?csrfToken},
     );
 
     if (kq.loi != null) {
@@ -488,5 +567,18 @@ void _kiemTraHeader(Uint8List png, AnhNhanVat anh) {
       header.getUint32(16) != anh.chieuRong ||
       header.getUint32(20) != anh.chieuCao) {
     throw const FormatException('Header PNG không khớp ảnh xem trước');
+  }
+}
+
+void _kiemTraPng128(Uint8List png) {
+  if (png.length < 33) throw const FormatException('Thiếu header PNG');
+  final header = ByteData.sublistView(png);
+  if (header.getUint32(0) != 0x89504e47 ||
+      header.getUint32(4) != 0x0d0a1a0a ||
+      header.getUint32(8) != 13 ||
+      header.getUint32(12) != 0x49484452 ||
+      header.getUint32(16) != 128 ||
+      header.getUint32(20) != 128) {
+    throw const FormatException('Header PNG nhân vật không hợp lệ');
   }
 }

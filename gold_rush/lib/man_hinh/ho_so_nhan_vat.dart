@@ -9,6 +9,7 @@ import '../blockchain/sbt/sbt_model.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart' show AnhNhanVat;
+import '../components/ai/nhan_vat_ai_gallery.dart';
 import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
 import 'anh_nhan_vat.dart';
@@ -163,6 +164,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                   khiThao: g.thaoVatPham,
                   trangThaiNhanVat: TrangThaiKhoDo.daTai,
                   phienVi: g.phienVi,
+                  authController: g.auth,
                   tepNhanVatDangDung: g.nhanVatDangDung,
                   khiChonNhanVat: (characterId) async {
                     final pv = g.phienVi;
@@ -2001,6 +2003,23 @@ class _TabNhanVat extends StatelessWidget {
                   ),
                 );
               }
+            },
+          ),
+          const SizedBox(height: 14),
+          NhanVatAiGallery(
+            authController: game.auth,
+            khiMoTaoNhanVat: () {
+              final api = MayChuNhanVat();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ManHinhAnhNhanVat(
+                    mayChu: api,
+                    authController: game.auth,
+                    vi: game.phienVi?.vi,
+                    tienTrinhController: game.tienTrinh,
+                  ),
+                ),
+              );
             },
           ),
         ],

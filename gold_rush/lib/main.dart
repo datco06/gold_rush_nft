@@ -242,6 +242,7 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       khiThao: game.thaoVatPham,
       trangThaiNhanVat: TrangThaiKhoDo.daTai,
       phienVi: game.phienVi,
+      authController: game.auth,
       tepNhanVatDangDung: game.nhanVatDangDung,
       khiChonNhanVat: _chonNhanVat,
     );

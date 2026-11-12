@@ -65,6 +65,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
   List<ThongTinNhanVat> _danhSachNhanVat = const [];
   bool _dangTaiDanhSach = false;
   ThongTinNhanVat? _nhanVatVuaLuu;
+  final Map<String, Uint8List> _anhNhanVatDaLuu = {};
+  final Set<String> _anhNhanVatLoi = {};
+  int _phienDanhSach = 0;
 
   // Trạng thái tiến trình chơi màn AI
   TienTrinhController? _tienTrinh;
@@ -90,9 +93,11 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       _tienTrinhOwned = false;
     } else if (widget.authController != null) {
       _tienTrinh = TienTrinhController(
-        mayChu: widget.mayChuTienTrinh ??
+        mayChu:
+            widget.mayChuTienTrinh ??
             MayChuTienTrinh(
-              mayChu: widget.mayChu.mayChu?.toString() ??
+              mayChu:
+                  widget.mayChu.mayChu?.toString() ??
                   const String.fromEnvironment(
                     'GOLD_RUSH_API',
                     defaultValue: 'http://localhost:8000',
@@ -103,7 +108,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       _tienTrinhOwned = true;
     }
     _tienTrinh?.addListener(_khiTienTrinhDoi);
-    if (_tienTrinh != null && _tienTrinh!.tienTrinh == null && !_tienTrinh!.dangTai) {
+    if (_tienTrinh != null &&
+        _tienTrinh!.tienTrinh == null &&
+        !_tienTrinh!.dangTai) {
       unawaited(_tienTrinh!.taiTienTrinh());
     }
   }
@@ -123,9 +130,12 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       );
       unawaited(_taiDanhSachNhanVat());
     } else {
+      _phienDanhSach++;
       _nguoiDung = null;
       _danhSachNhanVat = const [];
       _nhanVatVuaLuu = null;
+      _anhNhanVatDaLuu.clear();
+      _anhNhanVatLoi.clear();
     }
   }
 
@@ -136,9 +146,12 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
     if (!auth.canEnterGame) {
       setState(() {
+        _phienDanhSach++;
         _nguoiDung = null;
         _danhSachNhanVat = const [];
         _nhanVatVuaLuu = null;
+        _anhNhanVatDaLuu.clear();
+        _anhNhanVatLoi.clear();
       });
       return;
     }
@@ -163,14 +176,18 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
   void _xuLySuKienVi(SuKienVi sk) {
     if (sk is DoiTaiKhoan) {
-      final taiKhoanMoi =
-          sk.taiKhoan.isEmpty ? null : sk.taiKhoan.first.toLowerCase();
+      final taiKhoanMoi = sk.taiKhoan.isEmpty
+          ? null
+          : sk.taiKhoan.first.toLowerCase();
       final taiKhoanHienTai = _nguoiDung?.walletAddress.toLowerCase();
       if (taiKhoanMoi != taiKhoanHienTai) {
         setState(() {
+          _phienDanhSach++;
           _nguoiDung = null;
           _danhSachNhanVat = const [];
           _nhanVatVuaLuu = null;
+          _anhNhanVatDaLuu.clear();
+          _anhNhanVatLoi.clear();
         });
         _thongBao(
           'Tài khoản ví MetaMask đã thay đổi. Vui lòng đăng nhập lại SIWE.',
@@ -283,7 +300,10 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
     try {
       if (!_vi.coSan) {
-        _thongBao('Chưa tìm thấy tiện ích MetaMask trên trình duyệt.', loi: true);
+        _thongBao(
+          'Chưa tìm thấy tiện ích MetaMask trên trình duyệt.',
+          loi: true,
+        );
         return;
       }
 
@@ -291,16 +311,22 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       final chainId = await _vi.chainId();
 
       // 1. Tạo challenge EIP-4361 từ Backend
-      final chal =
-          await widget.mayChu.taoChallenge(diaChiVi: diaChi, chainId: chainId);
-      if (chal.loi != null || chal.challengeId == null || chal.message == null) {
+      final chal = await widget.mayChu.taoChallenge(
+        diaChiVi: diaChi,
+        chainId: chainId,
+      );
+      if (chal.loi != null ||
+          chal.challengeId == null ||
+          chal.message == null) {
         _thongBao('Không thể khởi tạo thử thách SIWE từ máy chủ.', loi: true);
         return;
       }
 
       // 2. Ký thông điệp qua MetaMask (personal_sign)
-      final signature =
-          await _vi.kyThongDiep(diaChi: diaChi, thongDiep: chal.message!);
+      final signature = await _vi.kyThongDiep(
+        diaChi: diaChi,
+        thongDiep: chal.message!,
+      );
 
       // 3. Xác minh chữ ký với Backend (nhận cookie gr_session & csrf_token)
       final ver = await widget.mayChu.xacMinhSiwe(
@@ -335,9 +361,12 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       await widget.authController!.logout();
       if (!mounted) return;
       setState(() {
+        _phienDanhSach++;
         _nguoiDung = null;
         _danhSachNhanVat = const [];
         _nhanVatVuaLuu = null;
+        _anhNhanVatDaLuu.clear();
+        _anhNhanVatLoi.clear();
       });
       _thongBao('Đã đăng xuất phiên MetaMask an toàn.');
       if (Navigator.of(context).canPop()) {
@@ -350,24 +379,55 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     await widget.mayChu.dangXuat(csrfToken: csrf);
     if (!mounted) return;
     setState(() {
+      _phienDanhSach++;
       _nguoiDung = null;
       _danhSachNhanVat = const [];
       _nhanVatVuaLuu = null;
+      _anhNhanVatDaLuu.clear();
+      _anhNhanVatLoi.clear();
     });
     _thongBao('Đã đăng xuất phiên MetaMask an toàn.');
   }
 
   Future<void> _taiDanhSachNhanVat() async {
     if (_nguoiDung == null) return;
+    final phien = ++_phienDanhSach;
     setState(() => _dangTaiDanhSach = true);
     final kq = await widget.mayChu.layDanhSach();
-    if (!mounted) return;
+    if (!mounted || phien != _phienDanhSach) return;
     setState(() {
       _dangTaiDanhSach = false;
       if (kq.loi == null) {
         _danhSachNhanVat = kq.danhSach;
+        final ids = kq.danhSach.map((e) => e.characterId).toSet();
+        _anhNhanVatDaLuu.removeWhere((id, _) => !ids.contains(id));
+        _anhNhanVatLoi.removeWhere((id) => !ids.contains(id));
       }
     });
+    if (kq.loi == null) {
+      await _taiAnhDanhSach(kq.danhSach, phien);
+    }
+  }
+
+  Future<void> _taiAnhDanhSach(
+    List<ThongTinNhanVat> danhSach,
+    int phien,
+  ) async {
+    await Future.wait(
+      danhSach.map((nv) async {
+        if (_anhNhanVatDaLuu.containsKey(nv.characterId)) return;
+        final kq = await widget.mayChu.taiAnhDaLuu(nv.characterId);
+        if (!mounted || phien != _phienDanhSach) return;
+        setState(() {
+          if (kq.png != null) {
+            _anhNhanVatDaLuu[nv.characterId] = kq.png!;
+            _anhNhanVatLoi.remove(nv.characterId);
+          } else {
+            _anhNhanVatLoi.add(nv.characterId);
+          }
+        });
+      }),
+    );
   }
 
   // --------------------------------------------------------------------------
@@ -410,17 +470,26 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       _ketQua = null;
       _nhanVatVuaLuu = null;
     });
-    final kq = await api.tao(moTa: moTa, maYeuCau: ma);
-    if (!mounted || phien != _phienTai) return;
-    if (kq.loi != null) {
-      setState(() {
-        _dangTai = false;
-        _ketQua = kq;
-      });
-      return;
+    try {
+      final kq = await api
+          .tao(moTa: moTa, maYeuCau: ma)
+          .timeout(const Duration(seconds: 20));
+      if (!mounted || phien != _phienTai) return;
+      if (kq.loi != null) {
+        setState(() {
+          _dangTai = false;
+          _dangTao = false;
+          _ketQua = kq;
+        });
+        return;
+      }
+      _anh = kq.anh!;
+      await _taiVaHienThi(api, _anh!, phien);
+    } on TimeoutException {
+      _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
+    } on Exception {
+      _ketThucVoiLoi(phien, LoiAnhNhanVat.ketNoi);
     }
-    _anh = kq.anh!;
-    await _taiVaHienThi(api, _anh!, phien);
   }
 
   Future<void> _taiLai() async {
@@ -439,12 +508,30 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     AnhNhanVat anh,
     int phien,
   ) async {
-    setState(() => _dangTao = false);
-    final kq = await api.tai(anh);
+    if (mounted && phien == _phienTai) {
+      setState(() => _dangTao = false);
+    }
+    try {
+      final kq = await api.tai(anh).timeout(const Duration(seconds: 20));
+      if (!mounted || phien != _phienTai) return;
+      setState(() {
+        _dangTai = false;
+        _dangTao = false;
+        _ketQua = kq;
+      });
+    } on TimeoutException {
+      _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
+    } on Exception {
+      _ketThucVoiLoi(phien, LoiAnhNhanVat.ketNoi);
+    }
+  }
+
+  void _ketThucVoiLoi(int phien, LoiAnhNhanVat loi) {
     if (!mounted || phien != _phienTai) return;
     setState(() {
       _dangTai = false;
-      _ketQua = kq;
+      _dangTao = false;
+      _ketQua = KetQuaAnhNhanVat.thatBai(loi);
     });
   }
 
@@ -456,7 +543,10 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     final anh = _anh;
     if (anh == null || _dangLuu) return;
     if (_nguoiDung == null) {
-      _thongBao('Cần đăng nhập MetaMask SIWE trước khi lưu nhân vật.', loi: true);
+      _thongBao(
+        'Cần đăng nhập MetaMask SIWE trước khi lưu nhân vật.',
+        loi: true,
+      );
       return;
     }
     if (!(_formLuu.currentState?.validate() ?? false)) return;
@@ -473,11 +563,14 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
     if (kq.thanhCong) {
       setState(() => _nhanVatVuaLuu = kq.nhanVat);
-      _thongBao('Đã lưu nhân vật "${kq.nhanVat!.name}" thành công vào tài khoản!');
+      _thongBao(
+        'Đã lưu nhân vật "${kq.nhanVat!.name}" thành công vào tài khoản!',
+      );
       await _taiDanhSachNhanVat();
     } else {
       _thongBao(
-        kq.chiTietLoi ?? 'Lưu nhân vật thất bại (${kq.maHttp ?? 'Lỗi kết nối'}).',
+        kq.chiTietLoi ??
+            'Lưu nhân vật thất bại (${kq.maHttp ?? 'Lỗi kết nối'}).',
         loi: true,
       );
     }
@@ -539,7 +632,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
         if (trangThai == TrangThaiOnchain.registered) {
           _thongBao('Xác minh thành công! Nhân vật đã được ghi nhận On-Chain.');
         } else {
-          _thongBao('Giao dịch đang chờ xác nhận trên blockchain (${trangThai.nhan}).');
+          _thongBao(
+            'Giao dịch đang chờ xác nhận trên blockchain (${trangThai.nhan}).',
+          );
         }
         await _taiDanhSachNhanVat();
       } else {
@@ -549,7 +644,12 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
         );
       }
     } on LoiVi catch (e) {
-      _thongBao(e.nguoiDungTuChoi ? 'Bạn đã hủy xác nhận giao dịch trên MetaMask.' : 'Lỗi MetaMask: ${e.thongBao}', loi: !e.nguoiDungTuChoi);
+      _thongBao(
+        e.nguoiDungTuChoi
+            ? 'Bạn đã hủy xác nhận giao dịch trên MetaMask.'
+            : 'Lỗi MetaMask: ${e.thongBao}',
+        loi: !e.nguoiDungTuChoi,
+      );
     } catch (e) {
       _thongBao('Đăng ký on-chain gặp sự cố: $e', loi: true);
     } finally {
@@ -671,7 +771,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                   const Text('Ảnh mẫu được chọn theo mô tả.'),
                                 const SizedBox(height: 12),
                                 ConstrainedBox(
-                                  constraints: const BoxConstraints(maxWidth: 256),
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 256,
+                                  ),
                                   child: AspectRatio(
                                     aspectRatio: 1,
                                     child: Image.memory(
@@ -717,7 +819,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         const SizedBox(height: 8),
                       ],
                       FilledButton.icon(
-                        onPressed: (_dangTai ||
+                        onPressed:
+                            (_dangTai ||
                                 (_tienTrinh != null &&
                                     !_tienTrinh!.isCharacterUnlocked))
                             ? null
@@ -731,7 +834,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                           _dangTai
                               ? 'Đang xử lý…'
                               : (_tienTrinh != null &&
-                                      !_tienTrinh!.isCharacterUnlocked)
+                                    !_tienTrinh!.isCharacterUnlocked)
                               ? 'Khóa (Cần hoàn thành 6 màn)'
                               : _maYeuCau == null
                               ? 'Tạo ảnh'
@@ -777,7 +880,11 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.verified, color: Colors.greenAccent, size: 20),
+                  const Icon(
+                    Icons.verified,
+                    color: Colors.greenAccent,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -785,12 +892,19 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     children: [
                       Text(
                         'Ví: ${user.viRutGon}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.greenAccent),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.greenAccent,
+                        ),
                       ),
                       if (user.username.isNotEmpty)
                         Text(
                           'Người chơi: ${user.username}',
-                          style: const TextStyle(fontSize: 11, color: Colors.white70),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white70,
+                          ),
                         ),
                     ],
                   ),
@@ -798,8 +912,15 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
               ),
               TextButton.icon(
                 onPressed: _dangKetNoiAuth ? null : _dangXuat,
-                icon: const Icon(Icons.logout, size: 16, color: Colors.redAccent),
-                label: const Text('Đăng xuất', style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                icon: const Icon(
+                  Icons.logout,
+                  size: 16,
+                  color: Colors.redAccent,
+                ),
+                label: const Text(
+                  'Đăng xuất',
+                  style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                ),
               ),
             ],
           ),
@@ -823,7 +944,11 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
           children: [
             const Text(
               'MetaMask SIWE',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFC9D2DB)),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFC9D2DB),
+              ),
             ),
             OutlinedButton(
               onPressed: _dangKetNoiAuth ? null : _dangNhapSiwe,
@@ -833,8 +958,18 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 visualDensity: VisualDensity.compact,
               ),
               child: _dangKetNoiAuth
-                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('ĐĂNG NHẬP SIWE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      'ĐĂNG NHẬP SIWE',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -877,8 +1012,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color:
-                          daMoKhoa ? Colors.greenAccent : Colors.orangeAccent,
+                      color: daMoKhoa
+                          ? Colors.greenAccent
+                          : Colors.orangeAccent,
                     ),
                   ),
                 ),
@@ -904,8 +1040,10 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 final stageId = index + 1;
                 final done = tt.daHoanThanhMan(stageId);
                 return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: done
                         ? const Color(0xFF1B5E20)
@@ -928,8 +1066,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         'Màn $stageId',
                         style: TextStyle(
                           fontSize: 11,
-                          fontWeight:
-                              done ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: done
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           color: done ? Colors.white : Colors.white54,
                         ),
                       ),
@@ -974,7 +1113,11 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
               child: const Text(
                 'LƯU Ý: Ảnh preview 128×128 pixel-art là ảnh tĩnh minh hoạ, CHƯA PHẢI sprite sheet điều khiển được trong game Flame.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Color(0xFF90A4AE), fontStyle: FontStyle.italic),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF90A4AE),
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -989,12 +1132,31 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Đã lưu: ${daLuu.name}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.greenAccent)),
+                    Text(
+                      'Đã lưu: ${daLuu.name}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.greenAccent,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('ID: ${daLuu.characterId}', style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                    Text(
+                      'ID: ${daLuu.characterId}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                     Row(
                       children: [
-                        Text('Hash: ${daLuu.hashRutGon}', style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.cyanAccent)),
+                        Text(
+                          'Hash: ${daLuu.hashRutGon}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                            color: Colors.cyanAccent,
+                          ),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.copy, size: 14),
                           tooltip: 'Sao chép SHA-256',
@@ -1025,18 +1187,29 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
-                      onPressed: (_dangLuu || _nguoiDung == null) ? null : _luuNhanVat,
+                      onPressed: (_dangLuu || _nguoiDung == null)
+                          ? null
+                          : _luuNhanVat,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade700,
                         foregroundColor: Colors.black,
                       ),
                       icon: _dangLuu
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.black,
+                              ),
+                            )
                           : const Icon(Icons.save),
                       label: Text(
                         _nguoiDung == null
                             ? 'CẦN ĐĂNG NHẬP ĐỂ LƯU'
-                            : (_dangLuu ? 'Đang lưu…' : 'LƯU NHÂN VẬT VÀO TÀI KHOẢN'),
+                            : (_dangLuu
+                                  ? 'Đang lưu…'
+                                  : 'LƯU NHÂN VẬT VÀO TÀI KHOẢN'),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -1065,15 +1238,25 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
               children: [
                 Text(
                   'NHÂN VẬT (${_danhSachNhanVat.length})',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
                 if (_dangTaiDanhSach)
-                  const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 else if (_nguoiDung != null)
                   TextButton.icon(
                     onPressed: _taiDanhSachNhanVat,
                     icon: const Icon(Icons.refresh, size: 14),
-                    label: const Text('Làm mới', style: TextStyle(fontSize: 12)),
+                    label: const Text(
+                      'Làm mới',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
               ],
             ),
@@ -1102,7 +1285,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _danhSachNhanVat.length,
                 separatorBuilder: (_, _) => const Divider(),
-                itemBuilder: (_, index) => _xayDungItemNhanVat(_danhSachNhanVat[index]),
+                itemBuilder: (_, index) =>
+                    _xayDungItemNhanVat(_danhSachNhanVat[index]),
               ),
           ],
         ),
@@ -1111,53 +1295,117 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
   }
 
   Widget _xayDungItemNhanVat(ThongTinNhanVat nv) {
+    final png = _anhNhanVatDaLuu[nv.characterId];
+    final anhLoi = _anhNhanVatLoi.contains(nv.characterId);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  nv.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-              ),
-              _xayDungHuyHieuTrangThai(nv.onchainStatus),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text('ID: ${nv.characterId}', style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.grey)),
-          Row(
-            children: [
-              Text('Hash: ${nv.hashRutGon}', style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.cyan)),
-              IconButton(
-                icon: const Icon(Icons.copy, size: 13),
-                tooltip: 'Sao chép SHA-256',
-                onPressed: () => _saoChepHash(nv.characterHash),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-          if (nv.transactionHash != null)
-            Text('Tx: ${nv.transactionHash!.substring(0, 10)}…', style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: Colors.white70)),
-          if (!nv.daDangKy) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: _dangDangKyOnchain ? null : () => _dangKyOnchain(nv),
-                icon: const Icon(Icons.app_registration, size: 14),
-                label: Text(
-                  nv.dangChoXacNhan ? 'Kiểm tra lại trạng thái' : 'Đăng ký On-Chain (EIP-712)',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
+          Container(
+            width: 72,
+            height: 72,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.45)),
             ),
-          ],
+            child: png != null
+                ? Image.memory(
+                    png,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.none,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.grey,
+                    ),
+                  )
+                : anhLoi
+                ? const Icon(Icons.broken_image_outlined, color: Colors.grey)
+                : const Padding(
+                    padding: EdgeInsets.all(22),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        nv.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    _xayDungHuyHieuTrangThai(nv.onchainStatus),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'ID: ${nv.characterId}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: Colors.grey,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      'Hash: ${nv.hashRutGon}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                        color: Colors.cyan,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 13),
+                      tooltip: 'Sao chép SHA-256',
+                      onPressed: () => _saoChepHash(nv.characterHash),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                if (nv.transactionHash != null)
+                  Text(
+                    'Tx: ${nv.transactionHash!.substring(0, 10)}…',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: Colors.white70,
+                    ),
+                  ),
+                if (!nv.daDangKy) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: _dangDangKyOnchain
+                          ? null
+                          : () => _dangKyOnchain(nv),
+                      icon: const Icon(Icons.app_registration, size: 14),
+                      label: Text(
+                        nv.dangChoXacNhan
+                            ? 'Kiểm tra lại trạng thái'
+                            : 'Đăng ký On-Chain (EIP-712)',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1186,7 +1434,14 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(st.nhan, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+        Text(
+          st.nhan,
+          style: TextStyle(
+            fontSize: 11,
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }
