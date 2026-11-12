@@ -1,15 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import '../ai/may_chu_de_xuat_do_kho.dart';
-import '../ai/may_chu_nhiem_vu.dart';
-import '../ai/may_chu_nhan_vat.dart';
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../man_choi.dart';
-import 'anh_nhan_vat.dart';
-import 'de_xuat_do_kho.dart';
-import 'nhiem_vu.dart';
+import 'main_lobby.dart';
 
 /// Khung dùng chung cho Menu, Cài đặt, Tạm dừng và Kết thúc.
 class _Khung extends StatelessWidget {
@@ -143,121 +140,9 @@ class ManHinhMenu extends StatelessWidget {
 
   const ManHinhMenu({super.key, required this.game});
 
-  void _moAnhNhanVat(BuildContext context) {
-    const demo = String.fromEnvironment('GOLD_RUSH_IMAGE_DEMO_PLAYER');
-    try {
-      final api = MayChuNhanVat(maNguoiChoiDemo: demo.isEmpty ? null : demo);
-      Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ManHinhAnhNhanVat(
-          mayChu: api,
-          authController: game.auth,
-          vi: game.phienVi?.vi,
-          tienTrinhController: game.tienTrinh,
-        ),
-      ));
-    } on ArgumentError {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cấu hình API ảnh nhân vật không hợp lệ.')),
-      );
-    }
-  }
-
-  void _moDeXuatDoKho(BuildContext context) {
-    final manChoi = game.manHienTai.id;
-    const demo = String.fromEnvironment('GOLD_RUSH_DIFFICULTY_DEMO_PLAYER');
-    try {
-      final api = MayChuDeXuatDoKho(maNguoiChoiDemo: demo.isEmpty ? null : demo);
-      Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ManHinhDeXuatDoKho(
-          mayChu: api,
-          manChoi: manChoi,
-        ),
-      ));
-    } on ArgumentError {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cấu hình API đề xuất độ khó không hợp lệ.')),
-      );
-    }
-  }
-
-  void _moNhiemVu(BuildContext context) {
-    final manChoi = game.manHienTai.id;
-    const demo = String.fromEnvironment('GOLD_RUSH_QUEST_DEMO_PLAYER');
-    try {
-      final api = MayChuNhiemVu(maNguoiChoiDemo: demo.isEmpty ? null : demo);
-      Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ManHinhNhiemVu(
-          mayChu: api,
-          manChoi: manChoi,
-        ),
-      ));
-    } on ArgumentError {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cấu hình API nhiệm vụ không hợp lệ.')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return _Khung(
-      tieuDe: 'GOLD RUSH',
-      phuDe:
-          'George đi tìm vàng giữa vùng đất đầy zombie '
-          'và bộ xương.\n'
-          'Nhặt hết số xu trên bản đồ trước khi hết máu '
-          '— và trước khi hết giờ.',
-      noiDung: [
-        _Nut(
-          nhan: 'CHƠI',
-          bieuTuong: Icons.play_arrow_rounded,
-          chinh: true,
-          khiBam: game.moChonMan,
-        ),
-        _Nut(
-          nhan: 'Kho đồ',
-          bieuTuong: Icons.backpack_outlined,
-          khiBam: game.moKhoDo,
-        ),
-        _Nut(
-          nhan: 'Cửa hàng nhân vật',
-          bieuTuong: Icons.storefront_rounded,
-          khiBam: game.moCuaHang,
-        ),
-        _Nut(
-          nhan: 'Đề xuất độ khó',
-          bieuTuong: Icons.insights,
-          khiBam: () => _moDeXuatDoKho(context),
-        ),
-        _Nut(
-          nhan: 'Nhiệm vụ AI',
-          bieuTuong: Icons.auto_awesome,
-          khiBam: () => _moNhiemVu(context),
-        ),
-        _Nut(
-          nhan: 'Ảnh nhân vật AI',
-          bieuTuong: Icons.image_outlined,
-          khiBam: () => _moAnhNhanVat(context),
-        ),
-        _Nut(
-          nhan: 'Cài đặt',
-          bieuTuong: Icons.tune_rounded,
-          khiBam: game.moCaiDat,
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Điều khiển: cần gạt ở góc dưới trái · '
-          'phím mũi tên hoặc W A S D\n'
-          'chạm vào bản đồ để đi tới chỗ đó',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12.5,
-            height: 1.6,
-            color: Color(0xFF9FAEBC),
-          ),
-        ),
-      ],
-    );
+    return GoldRushMainLobby(game: game);
   }
 }
 
@@ -331,6 +216,17 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
           ),
           contentPadding: EdgeInsets.zero,
         ),
+        if (widget.game.auth != null) ...[
+          const SizedBox(height: 12),
+          _Nut(
+            nhan: 'Đăng xuất & Ngắt kết nối ví',
+            bieuTuong: Icons.logout_rounded,
+            khiBam: () {
+              widget.game.dongCaiDat();
+              unawaited(widget.game.auth?.logout() ?? Future.value());
+            },
+          ),
+        ],
         const SizedBox(height: 18),
         _Nut(
           nhan: 'Quay lại',

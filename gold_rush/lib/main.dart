@@ -139,6 +139,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
     widget.auth.removeListener(_lockImmediately);
     _game.pauseEngine();
     _game.tienTrinh.dispose();
+    _game.danhSachVatPham.dispose();
     _game.phienVi?.dispose();
     _wallet.dispose();
     unawaited(AmThanh.dungNhacNen());
@@ -148,20 +149,6 @@ class _ManHinhGameState extends State<ManHinhGame> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 42,
-        title: Text(
-          widget.auth.user?.username ?? 'Gold Rush',
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () => unawaited(widget.auth.logout()),
-            icon: const Icon(Icons.logout, size: 18),
-            label: const Text('ĐĂNG XUẤT'),
-          ),
-        ],
-      ),
       body: GameWidget<GoldRushGame>(
         game: _game,
         autofocus: true,
@@ -232,12 +219,14 @@ class _KhoDoTrongGame extends StatefulWidget {
 class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
   @override
   Widget build(BuildContext context) {
-    final pv = widget.game.phienVi;
-
-    if (pv == null) return _noiDung();
+    final game = widget.game;
+    final pv = game.phienVi;
+    final listenable = pv == null
+        ? game.danhSachVatPham
+        : Listenable.merge([pv, game.danhSachVatPham]);
 
     return ListenableBuilder(
-      listenable: pv,
+      listenable: listenable,
       builder: (context, _) => _noiDung(),
     );
   }
@@ -247,17 +236,10 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
 
     return ManHinhKhoDo(
       khiDong: game.dongKhoDo,
-
-      // Chưa có dữ liệu vật phẩm thật.
-      // Không giả rằng người chơi có hoặc không có vật phẩm.
-      trangThaiTrangBi: TrangThaiKhoDo.loi,
-      loiTrangBi:
-          'Chưa kết nối dữ liệu vật phẩm từ '
-          'Gameplay và Backend. '
-          'Chức năng Trang bị/Tháo hiện được kiểm tra '
-          'trong demo riêng.',
-
-      // George luôn có; nhân vật cửa hàng phụ thuộc phiên ví.
+      trangThaiTrangBi: TrangThaiKhoDo.daTai,
+      danhSachVatPham: game.danhSachVatPham.value,
+      khiTrangBi: game.trangBiVatPham,
+      khiThao: game.thaoVatPham,
       trangThaiNhanVat: TrangThaiKhoDo.daTai,
       phienVi: game.phienVi,
       tepNhanVatDangDung: game.nhanVatDangDung,

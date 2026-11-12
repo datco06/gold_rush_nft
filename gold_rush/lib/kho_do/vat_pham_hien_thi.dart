@@ -119,4 +119,25 @@ class VatPhamHienThi {
             : DanhMucVatPham.nguyenLieu;
     }
   }
+
+  VatPhamHienThi voiTrangBi(OTrangBi? o) {
+    return VatPhamHienThi(
+      id: id,
+      ten: ten,
+      moTa: moTa,
+      loai: loai,
+      doHiem: doHiem,
+      nguon: nguon,
+      bieuTuong: bieuTuong,
+      danhMuc: danhMuc,
+      soLuong: soLuong,
+      duongDanAnh: duongDanAnh,
+      thuocTinh: thuocTinh,
+      oDangTrangBi: o,
+      laDuLieuMau: laDuLieuMau,
+      chainId: chainId,
+      diaChiHopDong: diaChiHopDong,
+      tokenId: tokenId,
+    );
+  }
 }

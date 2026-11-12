@@ -30,8 +30,9 @@ import 'components/george.dart';
 import 'components/hieu_ung.dart';
 import 'components/hud.dart';
 import 'components/ke_dich.dart';
-import 'components/vat_pham_roi.dart';
+import 'components/vat_pham_roi.dart' hide LoaiVatPham;
 import 'dieu_khien/nut_tam_dung.dart';
+import 'kho_do/vat_pham_hien_thi.dart';
 import 'man_choi.dart';
 import 'tai_nguyen.dart';
 import 'the_gioi.dart';
@@ -56,6 +57,7 @@ class KetQuaVan {
   final String maVan;
   final bool thang;
   final int xu;
+
   /// Thống kê chiến đấu chuẩn hóa cho Progress/Backend (`stage_id`, `won`, `boss_defeated`, v.v.).
   final Map<String, Object> thongKe;
 
@@ -76,35 +78,40 @@ class KetQuaVan {
   bool get matCoc => !man.mienPhi && !thang;
 
   KetQuaVan voiPhieu(String p) => KetQuaVan(
-        man: man,
-        maVan: maVan,
-        thang: thang,
-        xu: xu,
-        thongKe: thongKe,
-        phieu: p,
-      );
+    man: man,
+    maVan: maVan,
+    thang: thang,
+    xu: xu,
+    thongKe: thongKe,
+    phieu: p,
+  );
 }
 
 class GoldRushGame extends FlameGame
     with HasCollisionDetection, HasKeyboardHandlerComponents {
-  GoldRushGame._(this.theGioi, this._vi, [this.auth, TienTrinhController? tienTrinh, bool? batBoss])
-      : _tienTrinhController = tienTrinh,
-        coBoss = batBoss ?? CauHinh.batBoss,
-        super(world: theGioi);
+  GoldRushGame._(
+    this.theGioi,
+    this._vi, [
+    this.auth,
+    TienTrinhController? tienTrinh,
+    bool? batBoss,
+  ]) : _tienTrinhController = tienTrinh,
+       coBoss = batBoss ?? CauHinh.batBoss,
+       super(world: theGioi);
 
   factory GoldRushGame({
     Vi? vi,
     AuthController? auth,
     TienTrinhController? tienTrinh,
     bool? batBoss,
-  }) =>
-      GoldRushGame._(TheGioi(), vi, auth, tienTrinh, batBoss);
+  }) => GoldRushGame._(TheGioi(), vi, auth, tienTrinh, batBoss);
 
   final Vi? _vi;
   final AuthController? auth;
   final TienTrinhController? _tienTrinhController;
 
-  late final TienTrinhController tienTrinh = _tienTrinhController ??
+  late final TienTrinhController tienTrinh =
+      _tienTrinhController ??
       TienTrinhController(
         mayChu: MayChuTienTrinh(mayChu: GuiNhatKy.mayChu),
         authController: auth,
@@ -142,6 +149,116 @@ class GoldRushGame extends FlameGame
 
   /// Ngoại hình dùng khi dựng ván tiếp theo.
   String nhanVatDangDung = georgeGoc.tepAnh;
+
+  /// Danh sách vật phẩm & trang bị đồng bộ giữa Main Lobby và Kho đồ.
+  final ValueNotifier<List<VatPhamHienThi>> danhSachVatPham = ValueNotifier([
+    VatPhamHienThi(
+      id: 'kiem_go',
+      ten: 'Kiếm gỗ',
+      loai: LoaiVatPham.vuKhi,
+      doHiem: DoHiemVatPham.thuong,
+      nguon: NguonVatPham.game,
+      bieuTuong: BieuTuongVatPham.kiem,
+      danhMuc: DanhMucVatPham.vuKhi,
+      moTa: 'Thanh kiếm gỗ căn bản của thợ mỏ thám hiểm.',
+      thuocTinh: const {'Sát thương': '+5', 'Tốc độ đánh': 'Cơ bản'},
+      oDangTrangBi: OTrangBi.vuKhiChinh,
+    ),
+    VatPhamHienThi(
+      id: 'cung_rung_xanh',
+      ten: 'Cung rừng xanh',
+      loai: LoaiVatPham.vuKhi,
+      doHiem: DoHiemVatPham.hiem,
+      nguon: NguonVatPham.game,
+      bieuTuong: BieuTuongVatPham.cung,
+      danhMuc: DanhMucVatPham.vuKhi,
+      moTa: 'Cây cung gỗ phong tinh xảo cho đòn đánh tầm xa.',
+      thuocTinh: const {'Sát thương': '+9', 'Tầm bắn': 'Xa'},
+      oDangTrangBi: OTrangBi.vuKhiPhu,
+    ),
+    VatPhamHienThi(
+      id: 'giap_tham_hiem',
+      ten: 'Giáp người thám hiểm',
+      loai: LoaiVatPham.giap,
+      doHiem: DoHiemVatPham.khongPhoBien,
+      nguon: NguonVatPham.game,
+      bieuTuong: BieuTuongVatPham.giap,
+      danhMuc: DanhMucVatPham.giap,
+      moTa: 'Bộ giáp da dẻo dai giúp tăng phòng thủ khi thám hiểm mỏ vàng.',
+      thuocTinh: const {'Phòng thủ': '+6', 'Bền bỉ': '+10'},
+      oDangTrangBi: OTrangBi.giap,
+    ),
+    VatPhamHienThi(
+      id: 'kiem_thep',
+      ten: 'Kiếm thép rèn',
+      loai: LoaiVatPham.vuKhi,
+      doHiem: DoHiemVatPham.hiem,
+      nguon: NguonVatPham.game,
+      bieuTuong: BieuTuongVatPham.kiem,
+      danhMuc: DanhMucVatPham.vuKhi,
+      moTa: 'Thanh kiếm thép được rèn từ quặng sắt mỏ vàng.',
+      thuocTinh: const {'Sát thương': '+14', 'Chí mạng': '+5%'},
+    ),
+    VatPhamHienThi(
+      id: 'binh_hoi_phuc',
+      ten: 'Bình hồi phục',
+      loai: LoaiVatPham.vatPham,
+      doHiem: DoHiemVatPham.thuong,
+      nguon: NguonVatPham.game,
+      bieuTuong: BieuTuongVatPham.binhHoiPhuc,
+      danhMuc: DanhMucVatPham.tieuHao,
+      soLuong: 5,
+      moTa: 'Thuốc hồi sinh lực tức thì khi khám phá hầm mỏ nguy hiểm.',
+      thuocTinh: const {'Hồi máu': '+30 HP'},
+    ),
+    VatPhamHienThi(
+      id: 'bua_hoang_kim',
+      ten: 'Bùa Hoàng Kim',
+      loai: LoaiVatPham.vatPham,
+      doHiem: DoHiemVatPham.suThi,
+      nguon: NguonVatPham.game,
+      bieuTuong: BieuTuongVatPham.macDinh,
+      danhMuc: DanhMucVatPham.nguyenLieu,
+      soLuong: 1,
+      moTa: 'Cổ vật phát sáng rực rỡ thu thập được từ đền cổ.',
+      thuocTinh: const {'Tăng tỉ lệ rơi vàng': '+15%'},
+    ),
+  ]);
+
+  Future<void> trangBiVatPham(String itemId) async {
+    final ds = danhSachVatPham.value;
+    final idx = ds.indexWhere((vp) => vp.id == itemId);
+    if (idx < 0) return;
+    final vp = ds[idx];
+    if (vp.loai != LoaiVatPham.vuKhi && vp.loai != LoaiVatPham.giap) return;
+
+    final OTrangBi o;
+    if (vp.loai == LoaiVatPham.giap) {
+      o = OTrangBi.giap;
+    } else if (vp.bieuTuong == BieuTuongVatPham.cung) {
+      o = OTrangBi.vuKhiPhu;
+    } else {
+      o = OTrangBi.vuKhiChinh;
+    }
+
+    danhSachVatPham.value = [
+      for (final item in ds)
+        if (item.id == itemId)
+          item.voiTrangBi(o)
+        else if (item.oDangTrangBi == o)
+          item.voiTrangBi(null)
+        else
+          item,
+    ];
+  }
+
+  Future<void> thaoVatPham(String itemId) async {
+    final ds = danhSachVatPham.value;
+    danhSachVatPham.value = [
+      for (final item in ds)
+        if (item.id == itemId) item.voiTrangBi(null) else item,
+    ];
+  }
 
   /// Phiên ví dùng chung, không tạo riêng cho từng màn hình.
   late final PhienVi? phienVi = GuiNhatKy.daCauHinh
@@ -242,6 +359,7 @@ class GoldRushGame extends FlameGame
     soHang: banDo.soHang,
     biChan: banDo.luoi.biChanO,
   );
+
   /// Khởi tạo bộ nhớ bản đồ và trạng thái ván cho kiểm thử đơn vị mà không cần nạp `.tmx` hay âm thanh.
   @visibleForTesting
   void khoiTaoChoKiemThu({
@@ -365,7 +483,10 @@ class GoldRushGame extends FlameGame
     _thanhPhanVan.clear();
     // Dọn dẹp mọi đạn, vật phẩm rơi hoặc hiệu ứng nổ động còn sót trong theGioi từ ván trước.
     for (final c in theGioi.children.toList()) {
-      if (c is DanBan || c is VatPhamRoi || c is HieuUngNoKeDich || c is HieuUngNhatXu) {
+      if (c is DanBan ||
+          c is VatPhamRoi ||
+          c is HieuUngNoKeDich ||
+          c is HieuUngNhatXu) {
         c.removeFromParent();
       }
     }
@@ -669,14 +790,16 @@ class GoldRushGame extends FlameGame
     // Ghi nhận tiến trình khi thắng màn:
     if (soVang != null && kq.thang && kq.man.id >= 1 && kq.man.id <= 6) {
       unawaited(
-        tienTrinh.xacNhanHoanThanhMan(
-          stageId: kq.man.id,
-          evidenceType: 'referee_log',
-          evidence: maVan,
-        ).catchError((Object e, StackTrace s) {
-          debugPrint('Lỗi đồng bộ tiến trình màn ${kq.man.id}: $e');
-          return false;
-        }),
+        tienTrinh
+            .xacNhanHoanThanhMan(
+              stageId: kq.man.id,
+              evidenceType: 'referee_log',
+              evidence: maVan,
+            )
+            .catchError((Object e, StackTrace s) {
+              debugPrint('Lỗi đồng bộ tiến trình màn ${kq.man.id}: $e');
+              return false;
+            }),
       );
     }
   }

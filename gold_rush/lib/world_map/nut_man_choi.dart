@@ -99,6 +99,7 @@ class _NutManChoiState extends State<NutManChoi> {
                                   ),
                                 ],
                               ),
+                              textAlign: TextAlign.center,
                               style: TextStyle(color: gold, height: 1),
                             ),
                           ),
