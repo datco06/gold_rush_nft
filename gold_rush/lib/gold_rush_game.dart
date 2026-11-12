@@ -272,6 +272,7 @@ class GoldRushGame extends FlameGame
     final ids = (danhSachMan != null && danhSachMan.isNotEmpty)
         ? danhSachMan.map((m) => m.id).toList()
         : [1, 2, 3, 4, 5, 6];
+    // ignore: invalid_use_of_visible_for_testing_member
     tienTrinhWorldMap.khoiTaoChoKiemThu(ids);
   }
 
