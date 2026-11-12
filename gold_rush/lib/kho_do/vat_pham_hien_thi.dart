@@ -1,6 +1,12 @@
 /// Loại vật phẩm dùng để hiển thị và phân nhóm.
 enum LoaiVatPham { vuKhi, giap, vatPham }
 
+/// Phân loại dành riêng cho giao diện túi đồ.
+///
+/// Giá trị này không thay đổi quy tắc gameplay. Khi nguồn dữ liệu chưa cung
+/// cấp, UI suy ra từ [LoaiVatPham] và [BieuTuongVatPham].
+enum DanhMucVatPham { vuKhi, giap, phuKien, tieuHao, nguyenLieu, nhiemVu }
+
 /// Độ hiếm do nguồn dữ liệu cung cấp.
 enum DoHiemVatPham { thuong, khongPhoBien, hiem, suThi, huyenThoai }
 
@@ -26,6 +32,12 @@ class VatPhamHienThi {
   final DoHiemVatPham doHiem;
   final NguonVatPham nguon;
   final BieuTuongVatPham bieuTuong;
+
+  /// Danh mục chi tiết do nguồn dữ liệu cung cấp, nếu có.
+  final DanhMucVatPham? danhMuc;
+
+  /// Số lượng trong một chồng. Inventory hiện tại mặc định mỗi bản ghi là 1.
+  final int soLuong;
 
   /// Đường dẫn ảnh asset.
   /// Null thì giao diện dùng biểu tượng thay thế.
@@ -53,6 +65,8 @@ class VatPhamHienThi {
     required this.doHiem,
     required this.nguon,
     this.bieuTuong = BieuTuongVatPham.macDinh,
+    this.danhMuc,
+    this.soLuong = 1,
     this.moTa = '',
     this.duongDanAnh,
     Map<String, String> thuocTinh = const {},
@@ -64,6 +78,10 @@ class VatPhamHienThi {
   }) : thuocTinh = Map<String, String>.unmodifiable(thuocTinh) {
     if (id.trim().isEmpty || ten.trim().isEmpty) {
       throw ArgumentError('Vật phẩm phải có ID và tên.');
+    }
+
+    if (soLuong < 1) {
+      throw ArgumentError('Số lượng vật phẩm phải lớn hơn 0.');
     }
 
     if (nguon == NguonVatPham.nft) {
@@ -86,4 +104,19 @@ class VatPhamHienThi {
   }
 
   bool get dangTrangBi => oDangTrangBi != null;
+
+  DanhMucVatPham get danhMucHienThi {
+    if (danhMuc != null) return danhMuc!;
+
+    switch (loai) {
+      case LoaiVatPham.vuKhi:
+        return DanhMucVatPham.vuKhi;
+      case LoaiVatPham.giap:
+        return DanhMucVatPham.giap;
+      case LoaiVatPham.vatPham:
+        return bieuTuong == BieuTuongVatPham.binhHoiPhuc
+            ? DanhMucVatPham.tieuHao
+            : DanhMucVatPham.nguyenLieu;
+    }
+  }
 }

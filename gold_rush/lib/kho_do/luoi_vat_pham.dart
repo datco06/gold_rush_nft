@@ -32,7 +32,7 @@ class LuoiVatPham extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const khoangCach = 12.0;
-        const rongMongMuon = 220.0;
+        const rongMongMuon = 132.0;
 
         final soCot =
             ((constraints.maxWidth + khoangCach) / (rongMongMuon + khoangCach))
@@ -40,24 +40,25 @@ class LuoiVatPham extends StatelessWidget {
                 .clamp(1, 6)
                 .toInt();
 
-        final rongThe =
-            (constraints.maxWidth - (soCot - 1) * khoangCach) / soCot;
-
-        return Wrap(
-          spacing: khoangCach,
-          runSpacing: khoangCach,
-          children: [
-            for (final vatPham in danhSach)
-              SizedBox(
-                width: rongThe,
-                child: TheVatPham(
-                  key: ValueKey(vatPham.id),
-                  vatPham: vatPham,
-                  dangChon: vatPham.id == idDangChon,
-                  khiChon: khiChon,
-                ),
-              ),
-          ],
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: danhSach.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: soCot,
+            mainAxisSpacing: khoangCach,
+            crossAxisSpacing: khoangCach,
+            childAspectRatio: 0.86,
+          ),
+          itemBuilder: (context, index) {
+            final vatPham = danhSach[index];
+            return TheVatPham(
+              key: ValueKey(vatPham.id),
+              vatPham: vatPham,
+              dangChon: vatPham.id == idDangChon,
+              khiChon: khiChon,
+            );
+          },
         );
       },
     );

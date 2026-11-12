@@ -105,6 +105,8 @@ class _TrangDemoState extends State<_TrangDemo> {
       doHiem: vatPham.doHiem,
       nguon: vatPham.nguon,
       bieuTuong: vatPham.bieuTuong,
+      danhMuc: vatPham.danhMuc,
+      soLuong: vatPham.soLuong,
       duongDanAnh: vatPham.duongDanAnh,
       thuocTinh: vatPham.thuocTinh,
       oDangTrangBi: o,

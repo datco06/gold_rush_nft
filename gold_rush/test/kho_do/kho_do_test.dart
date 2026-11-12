@@ -234,4 +234,71 @@ void main() {
     expect(soLanDong, 1);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Tìm kiếm hỗ trợ tiếng Việt không dấu tại client', (
+    tester,
+  ) async {
+    await moKhoDo(tester, danhSach: [taoKiemMau()]);
+
+    final oTimKiem = find.widgetWithText(TextField, 'Tìm vật phẩm...');
+    await tester.enterText(oTimKiem, 'kiem kiem thu');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TheVatPham), findsOneWidget);
+
+    await tester.enterText(oTimKiem, 'khong ton tai');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TheVatPham), findsNothing);
+    expect(find.text('Không tìm thấy vật phẩm phù hợp'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Danh mục lọc đúng dữ liệu mà không gọi backend', (tester) async {
+    final giap = VatPhamHienThi(
+      id: 'test_giap',
+      ten: 'Giáp kiểm thử',
+      loai: LoaiVatPham.giap,
+      doHiem: DoHiemVatPham.hiem,
+      nguon: NguonVatPham.game,
+      bieuTuong: BieuTuongVatPham.giap,
+    );
+
+    await moKhoDo(tester, danhSach: [taoKiemMau(), giap]);
+
+    final mucGiapCoTheBam = find.ancestor(
+      of: find.text('Giáp'),
+      matching: find.byType(InkWell),
+    );
+    await tester.tap(mucGiapCoTheBam.first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Giáp kiểm thử'), findsOneWidget);
+    expect(find.text('Kiếm kiểm thử'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Bố cục hẹp không overflow', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ManHinhKhoDo(
+            khiDong: () {},
+            trangThaiTrangBi: TrangThaiKhoDo.daTai,
+            trangThaiNhanVat: TrangThaiKhoDo.trong,
+            danhSachVatPham: [taoKiemMau()],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TheVatPham), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

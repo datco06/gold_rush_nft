@@ -270,8 +270,9 @@ void main() {
                 final bytes = await image.toByteData(
                   format: ui.ImageByteFormat.png,
                 );
-                await File('$output/$tenTep')
-                    .writeAsBytes(bytes!.buffer.asUint8List());
+                await File(
+                  '$output/$tenTep',
+                ).writeAsBytes(bytes!.buffer.asUint8List());
               } finally {
                 image.dispose();
               }

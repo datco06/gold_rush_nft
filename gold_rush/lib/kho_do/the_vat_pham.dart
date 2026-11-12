@@ -3,7 +3,37 @@ import 'package:flutter/material.dart';
 import '../giao_dien/mau_game.dart';
 import 'vat_pham_hien_thi.dart';
 
-class TheVatPham extends StatelessWidget {
+Color mauDoHiem(DoHiemVatPham doHiem) {
+  switch (doHiem) {
+    case DoHiemVatPham.thuong:
+      return const Color(0xFFAAB5C0);
+    case DoHiemVatPham.khongPhoBien:
+      return const Color(0xFF43D98B);
+    case DoHiemVatPham.hiem:
+      return const Color(0xFF36BFFF);
+    case DoHiemVatPham.suThi:
+      return const Color(0xFFA765FF);
+    case DoHiemVatPham.huyenThoai:
+      return const Color(0xFFF5B829);
+  }
+}
+
+String tenDoHiem(DoHiemVatPham doHiem) {
+  switch (doHiem) {
+    case DoHiemVatPham.thuong:
+      return 'Thường';
+    case DoHiemVatPham.khongPhoBien:
+      return 'Không phổ biến';
+    case DoHiemVatPham.hiem:
+      return 'Hiếm';
+    case DoHiemVatPham.suThi:
+      return 'Sử thi';
+    case DoHiemVatPham.huyenThoai:
+      return 'Huyền thoại';
+  }
+}
+
+class TheVatPham extends StatefulWidget {
   final VatPhamHienThi vatPham;
   final bool dangChon;
   final ValueChanged<VatPhamHienThi>? khiChon;
@@ -15,31 +45,14 @@ class TheVatPham extends StatelessWidget {
     this.khiChon,
   });
 
-  String get _tenLoai {
-    switch (vatPham.loai) {
-      case LoaiVatPham.vuKhi:
-        return 'Vũ khí';
-      case LoaiVatPham.giap:
-        return 'Giáp';
-      case LoaiVatPham.vatPham:
-        return 'Vật phẩm';
-    }
-  }
+  @override
+  State<TheVatPham> createState() => _TheVatPhamState();
+}
 
-  String get _tenDoHiem {
-    switch (vatPham.doHiem) {
-      case DoHiemVatPham.thuong:
-        return 'Thường';
-      case DoHiemVatPham.khongPhoBien:
-        return 'Không phổ biến';
-      case DoHiemVatPham.hiem:
-        return 'Hiếm';
-      case DoHiemVatPham.suThi:
-        return 'Sử thi';
-      case DoHiemVatPham.huyenThoai:
-        return 'Huyền thoại';
-    }
-  }
+class _TheVatPhamState extends State<TheVatPham> {
+  bool _dangTro = false;
+
+  VatPhamHienThi get vatPham => widget.vatPham;
 
   IconData get _iconMacDinh {
     switch (vatPham.loai) {
@@ -80,148 +93,137 @@ class TheVatPham extends StatelessWidget {
   Widget build(BuildContext context) {
     final vp = vatPham;
     final anh = vp.duongDanAnh;
+    final mau = mauDoHiem(vp.doHiem);
+    final dangChon = widget.dangChon;
 
     return Semantics(
       selected: dangChon,
-      child: Material(
-        color: MauGame.nen,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: dangChon ? MauGame.chinh : MauGame.vien,
-            width: dangChon ? 2 : 1,
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: khiChon == null ? null : () => khiChon!(vp),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    if (vp.laDuLieuMau)
-                      const _NhanThe(noiDung: 'DEMO', noiBat: true),
-                    _NhanThe(
-                      noiDung: vp.nguon == NguonVatPham.nft
-                          ? 'Nguồn NFT'
-                          : 'Trong game',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  height: 84,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: MauGame.chinh.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: anh == null || anh.trim().isEmpty
-                      ? _hinhDuPhong()
-                      : Image.asset(
-                          anh,
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.none,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Tooltip(
-                              message: 'Không tải được ảnh vật phẩm',
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                color: MauGame.chuPhu,
-                                size: 32,
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  vp.ten,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: MauGame.chu,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'ID: ${vp.id}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: MauGame.chuPhu, fontSize: 11),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '$_tenLoai · $_tenDoHiem',
-                  style: const TextStyle(color: MauGame.chinh, fontSize: 12),
-                ),
-                const SizedBox(height: 10),
-                if (vp.thuocTinh.isEmpty)
-                  const Text(
-                    'Chưa có thông tin thuộc tính',
-                    style: TextStyle(color: MauGame.chuPhu, fontSize: 12),
-                  )
-                else
-                  for (final thuocTinh in vp.thuocTinh.entries)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '${thuocTinh.key}: ${thuocTinh.value}',
-                        style: const TextStyle(
-                          color: MauGame.chuPhu,
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      vp.dangTrangBi
-                          ? Icons.check_circle_outline_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      size: 16,
-                      color: vp.dangTrangBi ? MauGame.chinh : MauGame.chuPhu,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        vp.dangTrangBi
-                            ? 'Đang trang bị: $_tenOTrangBi'
-                            : 'Chưa trang bị',
-                        style: TextStyle(
-                          color: vp.dangTrangBi
-                              ? MauGame.chinh
-                              : MauGame.chuPhu,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (vp.nguon == NguonVatPham.nft) ...[
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Thông tin NFT chưa phải xác nhận quyền sở hữu.',
-                    style: TextStyle(
-                      color: MauGame.chuPhu,
-                      fontSize: 10,
-                      height: 1.4,
-                    ),
-                  ),
+      label: '${vp.ten}, ${tenDoHiem(vp.doHiem)}',
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _dangTro = true),
+        onExit: (_) => setState(() => _dangTro = false),
+        cursor: widget.khiChon == null
+            ? SystemMouseCursors.basic
+            : SystemMouseCursors.click,
+        child: AnimatedScale(
+          scale: _dangTro ? 1.025 : 1,
+          duration: const Duration(milliseconds: 150),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  mau.withValues(alpha: dangChon ? 0.2 : 0.09),
+                  const Color(0xFF0B1626),
                 ],
-              ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: dangChon || _dangTro ? mau : mau.withValues(alpha: 0.7),
+                width: dangChon ? 2.2 : 1.2,
+              ),
+              boxShadow: dangChon || _dangTro
+                  ? [
+                      BoxShadow(
+                        color: mau.withValues(alpha: dangChon ? 0.42 : 0.2),
+                        blurRadius: dangChon ? 14 : 8,
+                      ),
+                    ]
+                  : const [],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.khiChon == null
+                    ? null
+                    : () => widget.khiChon!(vp),
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 10, 10, 9),
+                      child: Column(
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Icon(
+                              Icons.auto_awesome,
+                              color: mau,
+                              size: 14,
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: anh == null || anh.trim().isEmpty
+                                  ? _hinhDuPhong()
+                                  : Image.asset(
+                                      anh,
+                                      width: 68,
+                                      height: 68,
+                                      fit: BoxFit.contain,
+                                      filterQuality: FilterQuality.none,
+                                      errorBuilder: (_, _, _) => const Icon(
+                                        Icons.broken_image_outlined,
+                                        color: MauGame.chuPhu,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          Text(
+                            vp.ten,
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: MauGame.chu,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              height: 1.15,
+                            ),
+                          ),
+                          if (vp.dangTrangBi) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              'Đang trang bị: $_tenOTrangBi',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: MauGame.chinh,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (vp.soLuong > 1)
+                      Positioned(
+                        right: 6,
+                        bottom: 6,
+                        child: _NhanThe(noiDung: '×${vp.soLuong}'),
+                      ),
+                    if (vp.dangTrangBi)
+                      const Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Icon(
+                          Icons.check_circle_rounded,
+                          color: MauGame.chinh,
+                          size: 17,
+                        ),
+                      ),
+                    if (vp.laDuLieuMau)
+                      const Positioned(
+                        left: 5,
+                        bottom: 5,
+                        child: _NhanThe(noiDung: 'DEMO', noiBat: true),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
