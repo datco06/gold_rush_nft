@@ -5,8 +5,12 @@ pydantic>=2.7
 numpy
 scikit-learn>=1.5
 matplotlib
+# Kiểm tra và chuẩn hóa ảnh xem trước nhân vật.
+Pillow>=12.3.0
 # Giao diện + kiểm thử
 streamlit>=1.50
 requests
 httpx
 pytest
+# Nạp .env cho lệnh test/dashboard qua python -m dotenv (có CLI).
+python-dotenv[cli]>=1.0

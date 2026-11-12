@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../ai/may_chu_de_xuat_do_kho.dart';
+import '../ai/may_chu_nhiem_vu.dart';
+import '../ai/may_chu_nhan_vat.dart';
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../man_choi.dart';
+import 'anh_nhan_vat.dart';
+import 'de_xuat_do_kho.dart';
+import 'nhiem_vu.dart';
 
 /// Khung dùng chung cho Menu, Cài đặt, Tạm dừng và Kết thúc.
 class _Khung extends StatelessWidget {
@@ -137,6 +143,61 @@ class ManHinhMenu extends StatelessWidget {
 
   const ManHinhMenu({super.key, required this.game});
 
+  void _moAnhNhanVat(BuildContext context) {
+    const demo = String.fromEnvironment('GOLD_RUSH_IMAGE_DEMO_PLAYER');
+    try {
+      final api = MayChuNhanVat(maNguoiChoiDemo: demo.isEmpty ? null : demo);
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ManHinhAnhNhanVat(
+          mayChu: api,
+          authController: game.auth,
+          vi: game.phienVi?.vi,
+          tienTrinhController: game.tienTrinh,
+        ),
+      ));
+    } on ArgumentError {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cấu hình API ảnh nhân vật không hợp lệ.')),
+      );
+    }
+  }
+
+  void _moDeXuatDoKho(BuildContext context) {
+    final manChoi = game.manHienTai.id;
+    const demo = String.fromEnvironment('GOLD_RUSH_DIFFICULTY_DEMO_PLAYER');
+    try {
+      final api = MayChuDeXuatDoKho(maNguoiChoiDemo: demo.isEmpty ? null : demo);
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ManHinhDeXuatDoKho(
+          mayChu: api,
+          manChoi: manChoi,
+        ),
+      ));
+    } on ArgumentError {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cấu hình API đề xuất độ khó không hợp lệ.')),
+      );
+    }
+  }
+
+  void _moNhiemVu(BuildContext context) {
+    final manChoi = game.manHienTai.id;
+    const demo = String.fromEnvironment('GOLD_RUSH_QUEST_DEMO_PLAYER');
+    try {
+      final api = MayChuNhiemVu(maNguoiChoiDemo: demo.isEmpty ? null : demo);
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ManHinhNhiemVu(
+          mayChu: api,
+          manChoi: manChoi,
+        ),
+      ));
+    } on ArgumentError {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cấu hình API nhiệm vụ không hợp lệ.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return _Khung(
@@ -162,6 +223,21 @@ class ManHinhMenu extends StatelessWidget {
           nhan: 'Cửa hàng nhân vật',
           bieuTuong: Icons.storefront_rounded,
           khiBam: game.moCuaHang,
+        ),
+        _Nut(
+          nhan: 'Đề xuất độ khó',
+          bieuTuong: Icons.insights,
+          khiBam: () => _moDeXuatDoKho(context),
+        ),
+        _Nut(
+          nhan: 'Nhiệm vụ AI',
+          bieuTuong: Icons.auto_awesome,
+          khiBam: () => _moNhiemVu(context),
+        ),
+        _Nut(
+          nhan: 'Ảnh nhân vật AI',
+          bieuTuong: Icons.image_outlined,
+          khiBam: () => _moAnhNhanVat(context),
         ),
         _Nut(
           nhan: 'Cài đặt',
@@ -396,6 +472,13 @@ class ManHinhKetThuc extends StatelessWidget {
               ],
               const SizedBox(height: 6),
               _Dong('Điểm cao nhất', '${game.diemCaoNhat}'),
+              if (game.auth?.canEnterGame == true) ...[
+                const SizedBox(height: 6),
+                _Dong(
+                  'Tiến trình AI',
+                  '${game.tienTrinh.totalCompleted}/6 màn${game.tienTrinh.isCharacterUnlocked ? ' (Mở khóa AI)' : ''}',
+                ),
+              ],
             ],
           ),
         ),

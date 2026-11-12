@@ -483,7 +483,25 @@ class _TheMan extends StatelessWidget {
   Future<void> _choiLuyenTap(PhienVi? p) async {
     if (!duocVaoMan) return;
 
-    if (!await game.choiMan(man)) {
+    String? maVan;
+    DateTime? luc;
+    if (p != null && p.daKetNoi && p.diaChi != null) {
+      maVan = game.nhatKy.sinhMaVan();
+      luc = DateTime.now();
+      try {
+        await p.mayChu.batDauMan(
+          maVan: maVan,
+          vi: p.diaChi!,
+          man: man.id,
+          ve: 0,
+        );
+      } catch (e) {
+        p.baoLoi('Không đăng ký được màn chơi với máy chủ: $e');
+        return;
+      }
+    }
+
+    if (!await game.choiMan(man, maVan: maVan, ve: 0, batDauThat: luc)) {
       p?.baoLoi('Không nạp được bản đồ ${man.tep}.');
     }
   }

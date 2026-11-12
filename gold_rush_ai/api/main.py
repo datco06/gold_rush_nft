@@ -13,6 +13,7 @@ Chạy:  uvicorn api.main:app --reload --port 8000      (tài liệu tương tá
 | GET    | /api/mo-hinh/do-kho    | tải tệp mô hình hiện hành (app cập nhật mô hình không cần phát hành lại) |
 | GET    | /api/ban-do/sinh       | sinh bản đồ .tmx mới theo seed                             |
 | POST   | /api/tro-ly            | trợ lý gợi ý cách chơi (RAG rút gọn)                        |
+| POST   | /api/ai/nhiem-vu/tao   | tạo nhiệm vụ, lưu lịch sử và xử lý retry                    |
 | GET    | /api/man               | danh sách màn chơi (man_choi.json)                          |
 | POST   | /api/man/bat-dau       | đăng ký bắt đầu màn có cọc: (ví, số vé) → mã ván, MỘT lần    |
 | GET    | /api/man/ve            | vé (ví, số vé) đã dùng để bắt đầu ván nào chưa                |
@@ -72,6 +73,12 @@ from api.kho_do import router as kho_do_router
 from api.nhiem_vu import router as nhiem_vu_router
 from api.tien_trinh import router as tien_trinh_router
 
+from api.ai_nhiem_vu import khoi_dong_nhiem_vu, nhiem_vu_da_nap, router as router_nhiem_vu
+from api.de_xuat_do_kho import (de_xuat_do_kho_da_nap, khoi_dong_de_xuat_do_kho,
+                                 router as router_de_xuat_do_kho)
+from api.nhan_vat_ai import khoi_dong_nhan_vat_ai, nhan_vat_ai_da_nap, router as router_nhan_vat_ai
+from api.ai_tien_trinh import khoi_dong_tien_trinh, tien_trinh_da_nap, router as router_tien_trinh
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("api")
 STATE: dict = {}
@@ -88,7 +95,17 @@ def _is_loopback(host: str) -> bool:
 
 
 def _cho_phep_private_network(config=None) -> bool:
-    """Xác định có cho phép CORS Private Network Access hay không."""
+    """Xác định có cho phép CORS Private Network Access hay không.
+
+    Quy định bảo mật:
+    - CHỈ cho phép trong môi trường phát triển cục bộ (local development).
+    - TUYỆT ĐỐI KHÔNG tự động bật trong môi trường production/live hoặc khi dùng cookie_secure=True (HTTPS).
+    - Nếu biến môi trường CORS_ALLOW_PRIVATE_NETWORK được đặt rõ:
+        - "true" / "1": cho phép (chỉ khi không ở production).
+        - "false" / "0": từ chối hoàn toàn.
+    - Mặc định local dev: cho phép nếu không có cờ production, cookie không yêu cầu secure,
+      và tất cả origin trong allowlist đều thuộc localhost/loopback.
+    """
     env = os.environ.get("ENVIRONMENT", "").strip().lower()
     app_env = os.environ.get("APP_ENV", "").strip().lower()
     node_env = os.environ.get("NODE_ENV", "").strip().lower()
@@ -123,8 +140,11 @@ def _cho_phep_private_network(config=None) -> bool:
 
 
 class _LifespanCORSMiddleware:
-    """Sử dụng snapshot cấu hình khởi động cho CORS.
-    Hỗ trợ allow_credentials=True khi cấu hình AuthConfig có sẵn.
+    """Use the validated startup snapshot, without loading secrets on import.
+
+    Starlette constructs middleware before entering lifespan. Delegate HTTP to
+    its standard CORSMiddleware once AuthConfig is available; refresh the cache
+    for a later lifespan. No requests are served without a successful startup.
     """
 
     def __init__(self, app):
@@ -154,6 +174,7 @@ class _LifespanCORSMiddleware:
                     allow_origins=CORS_ORIGINS,
                     allow_methods=["*"],
                     allow_headers=["*"],
+                    allow_private_network=allow_pn,
                 )
                 self._allow_pn = allow_pn
             await self._cors(scope, receive, send)
@@ -171,6 +192,7 @@ class _LifespanCORSMiddleware:
                     "Idempotency-Key",
                     "X-Demo-Player",
                 ],
+                allow_private_network=allow_pn,
             )
             self._config = config
             self._allow_pn = allow_pn
@@ -178,7 +200,7 @@ class _LifespanCORSMiddleware:
 
 
 def _check_auth_database(engine):
-    """Kiểm tra schema/revision mà không tạo tự động bảng."""
+    """Read schema/revision only; never create a DB, tables or run migrations."""
     try:
         if engine.dialect.name == "sqlite":
             database = engine.url.database
@@ -193,9 +215,11 @@ def _check_auth_database(engine):
                 raise ValueError("Auth schema is missing.")
             if set(MigrationContext.configure(connection).get_current_heads()) != expected:
                 raise ValueError("Auth schema revision is not current.")
+            # Also detect missing columns without reading any account data.
             for table in Base.metadata.sorted_tables:
                 connection.execute(select(table).limit(0)).close()
     except Exception:
+        # Driver/SQL exceptions can include connection strings or credentials.
         raise RuntimeError(
             "AUTH_DATABASE_NOT_READY: kiểm tra AUTH_DATABASE_URL, driver, quyền truy cập "
             "và schema; chạy Alembic upgrade head riêng trước khi khởi động."
@@ -212,6 +236,10 @@ async def _game_lifespan(app: FastAPI):
         log.error("Không khởi tạo được CSDL SQLite: %s", e)
 
     # Nạp MỘT LẦN lúc khởi động; một thành phần lỗi không làm sập cả server
+    khoi_dong_nhiem_vu(app)
+    khoi_dong_de_xuat_do_kho(app)
+    khoi_dong_nhan_vat_ai(app)
+    khoi_dong_tien_trinh(app)
     if "do_kho" in ENABLED:
         try:
             STATE["do_kho"] = json.loads(MO_HINH_DO_KHO.read_text(encoding="utf-8"))
@@ -229,8 +257,16 @@ async def _game_lifespan(app: FastAPI):
             STATE["tro_ly"] = TroLy(KB_DIR)
         except (OSError, ValueError) as e:
             log.error("không nạp được kho tri thức %s: %s", KB_DIR, e)
-    yield
-    STATE.clear()
+    try:
+        yield
+    finally:
+        STATE.clear()
+        app.state.nhiem_vu = None
+        app.state.de_xuat_do_kho = None
+        app.state.nhan_vat_ai = None
+        app.state.kho_tien_trinh = None
+        app.state.dich_vu_tien_trinh = None
+        app.state.ai_player_source = None
 
 
 @asynccontextmanager
@@ -295,6 +331,12 @@ app.include_router(kho_do_router)
 app.include_router(nhiem_vu_router)
 app.include_router(ban_do_router)
 
+# Đăng ký các router AI
+app.include_router(router_nhiem_vu)
+app.include_router(router_de_xuat_do_kho)
+app.include_router(router_nhan_vat_ai)
+app.include_router(router_tien_trinh)
+
 
 @app.middleware("http")
 async def do_thoi_gian(request: Request, call_next):
@@ -312,9 +354,13 @@ def _can(ten: str):
 
 
 @app.get("/api/health")
-def health():
+def health(request: Request):
     return {"status": "ok", "bat": sorted(ENABLED),
-            "da_nap": {"do_kho": "do_kho" in STATE, "tro_ly": "tro_ly" in STATE},
+            "da_nap": {"do_kho": "do_kho" in STATE, "tro_ly": "tro_ly" in STATE,
+                       "nhiem_vu": nhiem_vu_da_nap(request.app),
+                       "de_xuat_do_kho": de_xuat_do_kho_da_nap(request.app),
+                       "nhan_vat_ai": nhan_vat_ai_da_nap(request.app),
+                       "tien_trinh": tien_trinh_da_nap(request.app)},
             "phien_ban_mo_hinh": STATE.get("do_kho", {}).get("phien_ban")}
 
 
@@ -652,7 +698,7 @@ async def cap_phieu(
         raise HTTPException(429, f"Ví đã nhận đủ {trong_tai.VANG_TOI_DA_MOI_NGAY} vàng hôm nay")
     so.ghi(yc.ma_van, vi_xac_thuc, kq.so_vang, m.id, ve)
 
-    # BẢO MẬT: Chỉ cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực an toàn qua SIWE và SoVe
+    # 1. Cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực qua SIWE và SoVe
     try:
         with lay_csdl() as conn:
             conn.execute(
@@ -664,6 +710,26 @@ async def cap_phieu(
     except Exception as e_mr:
         log.warning("Không thể cập nhật match_results verified: %s", e_mr)
 
+    # 2. Tự động ghi nhận tiến trình vào KhoTienTrinh (phục vụ mở khóa AI Character)
+    kho_tt = getattr(app.state, "kho_tien_trinh", None)
+    auth_srv = getattr(app.state, "auth_service", None)
+    if kho_tt is not None and auth_srv is not None:
+        try:
+            with auth_srv._factory() as db:
+                from auth.models import User
+                u = db.scalar(select(User).where(User.wallet_address == vi_xac_thuc.lower()))
+                if u is not None:
+                    kho_tt.ghi_nhan_hoan_thanh(
+                        owner_user_id=str(u.id),
+                        verified_wallet_address=vi_xac_thuc.lower(),
+                        stage_id=m.id,
+                        completion_status="completed",
+                        verification_source="referee_validation",
+                        completion_evidence={"ma_van": yc.ma_van, "so_vang": kq.so_vang, "ve": ve},
+                        replay_key=f"referee:{yc.ma_van}",
+                    )
+        except Exception as e:
+            log.warning("Không thể tự động ghi nhận tiến trình từ cap_phieu (%s)", e)
     return _ky(khoa, so.lay(yc.ma_van))
 
 

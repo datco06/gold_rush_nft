@@ -32,9 +32,9 @@ class TimDuong {
   TimDuong({
     required this.soCot,
     required this.soHang,
-    required bool Function(int cot, int hang) biChan,
+    required this._biChan,
     this.gioiHanO = 2000,
-  }) : _biChan = biChan;
+  });
 
   bool biChan(int cot, int hang) {
     if (cot < 0 || hang < 0 || cot >= soCot || hang >= soHang) return true;

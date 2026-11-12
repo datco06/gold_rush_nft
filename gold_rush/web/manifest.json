@@ -1,11 +1,11 @@
 {
-    "name": "gold_rush",
-    "short_name": "gold_rush",
+    "name": "Gold Rush",
+    "short_name": "Gold Rush",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Gold Rush — AI Adventure & Blockchain.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

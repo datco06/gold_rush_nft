@@ -10,10 +10,13 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import 'ai/dieu_chinh_do_kho.dart';
 import 'ai/gui_nhat_ky.dart';
+import 'ai/may_chu_tien_trinh.dart';
 import 'ai/mo_hinh_do_kho.dart';
 import 'ai/nhat_ky_choi.dart';
+import 'ai/tien_trinh_controller.dart';
 import 'ai/tim_duong.dart';
 import 'am_thanh/am_thanh.dart';
+import 'auth/auth_controller.dart';
 import 'blockchain/may_chu_phieu.dart';
 import 'blockchain/nhan_vat.dart';
 import 'blockchain/phien_vi.dart';
@@ -84,12 +87,28 @@ class KetQuaVan {
 
 class GoldRushGame extends FlameGame
     with HasCollisionDetection, HasKeyboardHandlerComponents {
-  GoldRushGame._(this.theGioi, {bool? batBoss})
-      : coBoss = batBoss ?? CauHinh.batBoss,
+  GoldRushGame._(this.theGioi, this._vi, [this.auth, TienTrinhController? tienTrinh, bool? batBoss])
+      : _tienTrinhController = tienTrinh,
+        coBoss = batBoss ?? CauHinh.batBoss,
         super(world: theGioi);
 
-  factory GoldRushGame({bool? batBoss}) =>
-      GoldRushGame._(TheGioi(), batBoss: batBoss);
+  factory GoldRushGame({
+    Vi? vi,
+    AuthController? auth,
+    TienTrinhController? tienTrinh,
+    bool? batBoss,
+  }) =>
+      GoldRushGame._(TheGioi(), vi, auth, tienTrinh, batBoss);
+
+  final Vi? _vi;
+  final AuthController? auth;
+  final TienTrinhController? _tienTrinhController;
+
+  late final TienTrinhController tienTrinh = _tienTrinhController ??
+      TienTrinhController(
+        mayChu: MayChuTienTrinh(mayChu: GuiNhatKy.mayChu),
+        authController: auth,
+      );
 
   final TheGioi theGioi;
 
@@ -127,8 +146,11 @@ class GoldRushGame extends FlameGame
   /// Phiên ví dùng chung, không tạo riêng cho từng màn hình.
   late final PhienVi? phienVi = GuiNhatKy.daCauHinh
       ? PhienVi(
-          vi: taoViMacDinh(),
-          mayChu: MayChuPhieu(mayChu: GuiNhatKy.mayChu),
+          vi: _vi ?? taoViMacDinh(),
+          mayChu: MayChuPhieu(
+            mayChu: GuiNhatKy.mayChu,
+            layCsrfToken: () => auth?.csrfToken,
+          ),
         )
       : null;
 
@@ -616,8 +638,13 @@ class GoldRushGame extends FlameGame
     }
 
     if (!pv.daKetNoi) {
-      await pv.xinPhieuChoVan(maVan);
-
+    if (!pv.daKetNoi) {
+      if (auth?.canEnterGame == true) {
+        await pv.ketNoi();
+      }
+    }
+    if (!pv.daKetNoi) {
+      await pv.xinPhieuChoVan(maVan); // ghi nhớ, xin khi kết nối ví
       datTrangThai(
         'Kết nối MetaMask (Cửa hàng) '
         'để nhận vàng của ván này.',
@@ -634,6 +661,20 @@ class GoldRushGame extends FlameGame
                 '— nhận ở Cửa hàng hoặc tự gộp vào '
                 'giao dịch vào màn tiếp theo.',
     );
+
+    // Ghi nhận tiến trình khi thắng màn:
+    if (soVang != null && kq.thang && kq.man.id >= 1 && kq.man.id <= 6) {
+      unawaited(
+        tienTrinh.xacNhanHoanThanhMan(
+          stageId: kq.man.id,
+          evidenceType: 'referee_log',
+          evidence: maVan,
+        ).catchError((Object e, StackTrace s) {
+          debugPrint('Lỗi đồng bộ tiến trình màn ${kq.man.id}: $e');
+          return false;
+        }),
+      );
+    }
   }
 
   void _docJoystick() {
