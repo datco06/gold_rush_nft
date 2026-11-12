@@ -97,22 +97,27 @@ void main() {
       expect(find.text('Người khai phá'), findsOneWidget);
       expect(find.text('Huyền thoại'), findsOneWidget);
 
-      // Tab 3: VŨ KHÍ
+      // Tab 3: VŨ KHÍ opens pre-built ManHinhKhoDo on Trang bị tab
       await tester.tap(find.text('VŨ KHÍ'));
       await tester.pumpAndSettle();
-      expect(find.text('VŨ KHÍ & GIÁP'), findsOneWidget);
-      expect(find.text('Kiếm gỗ'), findsOneWidget);
+      expect(find.text('KHO ĐỒ'), findsOneWidget);
+      expect(find.text('TÚI VẬT PHẨM'), findsOneWidget);
 
-      // Select weapon to view detail
-      await tester.tap(find.text('Kiếm gỗ'));
+      // Close back to Profile
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
       await tester.pumpAndSettle();
-      expect(find.text('Tháo trang bị'), findsOneWidget);
+      expect(find.text('HỒ SƠ'), findsOneWidget);
 
-      // Tab 4: NHÂN VẬT
+      // Tab 4: NHÂN VẬT opens pre-built ManHinhKhoDo on Nhân vật tab
       await tester.tap(find.text('NHÂN VẬT'));
       await tester.pumpAndSettle();
-      expect(find.text('ĐANG DÙNG'), findsOneWidget);
-      expect(find.text('Tạo ảnh nhân vật AI'), findsOneWidget);
+      expect(find.text('KHO ĐỒ'), findsOneWidget);
+      expect(find.text('BỘ SƯU TẬP NHÂN VẬT'), findsOneWidget);
+
+      // Close back to Profile
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
+      await tester.pumpAndSettle();
+      expect(find.text('HỒ SƠ'), findsOneWidget);
     },
   );
 
@@ -134,7 +139,8 @@ void main() {
 
     await tester.tap(find.text('VŨ KHÍ'));
     await tester.pumpAndSettle();
-    expect(find.text('Bạn chưa sở hữu vũ khí nào.'), findsOneWidget);
+    expect(find.text('KHO ĐỒ'), findsOneWidget);
+    expect(find.text('Túi vật phẩm đang trống'), findsOneWidget);
   });
 
   testWidgets(
@@ -162,4 +168,3 @@ void main() {
     },
   );
 }
-

@@ -10,6 +10,7 @@ import '../giao_dien/khung_game.dart';
 import '../giao_dien/mau_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart';
 import '../kho_do/luoi_vat_pham.dart';
+import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import '../kho_do/the_vat_pham.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
 
@@ -44,6 +45,7 @@ class ManHinhKhoDo extends StatefulWidget {
   final String? loiNhanVat;
   final VoidCallback? khiThuLaiTrangBi;
   final VoidCallback? khiThuLaiNhanVat;
+  final int tabBanDau;
 
   const ManHinhKhoDo({
     super.key,
@@ -60,6 +62,7 @@ class ManHinhKhoDo extends StatefulWidget {
     this.loiNhanVat,
     this.khiThuLaiTrangBi,
     this.khiThuLaiNhanVat,
+    this.tabBanDau = 0,
   });
 
   @override
@@ -222,6 +225,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
       },
       child: DefaultTabController(
         length: 2,
+        initialIndex: widget.tabBanDau.clamp(0, 1),
         child: Column(
           children: [
             Builder(
@@ -312,7 +316,10 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _XemTruocNhanVat(nhanVat: _nhanVatDangDung),
+          _XemTruocNhanVat(
+            nhanVat: _nhanVatDangDung,
+            danhSachVatPham: widget.danhSachVatPham,
+          ),
           const SizedBox(height: 14),
           Wrap(
             alignment: WrapAlignment.center,
@@ -895,7 +902,10 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _XemTruocNhanVat(nhanVat: nv),
+          _XemTruocNhanVat(
+            nhanVat: nv,
+            danhSachVatPham: widget.danhSachVatPham,
+          ),
           const SizedBox(height: 18),
           Text(
             nv?.ten ??
@@ -1636,8 +1646,9 @@ class _KhungMuc extends StatelessWidget {
 
 class _XemTruocNhanVat extends StatelessWidget {
   final NhanVatBan? nhanVat;
+  final List<VatPhamHienThi> danhSachVatPham;
 
-  const _XemTruocNhanVat({this.nhanVat});
+  const _XemTruocNhanVat({this.nhanVat, this.danhSachVatPham = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -1659,51 +1670,65 @@ class _XemTruocNhanVat extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const CustomPaint(painter: _NenTraiNhanVat()),
-          Center(
-            child: Container(
-              width: 132,
-              height: 66,
-              margin: const EdgeInsets.only(top: 62),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFFFD76A).withValues(alpha: 0.6),
-                    const Color(0xFFF5B829).withValues(alpha: 0.16),
-                    Colors.transparent,
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: MauGame.chinh.withValues(alpha: 0.38),
-                    blurRadius: 22,
-                    spreadRadius: 2,
-                  ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(0.0, -0.05),
+                radius: 1.15,
+                colors: [
+                  Color(0xFF132A48),
+                  Color(0xFF0A1A30),
+                  Color(0xFF071120),
                 ],
+                stops: [0.0, 0.55, 1.0],
               ),
             ),
           ),
           Center(
-            child: nv != null
-                ? AnhNhanVat(tepAnh: nv.tepAnh, kichThuoc: 84)
-                : Container(
-                    width: 66,
-                    height: 84,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: MauGame.nen.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: MauGame.chu.withValues(alpha: 0.3),
+            child: Container(
+              width: 148,
+              height: 148,
+              margin: const EdgeInsets.only(bottom: 18),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFFD76A).withValues(alpha: 0.24),
+                    const Color(0xFF27C6FF).withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.55, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 22),
+              child: nv != null
+                  ? NhanVatVoiTrangBi(
+                      tepAnh: nv.tepAnh,
+                      kichThuoc: 96,
+                      danhSachVatPham: danhSachVatPham,
+                    )
+                  : Container(
+                      width: 66,
+                      height: 84,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: MauGame.nen.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: MauGame.chu.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.person_outline_rounded,
+                        size: 48,
+                        color: MauGame.chuPhu,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.person_outline_rounded,
-                      size: 48,
-                      color: MauGame.chuPhu,
-                    ),
-                  ),
+            ),
           ),
           Positioned(
             left: 8,
@@ -1896,113 +1921,6 @@ class _TrangThaiDuLieu extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Cảnh trang trí, không phải bản đồ gameplay.
-class _NenTraiNhanVat extends CustomPainter {
-  const _NenTraiNhanVat();
-
-  static const _co = Color(0xFF416C36);
-  static const _coSang = Color(0xFF4A793C);
-  static const _coToi = Color(0xFF385E31);
-  static const _ngonCo = Color(0xFF7CA758);
-  static const _la = Color(0xFF285337);
-  static const _laSang = Color(0xFF3B7042);
-  static const _than = Color(0xFF77523A);
-  static const _dat = Color(0xFF967044);
-  static const _datSang = Color(0xFFB28D58);
-  static const _bong = Color(0x440F2316);
-  static const _hoa = Color(0xFFE8CB77);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.save();
-    canvas.clipRect(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, Paint()..color = _co);
-
-    const o = 24.0;
-
-    for (var hang = 0; hang < size.height / o; hang++) {
-      for (var cot = 0; cot < size.width / o; cot++) {
-        final giaTri = (cot * 7 + hang * 13) % 9;
-
-        if (giaTri < 3 || giaTri > 6) {
-          canvas.drawRect(
-            Rect.fromLTWH(cot * o, hang * o, o, o),
-            Paint()..color = giaTri < 3 ? _coSang : _coToi,
-          );
-        }
-
-        if (giaTri == 4) {
-          final x = cot * o + 8;
-          final y = hang * o + 12;
-          final but = Paint()..color = _ngonCo;
-
-          canvas.drawRect(Rect.fromLTWH(x, y, 2, 5), but);
-          canvas.drawRect(Rect.fromLTWH(x + 4, y - 2, 2, 7), but);
-        }
-
-        if (giaTri == 6) {
-          canvas.drawRect(
-            Rect.fromLTWH(cot * o + 16, hang * o + 10, 3, 3),
-            Paint()..color = _hoa,
-          );
-        }
-      }
-    }
-
-    _veCay(canvas, Offset(size.width * 0.14, 52));
-    _veCay(canvas, Offset(size.width * 0.86, 66));
-
-    final tam = Offset(size.width / 2, size.height * 0.69);
-
-    canvas.drawOval(
-      Rect.fromCenter(center: tam + const Offset(0, 6), width: 132, height: 38),
-      Paint()..color = _bong,
-    );
-    canvas.drawRect(
-      Rect.fromCenter(center: tam, width: 108, height: 28),
-      Paint()..color = _dat,
-    );
-    canvas.drawRect(
-      Rect.fromCenter(center: tam - const Offset(0, 7), width: 124, height: 16),
-      Paint()..color = _datSang,
-    );
-
-    canvas.restore();
-  }
-
-  void _veCay(Canvas canvas, Offset diem) {
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: diem + const Offset(0, 28),
-        width: 40,
-        height: 12,
-      ),
-      Paint()..color = _bong,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(diem.dx - 4, diem.dy, 8, 30),
-      Paint()..color = _than,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(diem.dx - 21, diem.dy - 20, 42, 28),
-      Paint()..color = _la,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(diem.dx - 14, diem.dy - 34, 28, 30),
-      Paint()..color = _laSang,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(diem.dx - 8, diem.dy - 42, 16, 12),
-      Paint()..color = _laSang,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _NenTraiNhanVat oldDelegate) {
-    return false;
   }
 }
 

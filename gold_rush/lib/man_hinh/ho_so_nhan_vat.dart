@@ -6,10 +6,13 @@ import 'package:flutter/services.dart';
 import '../ai/may_chu_nhan_vat.dart';
 import '../blockchain/nhan_vat.dart';
 import '../blockchain/sbt/sbt_model.dart';
+import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart' show AnhNhanVat;
+import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
 import 'anh_nhan_vat.dart';
+import 'kho_do.dart';
 import 'main_lobby.dart' show CharacterMiniProfile;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -132,7 +135,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
   }
 
   String _formatGold(BigInt? raw) {
-    if (raw == null) return '--';
+    if (raw == null) return '0';
     final s = raw.toString();
     final buf = StringBuffer();
     for (var i = 0; i < s.length; i++) {
@@ -142,6 +145,82 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     return buf.toString();
   }
 
+  void _moKhoDoTab(int tabBanDau) {
+    final g = widget.game;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (routeContext) => ValueListenableBuilder<List<VatPhamHienThi>>(
+          valueListenable: g.danhSachVatPham,
+          builder: (context, items, _) {
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                return ManHinhKhoDo(
+                  tabBanDau: tabBanDau,
+                  khiDong: () => Navigator.of(routeContext).pop(),
+                  trangThaiTrangBi: TrangThaiKhoDo.daTai,
+                  danhSachVatPham: items,
+                  khiTrangBi: g.trangBiVatPham,
+                  khiThao: g.thaoVatPham,
+                  trangThaiNhanVat: TrangThaiKhoDo.daTai,
+                  phienVi: g.phienVi,
+                  tepNhanVatDangDung: g.nhanVatDangDung,
+                  khiChonNhanVat: (characterId) async {
+                    final pv = g.phienVi;
+                    if (g.trangThai != TrangThaiChoi.tamDung) {
+                      throw StateError('Không thể chọn nhân vật lúc này.');
+                    }
+                    if ((pv?.dangXuLy ?? false) || (pv?.dangHoi ?? false)) {
+                      throw StateError('Phiên ví đang xử lý thao tác khác.');
+                    }
+                    final id = int.tryParse(characterId);
+                    NhanVatBan? nhanVat;
+                    if (id == georgeGoc.id) {
+                      nhanVat = georgeGoc;
+                    } else {
+                      for (final nv in bangNhanVat) {
+                        if (nv.id == id) {
+                          nhanVat = nv;
+                          break;
+                        }
+                      }
+                    }
+                    if (nhanVat == null) {
+                      throw StateError(
+                        'Nhân vật không thuộc danh mục hiện tại.',
+                      );
+                    }
+                    if (nhanVat.id != georgeGoc.id &&
+                        (pv == null ||
+                            !pv.daKetNoi ||
+                            !pv.daCo.contains(nhanVat.id))) {
+                      throw StateError('Chưa xác nhận quyền sở hữu nhân vật.');
+                    }
+                    g.nhanVatDangDung = nhanVat.tepAnh;
+                    setModalState(() {});
+                    if (mounted) setState(() {});
+                    pv?.veLai();
+                  },
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _onTabSelected(_ProfileTab tab) {
+    if (tab == _ProfileTab.vuKhi) {
+      _moKhoDoTab(0);
+      return;
+    }
+    if (tab == _ProfileTab.nhanVat) {
+      _moKhoDoTab(1);
+      return;
+    }
+    setState(() => _currentTab = tab);
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = widget.game;
@@ -149,7 +228,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     final capDo = _computeLevel();
     final pv = g.phienVi;
     final goldText = pv == null
-        ? '--'
+        ? '0'
         : (pv.dangXuLy ? '...' : _formatGold(pv.vang));
 
     return Material(
@@ -190,8 +269,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                             child: _ProfileSidebar(
                               currentTab: _currentTab,
                               compact: compact,
-                              onTabChanged: (tab) =>
-                                  setState(() => _currentTab = tab),
+                              onTabChanged: _onTabSelected,
                             ),
                           ),
 
@@ -330,24 +408,33 @@ class _ProfileHeader extends StatelessWidget {
                     level: capDo,
                   ),
                   const SizedBox(width: 16),
-                  Image.asset(
-                    'assets/images/dong_xu.png',
-                    width: compact ? 18 : 22,
-                    height: compact ? 18 : 22,
-                    filterQuality: FilterQuality.none,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Icons.monetization_on_rounded,
-                      color: ProfileColors.gold,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
                   Text(
                     goldText,
                     style: TextStyle(
                       color: ProfileColors.textPrimary,
                       fontSize: compact ? 13 : 15,
                       fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    width: compact ? 20 : 24,
+                    height: compact ? 20 : 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          ProfileColors.goldHighlight,
+                          ProfileColors.gold,
+                        ],
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.monetization_on_rounded,
+                      color: const Color(0xFF4A2B00),
+                      size: compact ? 15 : 18,
                     ),
                   ),
                 ],
@@ -674,9 +761,13 @@ class _CharacterShowcase extends StatelessWidget {
                   ],
                 ),
                 child: Center(
-                  child: AnhNhanVat(
-                    tepAnh: nhanVat.tepAnh,
-                    kichThuoc: charSize,
+                  child: ValueListenableBuilder<List<VatPhamHienThi>>(
+                    valueListenable: game.danhSachVatPham,
+                    builder: (context, items, _) => NhanVatVoiTrangBi(
+                      tepAnh: nhanVat.tepAnh,
+                      kichThuoc: charSize,
+                      danhSachVatPham: items,
+                    ),
                   ),
                 ),
               ),

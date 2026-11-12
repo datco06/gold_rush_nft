@@ -55,7 +55,7 @@ void main() {
       expect(find.text('46.384'), findsNothing);
       expect(find.text('+15'), findsNothing);
       expect(find.text('+12'), findsNothing);
-      expect(find.text('--'), findsOneWidget);
+      expect(find.text('0'), findsOneWidget);
 
       // Equipment panel & Start button
       expect(find.text('TRANG BỊ HIỆN TẠI'), findsOneWidget);

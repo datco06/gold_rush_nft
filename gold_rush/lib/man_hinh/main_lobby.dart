@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../blockchain/nhan_vat.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart' show AnhNhanVat;
+import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
 import 'ho_so_nhan_vat.dart';
 
@@ -101,7 +102,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
   }
 
   String _formatGold(BigInt? raw) {
-    if (raw == null) return '--';
+    if (raw == null) return '0';
     final s = raw.toString();
     final buf = StringBuffer();
     for (var i = 0; i < s.length; i++) {
@@ -180,7 +181,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
           final capDo = _computePlayerLevel();
           final pv = g.phienVi;
           final goldText = pv == null
-              ? '--'
+              ? '0'
               : (pv.dangXuLy ? '...' : _formatGold(pv.vang));
 
           return LayoutBuilder(
@@ -209,9 +210,9 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                   _CharacterShowcase(
                     tepAnh: g.nhanVatDangDung,
                     tenNhanVat: nv.ten,
+                    danhSachVatPham: g.danhSachVatPham.value,
                     idleAnimation: _idleController,
                     compact: compact,
-                    rightOffset: rightPanelWidth * 0.34,
                   ),
 
                   // 3. Giao diện Header + Panel Trang bị + Nút BẮT ĐẦU
@@ -324,12 +325,8 @@ class _LobbyBackground extends StatelessWidget {
             ),
           ),
         ),
-        // Bục đá phát sáng dưới chân nhân vật
-        CustomPaint(
-          painter: _PedestalPainter(
-            centerShiftX: compact ? 0.0 : -rightPanelWidth * 0.17,
-          ),
-        ),
+        // Bục đá phát sáng dưới chân nhân vật (căn chính giữa)
+        const CustomPaint(painter: _PedestalPainter(centerShiftX: 0.0)),
       ],
     );
   }
@@ -343,7 +340,7 @@ class _PedestalPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width * 0.5 + centerShiftX;
-    final cy = size.height * 0.78;
+    final cy = size.height * 0.75;
     final rx = math.min(size.width * 0.20, 210.0);
     final ry = rx * 0.28;
 
@@ -784,8 +781,8 @@ class _GoldBalanceWidget extends StatelessWidget {
     return Container(
       height: compact ? 38 : 44,
       padding: EdgeInsets.only(
-        left: compact ? 8 : 10,
-        right: onAddTap != null ? 6 : 12,
+        left: compact ? 12 : 14,
+        right: onAddTap != null ? 6 : 10,
       ),
       decoration: BoxDecoration(
         color: LobbyColors.panelTranslucent,
@@ -801,18 +798,6 @@ class _GoldBalanceWidget extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(
-            'assets/images/dong_xu.png',
-            width: compact ? 20 : 24,
-            height: compact ? 20 : 24,
-            filterQuality: FilterQuality.none,
-            errorBuilder: (_, _, _) => const Icon(
-              Icons.monetization_on_rounded,
-              color: LobbyColors.primaryGold,
-              size: 22,
-            ),
-          ),
-          SizedBox(width: compact ? 6 : 8),
           Text(
             goldText,
             style: TextStyle(
@@ -820,6 +805,24 @@ class _GoldBalanceWidget extends StatelessWidget {
               fontSize: compact ? 13 : 15,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.4,
+            ),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          Container(
+            width: compact ? 22 : 26,
+            height: compact ? 22 : 26,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [LobbyColors.highlightGold, LobbyColors.primaryGold],
+              ),
+            ),
+            child: Icon(
+              Icons.monetization_on_rounded,
+              color: const Color(0xFF4A2B00),
+              size: compact ? 16 : 19,
             ),
           ),
           if (onAddTap != null) ...[
@@ -930,58 +933,69 @@ class _HeaderIconButtonState extends State<_HeaderIconButton> {
 class _CharacterShowcase extends StatelessWidget {
   final String tepAnh;
   final String tenNhanVat;
+  final List<VatPhamHienThi> danhSachVatPham;
   final Animation<double> idleAnimation;
   final bool compact;
-  final double rightOffset;
 
   const _CharacterShowcase({
     required this.tepAnh,
     required this.tenNhanVat,
+    required this.danhSachVatPham,
     required this.idleAnimation,
     required this.compact,
-    required this.rightOffset,
   });
 
   @override
   Widget build(BuildContext context) {
     final spriteSize = compact ? 132.0 : 184.0;
     return IgnorePointer(
-      child: Align(
-        alignment: Alignment.center,
-        child: Transform.translate(
-          offset: Offset(compact ? 0 : -rightOffset, compact ? 18 : 26),
-          child: RepaintBoundary(
-            child: AnimatedBuilder(
-              animation: idleAnimation,
-              builder: (context, child) {
-                final bob = math.sin(idleAnimation.value * math.pi) * -6.0;
-                return Transform.translate(
-                  offset: Offset(0, bob),
-                  child: child,
-                );
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: LobbyColors.primaryGold.withValues(
-                            alpha: 0.16,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final pedestalY = constraints.maxHeight * 0.75;
+          final left = (constraints.maxWidth - spriteSize) * 0.5;
+          final top = math.max(0.0, pedestalY - spriteSize + 8.0);
+          return Stack(
+            children: [
+              Positioned(
+                left: left,
+                top: top,
+                width: spriteSize,
+                height: spriteSize,
+                child: RepaintBoundary(
+                  child: AnimatedBuilder(
+                    animation: idleAnimation,
+                    builder: (context, child) {
+                      final bob =
+                          math.sin(idleAnimation.value * math.pi) * -6.0;
+                      return Transform.translate(
+                        offset: Offset(0, bob),
+                        child: child,
+                      );
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: LobbyColors.primaryGold.withValues(
+                              alpha: 0.18,
+                            ),
+                            blurRadius: 38,
+                            spreadRadius: 4,
                           ),
-                          blurRadius: 38,
-                          spreadRadius: 4,
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: NhanVatVoiTrangBi(
+                        tepAnh: tepAnh,
+                        kichThuoc: spriteSize,
+                        danhSachVatPham: danhSachVatPham,
+                      ),
                     ),
-                    child: AnhNhanVat(tepAnh: tepAnh, kichThuoc: spriteSize),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ),
+            ],
+          );
+        },
       ),
     );
   }
