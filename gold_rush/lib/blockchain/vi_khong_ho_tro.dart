@@ -54,6 +54,10 @@ class _ViKhongHoTro implements Vi {
       Future.error(_loi);
 
   @override
+  Future<String> kyThongDiep({required String diaChi, required String thongDiep}) =>
+      Future.error(_loi);
+
+  @override
   Future<BienLai?> bienLai(String maGiaoDich) => Future.error(_loi);
 }
 

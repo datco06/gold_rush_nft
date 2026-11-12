@@ -224,7 +224,7 @@ class SoVe(_SoJsonl):
         return any(v["vi"].lower() == vi.lower() and v["ve"] == ve for v in self._doc())
 
     def bat_dau(self, ma_van: str, vi: str, man: int, ve: int, luc: float | None = None) -> dict:
-        if self.da_dung(vi, ve):
+        if ve > 0 and self.da_dung(vi, ve):
             raise ValueError("Vé này đã dùng để bắt đầu một ván")
         if self.lay_theo_van(ma_van):
             raise ValueError("Mã ván đã được dùng")

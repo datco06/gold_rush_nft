@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../ai/http_client_boundary.dart';
 import 'abi.dart';
 import 'cua_hang.dart';
 import 'vi.dart';
@@ -25,9 +26,23 @@ class CauHinhChuoi {
 class MayChuPhieu {
   final String mayChu;
   final http.Client _client;
+  final String? Function()? layCsrfToken;
   static const Duration _hetGio = Duration(seconds: 10);
 
-  MayChuPhieu({required this.mayChu, http.Client? client}) : _client = client ?? http.Client();
+  MayChuPhieu({
+    required this.mayChu,
+    http.Client? client,
+    this.layCsrfToken,
+  }) : _client = client ?? taoHttpClientTrinhDuyet();
+
+  Map<String, String> _headers() {
+    final h = <String, String>{'Content-Type': 'application/json'};
+    final csrf = layCsrfToken?.call();
+    if (csrf != null && csrf.isNotEmpty) {
+      h['X-CSRF-Token'] = csrf;
+    }
+    return h;
+  }
 
   Future<CauHinhChuoi> cauHinh() async {
     final j = await _json(() => _client.get(Uri.parse('$mayChu/api/vang/cau-hinh')));
@@ -48,7 +63,7 @@ class MayChuPhieu {
     await _json(
       () => _client.post(
         Uri.parse('$mayChu/api/man/bat-dau'),
-        headers: const {'Content-Type': 'application/json'},
+        headers: _headers(),
         body: jsonEncode({'ma_van': maVan, 'vi': vi, 'man': man, 've': ve}),
       ),
       thanhCong: 201,
@@ -67,7 +82,7 @@ class MayChuPhieu {
     final j = await _json(
       () => _client.post(
         Uri.parse('$mayChu/api/vang/phieu'),
-        headers: const {'Content-Type': 'application/json'},
+        headers: _headers(),
         body: jsonEncode({'ma_van': maVan, 'vi': vi}),
       ),
       khi409: 'Ván này đã cấp phiếu cho một ví khác.',

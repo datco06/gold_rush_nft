@@ -27,6 +27,17 @@
 **/*.keystore
 **/key.properties
 
+# SQLite / Local Database
+*.db
+*.sqlite3
+**/data/*.db
+**/data/*.sqlite3
+
 # File xuất mã nguồn để phân tích
 GoldRush_CauTruc.txt
 GoldRush_Source.txt
+
+# Local runtime databases & localhost deployments
+gold_rush_ai/data/
+gold_rush_chain/deployments/localhost-*.json
+gold_rush_chain/ignition/deployments/chain-31337/

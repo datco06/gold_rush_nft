@@ -43,6 +43,7 @@ class NhatKyVan(BaseModel):
     diem: int = Field(ge=0, le=100000)
     do_kho_thich_ung: bool = False
     ten_hien_thi: str = Field(default="", max_length=20)
+    player_id: str = Field(default="", max_length=64)
     anh_chup: list[AnhChup] = Field(default_factory=list, max_length=400)
     su_kien: list[SuKien] = Field(default_factory=list, max_length=500)
     nhan_luc: str = Field(default="", max_length=40)        # máy chủ GHI ĐÈ lúc lưu — app gửi gì cũng vô nghĩa

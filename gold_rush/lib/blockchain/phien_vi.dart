@@ -27,6 +27,7 @@ class PhienVi extends ChangeNotifier {
   String? diaChi;
   CuaHangChuoi? cuaHang;
   StreamSubscription<SuKienVi>? _ngheVi;
+  bool _daDong = false;
 
   BigInt vang = BigInt.zero;
   VeVaoMan ve = VeVaoMan.khong;
@@ -58,6 +59,7 @@ class PhienVi extends ChangeNotifier {
       ve.dangMo && phieuCho.any((p) => p.coCoc && p.phieu.ve == BigInt.from(ve.so));
 
   void _bao(String s, {bool loi = false}) {
+    if (_daDong) return;
     thongBao = s;
     thongBaoLaLoi = loi;
     notifyListeners();
@@ -111,6 +113,7 @@ class PhienVi extends ChangeNotifier {
         cauHinh = ch;
         diaChi = dc;
         cuaHang = CuaHangChuoi(vi: vi, hopDong: ch.hopDong, bo: bo);
+        if (_daDong) return;
         _ngheVi ??= vi.suKien.listen(_khiViDoi);
         await _taiLaiNoi(); // gồm cả xin phiếu cho các ván chơi lúc chưa kết nối
       }, xong: 'Đã kết nối.');
@@ -310,6 +313,8 @@ class PhienVi extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_daDong) return;
+    _daDong = true;
     _ngheVi?.cancel();
     super.dispose();
   }

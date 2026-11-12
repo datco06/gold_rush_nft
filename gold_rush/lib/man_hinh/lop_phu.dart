@@ -1,25 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../ai/may_chu_de_xuat_do_kho.dart';
+import '../ai/may_chu_nhiem_vu.dart';
+import '../ai/may_chu_nhan_vat.dart';
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../man_choi.dart';
+import 'anh_nhan_vat.dart';
+import 'de_xuat_do_kho.dart';
+import 'nhiem_vu.dart';
 
-/// Bốn màn hình phủ lên trên game: Menu, Cài đặt, Tạm dừng, Kết thúc.
-///
-/// Điểm quan trọng về kiến trúc: đây là widget Flutter bình thường, KHÔNG phải
-/// component của Flame. Flame gọi chúng là "overlay" và vẽ chúng bằng chính hệ
-/// thống widget của Flutter, xếp chồng lên canvas của game.
-///
-/// Vì sao không vẽ menu bằng component Flame cho đồng bộ? Vì nút bấm, chữ,
-/// công tắc, cuộn, hiệu ứng chạm... Flutter đã làm sẵn hết và làm rất tốt.
-/// Viết lại những thứ đó bằng canvas là phí công. Quy tắc thực dụng:
-/// **cái gì chuyển động trong thế giới trò chơi thì dùng Flame, cái gì là
-/// giao diện tĩnh thì dùng Flutter.**
-
-// ---------------------------------------------------------------------------
-// Thành phần dùng chung
-// ---------------------------------------------------------------------------
+/// Khung dùng chung cho Menu, Cài đặt, Tạm dừng và Kết thúc.
 class _Khung extends StatelessWidget {
   final String tieuDe;
   final String? phuDe;
@@ -29,44 +21,62 @@ class _Khung extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
       color: CauHinh.mauNenMo,
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 380),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  tieuDe,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                    color: CauHinh.mauChinh,
-                    letterSpacing: 1.5,
-                    shadows: [
-                      Shadow(color: Colors.black, offset: Offset(0, 3), blurRadius: 6),
-                    ],
-                  ),
-                ),
-                if (phuDe != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    phuDe!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      height: 1.5,
-                      color: Color(0xFFC9D2DB),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: SizedBox(
+                width: double.infinity,
+                child: Material(
+                  color: CauHinh.mauNen,
+                  elevation: 12,
+                  shadowColor: Colors.black54,
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: BorderSide(
+                      color: CauHinh.mauChinh.withValues(alpha: 0.35),
                     ),
                   ),
-                ],
-                const SizedBox(height: 26),
-                ...noiDung,
-              ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          tieuDe,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: CauHinh.mauChinh,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        if (phuDe != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            phuDe!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              height: 1.5,
+                              color: Color(0xFFC9D2DB),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        ...noiDung,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -124,20 +134,79 @@ class _Nut extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Menu chính
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------
+// Menu
+// ------------------------------------------------------------------
+
 class ManHinhMenu extends StatelessWidget {
   final GoldRushGame game;
 
   const ManHinhMenu({super.key, required this.game});
 
+  void _moAnhNhanVat(BuildContext context) {
+    const demo = String.fromEnvironment('GOLD_RUSH_IMAGE_DEMO_PLAYER');
+    try {
+      final api = MayChuNhanVat(maNguoiChoiDemo: demo.isEmpty ? null : demo);
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ManHinhAnhNhanVat(
+          mayChu: api,
+          authController: game.auth,
+          vi: game.phienVi?.vi,
+          tienTrinhController: game.tienTrinh,
+        ),
+      ));
+    } on ArgumentError {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cấu hình API ảnh nhân vật không hợp lệ.')),
+      );
+    }
+  }
+
+  void _moDeXuatDoKho(BuildContext context) {
+    final manChoi = game.manHienTai.id;
+    const demo = String.fromEnvironment('GOLD_RUSH_DIFFICULTY_DEMO_PLAYER');
+    try {
+      final api = MayChuDeXuatDoKho(maNguoiChoiDemo: demo.isEmpty ? null : demo);
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ManHinhDeXuatDoKho(
+          mayChu: api,
+          manChoi: manChoi,
+        ),
+      ));
+    } on ArgumentError {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cấu hình API đề xuất độ khó không hợp lệ.')),
+      );
+    }
+  }
+
+  void _moNhiemVu(BuildContext context) {
+    final manChoi = game.manHienTai.id;
+    const demo = String.fromEnvironment('GOLD_RUSH_QUEST_DEMO_PLAYER');
+    try {
+      final api = MayChuNhiemVu(maNguoiChoiDemo: demo.isEmpty ? null : demo);
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ManHinhNhiemVu(
+          mayChu: api,
+          manChoi: manChoi,
+        ),
+      ));
+    } on ArgumentError {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cấu hình API nhiệm vụ không hợp lệ.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return _Khung(
       tieuDe: 'GOLD RUSH',
-      phuDe: 'George đi tìm vàng giữa vùng đất đầy zombie và bộ xương.\n'
-          'Nhặt hết số xu trên bản đồ trước khi hết máu — và trước khi hết giờ.',
+      phuDe:
+          'George đi tìm vàng giữa vùng đất đầy zombie '
+          'và bộ xương.\n'
+          'Nhặt hết số xu trên bản đồ trước khi hết máu '
+          '— và trước khi hết giờ.',
       noiDung: [
         _Nut(
           nhan: 'CHƠI',
@@ -146,9 +215,29 @@ class ManHinhMenu extends StatelessWidget {
           khiBam: game.moChonMan,
         ),
         _Nut(
+          nhan: 'Kho đồ',
+          bieuTuong: Icons.backpack_outlined,
+          khiBam: game.moKhoDo,
+        ),
+        _Nut(
           nhan: 'Cửa hàng nhân vật',
           bieuTuong: Icons.storefront_rounded,
           khiBam: game.moCuaHang,
+        ),
+        _Nut(
+          nhan: 'Đề xuất độ khó',
+          bieuTuong: Icons.insights,
+          khiBam: () => _moDeXuatDoKho(context),
+        ),
+        _Nut(
+          nhan: 'Nhiệm vụ AI',
+          bieuTuong: Icons.auto_awesome,
+          khiBam: () => _moNhiemVu(context),
+        ),
+        _Nut(
+          nhan: 'Ảnh nhân vật AI',
+          bieuTuong: Icons.image_outlined,
+          khiBam: () => _moAnhNhanVat(context),
         ),
         _Nut(
           nhan: 'Cài đặt',
@@ -157,19 +246,25 @@ class ManHinhMenu extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         const Text(
-          'Điều khiển:  cần gạt ở góc dưới trái  ·  phím mũi tên hoặc W A S D\n'
+          'Điều khiển: cần gạt ở góc dưới trái · '
+          'phím mũi tên hoặc W A S D\n'
           'chạm vào bản đồ để đi tới chỗ đó',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12.5, height: 1.6, color: Color(0xFF9FAEBC)),
+          style: TextStyle(
+            fontSize: 12.5,
+            height: 1.6,
+            color: Color(0xFF9FAEBC),
+          ),
         ),
       ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------
 // Cài đặt
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------
+
 class ManHinhCaiDat extends StatefulWidget {
   final GoldRushGame game;
 
@@ -191,7 +286,10 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
             setState(() => AmThanh.batNhac = v);
             AmThanh.datBatNhac(v);
           },
-          title: const Text('Nhạc nền', style: TextStyle(color: CauHinh.mauChu)),
+          title: const Text(
+            'Nhạc nền',
+            style: TextStyle(color: CauHinh.mauChu),
+          ),
           subtitle: const Text(
             'Bản nhạc lặp 8 giây, sinh bằng mã nguồn',
             style: TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
@@ -200,27 +298,35 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
         ),
         SwitchListTile(
           value: AmThanh.batHieuUng,
-          onChanged: (v) => setState(() => AmThanh.batHieuUng = v),
-          title: const Text('Hiệu ứng âm thanh',
-              style: TextStyle(color: CauHinh.mauChu)),
+          onChanged: (v) {
+            setState(() => AmThanh.batHieuUng = v);
+          },
+          title: const Text(
+            'Hiệu ứng âm thanh',
+            style: TextStyle(color: CauHinh.mauChu),
+          ),
           subtitle: const Text(
             'Tiếng nhặt xu, bước chân, kẻ địch nổ',
             style: TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
           ),
           contentPadding: EdgeInsets.zero,
         ),
-        // Người chơi phải BIẾT và TẮT ĐƯỢC việc AI chỉnh độ khó.
         SwitchListTile(
           value: widget.game.doKho.batThichUng,
           onChanged: widget.game.doKho.moHinh == null
               ? null
-              : (v) => setState(() => widget.game.doKho.batThichUng = v),
-          title: const Text('Độ khó thích ứng (AI)',
-              style: TextStyle(color: CauHinh.mauChu)),
+              : (v) {
+                  setState(() => widget.game.doKho.batThichUng = v);
+                },
+          title: const Text(
+            'Độ khó thích ứng (AI)',
+            style: TextStyle(color: CauHinh.mauChu),
+          ),
           subtitle: Text(
             widget.game.doKho.moHinh == null
                 ? 'Chưa có mô hình trong assets/models/'
-                : 'Kẻ địch nhanh/chậm trong khoảng 80–115% theo phong độ của bạn',
+                : 'Kẻ địch nhanh/chậm trong khoảng 80–115% '
+                      'theo phong độ của bạn',
             style: const TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
           ),
           contentPadding: EdgeInsets.zero,
@@ -236,20 +342,19 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
   }
 }
 
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------
 // Tạm dừng
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------
+
 class ManHinhTamDung extends StatelessWidget {
   final GoldRushGame game;
 
   const ManHinhTamDung({super.key, required this.game});
 
-  /// Trừ hao thời gian gửi nhật ký (tối đa 3 lần thử, ~22 s) và độ lệch đồng hồ.
   static const Duration _duPhong = Duration(seconds: 25);
 
   @override
   Widget build(BuildContext context) {
-    // Vẽ lại mỗi giây: hạn nộp tính theo giờ THẬT, vẫn trôi khi game tạm dừng.
     return StreamBuilder<int>(
       stream: Stream.periodic(const Duration(seconds: 1), (i) => i),
       builder: (context, _) => _xay(),
@@ -260,16 +365,23 @@ class ManHinhTamDung extends StatelessWidget {
     final m = game.manHienTai;
     var canhBao = '';
     final bd = game.batDauThat;
+
     if (!m.mienPhi && bd != null) {
-      // Đồng hồ TRONG GAME dừng, nhưng máy chủ tính giờ THẬT: tạm dừng quá lâu là phiếu bị từ chối.
       final con = bd.add(m.hanNopNhatKy - _duPhong).difference(DateTime.now());
-      canhBao = '\nĐồng hồ trong game đã dừng, nhưng máy chủ tính giờ thật: '
+
+      canhBao =
+          '\nĐồng hồ trong game đã dừng, '
+          'nhưng máy chủ tính giờ thật: '
           '${con.isNegative ? 'ĐÃ QUÁ hạn nộp — ván này sẽ không được trả vàng.' : 'còn ${dinhDangGiay(con.inSeconds)} để chơi xong.'}'
-          '\nVề menu bây giờ là bỏ ván — MẤT ${m.coc} vàng cọc.';
+          '\nVề menu bây giờ là bỏ ván '
+          '— MẤT ${m.coc} vàng cọc.';
     }
+
     return _Khung(
       tieuDe: 'TẠM DỪNG',
-      phuDe: 'Màn ${m.id} · ${m.ten}   ·   Điểm hiện tại: ${game.george?.diem ?? 0}$canhBao',
+      phuDe:
+          'Màn ${m.id} · ${m.ten} · '
+          'Điểm hiện tại: ${game.george?.diem ?? 0}$canhBao',
       noiDung: [
         _Nut(
           nhan: 'Chơi tiếp',
@@ -292,9 +404,10 @@ class ManHinhTamDung extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Kết thúc ván
-// ---------------------------------------------------------------------------
+// ------------------------------------------------------------------
+// Kết thúc
+// ------------------------------------------------------------------
+
 class ManHinhKetThuc extends StatelessWidget {
   final GoldRushGame game;
 
@@ -312,16 +425,24 @@ class ManHinhKetThuc extends StatelessWidget {
     final thang = game.trangThai == TrangThaiChoi.thang;
     final diem = game.george?.diem ?? 0;
     final m = game.manHienTai;
+
     final hetGio = !thang && game.giayConLai != null && game.giayConLai! <= 0;
 
     final String phuDe;
+
     if (thang) {
       phuDe = m.mienPhi
           ? 'George đã gom hết vàng và thoát ra an toàn.'
-          : 'HOÀN THÀNH màn ${m.id}! Nhận lại ${m.coc} cọc + ${m.soXu} xu + ${m.thuong} thưởng.';
+          : 'HOÀN THÀNH màn ${m.id}! '
+                'Nhận lại ${m.coc} cọc + '
+                '${m.soXu} xu + ${m.thuong} thưởng.';
     } else {
       final vi = hetGio ? 'Hết giờ!' : 'George đã gục ngã giữa đường tìm vàng.';
-      phuDe = m.mienPhi ? vi : '$vi Không hoàn thành màn ${m.id} — mất ${m.coc} vàng cọc.';
+
+      phuDe = m.mienPhi
+          ? vi
+          : '$vi Không hoàn thành màn ${m.id} '
+                '— mất ${m.coc} vàng cọc.';
     }
 
     return _Khung(
@@ -344,10 +465,20 @@ class ManHinhKetThuc extends StatelessWidget {
               _Dong('Xu đã nhặt', '${game.soXuDaNhat} / ${game.tongSoXu}'),
               if (!m.mienPhi) ...[
                 const SizedBox(height: 6),
-                _Dong('Vàng', thang ? '+${m.nhanVeKhiHoanThanh}' : '−${m.coc} (cọc)'),
+                _Dong(
+                  'Vàng',
+                  thang ? '+${m.nhanVeKhiHoanThanh}' : '−${m.coc} (cọc)',
+                ),
               ],
               const SizedBox(height: 6),
               _Dong('Điểm cao nhất', '${game.diemCaoNhat}'),
+              if (game.auth?.canEnterGame == true) ...[
+                const SizedBox(height: 6),
+                _Dong(
+                  'Tiến trình AI',
+                  '${game.tienTrinh.totalCompleted}/6 màn${game.tienTrinh.isCharacterUnlocked ? ' (Mở khóa AI)' : ''}',
+                ),
+              ],
             ],
           ),
         ),
@@ -357,12 +488,18 @@ class ManHinhKetThuc extends StatelessWidget {
             child: Text(
               kq!.phieu!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFFC9D2DB), fontSize: 13, height: 1.45),
+              style: const TextStyle(
+                color: Color(0xFFC9D2DB),
+                fontSize: 13,
+                height: 1.45,
+              ),
             ),
           ),
         _Nut(
           nhan: m.mienPhi ? 'Chơi lại' : 'Chọn màn',
-          bieuTuong: m.mienPhi ? Icons.refresh_rounded : Icons.grid_view_rounded,
+          bieuTuong: m.mienPhi
+              ? Icons.refresh_rounded
+              : Icons.grid_view_rounded,
           chinh: true,
           khiBam: m.mienPhi ? () => game.batDauVanMoi() : game.moChonMan,
         ),
@@ -392,7 +529,10 @@ class _Dong extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(nhan, style: const TextStyle(color: Color(0xFFC9D2DB), fontSize: 14)),
+        Text(
+          nhan,
+          style: const TextStyle(color: Color(0xFFC9D2DB), fontSize: 14),
+        ),
         Text(
           giaTri,
           style: const TextStyle(

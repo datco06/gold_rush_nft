@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color;
 
 import '../ai/tim_duong.dart';
+import '../chien_dau/sat_thuong.dart';
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import 'ban_do.dart';
@@ -36,7 +37,7 @@ enum TrangThaiKeDich { tuanTra, duoiTheo, timKiem }
 ///      nhất trên lưới ô, vòng qua cả dãy tường. Không truyền thì dùng lại
 ///      cách "đi thẳng, bị chặn thì trượt" của bản gốc.
 ///   5. **Hệ số tốc độ.** [heSoTocDo] do bộ điều chỉnh độ khó cung cấp.
-class KeDich extends NhanVat {
+class KeDich extends NhanVat implements CoTheBiDanh {
   /// Trả về vị trí người chơi. Truyền hàm thay vì truyền thẳng đối tượng
   /// George để tệp này không phụ thuộc vào tệp george.dart.
   final Vector2 Function() viTriNguoiChoi;
@@ -44,6 +45,7 @@ class KeDich extends NhanVat {
   final double tocDo;
   final double tamNhin;
   final Color mauVunNo;
+  final SucKhoe sucKhoe;
 
   /// Bộ tìm đường dùng chung cho mọi kẻ địch. null = không dùng A*.
   final TimDuong? timDuong;
@@ -76,9 +78,11 @@ class KeDich extends NhanVat {
     required this.tocDo,
     required this.tamNhin,
     required this.mauVunNo,
+    int mauToiDa = CauHinh.mauZombie,
     this.timDuong,
     double Function()? heSoTocDo,
-  }) : heSoTocDo = heSoTocDo ?? _mot;
+  }) : heSoTocDo = heSoTocDo ?? _mot,
+       sucKhoe = SucKhoe(mauToiDa);
 
   static double _mot() => 1.0;
 
@@ -99,6 +103,7 @@ class KeDich extends NhanVat {
       timDuong: timDuong,
       heSoTocDo: heSoTocDo,
       tocDo: CauHinh.tocDoZombie,
+      mauToiDa: CauHinh.mauZombie,
       tamNhin: CauHinh.tamNhinZombie,
       mauVunNo: const Color(0xFF7EB86C),
     );
@@ -121,6 +126,7 @@ class KeDich extends NhanVat {
       timDuong: timDuong,
       heSoTocDo: heSoTocDo,
       tocDo: CauHinh.tocDoSkeleton,
+      mauToiDa: CauHinh.mauSkeleton,
       tamNhin: CauHinh.tamNhinSkeleton,
       mauVunNo: const Color(0xFFE8E6D8),
     );
@@ -342,14 +348,29 @@ class KeDich extends NhanVat {
     _conLaiTuanTra = 0.8 + _rnd.nextDouble() * 1.8;
   }
 
+  @override
+  Vector2 get viTriDanh => position;
+
+  bool get daNo => _daNo;
+
+  @override
+  bool nhanSatThuong(int luong) {
+    if (_daNo || luong <= 0) return false;
+    sucKhoe.nhan(luong);
+    if (sucKhoe.conSong) return false;
+    noTung();
+    return true;
+  }
+
   // ------------------------------------------------------------------
-  /// Kẻ địch lao trúng George thì tự nổ và biến mất.
-  void noTung() {
-    if (_daNo) return;
+  /// Kẻ địch lao trúng George thì tự nổ và biến mất. Trả về true nếu nổ lần đầu.
+  bool noTung() {
+    if (_daNo) return false;
     _daNo = true;
 
     AmThanh.keDichNo();
     parent?.add(HieuUngNoKeDich(position.clone(), mauVunNo));
     removeFromParent();
+    return true;
   }
 }

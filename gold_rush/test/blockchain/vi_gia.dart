@@ -102,6 +102,16 @@ class ViGia implements Vi {
     return '0x${'f' * 64}';
   }
 
+  String? chuKyMacDinh;
+  LoiVi? loiKhiKy;
+
+  @override
+  Future<String> kyThongDiep({required String diaChi, required String thongDiep}) async {
+    final loi = loiKhiKy;
+    if (loi != null) throw loi;
+    return chuKyMacDinh ?? '0x${'aa' * 65}';
+  }
+
   @override
   Future<BienLai?> bienLai(String maGiaoDich) async {
     final i = soLanHoiBienLai++;

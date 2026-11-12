@@ -44,7 +44,9 @@ class Hud extends PositionComponent {
       fontSize: 17,
       fontWeight: FontWeight.w900,
       color: Color(0xFFFF6B5E),
-      shadows: [Shadow(color: Colors.black87, offset: Offset(0, 1), blurRadius: 2)],
+      shadows: [
+        Shadow(color: Colors.black87, offset: Offset(0, 1), blurRadius: 2),
+      ],
     ),
   );
 
@@ -53,7 +55,9 @@ class Hud extends PositionComponent {
       fontSize: 15,
       fontWeight: FontWeight.w700,
       color: CauHinh.mauChu,
-      shadows: [Shadow(color: Colors.black87, offset: Offset(0, 1), blurRadius: 2)],
+      shadows: [
+        Shadow(color: Colors.black87, offset: Offset(0, 1), blurRadius: 2),
+      ],
     ),
   );
 
@@ -79,9 +83,9 @@ class Hud extends PositionComponent {
   }
 
   @override
-  void onGameResize(Vector2 kichThuoc) {
-    super.onGameResize(kichThuoc);
-    size = kichThuoc;
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    this.size = size;
     if (isLoaded) _datViTriChu();
   }
 
@@ -105,7 +109,8 @@ class Hud extends PositionComponent {
     final con = layGiayConLai();
     _chuGio.text = con == null ? '' : '⏱ ${dinhDangGiay(con)}';
     final gap = con != null && con < 15;
-    if (gap != _gioGap) {                  // chỉ đổi kiểu chữ khi cần, không phải mỗi khung hình
+    if (gap != _gioGap) {
+      // chỉ đổi kiểu chữ khi cần, không phải mỗi khung hình
       _gioGap = gap;
       _chuGio.textRenderer = gap ? _kieuGioGap : _kieuChu;
     }
@@ -115,7 +120,7 @@ class Hud extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    final khung = Rect.fromLTWH(_le, _le, _rongThanh, _caoThanh);
+    const khung = Rect.fromLTWH(_le, _le, _rongThanh, _caoThanh);
     final bo = RRect.fromRectAndRadius(khung, const Radius.circular(6));
 
     canvas.drawRRect(bo, Paint()..color = CauHinh.mauMauNen);
