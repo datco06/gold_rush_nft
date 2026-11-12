@@ -95,7 +95,10 @@ def kiem_tra_csrf_va_origin(request: Request, player: NguoiChoiXacThuc) -> None:
     - CORS_ORIGINS = '*' không bao giờ được phép dùng để bypass kiểm tra mutation.
     """
     raw_origins = getattr(config, "CORS_ORIGINS", [])
-    allowed = [o.strip() for o in raw_origins if o.strip() and o.strip() != "*"]
+    allowed = set(o.strip() for o in raw_origins if o.strip() and o.strip() != "*")
+    auth_cfg = getattr(request.app.state, "auth_config", None)
+    if auth_cfg and hasattr(auth_cfg, "cors_origins"):
+        allowed.update(o.strip() for o in auth_cfg.cors_origins if o.strip() and o.strip() != "*")
 
     # 1. Nếu dùng Cookie xác thực, bắt buộc Origin và CSRF phải được xác minh
     if "gr_session" in request.cookies:

@@ -1,4 +1,4 @@
-"""Adapter kết nối hệ thống SIWE Auth với Backend AI (Giai đoạn 5).
+"""Adapter kết nối hệ thống SIWE Auth với Backend (Fail-Closed).
 
 Chức năng:
 - Đọc và thẩm định cookie HttpOnly `gr_session` qua `AuthService` và SQLite database thật.
@@ -9,6 +9,7 @@ Chức năng:
 from __future__ import annotations
 
 import logging
+import math
 import re
 from typing import Awaitable, Callable
 
@@ -16,10 +17,22 @@ from fastapi import FastAPI, HTTPException, Request
 
 from auth.config import AuthConfig
 from auth.service import AuthService, AuthServiceError
-from api.ngu_canh_ai import gan_nguon_xac_thuc_ai
-from core.schemas_nhan_vat import NguoiChoiXacThuc
+from api.auth_guard import NguoiChoiXacThuc
 
 log = logging.getLogger(__name__)
+
+NguonXacThuc = Callable[[Request], Awaitable[NguoiChoiXacThuc | None]]
+
+
+def gan_nguon_xac_thuc_ai(app: FastAPI, nguon: NguonXacThuc, *, thoi_gian_cho: float = 5.0) -> None:
+    """Gắn nguồn xác thực SIWE vào app.state."""
+    if not callable(nguon):
+        raise ValueError("Cần hàm async cung cấp thông tin xác thực SIWE hợp lệ")
+    if (isinstance(thoi_gian_cho, bool) or not isinstance(thoi_gian_cho, (int, float))
+            or not math.isfinite(thoi_gian_cho) or not 0 < thoi_gian_cho <= 60):
+        raise ValueError("Thời gian chờ nguồn xác thực phải trong (0, 60] giây")
+    app.state.ai_auth_source = nguon
+    app.state.ai_auth_source_timeout = float(thoi_gian_cho)
 
 
 def tao_auth_adapter(
@@ -29,11 +42,11 @@ def tao_auth_adapter(
     """Tạo hàm async adapter xác thực người chơi từ cookie `gr_session` và AuthService."""
 
     async def adapter(request: Request) -> NguoiChoiXacThuc | None:
-        # 1. Từ chối yêu cầu gắn header demo cho các API quản lý nhân vật chính thức
+        # 1. Từ chối yêu cầu gắn header demo cho các API quản lý chính thức
         if request.headers.get("X-Demo-Player"):
             raise HTTPException(
                 status_code=401,
-                detail="Tài khoản demo không có quyền quản lý nhân vật chính thức.",
+                detail="Tài khoản demo không có quyền quản lý chính thức.",
             )
 
         # 2. Đọc cookie HttpOnly `gr_session`
@@ -122,4 +135,3 @@ def tich_hop_auth_vao_app(app: FastAPI, auth_service: AuthService, auth_config: 
     app.state.auth_config = auth_config
     adapter = tao_auth_adapter(auth_service, auth_config)
     gan_nguon_xac_thuc_ai(app, adapter)
-

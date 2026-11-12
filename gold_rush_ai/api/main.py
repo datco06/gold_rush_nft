@@ -22,11 +22,14 @@ Chạy:  uvicorn api.main:app --reload --port 8000      (tài liệu tương tá
 """
 import json
 import logging
+import os
 import sys
 import time
 import uuid
 from contextlib import asynccontextmanager
+from ipaddress import ip_address
 from pathlib import Path
+from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # import được config, core khi chạy uvicorn
 
@@ -34,6 +37,18 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
+from alembic.config import Config as AlembicConfig
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import inspect, select
+from starlette.responses import JSONResponse
+
+from auth.config import AuthConfigError, load_auth_config
+from auth.database import create_auth_engine, create_session_factory
+from auth.models import Base
+from auth.router import create_auth_router
+from auth.service import AuthService
+from api.auth_adapter import tich_hop_auth_vao_app
 
 from config import (BAN_DO_DIR, CHAIN_ID, CORS_ORIGINS, ENABLED, HOP_DONG_CUA_HANG, KB_DIR, MAN_CHOI,
                     MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU, SO_VE, TRONG_TAI_KHOA)
@@ -60,10 +75,135 @@ from api.tien_trinh import router as tien_trinh_router
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("api")
 STATE: dict = {}
+_BACKEND_DIRECTORY = Path(__file__).resolve().parents[1]
+
+
+def _is_loopback(host: str) -> bool:
+    if host == "localhost":
+        return True
+    try:
+        return ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _cho_phep_private_network(config=None) -> bool:
+    """Xác định có cho phép CORS Private Network Access hay không."""
+    env = os.environ.get("ENVIRONMENT", "").strip().lower()
+    app_env = os.environ.get("APP_ENV", "").strip().lower()
+    node_env = os.environ.get("NODE_ENV", "").strip().lower()
+    if any(p in (env, app_env, node_env) for p in ("prod", "production", "live")):
+        return False
+
+    explicit = os.environ.get("CORS_ALLOW_PRIVATE_NETWORK", "").strip().lower()
+    if explicit in ("false", "0"):
+        return False
+    if explicit in ("true", "1"):
+        return True
+
+    if config is not None:
+        if getattr(config, "cookie_secure", False):
+            return False
+        for origin in getattr(config, "cors_origins", ()):
+            parsed = urlsplit(origin)
+            host = parsed.hostname or ""
+            if parsed.scheme != "http" or not _is_loopback(host):
+                return False
+        return True
+
+    for origin in CORS_ORIGINS:
+        try:
+            parsed = urlsplit(origin.strip())
+            host = parsed.hostname or ""
+            if parsed.scheme != "http" or not _is_loopback(host):
+                return False
+        except Exception:
+            return False
+    return True
+
+
+class _LifespanCORSMiddleware:
+    """Sử dụng snapshot cấu hình khởi động cho CORS.
+    Hỗ trợ allow_credentials=True khi cấu hình AuthConfig có sẵn.
+    """
+
+    def __init__(self, app):
+        self.app = app
+        self._config = None
+        self._cors = None
+        self._allow_pn = None
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        config = getattr(scope["app"].state, "auth_config", None)
+        allow_pn = _cho_phep_private_network(config)
+        if config is None:
+            if "auth" in ENABLED or "AUTH_CSRF_SECRET" in os.environ:
+                response = JSONResponse(
+                    status_code=503,
+                    content={"detail": {"code": "AUTH_UNAVAILABLE", "message": "Auth chưa khởi tạo thành công."}},
+                    headers={"Cache-Control": "no-store"},
+                )
+                await response(scope, receive, send)
+                return
+            if self._cors is None or self._allow_pn != allow_pn:
+                self._cors = CORSMiddleware(
+                    self.app,
+                    allow_origins=CORS_ORIGINS,
+                    allow_methods=["*"],
+                    allow_headers=["*"],
+                )
+                self._allow_pn = allow_pn
+            await self._cors(scope, receive, send)
+            return
+        if config is not self._config or self._allow_pn != allow_pn:
+            self._cors = CORSMiddleware(
+                self.app,
+                allow_origins=list(config.cors_origins),
+                allow_credentials=True,
+                allow_methods=["GET", "POST", "OPTIONS"],
+                allow_headers=[
+                    "Content-Type",
+                    "X-CSRF-Token",
+                    "X-Gold-Rush-Auth",
+                    "Idempotency-Key",
+                    "X-Demo-Player",
+                ],
+            )
+            self._config = config
+            self._allow_pn = allow_pn
+        await self._cors(scope, receive, send)
+
+
+def _check_auth_database(engine):
+    """Kiểm tra schema/revision mà không tạo tự động bảng."""
+    try:
+        if engine.dialect.name == "sqlite":
+            database = engine.url.database
+            if database in (None, "", ":memory:") or not Path(database).is_file():
+                raise ValueError("Auth requires an existing migrated database.")
+        expected = set(ScriptDirectory.from_config(
+            AlembicConfig(str(_BACKEND_DIRECTORY / "alembic.ini")),
+        ).get_heads())
+        with engine.connect() as connection:
+            tables = set(inspect(connection).get_table_names())
+            if not expected or not (set(Base.metadata.tables) | {"alembic_version"}) <= tables:
+                raise ValueError("Auth schema is missing.")
+            if set(MigrationContext.configure(connection).get_current_heads()) != expected:
+                raise ValueError("Auth schema revision is not current.")
+            for table in Base.metadata.sorted_tables:
+                connection.execute(select(table).limit(0)).close()
+    except Exception:
+        raise RuntimeError(
+            "AUTH_DATABASE_NOT_READY: kiểm tra AUTH_DATABASE_URL, driver, quyền truy cập "
+            "và schema; chạy Alembic upgrade head riêng trước khi khởi động."
+        ) from None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def _game_lifespan(app: FastAPI):
     # Khởi tạo CSDL SQLite nếu chưa có
     try:
         khoi_tao_csdl()
@@ -93,8 +233,61 @@ async def lifespan(app: FastAPI):
     STATE.clear()
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    auth_enabled = (
+        "auth" in ENABLED
+        or "AUTH_CSRF_SECRET" in os.environ
+        or "AUTH_DATABASE_URL" in os.environ
+    )
+    if not auth_enabled:
+        async with _game_lifespan(app):
+            yield
+        return
+
+    try:
+        auth_cfg = load_auth_config()
+    except AuthConfigError as error:
+        raise RuntimeError(f"AUTH_CONFIG_INVALID: {error}") from None
+
+    try:
+        options = {"base_directory": _BACKEND_DIRECTORY} if auth_cfg.database_url.startswith("sqlite") else {}
+        engine = create_auth_engine(auth_cfg, **options)
+    except Exception:
+        raise RuntimeError("AUTH_DATABASE_NOT_READY: kiểm tra AUTH_DATABASE_URL và driver đồng bộ đã cài.") from None
+
+    mounted = []
+    try:
+        _check_auth_database(engine)
+        factory = create_session_factory(engine)
+        router = create_auth_router(auth_cfg, factory)
+        auth_service = AuthService(auth_cfg, factory)
+        tich_hop_auth_vao_app(app, auth_service, auth_cfg)
+        previous = {id(route) for route in app.router.routes}
+        app.include_router(router)
+        mounted = [route for route in app.router.routes if id(route) not in previous]
+        app.openapi_schema = None
+        app.state.auth_engine = engine
+        app.state.auth_session_factory = factory
+        app.state.auth_config = auth_cfg
+        app.state.auth_service = auth_service
+        async with _game_lifespan(app):
+            yield
+    finally:
+        mounted_ids = {id(route) for route in mounted}
+        app.router.routes[:] = [route for route in app.router.routes if id(route) not in mounted_ids]
+        app.openapi_schema = None
+        for name in ("auth_config", "auth_session_factory", "auth_engine", "auth_service", "ai_auth_source"):
+            if hasattr(app.state, name):
+                delattr(app.state, name)
+        try:
+            engine.dispose()
+        except Exception:
+            raise RuntimeError("AUTH_DATABASE_SHUTDOWN_FAILED: không đóng được Engine Auth.") from None
+
+
 app = FastAPI(title="Gold Rush AI API", version="1.0.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(_LifespanCORSMiddleware)
 
 # Đăng ký các router mở rộng (Tiến trình, Kho đồ, Nhiệm vụ, Bản đồ)
 app.include_router(tien_trinh_router)
