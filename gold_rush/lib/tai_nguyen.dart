@@ -37,8 +37,10 @@ class TaiNguyen {
     georgeTheoTep[georgeGoc.tepAnh] = george;
     for (final nv in bangNhanVat) {
       try {
-        georgeTheoTep[nv.tepAnh] =
-            _bonHuong(await Flame.images.load(nv.tepAnh), 0.12);
+        georgeTheoTep[nv.tepAnh] = _bonHuong(
+          await Flame.images.load(nv.tepAnh),
+          0.12,
+        );
       } catch (_) {
         // Chưa chạy cong-cu/sinh_nhan_vat.py: nhân vật đó dùng hình George gốc.
       }
@@ -60,6 +62,25 @@ class TaiNguyen {
     joystickNum = Sprite(await Flame.images.load('joystick_num.png'));
   }
 
+  /// Khởi tạo hoạt ảnh giả từ một `ui.Image` trong bộ nhớ để chạy kiểm thử nhanh.
+  void napTuAnhGia(ui.Image anh) {
+    george = _bonHuong(anh, 0.12);
+    georgeTheoTep[georgeGoc.tepAnh] = george;
+    zombie = _bonHuong(anh, 0.18);
+    skeleton = _bonHuong(anh, 0.14);
+    dongXu = SpriteAnimation.fromFrameData(
+      anh,
+      SpriteAnimationData.sequenced(
+        amount: 1,
+        amountPerRow: 1,
+        stepTime: 0.09,
+        textureSize: Vector2.all(CauHinh.kichThuocO),
+      ),
+    );
+    joystickNen = Sprite(anh);
+    joystickNum = Sprite(anh);
+  }
+
   /// Cắt một sprite sheet 4 hàng × 4 cột thành bốn hoạt ảnh theo hướng.
   ///
   /// `texturePosition` là góc trên-trái của hàng cần cắt. Hàng thứ `i` bắt đầu
@@ -67,15 +88,15 @@ class TaiNguyen {
   /// sheet: nhầm hàng thì nhân vật đi xuống mà hoạt ảnh lại quay lưng.
   Map<HuongDi, SpriteAnimation> _bonHuong(ui.Image anh, double buocThoiGian) {
     SpriteAnimation hang(int i) => SpriteAnimation.fromFrameData(
-          anh,
-          SpriteAnimationData.sequenced(
-            amount: 4,
-            amountPerRow: 4,
-            stepTime: buocThoiGian,
-            textureSize: Vector2.all(CauHinh.kichThuocO),
-            texturePosition: Vector2(0, i * CauHinh.kichThuocO),
-          ),
-        );
+      anh,
+      SpriteAnimationData.sequenced(
+        amount: 4,
+        amountPerRow: 4,
+        stepTime: buocThoiGian,
+        textureSize: Vector2.all(CauHinh.kichThuocO),
+        texturePosition: Vector2(0, i * CauHinh.kichThuocO),
+      ),
+    );
 
     return {
       HuongDi.xuong: hang(0),

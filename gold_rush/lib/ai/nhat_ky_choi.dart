@@ -32,6 +32,32 @@ class NhatKyChoi {
   final List<Map<String, Object>> anhChup = [];
   final List<Map<String, Object>> suKien = [];
 
+  // Chiến đấu (Người 2): CHƯA gửi lên máy chủ, chờ thống nhất với Người 5.
+  // Máy chủ chỉ nhận 3 loại sự kiện (nhat_xu, trung_don, ket_thuc), nên các số
+  // này chỉ đếm cục bộ và KHÔNG được đưa vào `_ghi` hay `thanhJson`.
+  int soKeDichDaHa = 0;
+  int satThuongNhan = 0;
+  bool bossDaHa = false;
+  List<String> trangBi = const [];
+
+  void ghiHaKeDich() => soKeDichDaHa++;
+
+  /// Thống kê chiến đấu theo hợp đồng dữ liệu đề xuất trong tài liệu Người 2.
+  Map<String, Object> thongKeChienDau({
+    required int stageId,
+    required bool won,
+  }) =>
+      {
+        'stage_id': stageId,
+        'won': won,
+        'coins_collected': soXu,
+        'enemies_defeated': soKeDichDaHa,
+        'boss_defeated': bossDaHa,
+        'damage_taken': satThuongNhan,
+        'duration_seconds': _tron(giay),
+        'equipment_ids': List.of(trangBi),
+      };
+
   /// Sinh trước một mã ván — màn có cọc cần mã ván để đăng ký với máy chủ TRƯỚC khi chơi.
   String sinhMaVan() => _sinhMaVan();
 
@@ -41,6 +67,9 @@ class NhatKyChoi {
     tongXu = tongSoXu;
     soXu = 0;
     soLanTrung = 0;
+    soKeDichDaHa = 0;
+    satThuongNhan = 0;
+    bossDaHa = false;
     giay = 0;
     _demAnhChup = 0;
     anhChup.clear();
