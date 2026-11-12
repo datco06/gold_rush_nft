@@ -231,11 +231,11 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                   animation: controller,
                   builder: (context, _) {
                     return Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 4, 24, 12),
+                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 560),
+                          constraints: const BoxConstraints(maxWidth: 470),
                           child: Row(
                             children: [
                               Expanded(
@@ -246,7 +246,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                                   onTap: () => controller.animateTo(0),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 9),
                               Expanded(
                                 child: GameTabButton(
                                   label: 'Nhân vật',
@@ -313,11 +313,11 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _XemTruocNhanVat(nhanVat: _nhanVatDangDung),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Wrap(
             alignment: WrapAlignment.center,
-            spacing: 10,
-            runSpacing: 10,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _OTrangBi(
                 nhan: 'Vũ khí chính',
@@ -337,7 +337,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           const _GhiChu(
             noiDung:
                 'Trang bị đang dùng được hiển thị '
@@ -361,9 +361,9 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _thanhCongCu(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           _thanhDanhMuc(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (coDuLieuMau) ...[
             const _GhiChu(
               noiDung:
@@ -408,9 +408,9 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
               thongBaoLoi: widget.loiTrangBi ?? 'Không tải được kho đồ.',
               khiThuLai: widget.khiThuLaiTrangBi,
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           const Divider(height: 1, color: Color(0x55728AA5)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           const Row(
             children: [
               Icon(Icons.receipt_long_outlined, color: MauGame.chinh, size: 20),
@@ -426,7 +426,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: KeyedSubtree(
@@ -1491,11 +1491,11 @@ class _BoCucKho extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final le = constraints.maxHeight < 450 ? 10.0 : 20.0;
+        final le = constraints.maxHeight < 450 ? 8.0 : 14.0;
 
         if (constraints.maxWidth >= 700) {
-          final rongTrai = (constraints.maxWidth * 0.34)
-              .clamp(250.0, 380.0)
+          final rongTrai = (constraints.maxWidth * 0.3)
+              .clamp(230.0, 330.0)
               .toDouble();
 
           return Padding(
@@ -1546,7 +1546,7 @@ class _KhungMuc extends StatelessWidget {
     return CustomPaint(
       foregroundPainter: const _VienKhungKhoDo(),
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
@@ -1572,8 +1572,8 @@ class _KhungMuc extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+              margin: const EdgeInsets.only(bottom: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -1592,8 +1592,8 @@ class _KhungMuc extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
+                    width: 30,
+                    height: 30,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: const Color(0xFF0B1626),
@@ -1606,15 +1606,15 @@ class _KhungMuc extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Icon(bieuTuong, color: MauGame.chinh, size: 21),
+                    child: Icon(bieuTuong, color: MauGame.chinh, size: 18),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       tieuDe,
                       style: const TextStyle(
                         color: Color(0xFFFFD76A),
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.7,
                         shadows: [
@@ -1644,7 +1644,7 @@ class _XemTruocNhanVat extends StatelessWidget {
     final nv = nhanVat;
 
     return Container(
-      height: 220,
+      height: 180,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: MauGame.chinh.withValues(alpha: 0.8)),
@@ -1662,9 +1662,9 @@ class _XemTruocNhanVat extends StatelessWidget {
           const CustomPaint(painter: _NenTraiNhanVat()),
           Center(
             child: Container(
-              width: 150,
-              height: 78,
-              margin: const EdgeInsets.only(top: 78),
+              width: 132,
+              height: 66,
+              margin: const EdgeInsets.only(top: 62),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
@@ -1686,10 +1686,10 @@ class _XemTruocNhanVat extends StatelessWidget {
           ),
           Center(
             child: nv != null
-                ? AnhNhanVat(tepAnh: nv.tepAnh, kichThuoc: 100)
+                ? AnhNhanVat(tepAnh: nv.tepAnh, kichThuoc: 84)
                 : Container(
-                    width: 76,
-                    height: 100,
+                    width: 66,
+                    height: 84,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: MauGame.nen.withValues(alpha: 0.7),
@@ -1700,17 +1700,17 @@ class _XemTruocNhanVat extends StatelessWidget {
                     ),
                     child: const Icon(
                       Icons.person_outline_rounded,
-                      size: 58,
+                      size: 48,
                       color: MauGame.chuPhu,
                     ),
                   ),
           ),
           Positioned(
-            left: 10,
-            right: 10,
-            bottom: 10,
+            left: 8,
+            right: 8,
+            bottom: 8,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
               decoration: BoxDecoration(
                 color: MauGame.nen.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(6),
@@ -1752,7 +1752,7 @@ class _OTrangBi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 104,
+      width: 90,
       child: Column(
         children: [
           GameEquipmentSlot(
@@ -1761,23 +1761,23 @@ class _OTrangBi extends StatelessWidget {
               child: CustomPaint(painter: _HinhLoaiTrangBi(loai)),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 7),
           Text(
             nhan,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: GameInventoryStyle.textPrimary,
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             noiDung,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: GameInventoryStyle.textMuted,
-              fontSize: 11,
+              fontSize: 10,
               height: 1.4,
             ),
           ),

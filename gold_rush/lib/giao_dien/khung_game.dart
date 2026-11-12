@@ -53,10 +53,10 @@ class KhungGame extends StatelessWidget {
                         children: [
                           Padding(
                             padding: EdgeInsets.fromLTRB(
-                              gon ? 12 : 20,
-                              gon ? 0 : 8,
-                              gon ? 4 : 12,
-                              gon ? 0 : 8,
+                              gon ? 10 : 16,
+                              gon ? 0 : 6,
+                              gon ? 4 : 10,
+                              gon ? 0 : 6,
                             ),
                             child: Row(
                               children: [
@@ -67,7 +67,7 @@ class KhungGame extends StatelessWidget {
                                         const Icon(
                                           Icons.inventory_2_rounded,
                                           color: MauGame.chinh,
-                                          size: 30,
+                                          size: 25,
                                           shadows: [
                                             Shadow(
                                               color: MauGame.chinh,
@@ -75,7 +75,7 @@ class KhungGame extends StatelessWidget {
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: 9),
                                       ],
                                       Flexible(
                                         child: Text(
@@ -84,7 +84,7 @@ class KhungGame extends StatelessWidget {
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: MauGame.chinh,
-                                            fontSize: gon ? 20 : 27,
+                                            fontSize: gon ? 18 : 23,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 0.6,
                                             shadows: coNenTrangTri

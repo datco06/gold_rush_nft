@@ -47,13 +47,13 @@ abstract final class GameInventoryStyle {
 
     return InputDecoration(
       hintText: 'Tìm vật phẩm...',
-      hintStyle: const TextStyle(color: textMuted, fontSize: 15),
-      prefixIcon: const Icon(Icons.search_rounded, color: textMuted, size: 23),
+      hintStyle: const TextStyle(color: textMuted, fontSize: 14),
+      prefixIcon: const Icon(Icons.search_rounded, color: textMuted, size: 20),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: navy.withValues(alpha: 0.94),
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
       border: makeBorder(border),
       enabledBorder: makeBorder(border),
       focusedBorder: makeBorder(goldLight, 1.6),
@@ -107,8 +107,8 @@ class _GameTabButtonState extends State<GameTabButton> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 210),
             curve: Curves.easeOutCubic,
-            height: 58,
-            padding: const EdgeInsets.symmetric(horizontal: 26),
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
               gradient: selected
                   ? GameInventoryStyle.activeGradient
@@ -135,19 +135,19 @@ class _GameTabButtonState extends State<GameTabButton> {
                 children: [
                   Icon(
                     widget.icon,
-                    size: 22,
+                    size: 20,
                     color: selected
                         ? const Color(0xFFFFF1B5)
                         : GameInventoryStyle.textMuted,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Text(
                     widget.label,
                     style: TextStyle(
                       color: selected
                           ? const Color(0xFFFFF1C7)
                           : GameInventoryStyle.textPrimary,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       shadows: selected
                           ? const [Shadow(color: Colors.black45, blurRadius: 3)]
@@ -201,8 +201,8 @@ class _GameCloseButtonState extends State<GameCloseButton> {
               duration: const Duration(milliseconds: 100),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                width: 52,
-                height: 52,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   gradient: _hovered
                       ? const LinearGradient(
@@ -223,7 +223,7 @@ class _GameCloseButtonState extends State<GameCloseButton> {
                 child: const Icon(
                   Icons.close_rounded,
                   color: Color(0xFFFFE9A6),
-                  size: 30,
+                  size: 26,
                 ),
               ),
             ),
@@ -273,8 +273,8 @@ class _GameMenuButtonState<T> extends State<GameMenuButton<T>> {
         itemBuilder: (_) => widget.items,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: BoxDecoration(
             gradient: widget.active
                 ? GameInventoryStyle.activeGradient
@@ -297,27 +297,27 @@ class _GameMenuButtonState<T> extends State<GameMenuButton<T>> {
             children: [
               Icon(
                 widget.icon,
-                size: 20,
+                size: 18,
                 color: widget.active
                     ? const Color(0xFFFFF1B5)
                     : GameInventoryStyle.textMuted,
               ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 7),
               Text(
                 widget.label,
                 style: TextStyle(
                   color: widget.active
                       ? const Color(0xFFFFF1C7)
                       : GameInventoryStyle.textPrimary,
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               const Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: GameInventoryStyle.textPrimary,
-                size: 20,
+                size: 18,
               ),
             ],
           ),
@@ -358,8 +358,8 @@ class _GameToggleButtonState extends State<GameToggleButton> {
         onTap: () => widget.onChanged(!widget.selected),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 190),
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: BoxDecoration(
             gradient: widget.selected
                 ? GameInventoryStyle.activeGradient
@@ -380,19 +380,19 @@ class _GameToggleButtonState extends State<GameToggleButton> {
             children: [
               Icon(
                 widget.selected ? Icons.check_circle_rounded : widget.icon,
-                size: 20,
+                size: 18,
                 color: widget.selected
                     ? const Color(0xFFFFF1B5)
                     : GameInventoryStyle.textMuted,
               ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 7),
               Text(
                 widget.label,
                 style: TextStyle(
                   color: widget.selected
                       ? const Color(0xFFFFF1C7)
                       : GameInventoryStyle.textPrimary,
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -445,8 +445,8 @@ class _GameSegmentButtonState extends State<GameSegmentButton> {
           duration: const Duration(milliseconds: 100),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 19),
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 15),
             decoration: BoxDecoration(
               gradient: widget.selected
                   ? GameInventoryStyle.activeGradient
@@ -470,19 +470,19 @@ class _GameSegmentButtonState extends State<GameSegmentButton> {
               children: [
                 Icon(
                   widget.icon,
-                  size: 20,
+                  size: 18,
                   color: widget.selected
                       ? const Color(0xFF4A3100)
                       : GameInventoryStyle.textPrimary,
                 ),
-                const SizedBox(width: 9),
+                const SizedBox(width: 7),
                 Text(
                   widget.label,
                   style: TextStyle(
                     color: widget.selected
                         ? const Color(0xFF3F2A00)
                         : GameInventoryStyle.textPrimary,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -521,9 +521,9 @@ class _GameEquipmentSlotState extends State<GameEquipmentSlot> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        width: 72,
-        height: 72,
-        padding: const EdgeInsets.all(14),
+        width: 62,
+        height: 62,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           gradient: highlighted
               ? const LinearGradient(
