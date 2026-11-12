@@ -273,24 +273,25 @@ class BoCucWorldMap {
     CongTrinhWorldMap(1, 'lau_dai.png', Offset(590.5, 1006), 148),
     CongTrinhWorldMap(2, 'nha_quan_tro_v3.png', Offset(345.0, 272), 98),
     CongTrinhWorldMap(3, 'nha_tho_ren_v3.png', Offset(1392.5, 228), 98),
-    CongTrinhWorldMap(4, 'nha_thu_vien_v3.png', Offset(2272.5, 712), 98),
+    CongTrinhWorldMap(4, 'nha_thu_vien_v3.png', Offset(2122.5, 712), 98),
     CongTrinhWorldMap(5, 'nha_don_gac_v3.png', Offset(2302.5, 1318), 118),
     CongTrinhWorldMap(6, 'nha_kho_mo_v4.png', Offset(1442.5, 1328), 110),
-    // 14 địa điểm mở rộng đặt chính giữa các khoảng đất trống:
+    // 14 địa điểm mở rộng đặt chính giữa các khoảng đất trống & vùng biển hải đảo:
     CongTrinhWorldMap(7, 'nha_tho_ren_v3.png', Offset(1412.5, 968), 134),
     CongTrinhWorldMap(8, 'nha_quan_tro_dai_v4.png', Offset(242.5, 1402), 116),
     CongTrinhWorldMap(9, 'nha_don_gac_v3.png', Offset(345.0, 762), 106),
     CongTrinhWorldMap(10, 'nha_tho_san_v4.png', Offset(1120.0, 762), 104),
     CongTrinhWorldMap(11, 'nha_thu_vien_v3.png', Offset(1120.0, 272), 104),
     CongTrinhWorldMap(12, 'nha_coi_nuoc_v4.png', Offset(1592.5, 228), 106),
-    CongTrinhWorldMap(13, 'nha_gia_kim_v4.png', Offset(2122.5, 712), 104),
+    CongTrinhWorldMap(13, 'nha_gia_kim_v4.png', Offset(2122.5, 370), 104),
     CongTrinhWorldMap(14, 'nha_phao_dai_v4.png', Offset(2507.5, 890), 114),
-    CongTrinhWorldMap(15, 'nha_dinh_thu_v4.png', Offset(2512.5, 1562), 112),
-    CongTrinhWorldMap(16, 'nha_quan_tro_v3.png', Offset(2092.5, 1662), 104),
-    CongTrinhWorldMap(17, 'nha_coi_gio_v4.png', Offset(1662.5, 1592), 102),
-    CongTrinhWorldMap(18, 'nha_nha_kinh_v4.png', Offset(1222.5, 1595), 106),
-    CongTrinhWorldMap(19, 'nha_phap_su_v4.png', Offset(832.5, 1605), 64),
-    CongTrinhWorldMap(20, 'nha_thanh_tri_v4.png', Offset(242.5, 1588), 116),
+    // Màn 15–20: Phân bố xa nhau ở các vùng biển & bờ cõi mở rộng:
+    CongTrinhWorldMap(15, 'nha_dinh_thu_v4.png', Offset(2720.0, 1180), 112),
+    CongTrinhWorldMap(16, 'nha_quan_tro_v3.png', Offset(2720.0, 410), 104),
+    CongTrinhWorldMap(17, 'nha_coi_gio_v4.png', Offset(1880.0, 1720), 102),
+    CongTrinhWorldMap(18, 'nha_nha_kinh_v4.png', Offset(1280.0, 1780), 106),
+    CongTrinhWorldMap(19, 'nha_phap_su_v4.png', Offset(220.0, 180), 64),
+    CongTrinhWorldMap(20, 'nha_thanh_tri_v4.png', Offset(190.0, 1680), 116),
   ];
 
   static final viTriMan = Map<int, Offset>.unmodifiable({
@@ -418,50 +419,92 @@ class BoCucWorldMap {
     DoanDuongWorldMap(
       tuMan: 8,
       denMan: 20,
-      cacDiem: [viTriMan[8]!, viTriMan[20]!],
-      loaiTungChang: const [LoaiDuongWorldMap.duongDatLang],
+      cacDiem: [viTriMan[8]!, const Offset(215, 1540), viTriMan[20]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.duongDatLang,
+        LoaiDuongWorldMap.cauGoSuoi,
+      ],
     ),
     DoanDuongWorldMap(
       tuMan: 20,
+      denMan: 18,
+      cacDiem: [viTriMan[20]!, const Offset(700, 1750), viTriMan[18]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.cauGoSuoi,
+        LoaiDuongWorldMap.duongKhoBau,
+      ],
+    ),
+    DoanDuongWorldMap(
+      tuMan: 2,
       denMan: 19,
-      cacDiem: [viTriMan[20]!, viTriMan[19]!],
-      loaiTungChang: const [LoaiDuongWorldMap.duongDatLang],
+      cacDiem: [viTriMan[2]!, const Offset(280, 225), viTriMan[19]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.duongMonRung,
+        LoaiDuongWorldMap.cauGoSuoi,
+      ],
     ),
     DoanDuongWorldMap(
       tuMan: 19,
-      denMan: 18,
-      cacDiem: [viTriMan[19]!, viTriMan[18]!],
-      loaiTungChang: const [LoaiDuongWorldMap.duongKhoBau],
+      denMan: 11,
+      cacDiem: [viTriMan[19]!, const Offset(680, 225), viTriMan[11]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.cauGoSuoi,
+        LoaiDuongWorldMap.duongMonRung,
+      ],
     ),
     DoanDuongWorldMap(
       tuMan: 6,
       denMan: 18,
-      cacDiem: [viTriMan[6]!, viTriMan[18]!],
-      loaiTungChang: const [LoaiDuongWorldMap.duongKhoBau],
+      cacDiem: [viTriMan[6]!, const Offset(1360, 1550), viTriMan[18]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.duongKhoBau,
+        LoaiDuongWorldMap.cauGoSuoi,
+      ],
     ),
     DoanDuongWorldMap(
       tuMan: 18,
       denMan: 17,
-      cacDiem: [viTriMan[18]!, viTriMan[17]!],
-      loaiTungChang: const [LoaiDuongWorldMap.duongKhoBau],
+      cacDiem: [viTriMan[18]!, const Offset(1580, 1750), viTriMan[17]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.cauGoSuoi,
+        LoaiDuongWorldMap.duongCoDen,
+      ],
     ),
     DoanDuongWorldMap(
       tuMan: 17,
+      denMan: 15,
+      cacDiem: [viTriMan[17]!, const Offset(2300, 1540), viTriMan[15]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.duongCoDen,
+        LoaiDuongWorldMap.cauGoSuoi,
+      ],
+    ),
+    DoanDuongWorldMap(
+      tuMan: 13,
       denMan: 16,
-      cacDiem: [viTriMan[17]!, viTriMan[16]!],
-      loaiTungChang: const [LoaiDuongWorldMap.duongCoDen],
+      cacDiem: [viTriMan[13]!, const Offset(2420, 390), viTriMan[16]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.duongDaNui,
+        LoaiDuongWorldMap.cauDaDungNham,
+      ],
     ),
     DoanDuongWorldMap(
       tuMan: 16,
-      denMan: 15,
-      cacDiem: [viTriMan[16]!, viTriMan[15]!],
-      loaiTungChang: const [LoaiDuongWorldMap.duongCoDen],
+      denMan: 14,
+      cacDiem: [viTriMan[16]!, const Offset(2610, 650), viTriMan[14]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.cauDaDungNham,
+        LoaiDuongWorldMap.duongDaNui,
+      ],
     ),
     DoanDuongWorldMap(
       tuMan: 5,
       denMan: 15,
-      cacDiem: [viTriMan[5]!, viTriMan[15]!],
-      loaiTungChang: const [LoaiDuongWorldMap.duongCoDen],
+      cacDiem: [viTriMan[5]!, const Offset(2510, 1250), viTriMan[15]!],
+      loaiTungChang: const [
+        LoaiDuongWorldMap.duongCoDen,
+        LoaiDuongWorldMap.cauGoSuoi,
+      ],
     ),
     DoanDuongWorldMap(
       tuMan: 4,
@@ -681,6 +724,9 @@ class TaiNguyenWorldMap {
   static const tenAnh = <String>[
     'lau_dai.png',
     'terrain_khu_nha_v3.png',
+    'mat_nuoc.png',
+    'thac_nuoc.png',
+    'xoay_nuoc.png',
     'nha_tho_ren_v3.png',
     'nha_quan_tro_v3.png',
     'nha_thu_vien_v3.png',
@@ -901,7 +947,10 @@ class CanhQuanWorldMap extends CustomPainter {
     // 1. Vẽ nền địa hình pixel-art liền mạch toàn thế giới 2930×1960.
     _veNenDiaHinhLienMach(canvas, size, terrain);
 
-    // 2. Giữ nguyên 20 khoảng đất trống có đặt nhà, chỉ lấp các khoảng đất dư không có nhà.
+    // 2. Vẽ đại dương, vịnh biển và các hải đảo ngoài khơi bằng mat_nuoc.png, thac_nuoc.png, xoay_nuoc.png.
+    _veBienVaDaiDuong(canvas, size);
+
+    // 3. Giữ nguyên 20 khoảng đất trống có đặt nhà, chỉ lấp các khoảng đất dư không có nhà.
     if (terrain != null) {
       _veHoaTronTuNhienVaLapKhoangSan(canvas, terrain);
     }
@@ -1173,6 +1222,169 @@ class CanhQuanWorldMap extends CustomPainter {
     return null;
   }
 
+  void _veBienVaDaiDuong(Canvas canvas, Size size) {
+    final matNuoc = anh['mat_nuoc.png'];
+    final thacNuoc = anh['thac_nuoc.png'];
+    final xoayNuoc = anh['xoay_nuoc.png'];
+
+    // Vùng đại dương & biển bao bọc xung quanh thế giới
+    final matNaBien = Path()
+      // Đại dương Đông & Đông Nam
+      ..addRect(const Rect.fromLTWH(2600, 0, 330, 1960))
+      // Đại dương phía Nam
+      ..addRect(const Rect.fromLTWH(0, 1680, 2930, 280))
+      // Vịnh biển Tây Nam
+      ..addRect(const Rect.fromLTWH(0, 1540, 310, 420))
+      // Vịnh hồ sương mù Tây Bắc
+      ..addRect(const Rect.fromLTWH(0, 0, 320, 250));
+
+    canvas.save();
+    canvas.clipPath(matNaBien);
+
+    // 1. Màu nước sâu đại dương
+    final paintNenBien = Paint()
+      ..shader = ui.Gradient.linear(
+        const Offset(1465, 1400),
+        const Offset(1465, 1960),
+        const [
+          Color(0xD916394A),
+          Color(0xFF071922),
+        ],
+      );
+    canvas.drawRect(Offset.zero & size, paintNenBien);
+
+    // 2. Texture pixel mặt nước mat_nuoc.png
+    if (matNuoc != null) {
+      final paintNuoc = Paint()
+        ..filterQuality = FilterQuality.none
+        ..isAntiAlias = false
+        ..color = const Color(0xB8FFFFFF);
+      const tileW = 256.0;
+      const tileH = 256.0;
+      for (var y = 0.0; y < size.height; y += tileH) {
+        for (var x = 0.0; x < size.width; x += tileW) {
+          final r = Rect.fromLTWH(x, y, tileW, tileH);
+          if (r.right < 2580 &&
+              r.bottom < 1670 &&
+              !(x < 320 && y < 250) &&
+              !(x < 310 && y > 1530)) {
+            continue;
+          }
+          canvas.drawImageRect(
+            matNuoc,
+            Rect.fromLTWH(
+              0,
+              0,
+              matNuoc.width.toDouble(),
+              matNuoc.height.toDouble(),
+            ),
+            r,
+            paintNuoc,
+          );
+        }
+      }
+    }
+
+    // 3. Xoáy nước xoay_nuoc.png
+    if (xoayNuoc != null) {
+      final srcXoay = Rect.fromLTWH(
+        0,
+        0,
+        xoayNuoc.width.toDouble(),
+        xoayNuoc.height.toDouble(),
+      );
+      final paintXoay = Paint()
+        ..filterQuality = FilterQuality.none
+        ..color = const Color(0xE6FFFFFF);
+      // Xoáy nước biển Nam
+      canvas.drawImageRect(
+        xoayNuoc,
+        srcXoay,
+        Rect.fromCenter(
+          center: const Offset(1560, 1840),
+          width: 140,
+          height: 140,
+        ),
+        paintXoay,
+      );
+      // Xoáy nước biển Đông
+      canvas.drawImageRect(
+        xoayNuoc,
+        srcXoay,
+        Rect.fromCenter(
+          center: const Offset(2800, 1420),
+          width: 120,
+          height: 120,
+        ),
+        paintXoay,
+      );
+    }
+
+    // 4. Thác nước thac_nuoc.png
+    if (thacNuoc != null) {
+      final srcThac = Rect.fromLTWH(
+        0,
+        0,
+        thacNuoc.width.toDouble(),
+        thacNuoc.height.toDouble(),
+      );
+      final paintThac = Paint()..filterQuality = FilterQuality.none;
+      canvas.drawImageRect(
+        thacNuoc,
+        srcThac,
+        const Rect.fromLTWH(1840, 1630, 80, 75),
+        paintThac,
+      );
+      canvas.drawImageRect(
+        thacNuoc,
+        srcThac,
+        const Rect.fromLTWH(2540, 1050, 70, 70),
+        paintThac,
+      );
+    }
+
+    canvas.restore();
+
+    // 5. Khoảng sân đảo tròn (ô trống) cho các màn ngoài khơi 15, 16, 17, 18, 19, 20
+    final cacDao = [
+      BoCucWorldMap.congTrinh.firstWhere((c) => c.id == 15),
+      BoCucWorldMap.congTrinh.firstWhere((c) => c.id == 16),
+      BoCucWorldMap.congTrinh.firstWhere((c) => c.id == 17),
+      BoCucWorldMap.congTrinh.firstWhere((c) => c.id == 18),
+      BoCucWorldMap.congTrinh.firstWhere((c) => c.id == 19),
+      BoCucWorldMap.congTrinh.firstWhere((c) => c.id == 20),
+    ];
+
+    for (final dao in cacDao) {
+      final c = dao.chan - const Offset(0, 14);
+      final rSand = dao.chieuRong * 0.74;
+      final rStone = dao.chieuRong * 0.58;
+
+      // Đảo cát viền ngoài
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: c + const Offset(0, 5),
+          width: rSand * 2,
+          height: rSand * 1.3,
+        ),
+        Paint()..color = const Color(0xFFC7AB73),
+      );
+      // Thềm đá tròn trung tâm (ô trống)
+      canvas.drawOval(
+        Rect.fromCenter(center: c, width: rStone * 2, height: rStone * 1.2),
+        Paint()..color = const Color(0xFF5E6D59),
+      );
+      // Viền bờ kè bảo vệ
+      canvas.drawOval(
+        Rect.fromCenter(center: c, width: rStone * 2, height: rStone * 1.2),
+        Paint()
+          ..color = const Color(0xFF384736)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.8,
+      );
+    }
+  }
+
   /// Lấp các khoảng đất trống dư (không có ngôi nhà nào trong 20 màn đặt lên)
   /// và giữ nguyên vẹn 100% 20 khoảng đất trống nơi đặt 20 ngôi nhà.
   void _veHoaTronTuNhienVaLapKhoangSan(Canvas canvas, ui.Image terrain) {
@@ -1203,13 +1415,13 @@ class CanhQuanWorldMap extends CustomPainter {
 
           // Nếu khoảng đất trống này có đặt 1 trong 20 ngôi nhà thì giữ nguyên tuyệt đối.
           final coNha = BoCucWorldMap.congTrinh.any(
-            (c) => (c.chan - const Offset(0, 22) - san).distance < 78,
+            (c) => (c.chan - const Offset(0, 22) - san).distance < 125,
           );
           if (coNha) continue;
 
           // Không đè lên khoảng đất trống của ngôi nhà lân cận.
           final ganNha = BoCucWorldMap.congTrinh.any(
-            (c) => (c.chan - const Offset(0, 22) - san).distance < 115,
+            (c) => (c.chan - const Offset(0, 22) - san).distance < 160,
           );
           if (ganNha) continue;
 

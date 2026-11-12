@@ -51,15 +51,15 @@ void main() {
       expect(first, hasLength(TaiNguyenWorldMap.tenAnh.length));
       expect(identical(first, second), isTrue);
       expect(first.keys, contains('lau_dai.png'));
+      expect(first.keys, contains('mat_nuoc.png'));
+      expect(first.keys, contains('thac_nuoc.png'));
+      expect(first.keys, contains('xoay_nuoc.png'));
       for (final removed in [
         'hang_da.png',
-        'thac_nuoc.png',
         'day_nui.png',
         'den_co.png',
         'cay_co_thu.png',
-        'mat_nuoc.png',
         'nha_lang.png',
-        'xoay_nuoc.png',
       ]) {
         expect(first.containsKey(removed), isFalse);
       }
@@ -270,9 +270,8 @@ void main() {
                 final bytes = await image.toByteData(
                   format: ui.ImageByteFormat.png,
                 );
-                await File(
-                  '$output/$tenTep',
-                ).writeAsBytes(bytes!.buffer.asUint8List());
+                await File('$output/$tenTep')
+                    .writeAsBytes(bytes!.buffer.asUint8List());
               } finally {
                 image.dispose();
               }

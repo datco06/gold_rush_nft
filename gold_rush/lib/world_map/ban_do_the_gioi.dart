@@ -587,61 +587,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
     }
     return Stack(
       children: [
-        if (!manHinhNho && !daPhongToSau)
-          for (final vung in BoCucWorldMap.cacVung)
-            Builder(
-              builder: (context) {
-                final p = MatrixUtils.transformPoint(
-                  _boDieuKhien.value,
-                  vung.viTriBienBao,
-                );
-                if (!(Offset.zero & size).contains(p)) {
-                  return const SizedBox.shrink();
-                }
-                final mo =
-                    widget.trangThaiCacMan[vung.idManChinh] !=
-                    TrangThaiMan.chuaMo;
-                return Positioned(
-                  left: (p.dx - 64).clamp(6.0, size.width - 134.0),
-                  top: (p.dy - 14).clamp(6.0, size.height - 28.0),
-                  width: 128,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: const Color(0xD917211A),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: mo
-                              ? vung.mauVien.withValues(alpha: 0.85)
-                              : const Color(0xFF6B736C),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 2,
-                        ),
-                        child: Text(
-                          'VÙNG ${vung.idManChinh} · ${vung.ten.toUpperCase()}',
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: mo
-                                ? const Color(0xFFF7EBD2)
-                                : const Color(0xFFBFC4BC),
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+
         Positioned.fill(
           child: IgnorePointer(
             child: CustomPaint(

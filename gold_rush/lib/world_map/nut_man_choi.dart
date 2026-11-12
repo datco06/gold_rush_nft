@@ -195,79 +195,53 @@ class _HuyHieu extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final c = size.center(Offset.zero);
-    if (!laManChinh) {
-      // Mốc địa danh phụ: đồng xu bát giác nhỏ gọn, thanh thoát.
-      final r = size.width * 0.42;
-      if (active) {
-        canvas.drawCircle(
-          c,
-          r + 3,
-          Paint()
-            ..color = gold.withValues(alpha: 0.35)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 3,
-        );
-      }
-      canvas.drawCircle(
-        c + const Offset(0, 1.5),
-        r,
-        Paint()..color = const Color(0x990D140E),
-      );
+    // Màn chơi biểu tượng hình tròn: bóng đổ, viền hoàng kim, tâm xanh lục/ngọc
+    final r = size.width * 0.44;
+    canvas.drawCircle(
+      c + const Offset(0, 2),
+      r,
+      Paint()..color = const Color(0x990A140D),
+    );
+
+    if (active) {
       canvas.drawCircle(
         c,
-        r,
+        r + 3.5,
         Paint()
-          ..color = active ? const Color(0xFF3A4A32) : const Color(0xCC203024),
-      );
-      canvas.drawCircle(
-        c,
-        r,
-        Paint()
-          ..color = gold.withValues(alpha: active ? 0.95 : 0.7)
+          ..color = gold.withValues(alpha: 0.45)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = active ? 1.8 : 1.1,
+          ..strokeWidth = 3,
       );
-      return;
     }
 
-    Path diamond(double inset) => Path()
-      ..moveTo(c.dx, inset)
-      ..lineTo(size.width - inset, c.dy)
-      ..lineTo(c.dx, size.height - inset)
-      ..lineTo(inset, c.dy)
-      ..close();
-    if (active) {
-      canvas.drawPath(
-        diamond(1),
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..color = active
+            ? const Color(0xFF2E4832)
+            : (laManChinh ? const Color(0xFF1E3224) : const Color(0xFF1B281F)),
+    );
+
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..color = gold.withValues(alpha: active ? 1.0 : (laManChinh ? 0.95 : 0.8))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = active ? 2.4 : (laManChinh ? 2.0 : 1.4),
+    );
+
+    if (laManChinh) {
+      canvas.drawCircle(
+        c,
+        r - 3.5,
         Paint()
           ..color = gold.withValues(alpha: 0.35)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 5,
+          ..strokeWidth = 0.9,
       );
     }
-    canvas.drawPath(
-      diamond(3).shift(const Offset(0, 2)),
-      Paint()..color = const Color(0xAA101910),
-    );
-    canvas.drawPath(
-      diamond(3),
-      Paint()
-        ..color = active ? const Color(0xFF475738) : const Color(0xFF243828),
-    );
-    canvas.drawPath(
-      diamond(3),
-      Paint()
-        ..color = gold
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = active ? 2.2 : 1.5,
-    );
-    canvas.drawPath(
-      diamond(7),
-      Paint()
-        ..color = gold.withValues(alpha: 0.38)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
-    );
   }
 
   @override
