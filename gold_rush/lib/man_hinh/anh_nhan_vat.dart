@@ -13,6 +13,7 @@ import '../auth/auth_controller.dart';
 import '../blockchain/abi_dang_ky_nhan_vat.dart';
 import '../blockchain/vi.dart';
 import '../cau_hinh.dart';
+import '../components/ui/gold_rush_top_bar.dart';
 
 class ManHinhAnhNhanVat extends StatefulWidget {
   final MayChuNhanVat mayChu;
@@ -692,183 +693,226 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     final nhanCho = _dangTao ? 'Đang tạo ảnh…' : 'Đang tải ảnh…';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ảnh nhân vật AI'),
-        actions: [
-          if (_nguoiDung != null)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Làm mới nhân vật',
-              onPressed: _dangTaiDanhSach ? null : _taiDanhSachNhanVat,
+      backgroundColor: const Color(0xFF07121D),
+      body: SafeArea(
+        child: Column(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth < 600) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                  child: GoldRushTopBar(
+                    activeItem: GoldRushTopBarItem.xuongAi,
+                    onSanhCho: () => Navigator.of(context).maybePop(),
+                    onCuaHang: () => Navigator.of(context).maybePop(),
+                    onKhoDo: () => Navigator.of(context).maybePop(),
+                    onClose: () => Navigator.of(context).maybePop(),
+                    showClose: true,
+                    onSettings: null,
+                  ),
+                );
+              },
             ),
-        ],
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 580),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Thanh Xác Thực MetaMask SIWE
-                _xayDungAuthBar(),
-                const SizedBox(height: 16),
-
-                // 2. Thẻ Tiến Trình Chơi Màn
-                if (_tienTrinh != null) ...[
-                  _xayDungCardTienTrinh(),
-                  const SizedBox(height: 16),
-                ],
-
-                // 3. Form Nhập Mô Tả và Tạo Ảnh (Giữ nguyên toàn bộ cấu trúc & text của bản cũ)
-                Form(
-                  key: _form,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1400),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Text(
-                        'Mô tả nhân vật bạn muốn xem, như một thợ mỏ đội mũ vàng.',
+                        'XƯỞNG AI',
+                        style: TextStyle(
+                          color: Color(0xFFB68CFF),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Tạo nhân vật',
+                        style: TextStyle(
+                          color: Color(0xFFEAF2F8),
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _moTa,
-                        enabled: !_dangTai,
-                        minLines: 3,
-                        maxLines: 5,
-                        keyboardType: TextInputType.multiline,
-                        decoration: const InputDecoration(
-                          labelText: 'Mô tả nhân vật',
-                          helperText: 'Tối đa 500 ký tự.',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          final text = (value ?? '').trim();
-                          if (text.isEmpty) return 'Hãy nhập mô tả nhân vật.';
-                          if (text.runes.length > 500) {
-                            return 'Mô tả tối đa 500 ký tự.';
-                          }
-                          return null;
-                        },
-                        onChanged: _doiMoTa,
-                      ),
-                      const SizedBox(height: 20),
-                      if (_dangTai) ...[
-                        LinearProgressIndicator(semanticsLabel: nhanCho),
-                        const SizedBox(height: 12),
-                        Text(nhanCho, textAlign: TextAlign.center),
+
+                      // 2. Thẻ Tiến Trình Chơi Màn
+                      if (_tienTrinh != null) ...[
+                        _xayDungCardTienTrinh(),
                         const SizedBox(height: 16),
                       ],
-                      if (png != null && anh != null) ...[
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                Text(
-                                  anh.nguonSinh == 'demo'
-                                      ? 'Ảnh mẫu demo'
-                                      : 'Ảnh từ mô hình AI',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  anh.nguonNguCanh == 'demo'
-                                      ? 'Phiên demo'
-                                      : 'Phiên đã xác minh',
-                                ),
-                                if (anh.nguonSinh == 'demo')
-                                  const Text('Ảnh mẫu được chọn theo mô tả.'),
-                                const SizedBox(height: 12),
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 256,
-                                  ),
-                                  child: AspectRatio(
-                                    aspectRatio: 1,
-                                    child: Image.memory(
-                                      png,
-                                      filterQuality: FilterQuality.none,
-                                      fit: BoxFit.contain,
-                                      semanticLabel: 'Ảnh xem trước nhân vật',
-                                      errorBuilder: (_, _, _) => const Center(
-                                        child: Text('Chưa hiển thị được ảnh.'),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                const Text('Ảnh tĩnh để xem trước.'),
-                              ],
+
+                      // 3. Form Nhập Mô Tả và Tạo Ảnh (Giữ nguyên toàn bộ cấu trúc & text của bản cũ)
+                      Form(
+                        key: _form,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text(
+                              'Mô tả nhân vật bạn muốn xem, như một thợ mỏ đội mũ vàng.',
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Thẻ Lưu Nhân Vật & Disclaimer
-                        _xayDungCardLuuNhanVat(anh),
-                        const SizedBox(height: 16),
-                      ],
-                      if (kq?.loi != null) ...[
-                        Text(
-                          _thongBaoLoi(kq!, daTao: anh != null),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (!_dangTai && (kq?.coTheThuLai ?? false)) ...[
-                        OutlinedButton.icon(
-                          onPressed: anh == null
-                              ? () => _tao(thuLai: true)
-                              : _taiLai,
-                          icon: const Icon(Icons.refresh),
-                          label: Text(anh == null ? 'Thử lại' : 'Tải lại ảnh'),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      FilledButton.icon(
-                        onPressed:
-                            (_dangTai ||
-                                (_tienTrinh != null &&
-                                    !_tienTrinh!.isCharacterUnlocked))
-                            ? null
-                            : () => _tao(),
-                        icon: Icon(
-                          _tienTrinh != null && !_tienTrinh!.isCharacterUnlocked
-                              ? Icons.lock
-                              : Icons.auto_awesome,
-                        ),
-                        label: Text(
-                          _dangTai
-                              ? 'Đang xử lý…'
-                              : (_tienTrinh != null &&
-                                    !_tienTrinh!.isCharacterUnlocked)
-                              ? 'Khóa (Cần hoàn thành 6 màn)'
-                              : _maYeuCau == null
-                              ? 'Tạo ảnh'
-                              : 'Tạo ảnh mới',
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _moTa,
+                              enabled: !_dangTai,
+                              minLines: 3,
+                              maxLines: 5,
+                              keyboardType: TextInputType.multiline,
+                              decoration: const InputDecoration(
+                                labelText: 'Mô tả nhân vật',
+                                helperText: 'Tối đa 500 ký tự.',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: (value) {
+                                final text = (value ?? '').trim();
+                                if (text.isEmpty) {
+                                  return 'Hãy nhập mô tả nhân vật.';
+                                }
+                                if (text.runes.length > 500) {
+                                  return 'Mô tả tối đa 500 ký tự.';
+                                }
+                                return null;
+                              },
+                              onChanged: _doiMoTa,
+                            ),
+                            const SizedBox(height: 20),
+                            if (_dangTai) ...[
+                              LinearProgressIndicator(semanticsLabel: nhanCho),
+                              const SizedBox(height: 12),
+                              Text(nhanCho, textAlign: TextAlign.center),
+                              const SizedBox(height: 16),
+                            ],
+                            if (png != null && anh != null) ...[
+                              Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        anh.nguonSinh == 'demo'
+                                            ? 'Ảnh mẫu demo'
+                                            : 'Ảnh từ mô hình AI',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        anh.nguonNguCanh == 'demo'
+                                            ? 'Phiên demo'
+                                            : 'Phiên đã xác minh',
+                                      ),
+                                      if (anh.nguonSinh == 'demo')
+                                        const Text(
+                                          'Ảnh mẫu được chọn theo mô tả.',
+                                        ),
+                                      const SizedBox(height: 12),
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 256,
+                                        ),
+                                        child: AspectRatio(
+                                          aspectRatio: 1,
+                                          child: Image.memory(
+                                            png,
+                                            filterQuality: FilterQuality.none,
+                                            fit: BoxFit.contain,
+                                            semanticLabel:
+                                                'Ảnh xem trước nhân vật',
+                                            errorBuilder: (_, _, _) =>
+                                                const Center(
+                                                  child: Text(
+                                                    'Chưa hiển thị được ảnh.',
+                                                  ),
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text('Ảnh tĩnh để xem trước.'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              // Thẻ Lưu Nhân Vật & Disclaimer
+                              _xayDungCardLuuNhanVat(anh),
+                              const SizedBox(height: 16),
+                            ],
+                            if (kq?.loi != null) ...[
+                              Text(
+                                _thongBaoLoi(kq!, daTao: anh != null),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (!_dangTai && (kq?.coTheThuLai ?? false)) ...[
+                              OutlinedButton.icon(
+                                onPressed: anh == null
+                                    ? () => _tao(thuLai: true)
+                                    : _taiLai,
+                                icon: const Icon(Icons.refresh),
+                                label: Text(
+                                  anh == null ? 'Thử lại' : 'Tải lại ảnh',
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            FilledButton.icon(
+                              onPressed:
+                                  (_dangTai ||
+                                      (_tienTrinh != null &&
+                                          !_tienTrinh!.isCharacterUnlocked))
+                                  ? null
+                                  : () => _tao(),
+                              icon: Icon(
+                                _tienTrinh != null &&
+                                        !_tienTrinh!.isCharacterUnlocked
+                                    ? Icons.lock
+                                    : Icons.auto_awesome,
+                              ),
+                              label: Text(
+                                _dangTai
+                                    ? 'Đang xử lý…'
+                                    : (_tienTrinh != null &&
+                                          !_tienTrinh!.isCharacterUnlocked)
+                                    ? 'Khóa (Cần hoàn thành 6 màn)'
+                                    : _maYeuCau == null
+                                    ? 'Tạo ảnh'
+                                    : 'Tạo ảnh mới',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 24),
+
+                      // 3. Danh Sách Nhân Vật Thuộc Tài Khoản
+                      _xayDungDanhSachNhanVat(),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-
-                // 3. Danh Sách Nhân Vật Thuộc Tài Khoản
-                _xayDungDanhSachNhanVat(),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
+  // Giữ helper xác thực để tương thích các luồng cũ; thanh TopBar hiện thay
+  // thế phần hiển thị này trong màn Xưởng AI.
+  // ignore: unused_element
   Widget _xayDungAuthBar() {
     if (_dangKiemTraPhien) {
       return const LinearProgressIndicator();

@@ -45,6 +45,7 @@ class GoldRushTopBar extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 860;
+          final tiny = constraints.maxWidth < 500;
           return Container(
             constraints: const BoxConstraints(minHeight: 56),
             padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14),
@@ -64,7 +65,11 @@ class GoldRushTopBar extends StatelessWidget {
                 ),
               ],
             ),
-            child: compact ? _buildCompact(context) : _buildWide(context),
+            child: tiny
+                ? _buildTiny(context)
+                : compact
+                ? _buildCompact(context)
+                : _buildWide(context),
           );
         },
       ),
@@ -121,6 +126,33 @@ class GoldRushTopBar extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: _NavItems(
+            activeItem: activeItem,
+            onSanhCho: onSanhCho,
+            onCuaHang: onCuaHang,
+            onKhoDo: onKhoDo,
+            onXuongAi: onXuongAi,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTiny(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Expanded(child: _GoldRushBrand()),
+            if (showClose)
+              _IconButton(icon: Icons.close_rounded, onTap: onClose),
+          ],
+        ),
+        const SizedBox(height: 6),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: _NavItems(
