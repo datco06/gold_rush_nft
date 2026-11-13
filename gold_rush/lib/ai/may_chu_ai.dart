@@ -207,7 +207,7 @@ class MayChuAi {
     int gioiHanByte,
   ) async {
     final response = await client.send(request);
-    if (response.statusCode != 200) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       await response.stream.listen(null).cancel();
       return KetQuaApiAi._(
         loi: response.statusCode >= 500 ? LoiApiAi.mayChu : LoiApiAi.biTuChoi,
