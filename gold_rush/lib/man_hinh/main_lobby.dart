@@ -252,33 +252,74 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                               showClose: false,
                             ),
                             Expanded(
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: SingleChildScrollView(
-                                  physics: const ClampingScrollPhysics(),
-                                  child: SizedBox(
-                                    width: rightPanelWidth,
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        _EquippedItemsPanel(
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Align(
+                                    alignment: Alignment.topLeft,
+                                    child: SingleChildScrollView(
+                                      physics: const ClampingScrollPhysics(),
+                                      child: SizedBox(
+                                        width: rightPanelWidth,
+                                        child: _EquippedItemsPanel(
                                           compact: compact,
                                           items: g.danhSachVatPham.value,
                                           selectedSlotId: _selectedSlotId,
                                           onSlotTap: _onSlotTap,
                                         ),
-                                        SizedBox(height: compact ? 10 : 16),
-                                        _StartAdventureButton(
-                                          compact: compact,
-                                          loading: _startingAdventure,
-                                          onPressed: _onStartAdventure,
-                                        ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ),
+                                  Align(
+                                    alignment: const Alignment(0, 0.82),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: compact ? 280 : 440,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          _StartAdventureButton(
+                                            compact: compact,
+                                            loading: _startingAdventure,
+                                            onPressed: _onStartAdventure,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              _LobbyLinkButton(
+                                                icon: Icons.person_outline,
+                                                label: 'Đổi nhân vật',
+                                                onTap: g.moKhoDo,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              _LobbyLinkButton(
+                                                icon:
+                                                    Icons.inventory_2_outlined,
+                                                label: 'Kho đồ',
+                                                onTap: g.moKhoDo,
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          const Text(
+                                            'Nhấn ENTER để bắt đầu ván mới',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Color(0xFF7D90A0),
+                                              fontSize: 10,
+                                              letterSpacing: 1.1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -1352,7 +1393,36 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
 }
 
 // ============================================================================
-// 5. NÚT BẮT ĐẦU — GÓC DƯỚI BÊN PHẢI
+class _LobbyLinkButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _LobbyLinkButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 14),
+      label: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: LobbyColors.textPrimary,
+        backgroundColor: const Color(0x660A1724),
+        side: const BorderSide(color: Color(0x557D90A0)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+      ),
+    );
+  }
+}
+
+// 5. NÚT BẮT ĐẦU — TRUNG TÂM PHÍA DƯỚI
 // ============================================================================
 
 class _StartAdventureButton extends StatefulWidget {
