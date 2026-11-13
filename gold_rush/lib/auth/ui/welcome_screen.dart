@@ -185,7 +185,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         children: [
           const RepaintBoundary(
             child: ExcludeSemantics(
-              child: CustomPaint(painter: _LandscapePainter()),
+              child: Image(
+                image: AssetImage('assets/images/welcome_mine_background.jpg'),
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
+              ),
             ),
           ),
           const DecoratedBox(
@@ -208,7 +212,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final narrow = constraints.maxWidth < 440;
-                final padding = narrow ? 16.0 : 28.0;
+                if (!narrow && constraints.maxWidth >= 900) {
+                  return _wideWelcome(constraints);
+                }
+                final padding = 16.0;
                 return SingleChildScrollView(
                   key: const ValueKey('welcome-scroll'),
                   padding: EdgeInsets.symmetric(
@@ -274,6 +281,74 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 
+  Widget _wideWelcome(BoxConstraints constraints) {
+    final panelWidth = math.min(470.0, constraints.maxWidth * .36);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const Positioned(left: 40, top: 28, child: _BrandBar()),
+        const Positioned(right: 42, top: 28, child: _NetworkBar()),
+        Positioned(
+          left: 88,
+          top: math.max(150, constraints.maxHeight * .25),
+          width: math.min(600, constraints.maxWidth * .46),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: _reducedMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 260),
+            curve: Curves.easeOut,
+            builder: (context, value, child) => Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset((1 - value) * -12, 0),
+                child: child,
+              ),
+            ),
+            child: const _HeroCopy(),
+          ),
+        ),
+        Positioned(
+          right: math.max(42, constraints.maxWidth * .065),
+          top: math.max(140, constraints.maxHeight * .225),
+          width: panelWidth,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: _reducedMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 260),
+            curve: Curves.easeOut,
+            builder: (context, value, child) => Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset((1 - value) * 12, 0),
+                child: child,
+              ),
+            ),
+            child: ListenableBuilder(
+              listenable: widget.controller,
+              builder: (context, _) => _panel(false),
+            ),
+          ),
+        ),
+        const Positioned(
+          left: 88,
+          bottom: 28,
+          child: Text(
+            'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN\n'
+            'v1.3.0 · Gold Rush · Hành trình số',
+            style: TextStyle(
+              color: _Palette.mist,
+              fontSize: 9,
+              height: 1.6,
+              letterSpacing: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _panel(bool narrow) {
     final controller = widget.controller;
     final action = _action(controller);
@@ -283,17 +358,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     return RepaintBoundary(
       child: DecoratedBox(
         decoration: ShapeDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [_Palette.woodLight, _Palette.wood, _Palette.woodDark],
-          ),
+          color: const Color(0xE60B1822),
           shape: BeveledRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: _Palette.gold, width: 2),
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: Color(0x997E642B), width: 1),
           ),
           shadows: const [
-            BoxShadow(color: Color(0xAA070F15), offset: Offset(0, 7)),
+            BoxShadow(color: Color(0xAA070F15), offset: Offset(0, 9)),
             BoxShadow(
               color: Color(0x66000000),
               blurRadius: 36,
@@ -302,7 +373,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           ],
         ),
         child: Padding(
-          padding: EdgeInsets.all(narrow ? 20 : 28),
+          padding: EdgeInsets.all(narrow ? 20 : 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -485,8 +556,6 @@ String _shortWallet(String address) => address.length > 14
 abstract final class _Palette {
   static const gold = Color(0xFFF1CF7A);
   static const parchment = Color(0xFFF5E3B5);
-  static const woodLight = Color(0xFF4A3022);
-  static const wood = Color(0xFF30231E);
   static const woodDark = Color(0xFF201B1B);
   static const night = Color(0xFF101B27);
   static const muted = Color(0xFFC8BBA0);
@@ -495,8 +564,9 @@ abstract final class _Palette {
 }
 
 class _GameTitle extends StatelessWidget {
-  const _GameTitle({required this.narrow});
+  const _GameTitle({required this.narrow, this.align = TextAlign.center});
   final bool narrow;
+  final TextAlign align;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -504,8 +574,8 @@ class _GameTitle extends StatelessWidget {
     children: [
       const Text(
         'LỜI MỜI TỪ VÙNG ĐẤT VÀNG',
-        textAlign: TextAlign.center,
-        style: TextStyle(
+        textAlign: TextAlign.left,
+        style: const TextStyle(
           color: _Palette.gold,
           fontSize: 10,
           letterSpacing: 2.5,
@@ -537,15 +607,193 @@ class _GameTitle extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 7),
-      const Text(
+      Text(
         'AI ADVENTURE & BLOCKCHAIN',
-        textAlign: TextAlign.center,
+        textAlign: align,
         style: TextStyle(
           color: _Palette.parchment,
           fontSize: 11,
           letterSpacing: 2.7,
           height: 1.5,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  );
+}
+
+class _HeroCopy extends StatelessWidget {
+  const _HeroCopy();
+
+  @override
+  Widget build(BuildContext context) => const Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _GameTitle(narrow: false, align: TextAlign.left),
+      const SizedBox(height: 24),
+      const SizedBox(
+        width: 470,
+        child: Text(
+          'Một thế giới mỏ vàng pixel, nơi mỗi chuyến đào là một ván chơi '
+          'và mỗi nhân vật là một câu chuyện do AI vẽ nên.',
+          style: TextStyle(
+            color: Color(0xFF9BB0C0),
+            fontSize: 13.5,
+            height: 1.65,
+          ),
+        ),
+      ),
+      const SizedBox(height: 22),
+      const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Feature(
+            icon: Icons.map_outlined,
+            title: '6 màn phiêu lưu',
+            desc: 'Đào sâu qua từng tầng hang',
+          ),
+          SizedBox(width: 16),
+          _Feature(
+            icon: Icons.auto_awesome_outlined,
+            title: 'Nhân vật AI',
+            desc: 'Tạo và lưu nhân vật độc bản',
+          ),
+          SizedBox(width: 16),
+          _Feature(
+            icon: Icons.diamond_outlined,
+            title: 'Kho báu on-chain',
+            desc: 'Tài sản gắn với ví của bạn',
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+class _Feature extends StatelessWidget {
+  const _Feature({required this.icon, required this.title, required this.desc});
+  final IconData icon;
+  final String title;
+  final String desc;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 145,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: Color(0x14FFFFFF),
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: Color(0x2BFFFFFF)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(7),
+            child: Icon(icon, size: 16, color: _Palette.gold),
+          ),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          title,
+          style: const TextStyle(
+            color: _Palette.parchment,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          desc,
+          style: const TextStyle(
+            color: _Palette.mist,
+            fontSize: 10,
+            height: 1.35,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _BrandBar extends StatelessWidget {
+  const _BrandBar();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      DecoratedBox(
+        decoration: BoxDecoration(
+          color: _Palette.gold,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Icon(
+            Icons.monetization_on_rounded,
+            color: _Palette.night,
+            size: 18,
+          ),
+        ),
+      ),
+      const SizedBox(width: 10),
+      const Text(
+        'GOLD RUSH',
+        style: TextStyle(
+          color: _Palette.parchment,
+          fontSize: 16,
+          fontWeight: FontWeight.w800,
+          letterSpacing: .6,
+        ),
+      ),
+    ],
+  );
+}
+
+class _NetworkBar extends StatelessWidget {
+  const _NetworkBar();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xCC0B1822),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0x33FFFFFF)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.circle, size: 5, color: Color(0xFF3FD9A4)),
+            SizedBox(width: 6),
+            Text(
+              'TESTNET · SIWE',
+              style: TextStyle(
+                color: Color(0xFF9BB0C0),
+                fontSize: 9,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(width: 8),
+      Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: const Color(0xCC0B1822),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0x33FFFFFF)),
+        ),
+        child: const Icon(
+          Icons.info_outline,
+          size: 15,
+          color: Color(0xFF9BB0C0),
         ),
       ),
     ],
@@ -574,13 +822,14 @@ class _AdventurerCrest extends StatelessWidget {
               side: const BorderSide(color: _Palette.gold),
             ),
           ),
-          child: const Padding(
-            padding: EdgeInsets.all(8),
-            child: _SpriteFrame(
-              asset: 'assets/images/george.png',
-              columns: 4,
-              rows: 4,
-              size: 48,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: Image.asset(
+              'assets/images/welcome_adventurer.jpg',
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.medium,
             ),
           ),
         ),
