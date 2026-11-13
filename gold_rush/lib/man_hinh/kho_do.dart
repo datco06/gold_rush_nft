@@ -9,6 +9,7 @@ import '../blockchain/nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
 import '../components/ai/nhan_vat_ai_gallery.dart';
 import '../components/ui/game_inventory_controls.dart';
+import '../components/ui/gold_rush_top_bar.dart';
 import '../giao_dien/khung_game.dart';
 import '../giao_dien/mau_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart';
@@ -52,6 +53,7 @@ class ManHinhKhoDo extends StatefulWidget {
   final AuthController? authController;
   final MayChuNhanVat? mayChuNhanVat;
   final Future<void> Function()? khiMoTaoNhanVat;
+  final GoldRushTopBar? thanhTren;
 
   const ManHinhKhoDo({
     super.key,
@@ -72,6 +74,7 @@ class ManHinhKhoDo extends StatefulWidget {
     this.authController,
     this.mayChuNhanVat,
     this.khiMoTaoNhanVat,
+    this.thanhTren,
   });
 
   @override
@@ -228,6 +231,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
       tieuDe: 'KHO ĐỒ',
       chieuRongToiDa: double.infinity,
       nen: _NenKhoDo(animation: _hieuUngNen),
+      thanhTren: widget.thanhTren,
       khiDong: () {
         if (_dangXuLyThaoTac) return;
         widget.khiDong();
@@ -942,11 +946,6 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
             ),
           ),
           const SizedBox(height: 12),
-          const _GhiChu(
-            noiDung:
-                'Đổi nhân vật chỉ thay ngoại hình '
-                'và áp dụng từ ván chơi tiếp theo.',
-          ),
         ],
       ),
     );

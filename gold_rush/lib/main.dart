@@ -22,6 +22,7 @@ import 'man_hinh/anh_nhan_vat.dart';
 import 'man_hinh/cua_hang.dart';
 import 'man_hinh/kho_do.dart';
 import 'man_hinh/lop_phu.dart';
+import 'components/ui/gold_rush_top_bar.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -238,6 +239,20 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
 
     return ManHinhKhoDo(
       khiDong: game.dongKhoDo,
+      thanhTren: GoldRushTopBar(
+        activeItem: GoldRushTopBarItem.khoDo,
+        onSanhCho: game.dongKhoDo,
+        onCuaHang: () {
+          game.dongKhoDo();
+          game.moCuaHang();
+        },
+        onKhoDo: game.moKhoDo,
+        onXuongAi: () {
+          game.dongKhoDo();
+          unawaited(_moXuongAi());
+        },
+        onClose: game.dongKhoDo,
+      ),
       trangThaiTrangBi: TrangThaiKhoDo.daTai,
       danhSachVatPham: game.danhSachVatPham.value,
       khiTrangBi: game.trangBiVatPham,
@@ -247,24 +262,27 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       authController: game.auth,
       tepNhanVatDangDung: game.nhanVatDangDung,
       khiChonNhanVat: _chonNhanVat,
-      khiMoTaoNhanVat: () async {
-        final api = MayChuNhanVat();
-        try {
-          await Navigator.of(context).push<bool>(
-            MaterialPageRoute<bool>(
-              builder: (_) => ManHinhAnhNhanVat(
-                mayChu: api,
-                authController: game.auth,
-                vi: game.phienVi?.vi,
-                tienTrinhController: game.tienTrinh,
-              ),
-            ),
-          );
-        } finally {
-          api.dong();
-        }
-      },
+      khiMoTaoNhanVat: _moXuongAi,
     );
+  }
+
+  Future<void> _moXuongAi() async {
+    final game = widget.game;
+    final api = MayChuNhanVat();
+    try {
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => ManHinhAnhNhanVat(
+            mayChu: api,
+            authController: game.auth,
+            vi: game.phienVi?.vi,
+            tienTrinhController: game.tienTrinh,
+          ),
+        ),
+      );
+    } finally {
+      api.dong();
+    }
   }
 
   Future<void> _chonNhanVat(String characterId) async {

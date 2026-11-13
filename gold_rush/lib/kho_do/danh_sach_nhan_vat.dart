@@ -80,15 +80,6 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
           style: TextStyle(color: MauGame.chuPhu, fontSize: 13, height: 1.5),
         ),
         const SizedBox(height: 12),
-        if (!daKetNoi) ...[
-          const Text(
-            'George mặc định luôn khả dụng. '
-            'Chưa kết nối ví nên chưa xác nhận được '
-            'các nhân vật cửa hàng.',
-            style: TextStyle(color: MauGame.chuPhu, fontSize: 12, height: 1.5),
-          ),
-          const SizedBox(height: 12),
-        ],
         if (pv?.dangXuLy ?? false) ...[
           const LinearProgressIndicator(color: MauGame.chinh),
           const SizedBox(height: 10),

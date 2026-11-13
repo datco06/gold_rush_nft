@@ -11,6 +11,7 @@ class KhungGame extends StatelessWidget {
   final Widget child;
   final double chieuRongToiDa;
   final Widget? nen;
+  final Widget? thanhTren;
 
   const KhungGame({
     super.key,
@@ -19,6 +20,7 @@ class KhungGame extends StatelessWidget {
     required this.child,
     this.phuDe,
     this.nen,
+    this.thanhTren,
     this.chieuRongToiDa = 1200,
   }) : assert(chieuRongToiDa > 0);
 
@@ -51,73 +53,86 @@ class KhungGame extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              gon ? 10 : 16,
-                              gon ? 0 : 6,
-                              gon ? 4 : 10,
-                              gon ? 0 : 6,
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      if (coNenTrangTri) ...[
-                                        const Icon(
-                                          Icons.inventory_2_rounded,
-                                          color: MauGame.chinh,
-                                          size: 25,
-                                          shadows: [
-                                            Shadow(
-                                              color: MauGame.chinh,
-                                              blurRadius: 12,
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(width: 9),
-                                      ],
-                                      Flexible(
-                                        child: Text(
-                                          tieuDe,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
+                          if (thanhTren != null)
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                gon ? 8 : 14,
+                                gon ? 4 : 10,
+                                gon ? 8 : 14,
+                                gon ? 4 : 10,
+                              ),
+                              child: thanhTren,
+                            )
+                          else
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                gon ? 10 : 16,
+                                gon ? 0 : 6,
+                                gon ? 4 : 10,
+                                gon ? 0 : 6,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        if (coNenTrangTri) ...[
+                                          const Icon(
+                                            Icons.inventory_2_rounded,
                                             color: MauGame.chinh,
-                                            fontSize: gon ? 18 : 23,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 0.6,
-                                            shadows: coNenTrangTri
-                                                ? const [
-                                                    Shadow(
-                                                      color: Color(0xCCFF9D00),
-                                                      blurRadius: 12,
-                                                    ),
-                                                    Shadow(
-                                                      color: Colors.black,
-                                                      offset: Offset(0, 2),
-                                                      blurRadius: 3,
-                                                    ),
-                                                  ]
-                                                : null,
+                                            size: 25,
+                                            shadows: [
+                                              Shadow(
+                                                color: MauGame.chinh,
+                                                blurRadius: 12,
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(width: 9),
+                                        ],
+                                        Flexible(
+                                          child: Text(
+                                            tieuDe,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: MauGame.chinh,
+                                              fontSize: gon ? 18 : 23,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 0.6,
+                                              shadows: coNenTrangTri
+                                                  ? const [
+                                                      Shadow(
+                                                        color: Color(
+                                                          0xCCFF9D00,
+                                                        ),
+                                                        blurRadius: 12,
+                                                      ),
+                                                      Shadow(
+                                                        color: Colors.black,
+                                                        offset: Offset(0, 2),
+                                                        blurRadius: 3,
+                                                      ),
+                                                    ]
+                                                  : null,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                if (coNenTrangTri)
-                                  GameCloseButton(onTap: khiDong),
-                                if (!coNenTrangTri)
-                                  IconButton(
-                                    tooltip: 'Quay lại Menu',
-                                    onPressed: khiDong,
-                                    color: MauGame.chu,
-                                    icon: const Icon(Icons.close_rounded),
-                                  ),
-                              ],
+                                  if (coNenTrangTri)
+                                    GameCloseButton(onTap: khiDong),
+                                  if (!coNenTrangTri)
+                                    IconButton(
+                                      tooltip: 'Quay lại Menu',
+                                      onPressed: khiDong,
+                                      color: MauGame.chu,
+                                      icon: const Icon(Icons.close_rounded),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
                           if (phuDe != null)
                             Padding(
                               padding: EdgeInsets.fromLTRB(

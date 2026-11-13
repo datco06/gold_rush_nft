@@ -4,11 +4,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../blockchain/nhan_vat.dart';
+import '../ai/may_chu_nhan_vat.dart';
+import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart' show AnhNhanVat;
 import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
 import 'ho_so_nhan_vat.dart';
+import 'anh_nhan_vat.dart';
 
 /// Bảng màu Fantasy Treasure Adventure / RPG Mining Cave cho Main Lobby.
 abstract final class LobbyColors {
@@ -93,14 +96,6 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
     return georgeGoc;
   }
 
-  int _computePlayerLevel() {
-    final g = widget.game;
-    final mapCompleted = g.tienTrinhWorldMap.tienTrinh.cacManHoanThanh.length;
-    final aiCompleted = g.tienTrinh.tienTrinh?.totalCompleted ?? 0;
-    final completed = math.max<int>(mapCompleted, aiCompleted);
-    return 1 + completed;
-  }
-
   String _formatGold(BigInt? raw) {
     if (raw == null) return '0';
     final s = raw.toString();
@@ -169,6 +164,24 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
     );
   }
 
+  Future<void> _openAiWorkshop() async {
+    final api = MayChuNhanVat();
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => ManHinhAnhNhanVat(
+            mayChu: api,
+            authController: widget.game.auth,
+            vi: widget.game.phienVi?.vi,
+            tienTrinhController: widget.game.tienTrinh,
+          ),
+        ),
+      );
+    } finally {
+      api.dong();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -178,7 +191,6 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
         builder: (context, _) {
           final g = widget.game;
           final nv = _activeCharacterInfo();
-          final capDo = _computePlayerLevel();
           final pv = g.phienVi;
           final goldText = pv == null
               ? '0'
@@ -227,18 +239,17 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _LobbyHeader(
-                              compact: compact,
-                              characterFile: g.nhanVatDangDung,
-                              characterName: nv.ten,
-                              playerTitle: 'Nhà Thám Hiểm Vàng',
-                              level: capDo,
-                              goldText: goldText,
-                              hasWallet: pv != null,
-                              onProfileTap: _openProfileDialog,
-                              onGoldAddTap: pv != null ? g.moCuaHang : null,
-                              onShopTap: g.moCuaHang,
-                              onSettingsTap: g.moCaiDat,
+                            GoldRushTopBar(
+                              activeItem: GoldRushTopBarItem.sanhCho,
+                              gold: goldText,
+                              playerName: g.auth?.user?.username ?? 'datco6',
+                              onSanhCho: null,
+                              onCuaHang: g.moCuaHang,
+                              onKhoDo: g.moKhoDo,
+                              onXuongAi: _openAiWorkshop,
+                              onPlayerTap: _openProfileDialog,
+                              onSettings: g.moCaiDat,
+                              showClose: false,
                             ),
                             Expanded(
                               child: Align(
@@ -426,6 +437,8 @@ class _PedestalPainter extends CustomPainter {
 // 2. HEADER PHÍA TRÊN (LOGO + THẺ GEORGE BÊN TRÁI | VÀNG + SHOP + CÀI ĐẶT PHẢI)
 // ============================================================================
 
+// Giữ lại để tương thích với các màn lobby cũ đang tham chiếu nội bộ.
+// ignore: unused_element
 class _LobbyHeader extends StatelessWidget {
   final bool compact;
   final String characterFile;
