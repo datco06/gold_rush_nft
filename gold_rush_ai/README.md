@@ -212,16 +212,19 @@ Chỉ bật feature flag chưa cấp danh tính hoặc quyền sử dụng cho n
 | `AI_QUEST_DAILY_LIMIT` | `20` | Lượt gọi LLM nhiệm vụ/người/ngày UTC, 0–10000 |
 | `LLM_ENABLED` / `AI_IMAGE_ENABLED` | `false` | Bật riêng từng provider, độc lập với feature flag |
 | `LLM_CHAT_URL`, `LLM_MODEL`, `LLM_API_KEY` | Trống | Endpoint Chat Completions, model và khóa phía backend |
-| `AI_IMAGE_URL`, `AI_IMAGE_MODEL`, `AI_IMAGE_API_KEY` | Trống | Endpoint Images Generations, model và khóa phía backend |
-| `LLM_TIMEOUT_SECONDS` / `AI_IMAGE_TIMEOUT_SECONDS` | `10` | Timeout HTTP từng thao tác, trong `(0, 60]` giây |
+| `AI_IMAGE_PROVIDER` | Trống | Đặt `cloudflare` để dùng Cloudflare Workers AI |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | Trống | Tài khoản và token Workers AI, chỉ lưu phía backend |
+| `CLOUDFLARE_IMAGE_MODEL` | `@cf/black-forest-labs/flux-1-schnell` | Model tạo ảnh Cloudflare |
+| `CLOUDFLARE_IMAGE_STEPS` | `4` | Số bước khuếch tán, trong `[1, 8]` |
+| `LLM_TIMEOUT_SECONDS` / `AI_IMAGE_TIMEOUT_SECONDS` | `10` / `60` | Timeout HTTP từng thao tác, trong `(0, 60]` giây |
 
 Đường dẫn tương đối được tính từ thư mục chạy `gold_rush_ai`; mặc định database
 nằm dưới `config.DATA_DIR`. `.env`, database và `.venv` đều được Git bỏ qua.
 Chỉ đặt API key trong môi trường backend, không đưa vào Flutter hoặc Git.
 Endpoint phải là HTTP(S), không chứa thông tin đăng nhập, query hay fragment.
-Adapter LLM đọc `choices[0].message.content` chứa JSON; adapter ảnh cần đúng một
-`data[0].b64_json`, chưa hỗ trợ kết quả chỉ có URL. Cần chọn dịch vụ tương thích
-với payload trong `core/providers/llm.py` và `core/providers/anh_http.py`.
+Adapter LLM đọc `choices[0].message.content` chứa JSON. Adapter Cloudflare gửi
+trực tiếp `prompt` và `steps`, rồi đọc `result.image` Base64 theo REST API Workers
+AI; ảnh sau đó được kiểm tra và chuẩn hóa trước khi lưu.
 
 Khi provider tắt/lỗi, nhiệm vụ dùng rule-based, ảnh dùng mẫu offline và trả đúng
 nhãn nguồn. Nhánh demo luôn dùng provider offline ngay cả khi cấu hình provider

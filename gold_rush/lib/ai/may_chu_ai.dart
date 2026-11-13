@@ -51,10 +51,13 @@ class MayChuAi {
   final Duration thoiGianCho;
 
   MayChuAi({
-    String mayChu = const String.fromEnvironment('GOLD_RUSH_API'),
+    String mayChu = const String.fromEnvironment(
+      'GOLD_RUSH_API',
+      defaultValue: 'http://localhost:8000',
+    ),
     String? maNguoiChoiDemo,
     this.client,
-    this.thoiGianCho = const Duration(seconds: 15),
+    this.thoiGianCho = const Duration(seconds: 45),
   }) : _mayChu = _kiemTraMayChu(mayChu),
        _maNguoiChoiDemo = maNguoiChoiDemo {
     if (maNguoiChoiDemo != null &&

@@ -166,6 +166,23 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                   phienVi: g.phienVi,
                   authController: g.auth,
                   tepNhanVatDangDung: g.nhanVatDangDung,
+                  khiMoTaoNhanVat: () async {
+                    final api = MayChuNhanVat();
+                    try {
+                      await Navigator.of(context).push<bool>(
+                        MaterialPageRoute<bool>(
+                          builder: (_) => ManHinhAnhNhanVat(
+                            mayChu: api,
+                            authController: g.auth,
+                            vi: g.phienVi?.vi,
+                            tienTrinhController: g.tienTrinh,
+                          ),
+                        ),
+                      );
+                    } finally {
+                      api.dong();
+                    }
+                  },
                   khiChonNhanVat: (characterId) async {
                     final pv = g.phienVi;
                     if (g.trangThai != TrangThaiChoi.tamDung) {
@@ -2008,18 +2025,22 @@ class _TabNhanVat extends StatelessWidget {
           const SizedBox(height: 14),
           NhanVatAiGallery(
             authController: game.auth,
-            khiMoTaoNhanVat: () {
+            khiMoTaoNhanVat: () async {
               final api = MayChuNhanVat();
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ManHinhAnhNhanVat(
-                    mayChu: api,
-                    authController: game.auth,
-                    vi: game.phienVi?.vi,
-                    tienTrinhController: game.tienTrinh,
+              try {
+                await Navigator.of(context).push<bool>(
+                  MaterialPageRoute<bool>(
+                    builder: (_) => ManHinhAnhNhanVat(
+                      mayChu: api,
+                      authController: game.auth,
+                      vi: game.phienVi?.vi,
+                      tienTrinhController: game.tienTrinh,
+                    ),
                   ),
-                ),
-              );
+                );
+              } finally {
+                api.dong();
+              }
             },
           ),
         ],

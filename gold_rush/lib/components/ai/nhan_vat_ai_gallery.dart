@@ -12,7 +12,7 @@ import '../../auth/auth_controller.dart';
 class NhanVatAiGallery extends StatefulWidget {
   final AuthController? authController;
   final MayChuNhanVat? mayChu;
-  final VoidCallback? khiMoTaoNhanVat;
+  final Future<void> Function()? khiMoTaoNhanVat;
 
   const NhanVatAiGallery({
     super.key,
@@ -36,8 +36,9 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
   int _phien = 0;
 
   bool get _daDangNhap {
+    if (widget.mayChu != null) return true;
     final auth = widget.authController;
-    return auth == null || (auth.canEnterGame && auth.user != null);
+    return auth != null && auth.canEnterGame && auth.user != null;
   }
 
   @override
@@ -125,6 +126,13 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
     }
   }
 
+  Future<void> _moTaoNhanVat() async {
+    final moTao = widget.khiMoTaoNhanVat;
+    if (moTao == null) return;
+    await moTao();
+    if (mounted && _daDangNhap) await _tai();
+  }
+
   Future<void> _taiAnh(ThongTinNhanVat nv, int phien) async {
     try {
       final kq = await _api
@@ -197,12 +205,22 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
             'Bạn chưa tạo nhân vật AI nào. Hãy tạo nhân vật đầu tiên.',
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
-          if (widget.khiMoTaoNhanVat != null)
-            TextButton.icon(
-              onPressed: widget.khiMoTaoNhanVat,
-              icon: const Icon(Icons.auto_awesome_rounded),
-              label: const Text('Tạo nhân vật AI'),
-            ),
+          Wrap(
+            spacing: 8,
+            children: [
+              if (widget.khiMoTaoNhanVat != null)
+                TextButton.icon(
+                  onPressed: _moTaoNhanVat,
+                  icon: const Icon(Icons.auto_awesome_rounded),
+                  label: const Text('Tạo nhân vật AI'),
+                ),
+              TextButton.icon(
+                onPressed: _dangTai ? null : _tai,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Làm mới'),
+              ),
+            ],
+          ),
         ],
       );
     }
@@ -273,7 +291,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
           ),
           const SizedBox(height: 3),
           const Text(
-            'Đã lưu · Không phải NFT',
+            'Đã lưu · PNG tĩnh',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white54, fontSize: 9),
           ),
@@ -316,6 +334,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
                 const SizedBox(height: 12),
                 const Text('Trạng thái: Đã lưu trong Backend'),
                 const Text('Loại tài sản: Nhân vật AI, không phải NFT'),
+                const Text('Gameplay: Chưa có sprite sheet 4×4 để trang bị'),
                 Text('Mã: ${nv.idRutGon}'),
                 Text('Ngày tạo: ${nv.createdAt.toLocal()}'),
               ],

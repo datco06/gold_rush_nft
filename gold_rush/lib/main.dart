@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'am_thanh/am_thanh.dart';
+import 'ai/may_chu_nhan_vat.dart';
 import 'auth/app_platform_stub.dart'
     if (dart.library.js_interop) 'auth/app_platform_web.dart'
     as platform;
@@ -17,6 +18,7 @@ import 'blockchain/vi.dart';
 import 'cau_hinh.dart';
 import 'gold_rush_game.dart';
 import 'man_hinh/chon_man.dart';
+import 'man_hinh/anh_nhan_vat.dart';
 import 'man_hinh/cua_hang.dart';
 import 'man_hinh/kho_do.dart';
 import 'man_hinh/lop_phu.dart';
@@ -245,6 +247,23 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       authController: game.auth,
       tepNhanVatDangDung: game.nhanVatDangDung,
       khiChonNhanVat: _chonNhanVat,
+      khiMoTaoNhanVat: () async {
+        final api = MayChuNhanVat();
+        try {
+          await Navigator.of(context).push<bool>(
+            MaterialPageRoute<bool>(
+              builder: (_) => ManHinhAnhNhanVat(
+                mayChu: api,
+                authController: game.auth,
+                vi: game.phienVi?.vi,
+                tienTrinhController: game.tienTrinh,
+              ),
+            ),
+          );
+        } finally {
+          api.dong();
+        }
+      },
     );
   }
 

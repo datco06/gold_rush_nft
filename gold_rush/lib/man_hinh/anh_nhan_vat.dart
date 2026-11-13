@@ -21,6 +21,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
   final AuthController? authController;
   final TienTrinhController? tienTrinhController;
   final MayChuTienTrinh? mayChuTienTrinh;
+  final bool tuDongLuuSauKhiTao;
 
   const ManHinhAnhNhanVat({
     super.key,
@@ -30,6 +31,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
     this.authController,
     this.tienTrinhController,
     this.mayChuTienTrinh,
+    this.tuDongLuuSauKhiTao = false,
   });
 
   @override
@@ -473,7 +475,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     try {
       final kq = await api
           .tao(moTa: moTa, maYeuCau: ma)
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 50));
       if (!mounted || phien != _phienTai) return;
       if (kq.loi != null) {
         setState(() {
@@ -512,13 +514,16 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       setState(() => _dangTao = false);
     }
     try {
-      final kq = await api.tai(anh).timeout(const Duration(seconds: 20));
+      final kq = await api.tai(anh).timeout(const Duration(seconds: 50));
       if (!mounted || phien != _phienTai) return;
       setState(() {
         _dangTai = false;
         _dangTao = false;
         _ketQua = kq;
       });
+      if (kq.png != null && widget.tuDongLuuSauKhiTao && _nguoiDung != null) {
+        await _luuNhanVat(tuDong: true);
+      }
     } on TimeoutException {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
     } on Exception {
@@ -539,7 +544,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
   // Lưu Nhân Vật Chính Thức & Đăng Ký On-Chain
   // --------------------------------------------------------------------------
 
-  Future<void> _luuNhanVat() async {
+  Future<void> _luuNhanVat({bool tuDong = false}) async {
     final anh = _anh;
     if (anh == null || _dangLuu) return;
     if (_nguoiDung == null) {
@@ -549,12 +554,18 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       );
       return;
     }
-    if (!(_formLuu.currentState?.validate() ?? false)) return;
+    final ten = _tenNhanVat.text.trim();
+    if (ten.isEmpty || ten.runes.length > 32) {
+      if (!tuDong) {
+        _thongBao('Tên nhân vật phải từ 1 đến 32 ký tự.', loi: true);
+      }
+      return;
+    }
 
     setState(() => _dangLuu = true);
     final kq = await widget.mayChu.luu(
       imageId: anh.maAnh,
-      ten: _tenNhanVat.text.trim(),
+      ten: ten,
       csrfToken: _nguoiDung?.csrfToken,
     );
 
@@ -564,7 +575,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     if (kq.thanhCong) {
       setState(() => _nhanVatVuaLuu = kq.nhanVat);
       _thongBao(
-        'Đã lưu nhân vật "${kq.nhanVat!.name}" thành công vào tài khoản!',
+        tuDong
+            ? 'Ảnh đã tạo xong và được tự động lưu vào tài khoản!'
+            : 'Đã lưu nhân vật "${kq.nhanVat!.name}" thành công vào tài khoản!',
       );
       await _taiDanhSachNhanVat();
     } else {
@@ -1165,6 +1178,21 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                           constraints: const BoxConstraints(),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. '
+                      'Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet '
+                      '4×4 để điều khiển trong gameplay.',
+                      style: TextStyle(fontSize: 12, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: Navigator.of(context).canPop()
+                          ? () => Navigator.of(context).pop(true)
+                          : null,
+                      icon: const Icon(Icons.inventory_2_outlined),
+                      label: const Text('VỀ KHO ĐỒ XEM NHÂN VẬT'),
                     ),
                   ],
                 ),

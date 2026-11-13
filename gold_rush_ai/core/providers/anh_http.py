@@ -109,6 +109,9 @@ def provider_anh_tu_moi_truong(
     if bat not in ("true", "1"):
         raise ValueError("AI_IMAGE_ENABLED phải là true hoặc false")
     provider_type = env.get("AI_IMAGE_PROVIDER", "").strip().lower()
+    if provider_type == "cloudflare":
+        from .cloudflare_anh import cloudflare_provider_tu_moi_truong
+        return cloudflare_provider_tu_moi_truong(env, client=client)
     if provider_type == "gemini" or (env.get("GEMINI_API_KEY") and not env.get("AI_IMAGE_URL")):
         from .gemini_anh import gemini_provider_tu_moi_truong
         return gemini_provider_tu_moi_truong(env, client=client)

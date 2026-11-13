@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gold_rush/ai/may_chu_nhan_vat.dart';
 import 'package:gold_rush/kho_do/the_vat_pham.dart';
 import 'package:gold_rush/kho_do/vat_pham_hien_thi.dart';
 import 'package:gold_rush/man_hinh/kho_do.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 VatPhamHienThi taoKiemMau({bool dangTrangBi = false}) {
   return VatPhamHienThi(
@@ -34,6 +38,9 @@ void main() {
     List<VatPhamHienThi> danhSach = const [],
     Future<void> Function(String)? khiTrangBi,
     VoidCallback? khiDong,
+    int tabBanDau = 0,
+    MayChuNhanVat? mayChuNhanVat,
+    Future<void> Function()? khiMoTaoNhanVat,
   }) async {
     cauHinhKichThuoc(tester);
 
@@ -46,6 +53,9 @@ void main() {
             trangThaiNhanVat: TrangThaiKhoDo.trong,
             danhSachVatPham: danhSach,
             khiTrangBi: khiTrangBi,
+            tabBanDau: tabBanDau,
+            mayChuNhanVat: mayChuNhanVat,
+            khiMoTaoNhanVat: khiMoTaoNhanVat,
           ),
         ),
       ),
@@ -69,6 +79,35 @@ void main() {
     expect(find.byType(TheVatPham), findsNothing);
     expect(find.text('Túi vật phẩm đang trống'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tab Nhân vật hiện nút mở màn tạo nhân vật AI', (tester) async {
+    var soLanMo = 0;
+    final api = MayChuNhanVat(
+      mayChu: 'http://localhost',
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode(<Object>[]),
+          200,
+          headers: {'content-type': 'application/json'},
+        ),
+      ),
+    );
+    addTearDown(api.dong);
+
+    await moKhoDo(
+      tester,
+      tabBanDau: 1,
+      mayChuNhanVat: api,
+      khiMoTaoNhanVat: () async => soLanMo++,
+    );
+
+    final nutTao = find.text('Tạo nhân vật AI');
+    expect(nutTao, findsOneWidget);
+    await tester.ensureVisible(nutTao);
+    await tester.tap(nutTao);
+    await tester.pump();
+    expect(soLanMo, 1);
   });
 
   testWidgets('Chưa có callback thì nút Trang bị bị vô hiệu hóa', (

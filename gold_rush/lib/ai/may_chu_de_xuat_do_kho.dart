@@ -23,7 +23,10 @@ class MayChuDeXuatDoKho {
   final MayChuAi _api;
 
   MayChuDeXuatDoKho({
-    String mayChu = const String.fromEnvironment('GOLD_RUSH_API'),
+    String mayChu = const String.fromEnvironment(
+      'GOLD_RUSH_API',
+      defaultValue: 'http://localhost:8000',
+    ),
     String? maNguoiChoiDemo,
     http.Client? client,
     Duration thoiGianCho = const Duration(seconds: 15),

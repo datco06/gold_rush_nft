@@ -15,7 +15,10 @@ import 'package:http/http.dart' as http;
 class GuiNhatKy {
   GuiNhatKy._();
 
-  static const String mayChu = String.fromEnvironment('GOLD_RUSH_API');
+  static const String mayChu = String.fromEnvironment(
+    'GOLD_RUSH_API',
+    defaultValue: 'http://localhost:8000',
+  );
 
   static bool get daCauHinh => mayChu.isNotEmpty;
 

@@ -51,6 +51,7 @@ class ManHinhKhoDo extends StatefulWidget {
   final int tabBanDau;
   final AuthController? authController;
   final MayChuNhanVat? mayChuNhanVat;
+  final Future<void> Function()? khiMoTaoNhanVat;
 
   const ManHinhKhoDo({
     super.key,
@@ -70,6 +71,7 @@ class ManHinhKhoDo extends StatefulWidget {
     this.tabBanDau = 0,
     this.authController,
     this.mayChuNhanVat,
+    this.khiMoTaoNhanVat,
   });
 
   @override
@@ -1027,6 +1029,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                 NhanVatAiGallery(
                   authController: widget.authController,
                   mayChu: widget.mayChuNhanVat,
+                  khiMoTaoNhanVat: widget.khiMoTaoNhanVat,
                 ),
               ],
             ),

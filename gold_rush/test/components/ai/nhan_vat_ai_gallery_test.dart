@@ -74,7 +74,7 @@ void main() {
     await _choTai(tester);
 
     expect(find.text('Nhà thám hiểm AI'), findsOneWidget);
-    expect(find.text('Đã lưu · Không phải NFT'), findsOneWidget);
+    expect(find.text('Đã lưu · PNG tĩnh'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('ai-image-$_characterId')),
       findsOneWidget,
@@ -110,7 +110,7 @@ void main() {
         home: Scaffold(
           body: NhanVatAiGallery(
             mayChu: api,
-            khiMoTaoNhanVat: () => daMo = true,
+            khiMoTaoNhanVat: () async => daMo = true,
           ),
         ),
       ),

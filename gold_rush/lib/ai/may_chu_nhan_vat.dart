@@ -140,10 +140,13 @@ class MayChuNhanVat {
   final http.Client? _ownedClient;
 
   MayChuNhanVat({
-    String mayChu = const String.fromEnvironment('GOLD_RUSH_API'),
+    String mayChu = const String.fromEnvironment(
+      'GOLD_RUSH_API',
+      defaultValue: 'http://localhost:8000',
+    ),
     String? maNguoiChoiDemo,
     http.Client? client,
-    Duration thoiGianCho = const Duration(seconds: 15),
+    Duration thoiGianCho = const Duration(seconds: 45),
   }) : this._(
          mayChu: mayChu,
          maNguoiChoiDemo: maNguoiChoiDemo,
