@@ -351,15 +351,29 @@ class KeDich extends NhanVat implements CoTheBiDanh {
   @override
   Vector2 get viTriDanh => position;
 
+  int get maxHp => sucKhoe.toiDa;
+
+  int get currentHp => sucKhoe.hien;
+
+  bool get isDead => _daNo || !sucKhoe.conSong;
+
   bool get daNo => _daNo;
 
   @override
   bool nhanSatThuong(int luong) {
-    if (_daNo || luong <= 0) return false;
-    sucKhoe.nhan(luong);
-    if (sucKhoe.conSong) return false;
+    if (isDead || luong <= 0) return false;
+    takeDamage(luong);
+    return isDead;
+  }
+
+  void takeDamage(int amount) {
+    if (isDead || amount <= 0) return;
+    sucKhoe.nhan(amount);
+    if (!sucKhoe.conSong) onDeath();
+  }
+
+  void onDeath() {
     noTung();
-    return true;
   }
 
   // ------------------------------------------------------------------

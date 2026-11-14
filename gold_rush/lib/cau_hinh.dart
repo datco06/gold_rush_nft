@@ -70,7 +70,7 @@ class CauHinh {
   static const double caoHopChan = 7;
 
   // ---------- Chiến đấu, EXP, Boss (Người 2) ----------
-  static const int mauZombie = 30;
+  static const int mauZombie = 20;
   static const int mauSkeleton = 20;
   static const int satThuongGoc = 10;
   static const double thoiGianHoiDanh = 0.45;
