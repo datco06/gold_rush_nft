@@ -62,16 +62,34 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('Hiển thị đủ sáu ô từ dữ liệu màn gốc', (tester) async {
+  Future<void> duaManVaoKhung(WidgetTester tester, int id) async {
+    final state = tester.state<BanDoTheGioiState>(find.byType(BanDoTheGioi));
+    final diem = BoCucWorldMap.viTriMan[id]!;
+    const size = Size(2000, 1200);
+    const scale = 1.0;
+    final dich = BoCucWorldMap.tinhDichChuyenTapTrungDiem(
+      diemTheGioi: diem,
+      tiLe: scale,
+      kichThuocKhung: size,
+    );
+    state.boDieuKhienCamera.value = Matrix4.identity()
+      ..setEntry(0, 3, dich.dx)
+      ..setEntry(1, 3, dich.dy);
+    await tester.pump();
+  }
+
+  testWidgets('Mở camera quanh George và dựng các màn trong vùng nhìn', (
+    tester,
+  ) async {
     await moBanDo(tester, khiChon: (_) {});
 
     expect(danhSachMan, hasLength(6));
-    expect(find.byType(NutManChoi), findsNWidgets(6));
+    expect(find.byType(NutManChoi), findsWidgets);
+    expect(find.text('Màn 3'), findsOneWidget);
 
-    for (final man in danhSachMan) {
-      expect(find.text('Màn ${man.id}'), findsOneWidget);
-      expect(find.text(man.ten), findsOneWidget);
-    }
+    final state = tester.state<BanDoTheGioiState>(find.byType(BanDoTheGioi));
+    expect(state.nodeGeorgeHienTai, 3);
+    expect(state.viTriGeorge, BoCucWorldMap.viTriMan[3]);
 
     expect(tester.takeException(), isNull);
   });
@@ -99,9 +117,9 @@ void main() {
       );
     }
 
-    expect(find.text('Hoàn thành'), findsNWidgets(2));
-    expect(find.text('Đã mở'), findsOneWidget);
-    expect(find.text('Chưa mở'), findsNWidgets(3));
+    expect(find.text('Hoàn thành'), findsWidgets);
+    expect(find.text('Đã mở'), findsWidgets);
+    expect(find.text('Chưa mở'), findsWidgets);
   });
 
   testWidgets('Chọn từng ô trả đúng đối tượng màn', (tester) async {
@@ -113,6 +131,7 @@ void main() {
     expect(cacManDaChon, isEmpty);
 
     for (final man in danhSachMan) {
+      await duaManVaoKhung(tester, man.id);
       await tester.tap(find.text('Màn ${man.id}'));
       await tester.pumpAndSettle();
 
@@ -143,6 +162,7 @@ void main() {
       },
     );
 
+    await duaManVaoKhung(tester, 4);
     await tester.tap(find.text('Màn 4'));
     await tester.pumpAndSettle();
 
@@ -159,10 +179,10 @@ void main() {
   });
 
   group('World Map mở rộng, 6 vùng, đường mòn, George và Camera', () {
-    test('Bản đồ mở rộng gấp 4 lần diện tích cũ và giữ vùng cũ tỉ lệ 1:1', () {
+    test('Nền đất liền duy nhất phủ toàn vùng thế giới 2930×1960', () {
       expect(BoCucWorldMap.kichThuocCu, const Size(1465, 980));
       expect(BoCucWorldMap.kichThuoc, const Size(2930, 1960));
-      expect(BoCucWorldMap.vungBanDoCu.size, BoCucWorldMap.kichThuocCu);
+      expect(BoCucWorldMap.vungBanDoCu.size, BoCucWorldMap.kichThuoc);
       expect(
         (Offset.zero & BoCucWorldMap.kichThuoc).contains(
           BoCucWorldMap.vungBanDoCu.topLeft,
@@ -170,30 +190,29 @@ void main() {
         isTrue,
       );
       expect(
-        (Offset.zero & BoCucWorldMap.kichThuoc).contains(
-          BoCucWorldMap.vungBanDoCu.bottomRight,
-        ),
-        isTrue,
+        BoCucWorldMap.vungBanDoCu.bottomRight,
+        BoCucWorldMap.kichThuoc.bottomRight(Offset.zero),
       );
     });
 
     test('Đủ sáu vùng địa lý liên tiếp tương ứng màn 1–6 và mạng đường nối liên tục', () {
       expect(BoCucWorldMap.cacVung, hasLength(6));
-      expect(
-        BoCucWorldMap.cacVung.map((v) => v.idManChinh).toList(),
-        [1, 2, 3, 4, 5, 6],
-      );
-      expect(
-        BoCucWorldMap.cacVung.map((v) => v.loai).toList(),
-        [
-          LoaiVungWorldMap.langKhoiDau,
-          LoaiVungWorldMap.khuRung,
-          LoaiVungWorldMap.nuiDaMoVang,
-          LoaiVungWorldMap.nuiLua,
-          LoaiVungWorldMap.denCoTanTich,
-          LoaiVungWorldMap.vungKhoBau,
-        ],
-      );
+      expect(BoCucWorldMap.cacVung.map((v) => v.idManChinh).toList(), [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+      ]);
+      expect(BoCucWorldMap.cacVung.map((v) => v.loai).toList(), [
+        LoaiVungWorldMap.langKhoiDau,
+        LoaiVungWorldMap.khuRung,
+        LoaiVungWorldMap.nuiDaMoVang,
+        LoaiVungWorldMap.nuiLua,
+        LoaiVungWorldMap.denCoTanTich,
+        LoaiVungWorldMap.vungKhoBau,
+      ]);
 
       for (final vung in BoCucWorldMap.cacVung) {
         final viTriNode = BoCucWorldMap.viTriMan[vung.idManChinh]!;
@@ -226,6 +245,7 @@ void main() {
         expect(state.dangDiChuyenGeorge, isFalse);
 
         // Bấm chọn Màn 1 (đã mở) -> George phải đi dọc đường 3 -> 2 -> 1.
+        await duaManVaoKhung(tester, 1);
         await tester.tap(find.text('Màn 1'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
@@ -257,6 +277,7 @@ void main() {
       // Màn 4, 5, 6 đang khóa trong tienTrinhMau.
       for (final idKhoa in [4, 5, 6]) {
         expect(state.diChuyenGeorgeDen(idKhoa), isFalse);
+        await duaManVaoKhung(tester, idKhoa);
         await tester.tap(find.text('Màn $idKhoa'));
         await tester.pumpAndSettle();
 
@@ -303,11 +324,17 @@ void main() {
         );
         expect(
           kqCucDai.dx,
-          closeTo(kichThuocKhung.width - BoCucWorldMap.kichThuoc.width * 2.0, 0.01),
+          closeTo(
+            kichThuocKhung.width - BoCucWorldMap.kichThuoc.width * 2.0,
+            0.01,
+          ),
         );
         expect(
           kqCucDai.dy,
-          closeTo(kichThuocKhung.height - BoCucWorldMap.kichThuoc.height * 2.0, 0.01),
+          closeTo(
+            kichThuocKhung.height - BoCucWorldMap.kichThuoc.height * 2.0,
+            0.01,
+          ),
         );
         expect(kqCucTieu.dx, closeTo(0.0, 0.01));
         expect(kqCucTieu.dy, closeTo(0.0, 0.01));
@@ -353,30 +380,26 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Ở góc nhìn toàn cảnh: 6 màn chính hiển thị đầy đủ (gon == false),
-        // 14 địa danh phụ thu gọn (gon == true) để không rối nhãn.
-        final cacNutToanCanh = tester.widgetList<NutManChoi>(
-          find.byType(NutManChoi),
-        );
-        expect(cacNutToanCanh, hasLength(20));
-        for (final nut in cacNutToanCanh) {
-          if (nut.man.id <= 6) {
-            expect(nut.gon, isFalse);
-          } else {
-            expect(nut.gon, isTrue);
-          }
+        // Camera mở quanh George nên chỉ dựng các địa danh đang nằm trong viewport.
+        final cacNutQuanhGeorge = tester
+            .widgetList<NutManChoi>(find.byType(NutManChoi))
+            .toList();
+        expect(cacNutQuanhGeorge, isNotEmpty);
+        for (final nut in cacNutQuanhGeorge) {
+          expect(nut.gon, nut.man.id > 6);
         }
 
-        // Phóng to vào vùng George (Màn 3) -> các địa danh phụ trong khung nhìn hiện tên đầy đủ.
-        await tester.tap(find.byTooltip('Định vị George'));
-        await tester.pumpAndSettle();
-        final cacNutKhiZoom = tester.widgetList<NutManChoi>(
-          find.byType(NutManChoi),
-        );
-        expect(
-          cacNutKhiZoom.where((n) => n.man.id > 6).every((n) => !n.gon),
-          isTrue,
-        );
+        expect(BoCucWorldMap.viTriMan, hasLength(20));
+        expect(BoCucWorldMap.cacTuyenDuong, hasLength(19));
+        for (var id = 1; id < 20; id++) {
+          final doan = BoCucWorldMap.cacTuyenDuong[id - 1];
+          expect((doan.tuMan, doan.denMan), (id, id + 1));
+          expect(
+            BoCucWorldMap.viTriMan[id + 1]!.dy,
+            lessThan(BoCucWorldMap.viTriMan[id]!.dy),
+            reason: 'Màn ${id + 1} phải nằm cao hơn màn $id',
+          );
+        }
       },
     );
   });

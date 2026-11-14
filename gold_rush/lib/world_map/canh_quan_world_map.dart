@@ -134,10 +134,7 @@ class LoTrinhGeorgeWorldMap {
       if (seg <= 0.0001) continue;
       if (daQua + seg >= mucTieu || i == cacDiem.length - 2) {
         final localT = ((mucTieu - daQua) / seg).clamp(0.0, 1.0);
-        return (
-          viTri: Offset.lerp(a, b, localT)!,
-          huong: (b - a) / seg,
-        );
+        return (viTri: Offset.lerp(a, b, localT)!, huong: (b - a) / seg);
       }
       daQua += seg;
     }
@@ -160,16 +157,14 @@ class CongTrinhWorldMap {
   const CongTrinhWorldMap(this.id, this.anh, this.chan, this.chieuRong);
 }
 
-/// Bố cục World Map mở rộng:
-/// - Giữ vùng bản đồ cũ ở trung tâm với tỉ lệ gốc 1465×980 (không kéo giãn).
-/// - Mở rộng thế giới lên 2930×1960 (gấp 4 lần diện tích cũ, lớn hơn viewport 3–4 lần).
-/// - Phân chia 6 vùng pixel-art liên tiếp nối bằng mạng đường mòn uốn lượn tự nhiên.
+/// Bố cục World Map dùng một ảnh đất liền duy nhất, phóng đều 2×.
+/// Tọa độ công trình, nút màn và đường đi cùng lấy từ tâm các sân có sẵn.
 class BoCucWorldMap {
   BoCucWorldMap._();
 
   static const kichThuocCu = Size(1465, 980);
   static const kichThuoc = Size(2930, 1960);
-  static const vungBanDoCu = Rect.fromLTWH(732.5, 490, 1465, 980);
+  static const vungBanDoCu = Rect.fromLTWH(0, 0, 2930, 1960);
 
   /// Sáu vùng địa lý tương ứng với màn 1–6.
   static const cacVung = <VungWorldMap>[
@@ -178,120 +173,117 @@ class BoCucWorldMap {
       loai: LoaiVungWorldMap.langKhoiDau,
       ten: 'Làng khởi đầu',
       diaDanh: 'Thảo nguyên & Cối xay gió',
-      phamVi: Rect.fromLTWH(80, 820, 920, 1040),
+      phamVi: Rect.fromLTWH(1900, 1450, 950, 510),
       mauNenChinh: Color(0xFF476E40),
       mauNenPhu: Color(0xFF5B844E),
       mauVien: Color(0xFFA8C67C),
-      viTriBienBao: Offset(560, 860),
+      viTriBienBao: Offset(2140, 1510),
     ),
     VungWorldMap(
       idManChinh: 2,
       loai: LoaiVungWorldMap.khuRung,
       ten: 'Khu rừng',
       diaDanh: 'Rừng Cổ Thụ & Suối Ngàn',
-      phamVi: Rect.fromLTWH(80, 90, 940, 710),
+      phamVi: Rect.fromLTWH(1550, 1450, 760, 510),
       mauNenChinh: Color(0xFF2B5335),
       mauNenPhu: Color(0xFF396944),
       mauVien: Color(0xFF7CB37D),
-      viTriBienBao: Offset(580, 325),
+      viTriBienBao: Offset(1790, 1510),
     ),
     VungWorldMap(
       idManChinh: 3,
       loai: LoaiVungWorldMap.nuiDaMoVang,
       ten: 'Núi đá / Mỏ vàng',
       diaDanh: 'Đèo Đá Xám & Hầm Mỏ',
-      phamVi: Rect.fromLTWH(1040, 90, 860, 730),
+      phamVi: Rect.fromLTWH(650, 1350, 900, 610),
       mauNenChinh: Color(0xFF54524C),
       mauNenPhu: Color(0xFF6B655B),
       mauVien: Color(0xFFD2B36B),
-      viTriBienBao: Offset(1440, 235),
+      viTriBienBao: Offset(900, 1430),
     ),
     VungWorldMap(
       idManChinh: 4,
       loai: LoaiVungWorldMap.nuiLua,
       ten: 'Núi lửa',
       diaDanh: 'Hỏa Sơn & Khe Dung Nham',
-      phamVi: Rect.fromLTWH(1920, 90, 930, 810),
+      phamVi: Rect.fromLTWH(0, 1350, 700, 610),
       mauNenChinh: Color(0xFF432622),
       mauNenPhu: Color(0xFF5C3128),
       mauVien: Color(0xFFFF7A33),
-      viTriBienBao: Offset(2340, 355),
+      viTriBienBao: Offset(160, 1430),
     ),
     VungWorldMap(
       idManChinh: 5,
       loai: LoaiVungWorldMap.denCoTanTich,
       ten: 'Đền cổ / Tàn tích',
       diaDanh: 'Thung Lũng Cổ Ngữ',
-      phamVi: Rect.fromLTWH(1920, 920, 930, 940),
+      phamVi: Rect.fromLTWH(1100, 1300, 700, 660),
       mauNenChinh: Color(0xFF3A4952),
       mauNenPhu: Color(0xFF4D5F69),
       mauVien: Color(0xFF7CE0D3),
-      viTriBienBao: Offset(2360, 1065),
+      viTriBienBao: Offset(1330, 1380),
     ),
     VungWorldMap(
       idManChinh: 6,
       loai: LoaiVungWorldMap.vungKhoBau,
       ten: 'Vùng kho báu',
       diaDanh: 'Đỉnh Kho Báu Hoàng Kim',
-      phamVi: Rect.fromLTWH(1020, 920, 880, 940),
+      phamVi: Rect.fromLTWH(2350, 1250, 580, 710),
       mauNenChinh: Color(0xFF665329),
       mauNenPhu: Color(0xFF826A34),
       mauVien: Color(0xFFFFD966),
-      viTriBienBao: Offset(1460, 1150),
+      viTriBienBao: Offset(2550, 1330),
     ),
   ];
 
-  /// Tâm thực của 20 khoảng đất trống trong bức `terrain_khu_nha_v3.png` (hệ tọa độ 1465×980).
+  /// Tâm 20 sân theo thứ tự dích dắc từ dưới lên (hệ tọa độ thế giới 2930×1960).
   static const cacTamSanGoc1465 = <Offset>[
-    Offset(676, 472), // 1: Quảng trường bát giác đá trung tâm
-    Offset(530, 594), // 2
-    Offset(745, 637), // 3
-    Offset(888, 538), // 4
-    Offset(340, 273), // 5: Đài đá tròn lớn có bậc thang
-    Offset(1155, 381), // 6
-    Offset(1390, 203), // 7
-    Offset(230, 718), // 8
-    Offset(140, 483), // 9
-    Offset(480, 428), // 10
-    Offset(660, 273), // 11
-    Offset(860, 273), // 12
-    Offset(1120, 568), // 13
-    Offset(1390, 578), // 14
-    Offset(1360, 808), // 15
-    Offset(1150, 898), // 16
-    Offset(930, 868), // 17
-    Offset(710, 818), // 18
-    Offset(490, 878), // 19
-    Offset(100, 858), // 20
+    Offset(2230, 1806),
+    Offset(1860, 1744),
+    Offset(980, 1732),
+    Offset(200, 1664),
+    Offset(1420, 1594),
+    Offset(2720, 1560),
+    Offset(460, 1408),
+    Offset(1490, 1248),
+    Offset(1060, 1164),
+    Offset(2780, 1132),
+    Offset(2240, 1120),
+    Offset(1776, 1042),
+    Offset(280, 940),
+    Offset(1352, 912),
+    Offset(960, 800),
+    Offset(2310, 728),
+    Offset(1720, 548),
+    Offset(1320, 528),
+    Offset(680, 440),
+    Offset(2780, 402),
   ];
 
   /// 20 công trình đặt chính giữa các khoảng đất trống thực tế trên bản đồ 2930×1960:
   /// - Màn 1–6 là 6 cứ điểm trung tâm của 6 vùng chính.
   /// - Màn 7–20 đặt cân đối chính giữa các khoảng đất trống ở từng khu vực.
   static const congTrinh = <CongTrinhWorldMap>[
-    // 6 màn chính tương ứng 6 vùng (đặt chính giữa khoảng đất trống của từng vùng):
-    CongTrinhWorldMap(1, 'lau_dai.png', Offset(590.5, 1006), 148),
-    CongTrinhWorldMap(2, 'nha_quan_tro_v3.png', Offset(345.0, 272), 98),
-    CongTrinhWorldMap(3, 'nha_tho_ren_v3.png', Offset(1392.5, 228), 98),
-    CongTrinhWorldMap(4, 'nha_thu_vien_v3.png', Offset(2122.5, 712), 98),
-    CongTrinhWorldMap(5, 'nha_don_gac_v3.png', Offset(2302.5, 1318), 118),
-    CongTrinhWorldMap(6, 'nha_kho_mo_v4.png', Offset(1442.5, 1328), 110),
-    // 14 địa điểm mở rộng đặt chính giữa các khoảng đất trống & vùng biển hải đảo:
-    CongTrinhWorldMap(7, 'nha_tho_ren_v3.png', Offset(1412.5, 968), 134),
-    CongTrinhWorldMap(8, 'nha_quan_tro_dai_v4.png', Offset(242.5, 1402), 116),
-    CongTrinhWorldMap(9, 'nha_don_gac_v3.png', Offset(345.0, 762), 106),
-    CongTrinhWorldMap(10, 'nha_tho_san_v4.png', Offset(1120.0, 762), 104),
-    CongTrinhWorldMap(11, 'nha_thu_vien_v3.png', Offset(1120.0, 272), 104),
-    CongTrinhWorldMap(12, 'nha_coi_nuoc_v4.png', Offset(1592.5, 228), 106),
-    CongTrinhWorldMap(13, 'nha_gia_kim_v4.png', Offset(2122.5, 370), 104),
-    CongTrinhWorldMap(14, 'nha_phao_dai_v4.png', Offset(2507.5, 890), 114),
-    // Màn 15–20: Phân bố xa nhau ở các vùng biển & bờ cõi mở rộng:
-    CongTrinhWorldMap(15, 'nha_dinh_thu_v4.png', Offset(2720.0, 1180), 112),
-    CongTrinhWorldMap(16, 'nha_quan_tro_v3.png', Offset(2720.0, 410), 104),
-    CongTrinhWorldMap(17, 'nha_coi_gio_v4.png', Offset(1880.0, 1720), 102),
-    CongTrinhWorldMap(18, 'nha_nha_kinh_v4.png', Offset(1280.0, 1780), 106),
-    CongTrinhWorldMap(19, 'nha_phap_su_v4.png', Offset(220.0, 180), 64),
-    CongTrinhWorldMap(20, 'nha_thanh_tri_v4.png', Offset(190.0, 1680), 116),
+    CongTrinhWorldMap(1, 'lau_dai.png', Offset(2230, 1806), 148),
+    CongTrinhWorldMap(2, 'nha_quan_tro_v3.png', Offset(1860, 1744), 130),
+    CongTrinhWorldMap(3, 'nha_tho_ren_v3.png', Offset(980, 1732), 130),
+    CongTrinhWorldMap(4, 'nha_thu_vien_v3.png', Offset(200, 1664), 130),
+    CongTrinhWorldMap(5, 'nha_don_gac_v3.png', Offset(1420, 1594), 140),
+    CongTrinhWorldMap(6, 'nha_kho_mo_v4.png', Offset(2720, 1560), 140),
+    CongTrinhWorldMap(7, 'nha_tho_ren_v3.png', Offset(460, 1408), 135),
+    CongTrinhWorldMap(8, 'nha_quan_tro_dai_v4.png', Offset(1490, 1248), 140),
+    CongTrinhWorldMap(9, 'nha_don_gac_v3.png', Offset(1060, 1164), 132),
+    CongTrinhWorldMap(10, 'nha_tho_san_v4.png', Offset(2780, 1132), 130),
+    CongTrinhWorldMap(11, 'nha_thu_vien_v3.png', Offset(2240, 1120), 130),
+    CongTrinhWorldMap(12, 'nha_coi_nuoc_v4.png', Offset(1776, 1042), 132),
+    CongTrinhWorldMap(13, 'nha_gia_kim_v4.png', Offset(280, 940), 130),
+    CongTrinhWorldMap(14, 'nha_phao_dai_v4.png', Offset(1352, 912), 142),
+    CongTrinhWorldMap(15, 'nha_dinh_thu_v4.png', Offset(960, 800), 140),
+    CongTrinhWorldMap(16, 'nha_quan_tro_v3.png', Offset(2310, 728), 130),
+    CongTrinhWorldMap(17, 'nha_coi_gio_v4.png', Offset(1720, 548), 128),
+    CongTrinhWorldMap(18, 'nha_nha_kinh_v4.png', Offset(1320, 528), 132),
+    CongTrinhWorldMap(19, 'nha_phap_su_v4.png', Offset(680, 440), 72),
+    CongTrinhWorldMap(20, 'nha_thanh_tri_v4.png', Offset(2780, 402), 145),
   ];
 
   static final viTriMan = Map<int, Offset>.unmodifiable({
@@ -300,6 +292,14 @@ class BoCucWorldMap {
 
   /// Lộ trình di chuyển giữa các màn chơi (phục vụ tìm đường cho George).
   static final cacTuyenDuong = List<DoanDuongWorldMap>.unmodifiable([
+    for (var id = 1; id < 20; id++)
+      DoanDuongWorldMap(
+        tuMan: id,
+        denMan: id + 1,
+        cacDiem: [viTriMan[id]!, viTriMan[id + 1]!],
+        loaiTungChang: const [LoaiDuongWorldMap.duongMonRung],
+      ),
+    /* Các tuyến cũ được thay bằng chuỗi tuần tự ở trên.
     DoanDuongWorldMap(
       tuMan: 1,
       denMan: 2,
@@ -542,6 +542,7 @@ class BoCucWorldMap {
       cacDiem: [viTriMan[11]!, viTriMan[3]!],
       loaiTungChang: const [LoaiDuongWorldMap.duongDaNui],
     ),
+    */
   ]);
 
   /// Trả về vùng địa lý tương ứng với một ID màn chơi.
@@ -679,9 +680,7 @@ class BoCucWorldMap {
       final tamX = (kichThuocKhung.width - mapW) / 2;
       x = dichChuyen.dx.clamp(tamX - le, tamX + le).toDouble();
     } else {
-      x = dichChuyen.dx
-          .clamp(kichThuocKhung.width - mapW - le, le)
-          .toDouble();
+      x = dichChuyen.dx.clamp(kichThuocKhung.width - mapW - le, le).toDouble();
     }
 
     final double y;
@@ -689,9 +688,7 @@ class BoCucWorldMap {
       final tamY = (kichThuocKhung.height - mapH) / 2;
       y = dichChuyen.dy.clamp(tamY - le, tamY + le).toDouble();
     } else {
-      y = dichChuyen.dy
-          .clamp(kichThuocKhung.height - mapH - le, le)
-          .toDouble();
+      y = dichChuyen.dy.clamp(kichThuocKhung.height - mapH - le, le).toDouble();
     }
 
     return Offset(x, y);
@@ -881,59 +878,170 @@ class CanhQuanWorldMap extends CustomPainter {
   CanhQuanWorldMap(this.anh, {required this.trangThaiCacMan});
 
   static const _maTranDonVi = <double>[
-    1, 0, 0, 0, 0,
-    0, 1, 0, 0, 0,
-    0, 0, 1, 0, 0,
-    0, 0, 0, 1, 0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   static const _maTranRung = <double>[
-    0.80, 0.05, 0.00, 0, -6,
-    0.04, 1.08, 0.04, 0, 5,
-    0.02, 0.10, 0.94, 0, 3,
-    0, 0, 0, 1, 0,
+    0.80,
+    0.05,
+    0.00,
+    0,
+    -6,
+    0.04,
+    1.08,
+    0.04,
+    0,
+    5,
+    0.02,
+    0.10,
+    0.94,
+    0,
+    3,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   static const _maTranLang = <double>[
-    1.04, 0.05, 0.00, 0, 5,
-    0.04, 1.04, 0.02, 0, 4,
-    0.00, 0.02, 0.90, 0, -3,
-    0, 0, 0, 1, 0,
+    1.04,
+    0.05,
+    0.00,
+    0,
+    5,
+    0.04,
+    1.04,
+    0.02,
+    0,
+    4,
+    0.00,
+    0.02,
+    0.90,
+    0,
+    -3,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   static const _maTranMoVang = <double>[
-    0.96, 0.16, 0.06, 0, 8,
-    0.14, 0.86, 0.08, 0, 3,
-    0.06, 0.12, 0.76, 0, -4,
-    0, 0, 0, 1, 0,
+    0.96,
+    0.16,
+    0.06,
+    0,
+    8,
+    0.14,
+    0.86,
+    0.08,
+    0,
+    3,
+    0.06,
+    0.12,
+    0.76,
+    0,
+    -4,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   static const _maTranNuiLua = <double>[
-    0.72, 0.22, 0.08, 0, 12,
-    0.14, 0.38, 0.06, 0, -8,
-    0.08, 0.12, 0.34, 0, -12,
-    0, 0, 0, 1, 0,
+    0.72,
+    0.22,
+    0.08,
+    0,
+    12,
+    0.14,
+    0.38,
+    0.06,
+    0,
+    -8,
+    0.08,
+    0.12,
+    0.34,
+    0,
+    -12,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   static const _maTranDenCo = <double>[
-    0.72, 0.14, 0.12, 0, -2,
-    0.08, 0.88, 0.16, 0, 4,
-    0.10, 0.22, 0.90, 0, 8,
-    0, 0, 0, 1, 0,
+    0.72,
+    0.14,
+    0.12,
+    0,
+    -2,
+    0.08,
+    0.88,
+    0.16,
+    0,
+    4,
+    0.10,
+    0.22,
+    0.90,
+    0,
+    8,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   static const _maTranKhoBau = <double>[
-    1.06, 0.16, 0.02, 0, 12,
-    0.10, 0.96, 0.04, 0, 6,
-    0.02, 0.08, 0.72, 0, -8,
-    0, 0, 0, 1, 0,
+    1.06,
+    0.16,
+    0.02,
+    0,
+    12,
+    0.10,
+    0.96,
+    0.04,
+    0,
+    6,
+    0.02,
+    0.08,
+    0.72,
+    0,
+    -8,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   static ColorFilter _noiSuyLocMau(List<double> dich, double t) {
     final k = t.clamp(0.0, 1.0);
     return ColorFilter.matrix([
-      for (var i = 0; i < 20; i++)
-        _maTranDonVi[i] * (1.0 - k) + dich[i] * k,
+      for (var i = 0; i < 20; i++) _maTranDonVi[i] * (1.0 - k) + dich[i] * k,
     ]);
   }
 
@@ -944,16 +1052,8 @@ class CanhQuanWorldMap extends CustomPainter {
 
     final terrain = anh['terrain_khu_nha_v3.png'];
 
-    // 1. Vẽ nền địa hình pixel-art liền mạch toàn thế giới 2930×1960.
+    // Một ảnh đất liền duy nhất; không lật gương hoặc ghép thêm dải biển.
     _veNenDiaHinhLienMach(canvas, size, terrain);
-
-    // 2. Vẽ đại dương, vịnh biển và các hải đảo ngoài khơi bằng mat_nuoc.png, thac_nuoc.png, xoay_nuoc.png.
-    _veBienVaDaiDuong(canvas, size);
-
-    // 3. Giữ nguyên 20 khoảng đất trống có đặt nhà, chỉ lấp các khoảng đất dư không có nhà.
-    if (terrain != null) {
-      _veHoaTronTuNhienVaLapKhoangSan(canvas, terrain);
-    }
 
     // 3. Vẽ 20 công trình đặt chính giữa khoảng đất trống theo thứ tự chiều sâu Y.
     final sorted = [...BoCucWorldMap.congTrinh]
@@ -962,9 +1062,6 @@ class CanhQuanWorldMap extends CustomPainter {
       if (!trangThaiCacMan.containsKey(c.id)) continue;
       _veCongTrinh(canvas, c, trangThaiCacMan[c.id] == TrangThaiMan.chuaMo);
     }
-
-    // 4. Viền khung bản đồ cổ điển bao ngoài thế giới.
-    _veKhungVienTheGioi(canvas, size);
 
     canvas.restore();
   }
@@ -1062,6 +1159,8 @@ class CanhQuanWorldMap extends CustomPainter {
     return path;
   }
 
+  // Các hàm phối nền cũ được giữ để dễ đối chiếu asset nhưng không còn render.
+  // ignore: unused_element
   void _veVungChuyenSacMem(
     Canvas canvas,
     ui.Image terrain, {
@@ -1106,69 +1205,14 @@ class CanhQuanWorldMap extends CustomPainter {
     );
     if (terrain == null) return;
 
-    // 1. Lớp địa hình gốc liền mạch 100% trên toàn bản đồ 2930×1960.
-    _veLuoiGuongTerrain11(canvas, terrain);
-
-    // 2. Chuyển sắc hữu cơ mềm mại cho 6 vùng địa lý xung quanh:
-    // Vùng 2 — Khu rừng cổ thụ (Tây Bắc):
-    _veVungChuyenSacMem(
-      canvas,
+    final src = _khungNguonTerrain(terrain, 70, 0, 1465, 980);
+    canvas.drawImageRect(
       terrain,
-      tam: const Offset(420, 360),
-      rx: 520,
-      ry: 420,
-      maTranDich: _maTranRung,
-      hatGiong: 2,
-    );
-    // Vùng 1 — Làng khởi đầu & Thảo nguyên (Tây Nam):
-    _veVungChuyenSacMem(
-      canvas,
-      terrain,
-      tam: const Offset(430, 1420),
-      rx: 520,
-      ry: 520,
-      maTranDich: _maTranLang,
-      hatGiong: 1,
-    );
-    // Vùng 3 — Núi đá / Mỏ vàng (Bắc):
-    _veVungChuyenSacMem(
-      canvas,
-      terrain,
-      tam: const Offset(1460, 220),
-      rx: 520,
-      ry: 310,
-      maTranDich: _maTranMoVang,
-      hatGiong: 3,
-    );
-    // Vùng 4 — Núi lửa & Đá Bazan (Đông Bắc):
-    _veVungChuyenSacMem(
-      canvas,
-      terrain,
-      tam: const Offset(2460, 420),
-      rx: 560,
-      ry: 480,
-      maTranDich: _maTranNuiLua,
-      hatGiong: 4,
-    );
-    // Vùng 5 — Đền cổ / Tàn tích (Đông Nam):
-    _veVungChuyenSacMem(
-      canvas,
-      terrain,
-      tam: const Offset(2460, 1480),
-      rx: 540,
-      ry: 520,
-      maTranDich: _maTranDenCo,
-      hatGiong: 5,
-    );
-    // Vùng 6 — Vùng kho báu Hoàng Kim (Nam):
-    _veVungChuyenSacMem(
-      canvas,
-      terrain,
-      tam: const Offset(1460, 1680),
-      rx: 520,
-      ry: 360,
-      maTranDich: _maTranKhoBau,
-      hatGiong: 6,
+      src,
+      Offset.zero & size,
+      Paint()
+        ..filterQuality = FilterQuality.none
+        ..isAntiAlias = false,
     );
   }
 
@@ -1222,6 +1266,7 @@ class CanhQuanWorldMap extends CustomPainter {
     return null;
   }
 
+  // ignore: unused_element
   void _veBienVaDaiDuong(Canvas canvas, Size size) {
     final matNuoc = anh['mat_nuoc.png'];
     final thacNuoc = anh['thac_nuoc.png'];
@@ -1246,10 +1291,7 @@ class CanhQuanWorldMap extends CustomPainter {
       ..shader = ui.Gradient.linear(
         const Offset(1465, 1400),
         const Offset(1465, 1960),
-        const [
-          Color(0xD916394A),
-          Color(0xFF071922),
-        ],
+        const [Color(0xD916394A), Color(0xFF071922)],
       );
     canvas.drawRect(Offset.zero & size, paintNenBien);
 
@@ -1387,6 +1429,7 @@ class CanhQuanWorldMap extends CustomPainter {
 
   /// Lấp các khoảng đất trống dư (không có ngôi nhà nào trong 20 màn đặt lên)
   /// và giữ nguyên vẹn 100% 20 khoảng đất trống nơi đặt 20 ngôi nhà.
+  // ignore: unused_element
   void _veHoaTronTuNhienVaLapKhoangSan(Canvas canvas, ui.Image terrain) {
     const manhTanCay = Rect.fromLTWH(85, 35, 190, 145);
     const manhThamCo = Rect.fromLTWH(90, 535, 185, 140);
@@ -1441,6 +1484,7 @@ class CanhQuanWorldMap extends CustomPainter {
     }
   }
 
+  // ignore: unused_element
   void _veKhungVienTheGioi(Canvas canvas, Size size) {
     final vienNgoai = Paint()
       ..color = const Color(0xFF172219)

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/man_choi.dart';
 import 'package:gold_rush/man_hinh/chon_man.dart';
+import 'package:gold_rush/world_map/ban_do_the_gioi.dart';
 import 'package:gold_rush/world_map/canh_quan_world_map.dart';
 import 'package:gold_rush/world_map/nut_man_choi.dart';
 import 'package:gold_rush/world_map/luu_tien_trinh.dart';
@@ -93,7 +95,7 @@ void main() {
         expect(
           height,
           lessThanOrEqualTo(190),
-          reason: 'Nhà/tháp không lấn át lâu đài.',
+          reason: '${building.anh} không được lấn át lâu đài.',
         );
         final bounds = Rect.fromLTWH(
           building.chan.dx - building.chieuRong / 2,
@@ -166,7 +168,7 @@ void main() {
         reason: 'Cảnh chỉ dùng lâu đài và bộ nhà mới.',
       );
       expect(tester.takeException(), isNull);
-      expect(find.byType(NutManChoi), findsNWidgets(20));
+      expect(find.byType(NutManChoi), findsWidgets);
       expect(find.textContaining('Chưa nạp được ảnh'), findsNothing);
       expect(cacMan, hasLength(20));
       expect(
@@ -177,18 +179,52 @@ void main() {
         scene.trangThaiCacMan.values.where((s) => s == TrangThaiMan.chuaMo),
         hasLength(19),
       );
-      expect(find.byIcon(Icons.lock_rounded), findsNWidgets(19));
-
       final view = tester.getRect(find.byType(InteractiveViewer));
-      final rects = <Rect>[];
+      final mapState = tester.state<BanDoTheGioiState>(
+        find.byType(BanDoTheGioi),
+      );
       for (final man in cacMan) {
+        if (find.byTooltip('Đóng thông tin màn').evaluate().isNotEmpty) {
+          await tester.tap(find.byTooltip('Đóng thông tin màn'));
+          await tester.pump();
+        }
+        final scale = math.max(
+          mapState.boDieuKhienCamera.value.getMaxScaleOnAxis(),
+          0.8,
+        );
+        final dich = BoCucWorldMap.tinhDichChuyenTapTrungDiem(
+          diemTheGioi: BoCucWorldMap.viTriMan[man.id]!,
+          tiLe: scale,
+          kichThuocKhung: view.size,
+        );
+        mapState.boDieuKhienCamera.value = Matrix4.identity()
+          ..setEntry(0, 0, scale)
+          ..setEntry(1, 1, scale)
+          ..setEntry(2, 2, scale)
+          ..setEntry(0, 3, dich.dx)
+          ..setEntry(1, 3, dich.dy);
+        await tester.pump();
         final finder = find.byKey(ValueKey('world-map-level-${man.id}'));
         final rect = tester.getRect(finder);
         expect(view.contains(rect.topLeft), isTrue);
         expect(view.contains(rect.bottomRight), isTrue);
-        expect(rects.every((other) => !other.overlaps(rect)), isTrue);
-        rects.add(rect);
+        await tester.tap(finder);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final selected = tester
+            .widgetList<NutManChoi>(find.byType(NutManChoi))
+            .where((node) => node.dangChon);
+        expect(selected.single.man.id, man.id);
+        if (man.id != 1) {
+          final button = find.widgetWithText(FilledButton, 'Màn chưa mở');
+          expect(tester.widget<FilledButton>(button).onPressed, isNull);
+        }
       }
+
+      await tester.tap(find.byTooltip('Đóng thông tin màn'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Định vị George'));
+      await tester.pumpAndSettle();
 
       // Xuất chính Widget Flutter đã render, không ghép ảnh mô phỏng giao diện.
       final output = Platform.environment['WORLD_MAP_SCREENSHOT_DIR'];
@@ -210,20 +246,6 @@ void main() {
             image.dispose();
           }
         });
-      }
-
-      for (final man in cacMan) {
-        await tester.tap(find.byKey(ValueKey('world-map-level-${man.id}')));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        final selected = tester
-            .widgetList<NutManChoi>(find.byType(NutManChoi))
-            .where((node) => node.dangChon);
-        expect(selected.single.man.id, man.id);
-        if (man.id != 1) {
-          final button = find.widgetWithText(FilledButton, 'Màn chưa mở');
-          expect(tester.widget<FilledButton>(button).onPressed, isNull);
-        }
       }
       if (size == const Size(1440, 900)) {
         final viewer = tester.widget<InteractiveViewer>(
@@ -250,7 +272,11 @@ void main() {
         );
         await tester.tap(find.byTooltip('Toàn bản đồ'));
         await tester.pumpAndSettle();
-        expect(transform.value.getMaxScaleOnAxis(), closeTo(oldScale, 0.001));
+        final coverScale = math.max(
+          view.width / BoCucWorldMap.kichThuoc.width,
+          view.height / BoCucWorldMap.kichThuoc.height,
+        );
+        expect(transform.value.getMaxScaleOnAxis(), closeTo(coverScale, 0.001));
         final beforePan = transform.value.clone();
         await tester.dragFrom(
           view.topLeft + const Offset(25, 100),
@@ -270,9 +296,8 @@ void main() {
                 final bytes = await image.toByteData(
                   format: ui.ImageByteFormat.png,
                 );
-                await File(
-                  '$output/$tenTep',
-                ).writeAsBytes(bytes!.buffer.asUint8List());
+                await File('$output/$tenTep')
+                    .writeAsBytes(bytes!.buffer.asUint8List());
               } finally {
                 image.dispose();
               }

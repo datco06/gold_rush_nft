@@ -57,7 +57,8 @@ class MayChuAi {
     ),
     String? maNguoiChoiDemo,
     this.client,
-    this.thoiGianCho = const Duration(seconds: 45),
+    // Cloudflare Flux có thể cần gần 60 giây; đồng bộ với timeout backend.
+    this.thoiGianCho = const Duration(seconds: 60),
   }) : _mayChu = _kiemTraMayChu(mayChu),
        _maNguoiChoiDemo = maNguoiChoiDemo {
     if (maNguoiChoiDemo != null &&

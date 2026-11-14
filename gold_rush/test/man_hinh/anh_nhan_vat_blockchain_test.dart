@@ -156,6 +156,7 @@ void main() {
                     '0x2222222222222222222222222222222222222222',
                 'created_at': '2026-11-09T13:38:28Z',
                 'onchain_status': 'not_registered',
+              });
               }, 201);
             }
             if (r.url.path == '/api/ai/nhan-vat/danh-sach') {

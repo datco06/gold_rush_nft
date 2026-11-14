@@ -292,6 +292,37 @@ class MayChuNhanVat {
     }
   }
 
+  /// Tải sprite sheet 4x4 (64x64) đã chuẩn hóa để dùng trong gameplay.
+  Future<KetQuaPngNhanVat> taiSpriteSheetDaLuu(String characterId) async {
+    if (!RegExp(r'^char_[0-9a-f]{32}$').hasMatch(characterId)) {
+      return const KetQuaPngNhanVat(loi: LoiAnhNhanVat.yeuCauKhongHopLe);
+    }
+    final kq = await _api.getBytes(
+      '/api/ai/nhan-vat/$characterId/sprite-sheet',
+      headers: const {'Accept': 'image/png'},
+    );
+    if (kq.loi != null) return KetQuaPngNhanVat(loi: kq.loi, maHttp: kq.maHttp);
+    try {
+      if (kq.contentType?.split(';').first.trim().toLowerCase() != 'image/png') {
+        throw const FormatException('Sprite sheet cần image/png');
+      }
+      final png = kq.bytes!;
+      final codec = await ui.instantiateImageCodec(png).timeout(const Duration(seconds: 5));
+      try {
+        if (codec.frameCount != 1) throw const FormatException('Sprite sheet cần là ảnh tĩnh');
+        final frame = await codec.getNextFrame().timeout(const Duration(seconds: 5));
+        try {
+          if (frame.image.width != 64 || frame.image.height != 64) {
+            throw const FormatException('Sprite sheet cần kích thước 64x64');
+          }
+        } finally { frame.image.dispose(); }
+      } finally { codec.dispose(); }
+      return KetQuaPngNhanVat(png: png, maHttp: kq.maHttp);
+    } on Exception {
+      return const KetQuaPngNhanVat(loi: LoiAnhNhanVat.phanHoiKhongHopLe);
+    }
+  }
+
   // --------------------------------------------------------------------------
   // Quản lý Phiên SIWE & CSRF (/api/me, /api/auth)
   // --------------------------------------------------------------------------

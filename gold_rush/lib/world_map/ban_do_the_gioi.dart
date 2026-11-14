@@ -110,10 +110,11 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
 
     _boDieuKhienGeorge =
         AnimationController(
-          vsync: this,
-          duration: const Duration(milliseconds: 360),
-        )..addListener(_capNhatBuocDiGeorge)
-        ..addStatusListener(_khiTrangThaiDiChuyenDoi);
+            vsync: this,
+            duration: const Duration(milliseconds: 360),
+          )
+          ..addListener(_capNhatBuocDiGeorge)
+          ..addStatusListener(_khiTrangThaiDiChuyenDoi);
   }
 
   @override
@@ -221,12 +222,10 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
     return true;
   }
 
-  double _tiLeVuaKhung(Size kichThuoc) =>
-      math.min(
-        kichThuoc.width / BoCucWorldMap.kichThuoc.width,
-        kichThuoc.height / BoCucWorldMap.kichThuoc.height,
-      ) *
-      1.0;
+  double _tiLeVuaKhung(Size kichThuoc) => math.max(
+    kichThuoc.width / BoCucWorldMap.kichThuoc.width,
+    kichThuoc.height / BoCucWorldMap.kichThuoc.height,
+  );
 
   void _datGocNhin(double tiLe, double x, double y, {double le = 0.0}) {
     final size = _kichThuocVungXem;
@@ -292,7 +291,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
     final scale = m.getMaxScaleOnAxis().clamp(_tiLeVuaKhung(size), 3.0);
     final tx = m.entry(0, 3);
     final ty = m.entry(1, 3);
-    _datGocNhin(scale, tx, ty, le: 32);
+    _datGocNhin(scale, tx, ty);
   }
 
   Rect? _tinhVungNhinThay(Size size) {
@@ -318,61 +317,6 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          height: 36,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'GOLD RUSH · ATLAS · ${vungGeorge.ten.toUpperCase()}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFCAB48A),
-                      fontSize: 10,
-                      letterSpacing: 1.6,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Định vị George',
-                  onPressed: tapTrungVaoGeorge,
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 17,
-                  color: const Color(0xFFFFD56B),
-                  icon: const Icon(Icons.my_location),
-                ),
-                IconButton(
-                  tooltip: 'Thu nhỏ',
-                  onPressed: () => _zoom(1 / 1.25),
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 17,
-                  color: MauGame.chu,
-                  icon: const Icon(Icons.remove),
-                ),
-                IconButton(
-                  tooltip: 'Phóng to',
-                  onPressed: () => _zoom(1.25),
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 17,
-                  color: MauGame.chu,
-                  icon: const Icon(Icons.add),
-                ),
-                IconButton(
-                  tooltip: 'Toàn bản đồ',
-                  onPressed: _xemToanBanDo,
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 17,
-                  color: const Color(0xFFE4C68B),
-                  icon: const Icon(Icons.fit_screen),
-                ),
-              ],
-            ),
-          ),
-        ),
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -384,7 +328,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!mounted || _kichThuocVungXem != size) return;
                   if (truoc.isEmpty) {
-                    _xemToanBanDo();
+                    tapTrungVaoGeorge(tiLe: _tiLeVuaKhung(size) * 1.12);
                   } else {
                     // Giữ vùng đang xem khi xoay thiết bị/resize cửa sổ.
                     final tamCu = _boDieuKhien.toScene(
@@ -420,7 +364,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
                         constrained: false,
                         minScale: _tiLeVuaKhung(size),
                         maxScale: 3,
-                        boundaryMargin: const EdgeInsets.all(32),
+                        boundaryMargin: EdgeInsets.zero,
                         onInteractionEnd: (_) => _gioiHanCameraSauTuongTac(),
                         child: SizedBox.fromSize(
                           size: BoCucWorldMap.kichThuoc,
@@ -489,6 +433,15 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
                         animation: _boDieuKhien,
                         builder: (context, _) => _cacDiaDiem(size),
                       ),
+                      if (size.width >= 700)
+                        Positioned(
+                          left: 12,
+                          top: 12,
+                          child: IgnorePointer(
+                            child: _nhanKhuVuc(vungGeorge.ten),
+                          ),
+                        ),
+                      Positioned(right: 12, top: 12, child: _thanhDieuKhien()),
                       FutureBuilder<Map<String, ui.Image>>(
                         future: _taiAnh,
                         builder: (context, snapshot) {
@@ -527,6 +480,71 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
     child: Text(noiDung, style: const TextStyle(color: MauGame.chu)),
   );
 
+  Widget _nhanKhuVuc(String ten) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: const Color(0xCC14221B),
+      border: Border.all(color: const Color(0x887E7655)),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Text(
+        'GOLD RUSH · ${ten.toUpperCase()}',
+        style: const TextStyle(
+          color: Color(0xFFE7D9B2),
+          fontSize: 10,
+          letterSpacing: 1.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  );
+
+  Widget _thanhDieuKhien() => DecoratedBox(
+    decoration: BoxDecoration(
+      color: const Color(0xD914221B),
+      border: Border.all(color: const Color(0x887E7655)),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Định vị George',
+          onPressed: tapTrungVaoGeorge,
+          visualDensity: VisualDensity.compact,
+          iconSize: 17,
+          color: const Color(0xFFFFD56B),
+          icon: const Icon(Icons.my_location),
+        ),
+        IconButton(
+          tooltip: 'Thu nhỏ',
+          onPressed: () => _zoom(1 / 1.25),
+          visualDensity: VisualDensity.compact,
+          iconSize: 17,
+          color: MauGame.chu,
+          icon: const Icon(Icons.remove),
+        ),
+        IconButton(
+          tooltip: 'Phóng to',
+          onPressed: () => _zoom(1.25),
+          visualDensity: VisualDensity.compact,
+          iconSize: 17,
+          color: MauGame.chu,
+          icon: const Icon(Icons.add),
+        ),
+        IconButton(
+          tooltip: 'Toàn bản đồ',
+          onPressed: _xemToanBanDo,
+          visualDensity: VisualDensity.compact,
+          iconSize: 17,
+          color: const Color(0xFFE4C68B),
+          icon: const Icon(Icons.fit_screen),
+        ),
+      ],
+    ),
+  );
+
   void _khiBamNutMan(ManChoi man) {
     if (_daMo(man.id)) {
       _diChuyenGeorgeDen(man.id);
@@ -552,16 +570,13 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
 
       final laManChinh = man.id <= 6;
       final gonMan = manHinhNho || (!laManChinh && !daPhongToSau);
-      final rong = gonMan ? (laManChinh ? 40.0 : 30.0) : (laManChinh ? 102.0 : 92.0);
+      final rong = gonMan
+          ? (laManChinh ? 40.0 : 30.0)
+          : (laManChinh ? 102.0 : 92.0);
       final cao =
           (gonMan ? (laManChinh ? 40.0 : 30.0) : (laManChinh ? 70.0 : 62.0)) *
           textScale;
-      cacMoc.add((
-        man: man,
-        moc: moc,
-        gon: gonMan,
-        kichThuoc: Size(rong, cao),
-      ));
+      cacMoc.add((man: man, moc: moc, gon: gonMan, kichThuoc: Size(rong, cao)));
     }
     if (manHinhNho) {
       // Đặt các địa điểm sát mép trước: chúng có ít chỗ dịch nhãn hơn.
@@ -578,16 +593,10 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
         size,
         cacNhan.map((n) => n.khung).toList(),
       );
-      cacNhan.add((
-        man: diem.man,
-        moc: diem.moc,
-        khung: khung,
-        gon: diem.gon,
-      ));
+      cacNhan.add((man: diem.man, moc: diem.moc, khung: khung, gon: diem.gon));
     }
     return Stack(
       children: [
-
         Positioned.fill(
           child: IgnorePointer(
             child: CustomPaint(

@@ -476,7 +476,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     try {
       final kq = await api
           .tao(moTa: moTa, maYeuCau: ma)
-          .timeout(const Duration(seconds: 50));
+          .timeout(const Duration(seconds: 65));
       if (!mounted || phien != _phienTai) return;
       if (kq.loi != null) {
         setState(() {
@@ -515,7 +515,10 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       setState(() => _dangTao = false);
     }
     try {
-      final kq = await api.tai(anh).timeout(const Duration(seconds: 50));
+      // Ảnh đã được cache ở backend sau bước tạo; nếu endpoint tải ảnh
+      // không phản hồi nhanh thì kết thúc trạng thái loading để người dùng
+      // có thể thử lại, không khóa màn hình theo timeout tạo ảnh 60 giây.
+      final kq = await api.tai(anh).timeout(const Duration(seconds: 10));
       if (!mounted || phien != _phienTai) return;
       setState(() {
         _dangTai = false;
@@ -742,6 +745,10 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      if (_nguoiDung != null) ...[
+                        _xayDungAuthBar(),
+                        const SizedBox(height: 16),
+                      ],
 
                       // 2. Thẻ Tiến Trình Chơi Màn
                       if (_tienTrinh != null) ...[

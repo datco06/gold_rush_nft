@@ -6,6 +6,8 @@ import 'package:gold_rush/blockchain/phien_vi.dart';
 import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/man_choi.dart';
 import 'package:gold_rush/man_hinh/chon_man.dart';
+import 'package:gold_rush/world_map/ban_do_the_gioi.dart';
+import 'package:gold_rush/world_map/canh_quan_world_map.dart';
 import 'package:gold_rush/world_map/tien_trinh_world_map.dart';
 
 /// Đối tượng chỉ dùng cho test giao diện.
@@ -80,7 +82,24 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('Ưu tiên màn hiện tại từ tiến trình khi mới mở', (tester) async {
+  Future<void> duaManVaoKhung(WidgetTester tester, int id) async {
+    final state = tester.state<BanDoTheGioiState>(find.byType(BanDoTheGioi));
+    final diem = BoCucWorldMap.viTriMan[id]!;
+    const size = Size(2000, 1200);
+    final dich = BoCucWorldMap.tinhDichChuyenTapTrungDiem(
+      diemTheGioi: diem,
+      tiLe: 1,
+      kichThuocKhung: size,
+    );
+    state.boDieuKhienCamera.value = Matrix4.identity()
+      ..setEntry(0, 3, dich.dx)
+      ..setEntry(1, 3, dich.dy);
+    await tester.pump();
+  }
+
+  testWidgets('Chỉ mở bảng chi tiết sau khi người dùng chọn màn', (
+    tester,
+  ) async {
     await moChonMan(
       tester,
       tienTrinh: TienTrinhWorldMap(
@@ -90,6 +109,12 @@ void main() {
       ),
     );
 
+    expect(find.byKey(const ValueKey('bang-thong-tin-man')), findsNothing);
+
+    await tester.tap(find.text('Màn 3'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('bang-thong-tin-man')), findsOneWidget);
     expect(find.text('Trạng thái: Đã mở'), findsOneWidget);
     expect(
       find.widgetWithText(FilledButton, 'Cọc ${danhSachMan[2].coc}'),
@@ -111,6 +136,7 @@ void main() {
       ),
     );
 
+    await duaManVaoKhung(tester, 4);
     await tester.tap(find.text('Màn 4'));
     await tester.pumpAndSettle();
 
@@ -178,6 +204,9 @@ void main() {
       ),
     );
 
+    await tester.tap(find.text('Màn 1'));
+    await tester.pumpAndSettle();
+
     final nutChoi = find.widgetWithText(FilledButton, 'Chơi');
 
     expect(tester.widget<FilledButton>(nutChoi).onPressed, isNotNull);
@@ -203,6 +232,9 @@ void main() {
       ),
     );
 
+    await tester.tap(find.text('Màn 2'));
+    await tester.pumpAndSettle();
+
     final man2 = danhSachMan.singleWhere((man) => man.id == 2);
     final nutCoc = find.widgetWithText(FilledButton, 'Cọc ${man2.coc}');
 
@@ -215,6 +247,10 @@ void main() {
     tester,
   ) async {
     await moChonMan(tester);
+
+    await duaManVaoKhung(tester, 1);
+    await tester.tap(find.text('Màn 1'));
+    await tester.pumpAndSettle();
 
     expect(
       find.text(

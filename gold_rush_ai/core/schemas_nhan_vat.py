@@ -66,10 +66,11 @@ class ThongTinNhanVat(_Schema):
     # Chuẩn bị cho gameplay (Section 8)
     preview_ready: bool = True
     playable_ready: bool = False
-    sprite_format: Literal["static_png_128x128"] = "static_png_128x128"
+    sprite_format: Literal["static_png_128x128", "sprite_sheet_4x4_64x64"] = "static_png_128x128"
+    sprite_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    sprite_sheet_url: str | None = Field(default=None, max_length=160)
     gameplay_notes: str = (
-        "Ảnh preview 128x128 tĩnh. Cần bộ công cụ cắt/chuyển thành sprite sheet "
-        "4 hướng x 4 frame để tích hợp vào Flame engine ở giai đoạn tiếp theo."
+        "Sprite sheet 4x4 được chuẩn hóa từ ảnh AI; MVP lặp khung tĩnh cho 16 ô."
     )
 
 

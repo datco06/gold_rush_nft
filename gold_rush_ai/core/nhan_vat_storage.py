@@ -19,7 +19,7 @@ from .schemas_nhan_vat import (
     YeuCauLuuNhanVat,
     chuan_hoa_vi,
 )
-from .xu_ly_anh import chuan_hoa_anh
+from .xu_ly_anh import chuan_hoa_anh, tao_sprite_sheet_4x4
 
 
 class LoiKhoNhanVat(RuntimeError):
@@ -598,4 +598,7 @@ class KhoNhanVat:
             onchain_status=row["onchain_status"],
             transaction_hash=row["transaction_hash"],
             name=row["name"],
+            sprite_format="sprite_sheet_4x4_64x64",
+            sprite_hash=tinh_character_hash(tao_sprite_sheet_4x4(row["image_blob"])),
+            sprite_sheet_url=f"/api/ai/nhan-vat/{char_id}/sprite-sheet",
         )

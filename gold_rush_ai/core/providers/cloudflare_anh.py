@@ -5,6 +5,7 @@ import binascii
 from collections.abc import Mapping
 from contextlib import nullcontext
 import json
+import logging
 import math
 import re
 from typing import Literal
@@ -12,6 +13,8 @@ from typing import Literal
 import httpx
 
 from .anh import LoiProviderAnh
+
+log = logging.getLogger(__name__)
 
 
 DEFAULT_MODEL = "@cf/black-forest-labs/flux-1-schnell"
@@ -86,6 +89,12 @@ class CloudflareWorkersAnh:
                     follow_redirects=False,
                 ) as response:
                     if response.status_code != 200:
+                        # Đọc một phần envelope lỗi có cấu trúc để chẩn đoán
+                        # 400 an toàn; tuyệt đối không log raw body vì có thể
+                        # chứa prompt hoặc thông tin nhạy cảm.
+                        detail = self._trich_xuat_loi(response)
+                        if detail:
+                            log.warning("Cloudflare HTTP %s: %s", response.status_code, detail)
                         raise self._loi_http(response.status_code)
                     if response.headers.get("content-encoding", "identity").strip().lower() != "identity":
                         raise LoiProviderAnh("Phản hồi Cloudflare dùng encoding chưa hỗ trợ")
@@ -106,6 +115,28 @@ class CloudflareWorkersAnh:
             raise
         except (httpx.HTTPError, ValueError, TypeError, UnicodeError, RecursionError):
             raise LoiProviderAnh("Không nhận được phản hồi Cloudflare hợp lệ") from None
+
+    @staticmethod
+    def _trich_xuat_loi(response: httpx.Response) -> str | None:
+        try:
+            raw = response.read()[:16 * 1024]
+            payload = json.loads(raw)
+        except (httpx.HTTPError, json.JSONDecodeError, UnicodeDecodeError, TypeError, ValueError):
+            return None
+        errors = payload.get("errors") if isinstance(payload, dict) else None
+        if not isinstance(errors, list):
+            error = payload.get("error") if isinstance(payload, dict) else None
+            errors = [error] if isinstance(error, dict) else []
+        details: list[str] = []
+        for item in errors[:2]:
+            if not isinstance(item, dict):
+                continue
+            code = item.get("code")
+            message = item.get("message")
+            if isinstance(message, str) and message.strip():
+                safe = " ".join(message.split())[:180]
+                details.append(f"{code}: {safe}" if code is not None else safe)
+        return "; ".join(details) or None
 
     @staticmethod
     def _tao_prompt(system_prompt: str, user_prompt: str) -> str:

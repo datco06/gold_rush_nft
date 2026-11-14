@@ -30,6 +30,9 @@ class ThongTinNhanVat {
   final DateTime createdAt;
   final TrangThaiOnchain onchainStatus;
   final String? transactionHash;
+  final String? spriteHash;
+  final String? spriteSheetUrl;
+  final String spriteFormat;
 
   const ThongTinNhanVat({
     required this.characterId,
@@ -40,6 +43,9 @@ class ThongTinNhanVat {
     required this.createdAt,
     required this.onchainStatus,
     this.transactionHash,
+    this.spriteHash,
+    this.spriteSheetUrl,
+    this.spriteFormat = 'static_png_128x128',
   });
 
   factory ThongTinNhanVat.tuJson(Map<String, dynamic> json) {
@@ -133,6 +139,9 @@ class ThongTinNhanVat {
       createdAt: createdAt,
       onchainStatus: onchainStatus,
       transactionHash: txHash,
+      spriteHash: json['sprite_hash'] as String?,
+      spriteSheetUrl: json['sprite_sheet_url'] as String?,
+      spriteFormat: (json['sprite_format'] as String?) ?? 'static_png_128x128',
     );
   }
 

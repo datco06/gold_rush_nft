@@ -137,7 +137,9 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
     try {
       final kq = await _api
           .taiAnhDaLuu(nv.characterId)
-          .timeout(const Duration(seconds: 20));
+          // Ảnh đã lưu nằm trong SQLite nên phải phản hồi nhanh; tránh spinner
+          // kéo dài khi phiên Auth/backend bị treo.
+          .timeout(const Duration(seconds: 8));
       if (!mounted || phien != _phien) return;
       if (kq.png == null) {
         setState(() => _anhLoi.add(nv.characterId));

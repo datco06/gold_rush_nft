@@ -59,50 +59,33 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
       child: Material(
         color: const Color(0xFF18261F),
         child: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              Container(
-                height: 48,
-                padding: const EdgeInsets.only(left: 16, right: 6),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF202D24),
-                  border: Border(bottom: BorderSide(color: Color(0xFF6C6747))),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.explore_outlined,
-                      size: 20,
-                      color: Color(0xFFCBB583),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'WORLD MAP',
-                      style: TextStyle(
-                        color: Color(0xFFE7D9B2),
-                        fontSize: 16,
-                        letterSpacing: 3,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      tooltip: 'Quay lại Menu',
-                      onPressed: game.dongChonMan,
-                      color: const Color(0xFFD3C5A4),
-                      iconSize: 20,
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
+              Positioned.fill(
                 child: pv == null
                     ? _noiDung(null)
                     : ListenableBuilder(
                         listenable: pv,
                         builder: (context, _) => _noiDung(pv),
                       ),
+              ),
+              Positioned(
+                right: 14,
+                bottom: 14,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xD914221B),
+                    border: Border.all(color: const Color(0x887E7655)),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: IconButton(
+                    tooltip: 'Quay lại Menu',
+                    onPressed: game.dongChonMan,
+                    color: const Color(0xFFD3C5A4),
+                    iconSize: 20,
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
               ),
             ],
           ),
@@ -129,15 +112,9 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
       );
     }
 
-    // Ưu tiên ô đang xem; khi mới mở, ưu tiên màn từ tiến trình.
-    final idUuTien = _idManDangChon ?? tienTrinh?.manHienTai;
-    var manDangChon = danhSach.first;
-
+    ManChoi? manDangChon;
     for (final man in danhSach) {
-      if (man.id == idUuTien) {
-        manDangChon = man;
-        break;
-      }
+      if (man.id == _idManDangChon) manDangChon = man;
     }
 
     // Chưa có tiến trình: giữ cách chọn màn của bản gốc.
@@ -149,7 +126,7 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
     final banDo = BanDoTheGioi(
       danhSachMan: danhSach,
       trangThaiCacMan: trangThaiCacMan,
-      manDangChon: manDangChon.id,
+      manDangChon: manDangChon?.id,
       khiChonMan: (man) {
         setState(() {
           _idManDangChon = man.id;
@@ -157,43 +134,27 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
       },
     );
 
-    final thongTin = _bangThongTin(pv, manDangChon);
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        final namNgang = constraints.maxWidth > constraints.maxHeight;
-
-        final hienThiHaiCot =
-            constraints.maxWidth >= 850 ||
-            (namNgang && constraints.maxWidth >= 600);
-
-        if (hienThiHaiCot) {
-          final chieuRongThongTin = constraints.maxWidth >= 1000
-              ? 280.0
-              : 256.0;
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: banDo),
-              const VerticalDivider(width: 1, color: MauGame.vien),
-              SizedBox(width: chieuRongThongTin, child: thongTin),
-            ],
-          );
-        }
-
-        // Màn hình hẹp: bản đồ trên, thông tin cuộn bên dưới.
-        return Column(
+        final rongBang = constraints.maxWidth < 700
+            ? constraints.maxWidth - 24
+            : 300.0;
+        return Stack(
           children: [
-            SizedBox(
-              height:
-                  (constraints.maxWidth / BoCucWorldMap.kichThuoc.aspectRatio +
-                          36)
-                      .clamp(0.0, constraints.maxHeight * 0.58),
-              child: banDo,
-            ),
-            const Divider(height: 1, color: MauGame.vien),
-            Expanded(child: thongTin),
+            Positioned.fill(child: banDo),
+            if (manDangChon != null)
+              Positioned(
+                key: const ValueKey('bang-thong-tin-man'),
+                right: 12,
+                top: 70,
+                bottom: 70,
+                width: rongBang,
+                child: Material(
+                  elevation: 10,
+                  color: Colors.transparent,
+                  child: _bangThongTin(pv, manDangChon),
+                ),
+              ),
           ],
         );
       },
@@ -222,23 +183,37 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
       height: 1.5,
     );
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Color(0xFF283329),
-        border: Border(left: BorderSide(color: Color(0xFF7E7655))),
+      decoration: BoxDecoration(
+        color: const Color(0xF2283329),
+        border: Border.all(color: const Color(0xFF7E7655)),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'ĐỊA ĐIỂM ĐANG CHỌN',
-              style: TextStyle(
-                color: Color(0xFFAFA980),
-                fontSize: 10,
-                letterSpacing: 2,
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'ĐỊA ĐIỂM ĐANG CHỌN',
+                    style: TextStyle(
+                      color: Color(0xFFAFA980),
+                      fontSize: 10,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Đóng thông tin màn',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => setState(() => _idManDangChon = null),
+                  color: const Color(0xFFD3C5A4),
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             _TheMan(game: game, man: man, pv: pv, duocVaoMan: duocVaoMan),

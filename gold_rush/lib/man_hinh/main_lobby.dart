@@ -257,21 +257,24 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                 children: [
                                   Align(
                                     alignment: Alignment.topLeft,
-                                    child: SingleChildScrollView(
-                                      physics: const ClampingScrollPhysics(),
-                                      child: SizedBox(
-                                        width: rightPanelWidth,
-                                        child: _EquippedItemsPanel(
-                                          compact: compact,
-                                          items: g.danhSachVatPham.value,
-                                          selectedSlotId: _selectedSlotId,
-                                          onSlotTap: _onSlotTap,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 30),
+                                      child: SingleChildScrollView(
+                                        physics: const ClampingScrollPhysics(),
+                                        child: SizedBox(
+                                          width: rightPanelWidth,
+                                          child: _EquippedItemsPanel(
+                                            compact: compact,
+                                            items: g.danhSachVatPham.value,
+                                            selectedSlotId: _selectedSlotId,
+                                            onSlotTap: _onSlotTap,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                   Align(
-                                    alignment: const Alignment(0, 0.82),
+                                    alignment: const Alignment(0, 0.88),
                                     child: ConstrainedBox(
                                       constraints: BoxConstraints(
                                         maxWidth: compact ? 280 : 440,
@@ -287,25 +290,6 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                             onPressed: _onStartAdventure,
                                           ),
                                           const SizedBox(height: 8),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              _LobbyLinkButton(
-                                                icon: Icons.person_outline,
-                                                label: 'Đổi nhân vật',
-                                                onTap: g.moKhoDo,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              _LobbyLinkButton(
-                                                icon:
-                                                    Icons.inventory_2_outlined,
-                                                label: 'Kho đồ',
-                                                onTap: g.moKhoDo,
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 6),
                                           const Text(
                                             'Nhấn ENTER để bắt đầu ván mới',
                                             textAlign: TextAlign.center,
@@ -392,7 +376,7 @@ class _PedestalPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width * 0.5 + centerShiftX;
-    final cy = size.height * 0.75;
+    final cy = size.height * 0.75 - 10.0;
     final rx = math.min(size.width * 0.20, 210.0);
     final ry = rx * 0.28;
 
@@ -1005,7 +989,7 @@ class _CharacterShowcase extends StatelessWidget {
     return IgnorePointer(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final pedestalY = constraints.maxHeight * 0.75;
+          final pedestalY = constraints.maxHeight * 0.65;
           final left = (constraints.maxWidth - spriteSize) * 0.5;
           final top = math.max(0.0, pedestalY - spriteSize + 8.0);
           return Stack(
@@ -1393,35 +1377,6 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
 }
 
 // ============================================================================
-class _LobbyLinkButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _LobbyLinkButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 14),
-      label: Text(label),
-      style: TextButton.styleFrom(
-        foregroundColor: LobbyColors.textPrimary,
-        backgroundColor: const Color(0x660A1724),
-        side: const BorderSide(color: Color(0x557D90A0)),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-      ),
-    );
-  }
-}
-
 // 5. NÚT BẮT ĐẦU — TRUNG TÂM PHÍA DƯỚI
 // ============================================================================
 

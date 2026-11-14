@@ -42,6 +42,7 @@ from core.nhan_vat_storage import (
 from core.providers.anh import AnhMauOffline, LoiProviderAnh
 from core.providers.anh_http import provider_anh_tu_moi_truong
 from core.quota_ai import KhoQuotaAI, LoiQuotaAI, VuotQuotaAI
+from core.xu_ly_anh import tao_sprite_sheet_4x4
 from core.schemas_nhan_vat import (
     DuLieuChuanBiOnchain,
     KetQuaKiemTraHash,
@@ -160,7 +161,12 @@ async def lay_ngu_canh_anh(
     auth_source = getattr(request.app.state, "ai_auth_source", None)
     if auth_source is not None and not x_demo_player:
         try:
-            player = await auth_source(request)
+            # Không để endpoint tải ảnh bị treo vô hạn khi Auth/session backend
+            # không phản hồi. Các endpoint SIWE khác cũng dùng cùng timeout này.
+            player = await asyncio.wait_for(
+                auth_source(request),
+                timeout=getattr(request.app.state, "ai_auth_source_timeout", 5),
+            )
             if player is not None:
                 # 1.1 Thử lấy snapshot tiến trình từ nguồn xác thực đáng tin cậy (ai_player_source)
                 snapshot = None
@@ -574,6 +580,30 @@ def tai_anh_nhan_vat(
         media_type="image/png",
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )
+
+
+@router.get("/{character_id}/sprite-sheet", response_class=Response, responses={200: {"content": {"image/png": {}}}})
+def tai_sprite_sheet_nhan_vat(
+    character_id: Annotated[str, Path(min_length=37, max_length=37, pattern=r"^char_[0-9a-f]{32}$")],
+    player: Annotated[NguoiChoiXacThuc, Depends(lay_nguoi_choi_xac_thuc)],
+    state: Annotated[TrangThaiNhanVatAI, Depends(lay_trang_thai)],
+) -> Response:
+    """Tải sprite sheet 4x4 PNG đã chuẩn hóa cho gameplay."""
+    if state.kho_nhan_vat is None:
+        raise HTTPException(503, "Kho lưu trữ nhân vật chưa sẵn sàng")
+    try:
+        _, blob = state.kho_nhan_vat.doc_anh_nhan_vat(character_id, nguoi_yeu_cau=player)
+        sprite = tao_sprite_sheet_4x4(blob)
+    except NhanVatKhongTonTai:
+        raise HTTPException(404, "Nhân vật không tồn tại") from None
+    except LoiQuyenTruyCapNhanVat:
+        raise HTTPException(403, "Không có quyền tải sprite sheet này") from None
+    except LoiToanVenNhanVat:
+        raise HTTPException(500, "Dữ liệu ảnh nhân vật bị sai lệch tính toàn vẹn SHA-256") from None
+    except (LoiKhoNhanVat, ValueError):
+        raise HTTPException(503, "Chưa tạo được sprite sheet hợp lệ") from None
+    return Response(content=sprite, media_type="image/png",
+                    headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
 
 @router.get("/{character_id}/kiem-tra-hash", response_model=KetQuaKiemTraHash)
