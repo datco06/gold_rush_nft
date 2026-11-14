@@ -17,6 +17,7 @@ import 'blockchain/nhan_vat.dart';
 import 'blockchain/vi.dart';
 import 'cau_hinh.dart';
 import 'gold_rush_game.dart';
+import 'dieu_khien/nut_ban.dart';
 import 'man_hinh/chon_man.dart';
 import 'man_hinh/anh_nhan_vat.dart';
 import 'man_hinh/cua_hang.dart';
@@ -172,6 +173,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
             ),
           ),
           LopPhu.khoDo: (_, game) => _KhoDoTrongGame(game: game),
+          LopPhu.nutBan: (_, game) => NutBan(game: game),
         },
         loadingBuilder: (_) => const ColoredBox(
           color: CauHinh.mauNen,

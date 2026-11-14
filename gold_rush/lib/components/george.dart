@@ -236,6 +236,31 @@ class George extends NhanVat with KeyboardHandler {
     return true;
   }
 
+  /// Bắn một viên đạn theo đúng hướng đang nhìn.
+  ///
+  /// Đây là lối vào riêng cho nút BẮN: mỗi lần gọi chỉ tạo một [DanBan],
+  /// không dùng hồi chiêu nên các lần chạm liên tiếp tạo các viên đạn riêng.
+  bool banTheoHuongNhin() {
+    if (!conSong || !dieuKhienDuoc) return false;
+
+    final cha = parent;
+    if (cha == null) return false;
+
+    final huong = huongNhin;
+    final vk = trangBi.hienTai;
+    cha.add(
+      DanBan(
+        banDo: banDo,
+        viTri: position + huong * 8,
+        huong: huong,
+        satThuong: vk.satThuong + capDo.thuongSatThuong,
+        tamBay: CauHinh.kichThuocO * 4,
+        khiHaMucTieu: _khiHaMucTieu,
+      ),
+    );
+    return true;
+  }
+
   // --------------------------------------------------
   // VÒNG LẶP GAME
   // --------------------------------------------------

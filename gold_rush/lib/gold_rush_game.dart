@@ -51,6 +51,7 @@ class LopPhu {
   static const cuaHang = 'cuaHang';
   static const chonMan = 'chonMan';
   static const khoDo = 'khoDo';
+  static const nutBan = 'nutBan';
 }
 
 /// Kết quả ván vừa xong.
@@ -413,6 +414,7 @@ class GoldRushGame extends FlameGame
       LopPhu.huyHieu,
       LopPhu.cuaHang,
       LopPhu.chonMan,
+      LopPhu.nutBan,
     ]) {
       overlays.addEntry(ten, (_, _) => const SizedBox.shrink());
     }
@@ -505,9 +507,7 @@ class GoldRushGame extends FlameGame
     if (size.x <= 0) return;
 
     final z = size.x / (CauHinh.soONhinThayNgang * CauHinh.kichThuocO);
-    camera.viewfinder.zoom = z
-        .clamp(CauHinh.zoomToiThieu, CauHinh.zoomToiDa)
-        .toDouble();
+    camera.viewfinder.zoom = z.clamp(1.0, 1.6).toDouble();
   }
 
   // ==================================================================
@@ -614,6 +614,7 @@ class GoldRushGame extends FlameGame
     }
 
     camera.follow(george!, snap: true);
+    _ghimCameraTrongBanDo();
 
     nhatKy.batDau(tongSoXu, maVanCoSan: maVan);
     giayConLai = manHienTai.gioiHanGiay > 0
@@ -899,7 +900,7 @@ class GoldRushGame extends FlameGame
     if (bd.y <= nuaH * 2) {
       vf.position.y = bd.y / 2;
     } else {
-      vf.position.y = vf.position.y.clamp(nuaH, bd.y - nuaH);
+      vf.position.y = vf.position.y.clamp(nuaH, max(nuaH, bd.y - nuaH));
     }
   }
 
@@ -923,6 +924,7 @@ class GoldRushGame extends FlameGame
     overlays.remove(LopPhu.cuaHang);
     overlays.remove(LopPhu.chonMan);
     overlays.remove(LopPhu.khoDo);
+    overlays.remove(LopPhu.nutBan);
   }
 
   /// Chơi màn [m]. Màn có cọc: [maVan] và [ve] đã đăng ký với máy chủ (PhienVi.chuanBiMan).
@@ -968,6 +970,7 @@ class GoldRushGame extends FlameGame
     _vanDangDienRa = true;
 
     _anTatCaLopPhu();
+    overlays.add(LopPhu.nutBan);
 
     trangThai = TrangThaiChoi.dangChoi;
     _datDieuKhien(true);
@@ -985,6 +988,7 @@ class GoldRushGame extends FlameGame
     george?.huongJoystick.setZero();
 
     AmThanh.tamDungNhac();
+    overlays.remove(LopPhu.nutBan);
     overlays.add(LopPhu.tamDung);
     pauseEngine();
   }
@@ -993,6 +997,7 @@ class GoldRushGame extends FlameGame
     if (trangThai != TrangThaiChoi.tamDung) return;
 
     overlays.remove(LopPhu.tamDung);
+    overlays.add(LopPhu.nutBan);
     trangThai = TrangThaiChoi.dangChoi;
 
     _datDieuKhien(true);

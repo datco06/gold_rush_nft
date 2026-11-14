@@ -277,7 +277,8 @@ class ManHinhTamDung extends StatelessWidget {
       tieuDe: 'TẠM DỪNG',
       phuDe:
           'Màn ${m.id} · ${m.ten} · '
-          'Điểm hiện tại: ${game.george?.diem ?? 0}$canhBao',
+          'Điểm hiện tại: ${game.george?.diem ?? 0} · '
+          'Xu hiện tại: ${game.soXuDaNhat} / ${game.tongSoXu}$canhBao',
       noiDung: [
         _Nut(
           nhan: 'Chơi tiếp',
