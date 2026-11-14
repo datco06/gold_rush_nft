@@ -114,6 +114,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
   /// game mới ra đời, toàn bộ tài nguyên nạp lại và ván chơi bị đặt lại từ đầu.
   late final ({Vi vi, void Function() dispose}) _wallet;
   late final GoldRushGame _game;
+  late final FocusNode _gameFocusNode;
   bool _resumeAfterCheck = false;
 
   @override
@@ -121,6 +122,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
     super.initState();
     _wallet = platform.createGameWallet(widget.wallet);
     _game = GoldRushGame(vi: _wallet.vi, auth: widget.auth);
+    _gameFocusNode = FocusNode(debugLabel: 'gold-rush-game');
     widget.auth.addListener(_lockImmediately);
   }
 
@@ -131,7 +133,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
           (!_game.paused && widget.auth.status == AuthStatus.checkingSession);
       _game.pauseEngine();
       unawaited(AmThanh.tamDungNhac());
-    } else if (_resumeAfterCheck) {
+    } else if (_resumeAfterCheck || _game.trangThai == TrangThaiChoi.dangChoi) {
       _resumeAfterCheck = false;
       _game.resumeEngine();
       unawaited(AmThanh.tiepTucNhac());
@@ -147,6 +149,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
     _game.danhSachVatPham.dispose();
     _game.phienVi?.dispose();
     _wallet.dispose();
+    _gameFocusNode.dispose();
     unawaited(AmThanh.dungNhacNen());
     super.dispose();
   }
@@ -154,54 +157,61 @@ class _ManHinhGameState extends State<ManHinhGame> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GameWidget<GoldRushGame>(
-        game: _game,
-        autofocus: true,
-        overlayBuilderMap: {
-          LopPhu.menu: (_, game) => ManHinhMenu(game: game),
-          LopPhu.caiDat: (_, game) => ManHinhCaiDat(game: game),
-          LopPhu.tamDung: (_, game) => ManHinhTamDung(game: game),
-          LopPhu.ketThuc: (_, game) => ManHinhKetThuc(game: game),
-          LopPhu.huyHieu: (_, game) => ManHinhHuyHieu(game: game),
-          LopPhu.cuaHang: (_, game) => ManHinhCuaHang(game: game),
-          LopPhu.chonMan: (_, game) => ListenableBuilder(
-            listenable: game.tienTrinhWorldMap,
-            builder: (context, _) => ManHinhChonMan(
-              game: game,
-              tienTrinh: game.tienTrinhWorldMap.tienTrinh,
-              loiLuuTienTrinh: game.tienTrinhWorldMap.loi,
+      body: Listener(
+        onPointerDown: (_) => _gameFocusNode.requestFocus(),
+        child: GameWidget<GoldRushGame>(
+          game: _game,
+          focusNode: _gameFocusNode,
+          autofocus: true,
+          overlayBuilderMap: {
+            LopPhu.menu: (_, game) => ManHinhMenu(game: game),
+            LopPhu.caiDat: (_, game) => ManHinhCaiDat(game: game),
+            LopPhu.tamDung: (_, game) => ManHinhTamDung(game: game),
+            LopPhu.ketThuc: (_, game) => ManHinhKetThuc(game: game),
+            LopPhu.huyHieu: (_, game) => ManHinhHuyHieu(game: game),
+            LopPhu.cuaHang: (_, game) => ManHinhCuaHang(game: game),
+            LopPhu.chonMan: (_, game) => ListenableBuilder(
+              listenable: game.tienTrinhWorldMap,
+              builder: (context, _) => ManHinhChonMan(
+                game: game,
+                tienTrinh: game.tienTrinhWorldMap.tienTrinh,
+                loiLuuTienTrinh: game.tienTrinhWorldMap.loi,
+              ),
+            ),
+            LopPhu.khoDo: (_, game) => _KhoDoTrongGame(game: game),
+            LopPhu.nutBan: (_, game) => NutBan(game: game),
+          },
+          loadingBuilder: (_) => const ColoredBox(
+            color: CauHinh.mauNen,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: CauHinh.mauChinh),
+                  SizedBox(height: 16),
+                  Text(
+                    'Đang nạp Gold Rush...',
+                    style: TextStyle(color: CauHinh.mauChu),
+                  ),
+                ],
+              ),
             ),
           ),
-          LopPhu.khoDo: (_, game) => _KhoDoTrongGame(game: game),
-          LopPhu.nutBan: (_, game) => NutBan(game: game),
-        },
-        loadingBuilder: (_) => const ColoredBox(
-          color: CauHinh.mauNen,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: CauHinh.mauChinh),
-                SizedBox(height: 16),
-                Text(
-                  'Đang nạp Gold Rush...',
-                  style: TextStyle(color: CauHinh.mauChu),
+          errorBuilder: (_, loi) => ColoredBox(
+            color: CauHinh.mauNen,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Text(
+                  'Không nạp được game.\n\n$loi\n\n'
+                  'Kiểm tra lại phần assets trong pubspec.yaml '
+                  'và các tệp trong thư mục assets/.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFFFF8A80),
+                    fontSize: 13,
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        errorBuilder: (_, loi) => ColoredBox(
-          color: CauHinh.mauNen,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Text(
-                'Không nạp được game.\n\n$loi\n\n'
-                'Kiểm tra lại phần assets trong pubspec.yaml '
-                'và các tệp trong thư mục assets/.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 13),
               ),
             ),
           ),

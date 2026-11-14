@@ -606,7 +606,9 @@ class GoldRushGame extends FlameGame
     if (size.x <= 0) return;
 
     final z = size.x / (CauHinh.soONhinThayNgang * CauHinh.kichThuocO);
-    camera.viewfinder.zoom = z.clamp(1.0, 1.6).toDouble();
+    camera.viewfinder.zoom = z
+        .clamp(CauHinh.zoomToiThieu, CauHinh.zoomToiDa)
+        .toDouble();
   }
 
   // ==================================================================
