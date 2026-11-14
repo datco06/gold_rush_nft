@@ -81,12 +81,14 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     g.auth?.addListener(_onAuthChanged);
     g.phienVi?.addListener(_onDataChanged);
     g.tienTrinh.addListener(_onDataChanged);
+    g.huyHieuDaNhan.addListener(_onDataChanged);
   }
 
   void _detachListeners(GoldRushGame g) {
     g.auth?.removeListener(_onAuthChanged);
     g.phienVi?.removeListener(_onDataChanged);
     g.tienTrinh.removeListener(_onDataChanged);
+    g.huyHieuDaNhan.removeListener(_onDataChanged);
   }
 
   void _onAuthChanged() {
@@ -1440,7 +1442,7 @@ class _DisplayedBadges extends StatelessWidget {
 
   List<ThanhTuuSBT> _getDisplayed() {
     // SBT danh mục cứng hiện có 5 thành tựu
-    final badges = _allBadges();
+    final badges = _badgesFor(game);
     return badges.where((b) => b.displayed).toList();
   }
 
@@ -1473,7 +1475,7 @@ class _TabHuyHieu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badges = _allBadges();
+    final badges = _badgesFor(game);
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1546,11 +1548,27 @@ class _BadgeTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.military_tech_rounded,
-              color: color,
-              size: compact ? 28 : 34,
-            ),
+            if (badge.imagePath != null)
+              Opacity(
+                opacity: isOwned ? 1 : 0.35,
+                child: Image.asset(
+                  badge.imagePath!,
+                  width: compact ? 42 : 54,
+                  height: compact ? 42 : 54,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.military_tech_rounded,
+                    color: color,
+                    size: compact ? 28 : 34,
+                  ),
+                ),
+              )
+            else
+              Icon(
+                Icons.military_tech_rounded,
+                color: color,
+                size: compact ? 28 : 34,
+              ),
             const SizedBox(height: 6),
             Text(
               badge.name,
@@ -1607,17 +1625,31 @@ class _BadgeChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: ProfileColors.gold),
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.military_tech_rounded,
-              color: ProfileColors.gold,
-              size: compact ? 16 : 18,
-            ),
-            const SizedBox(width: 6),
+            if (badge.imagePath != null)
+              Image.asset(
+                badge.imagePath!,
+                width: compact ? 34 : 42,
+                height: compact ? 34 : 42,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.military_tech_rounded,
+                  color: ProfileColors.gold,
+                  size: compact ? 20 : 24,
+                ),
+              )
+            else
+              Icon(
+                Icons.military_tech_rounded,
+                color: ProfileColors.gold,
+                size: compact ? 20 : 24,
+              ),
+            const SizedBox(height: 5),
             Text(
               badge.name,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: ProfileColors.textPrimary,
                 fontSize: compact ? 11 : 12,
@@ -2239,30 +2271,20 @@ class _EmptyState extends StatelessWidget {
 /// requires an on-chain call per wallet, which is not done during UI build.
 /// The Profile screen shows them as "Chưa mở khóa" until the SBT service
 /// confirms ownership for the connected wallet.
-List<ThanhTuuSBT> _allBadges() => [
-  ThanhTuuSBT(
-    achievementId: 1,
-    name: 'Người khai phá',
-    description: 'Hoàn thành màn 1 lần đầu tiên.',
-  ),
-  ThanhTuuSBT(
-    achievementId: 2,
-    name: 'Thợ mỏ siêng năng',
-    description: 'Hoàn thành 3 màn liên tiếp.',
-  ),
-  ThanhTuuSBT(
-    achievementId: 3,
-    name: 'Nhà thám hiểm',
-    description: 'Khám phá tất cả các vùng trên bản đồ.',
-  ),
-  ThanhTuuSBT(
-    achievementId: 4,
-    name: 'Vua Vàng',
-    description: 'Tích lũy 1000 vàng.',
-  ),
-  ThanhTuuSBT(
-    achievementId: 5,
-    name: 'Huyền thoại',
-    description: 'Hoàn thành tất cả 20 màn.',
-  ),
-];
+List<ThanhTuuSBT> _allBadges() => [...bangThanhTuuSBT];
+
+List<ThanhTuuSBT> _badgesFor(GoldRushGame game) {
+  final unlocked = game.huyHieuDaNhan.value;
+  final displayed = unlocked.toList()..sort();
+  final displayedIds = displayed.take(3).toSet();
+  return [
+    for (final badge in _allBadges())
+      if (unlocked.contains(badge.achievementId))
+        badge.copyWith(
+          ownershipStatus: TrangThaiSoHuuSBT.daSoHuu,
+          selectedForDisplay: displayedIds.contains(badge.achievementId),
+        )
+      else
+        badge,
+  ];
+}

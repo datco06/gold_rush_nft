@@ -11,6 +11,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'ai/dieu_chinh_do_kho.dart';
 import 'ai/gui_nhat_ky.dart';
 import 'ai/may_chu_tien_trinh.dart';
+import 'ai/may_chu_huy_hieu.dart';
 import 'ai/mo_hinh_do_kho.dart';
 import 'ai/nhat_ky_choi.dart';
 import 'ai/tien_trinh_controller.dart';
@@ -46,6 +47,7 @@ class LopPhu {
   static const caiDat = 'caiDat';
   static const tamDung = 'tamDung';
   static const ketThuc = 'ketThuc';
+  static const huyHieu = 'huyHieu';
   static const cuaHang = 'cuaHang';
   static const chonMan = 'chonMan';
   static const khoDo = 'khoDo';
@@ -63,6 +65,7 @@ class KetQuaVan {
 
   /// Trạng thái phiếu vàng của ván (đang xin / đã có / không có) — cập nhật khi máy chủ trả lời.
   final String? phieu;
+  final Map<String, dynamic>? huyHieuMoi;
 
   const KetQuaVan({
     required this.man,
@@ -71,6 +74,7 @@ class KetQuaVan {
     this.maVan = '',
     this.thongKe = const {},
     this.phieu,
+    this.huyHieuMoi,
   });
 
   int get stageId => man.id;
@@ -84,6 +88,17 @@ class KetQuaVan {
     xu: xu,
     thongKe: thongKe,
     phieu: p,
+    huyHieuMoi: huyHieuMoi,
+  );
+
+  KetQuaVan voiHuyHieu(Map<String, dynamic> badge) => KetQuaVan(
+    man: man,
+    maVan: maVan,
+    thang: thang,
+    xu: xu,
+    thongKe: thongKe,
+    phieu: phieu,
+    huyHieuMoi: badge,
   );
 }
 
@@ -273,6 +288,9 @@ class GoldRushGame extends FlameGame
 
   final ValueNotifier<KetQuaVan?> ketQuaVan = ValueNotifier(null);
 
+  /// Huy hiệu đã được backend xác nhận trong phiên hiện tại.
+  final ValueNotifier<Set<int>> huyHieuDaNhan = ValueNotifier(<int>{});
+
   int _mauTruoc = CauHinh.mauToiDa;
   int _diemTruoc = 0;
 
@@ -313,6 +331,10 @@ class GoldRushGame extends FlameGame
     timDuong = _dungTimDuong();
 
     await _napMoHinhDoKho();
+    unawaited(napHuyHieu());
+    if (auth?.canEnterGame == true && auth?.walletAddress != null) {
+      unawaited(phienVi?.ketNoiDaXacThuc(auth!.walletAddress!));
+    }
 
     theGioi.khiChamVaoBanDo = (viTri) {
       george?.viTriDich = viTri;
@@ -360,6 +382,22 @@ class GoldRushGame extends FlameGame
     biChan: banDo.luoi.biChanO,
   );
 
+  Future<void> napHuyHieu() async {
+    if (auth == null) return;
+    final client = MayChuHuyHieu();
+    final data = await client.taiDanhSach();
+    client.dong();
+    final badges = data?['badges'];
+    if (badges is! List) return;
+    final ids = <int>{};
+    for (final item in badges) {
+      if (item is Map && item['eligible'] == true && item['badge_id'] is int) {
+        ids.add(item['badge_id'] as int);
+      }
+    }
+    if (ids.isNotEmpty) huyHieuDaNhan.value = ids;
+  }
+
   /// Khởi tạo bộ nhớ bản đồ và trạng thái ván cho kiểm thử đơn vị mà không cần nạp `.tmx` hay âm thanh.
   @visibleForTesting
   void khoiTaoChoKiemThu({
@@ -372,6 +410,7 @@ class GoldRushGame extends FlameGame
       LopPhu.caiDat,
       LopPhu.tamDung,
       LopPhu.ketThuc,
+      LopPhu.huyHieu,
       LopPhu.cuaHang,
       LopPhu.chonMan,
     ]) {
@@ -747,6 +786,28 @@ class GoldRushGame extends FlameGame
     final daGui = await GuiNhatKy.gui(nk);
     final pv = phienVi;
 
+    if (daGui && kq.thang && auth != null && maVan.isNotEmpty) {
+      final mayChuHuyHieu = MayChuHuyHieu();
+      final badge = await mayChuHuyHieu.danhGia(
+        maVan: maVan,
+        csrfToken: auth?.csrfToken,
+      );
+      mayChuHuyHieu.dong();
+      final moi = (badge?['new_badges'] as List?)
+          ?.whereType<Map<String, dynamic>>()
+          .toList();
+      if (moi != null && moi.isNotEmpty && identical(ketQuaVan.value, kq)) {
+        final badgeId = moi.first['badge_id'];
+        if (badgeId is int) {
+          huyHieuDaNhan.value = {...huyHieuDaNhan.value, badgeId};
+        }
+        kq = kq.voiHuyHieu(moi.first);
+        ketQuaVan.value = kq;
+        overlays.remove(LopPhu.ketThuc);
+        overlays.add(LopPhu.huyHieu);
+      }
+    }
+
     if (!coPhieu || pv == null) return;
 
     void datTrangThai(String p) {
@@ -765,7 +826,9 @@ class GoldRushGame extends FlameGame
 
     if (!pv.daKetNoi) {
       if (auth?.canEnterGame == true) {
-        await pv.ketNoi();
+        if (auth?.walletAddress != null) {
+          await pv.ketNoiDaXacThuc(auth!.walletAddress!);
+        }
       }
     }
     if (!pv.daKetNoi) {
@@ -856,6 +919,7 @@ class GoldRushGame extends FlameGame
     overlays.remove(LopPhu.caiDat);
     overlays.remove(LopPhu.tamDung);
     overlays.remove(LopPhu.ketThuc);
+    overlays.remove(LopPhu.huyHieu);
     overlays.remove(LopPhu.cuaHang);
     overlays.remove(LopPhu.chonMan);
     overlays.remove(LopPhu.khoDo);
@@ -951,6 +1015,11 @@ class GoldRushGame extends FlameGame
   }
 
   void moCuaHang() => overlays.add(LopPhu.cuaHang);
+
+  void dongHuyHieu() {
+    overlays.remove(LopPhu.huyHieu);
+    overlays.add(LopPhu.ketThuc);
+  }
 
   void dongCuaHang() => overlays.remove(LopPhu.cuaHang);
 

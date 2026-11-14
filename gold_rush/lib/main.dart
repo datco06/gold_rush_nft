@@ -142,6 +142,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
     widget.auth.removeListener(_lockImmediately);
     _game.pauseEngine();
     _game.tienTrinh.dispose();
+    _game.huyHieuDaNhan.dispose();
     _game.danhSachVatPham.dispose();
     _game.phienVi?.dispose();
     _wallet.dispose();
@@ -160,6 +161,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
           LopPhu.caiDat: (_, game) => ManHinhCaiDat(game: game),
           LopPhu.tamDung: (_, game) => ManHinhTamDung(game: game),
           LopPhu.ketThuc: (_, game) => ManHinhKetThuc(game: game),
+          LopPhu.huyHieu: (_, game) => ManHinhHuyHieu(game: game),
           LopPhu.cuaHang: (_, game) => ManHinhCuaHang(game: game),
           LopPhu.chonMan: (_, game) => ListenableBuilder(
             listenable: game.tienTrinhWorldMap,

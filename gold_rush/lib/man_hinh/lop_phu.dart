@@ -414,6 +414,110 @@ class ManHinhKetThuc extends StatelessWidget {
   }
 }
 
+/// Popup huy hiệu hiển thị trước màn hình kết quả thắng.
+class ManHinhHuyHieu extends StatelessWidget {
+  final GoldRushGame game;
+
+  const ManHinhHuyHieu({super.key, required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = game.ketQuaVan.value?.huyHieuMoi;
+    if (badge == null) return const SizedBox.shrink();
+    return Material(
+      color: Colors.black.withValues(alpha: 0.72),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(28, 24, 28, 22),
+              decoration: BoxDecoration(
+                color: const Color(0xFF171A31),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: const Color(0xFFFFD166), width: 4),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    '✧ CHÚC MỪNG! ✧',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFFFD166),
+                      fontSize: 38,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Bạn đã nhận được huy hiệu mới!',
+                    style: TextStyle(color: Color(0xFFE7DCC8), fontSize: 22),
+                  ),
+                  const SizedBox(height: 22),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      width: 260,
+                      height: 260,
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(18),
+                      child: Image.asset(
+                        badge['image'] as String,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.military_tech,
+                          color: Color(0xFFFFB300),
+                          size: 120,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    (badge['name'] as String).toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFFFFE09A),
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '✓ Đã ghi nhận huy hiệu SBT',
+                    style: TextStyle(color: Color(0xFF9FE4C2), fontSize: 20),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 58,
+                    child: FilledButton(
+                      onPressed: game.dongHuyHieu,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFF0F0F0),
+                        foregroundColor: Colors.black,
+                      ),
+                      child: const Text(
+                        'ĐÓNG',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Dong extends StatelessWidget {
   final String nhan;
   final String giaTri;

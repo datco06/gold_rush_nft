@@ -247,13 +247,9 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
                 style: chuPhu,
               )
             else if (!pv.daKetNoi)
-              FilledButton.icon(
-                onPressed: pv.dangXuLy || pv.dangHoi ? null : pv.ketNoi,
-                icon: const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  size: 17,
-                ),
-                label: const Text('Kết nối MetaMask'),
+              const Text(
+                'Ví được đồng bộ từ MetaMask sau khi đăng nhập.',
+                style: chuPhu,
               )
             else
               Text(

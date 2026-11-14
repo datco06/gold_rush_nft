@@ -72,6 +72,7 @@ from api.ban_do_moi import router as ban_do_router
 from api.kho_do import router as kho_do_router
 from api.nhiem_vu import router as nhiem_vu_router
 from api.tien_trinh import router as tien_trinh_router
+from api.thanh_tuu import router as thanh_tuu_router
 
 from api.ai_nhiem_vu import khoi_dong_nhiem_vu, nhiem_vu_da_nap, router as router_nhiem_vu
 from api.de_xuat_do_kho import (de_xuat_do_kho_da_nap, khoi_dong_de_xuat_do_kho,
@@ -327,6 +328,7 @@ app.add_middleware(_LifespanCORSMiddleware)
 
 # Đăng ký các router mở rộng (Tiến trình, Kho đồ, Nhiệm vụ, Bản đồ)
 app.include_router(tien_trinh_router)
+app.include_router(thanh_tuu_router)
 app.include_router(kho_do_router)
 app.include_router(nhiem_vu_router)
 app.include_router(ban_do_router)

@@ -196,27 +196,33 @@ BigInt? _docTokenId(Object? value) {
 final List<ThanhTuuSBT> bangThanhTuuSBT = List<ThanhTuuSBT>.unmodifiable([
   ThanhTuuSBT(
     achievementId: 1,
-    name: 'Thợ Mỏ Tập Sự',
-    description: 'Hoàn thành màn 1.',
+    name: 'Thợ mỏ tập sự',
+    description: 'Hoàn thành và chiến thắng màn 1 lần đầu tiên.',
+    imagePath: 'assets/images/huy_hieu/badge_tap_su.png',
   ),
   ThanhTuuSBT(
     achievementId: 2,
-    name: 'Nhà Thám Hiểm Rừng Xanh',
-    description: 'Hoàn thành 6 màn.',
+    name: 'Chiến binh dũng cảm',
+    description: 'Hoàn thành và chiến thắng màn 6 lần đầu tiên.',
+    imagePath: 'assets/images/huy_hieu/badge_dung_cam.png',
   ),
   ThanhTuuSBT(
     achievementId: 3,
-    name: 'Kẻ Săn Boss',
-    description: 'Đánh bại Boss đầu tiên.',
+    name: 'Kẻ chinh phục Boss',
+    description: 'Hoàn thành màn 9 thành công.',
+    imagePath: 'assets/images/huy_hieu/badge_boss_09.png',
   ),
   ThanhTuuSBT(
     achievementId: 4,
-    name: 'Chiến Binh Bất Bại',
-    description: 'Đánh bại Boss không mất máu.',
+    name: 'Bậc thầy chinh phục',
+    description: 'Hoàn thành và chiến thắng màn 15 lần đầu tiên.',
+    imagePath: 'assets/images/huy_hieu/badge_chinh_phuc_15.png',
   ),
   ThanhTuuSBT(
     achievementId: 5,
     name: 'Huyền Thoại Gold Rush',
-    description: 'Hoàn thành thử thách đặc biệt.',
+    description:
+        'Hoàn thành và chiến thắng màn 20, kết thúc hành trình phiêu lưu.',
+    imagePath: 'assets/images/huy_hieu/badge_huyen_thoai_20.png',
   ),
 ]);

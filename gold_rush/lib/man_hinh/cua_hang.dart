@@ -107,10 +107,10 @@ class ManHinhCuaHang extends StatelessWidget {
 
     return [
       if (!pv.daKetNoi)
-        FilledButton.icon(
-          onPressed: pv.dangXuLy ? null : pv.ketNoi,
-          icon: const Icon(Icons.account_balance_wallet_outlined),
-          label: const Text('Kết nối MetaMask'),
+        const Text(
+          'Ví được đồng bộ từ MetaMask sau khi đăng nhập. Hãy tải lại trang nếu ví chưa sẵn sàng.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Color(0xFFFFB4A9), height: 1.5),
         )
       else ...[
         Text(

@@ -91,10 +91,23 @@ CREATE TABLE IF NOT EXISTS stage_rewards (
     FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS achievement_progress (
+    player_id TEXT NOT NULL,
+    achievement_id INTEGER NOT NULL,
+    stage_id INTEGER NOT NULL,
+    ma_van TEXT NOT NULL,
+    eligible_at TEXT NOT NULL,
+    claimed_at TEXT,
+    UNIQUE(player_id, achievement_id),
+    UNIQUE(player_id, ma_van),
+    FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_inventory_player ON inventory(player_id);
 CREATE INDEX IF NOT EXISTS idx_quests_player_status ON quests(player_id, status);
 CREATE INDEX IF NOT EXISTS idx_match_player ON match_results(player_id);
 CREATE INDEX IF NOT EXISTS idx_stage_rewards_player ON stage_rewards(player_id);
+CREATE INDEX IF NOT EXISTS idx_achievement_progress_player ON achievement_progress(player_id);
 """
 
 
