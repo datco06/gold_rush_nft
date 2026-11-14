@@ -588,6 +588,45 @@ class GoldRushGame extends FlameGame
             ),
           );
           break;
+
+        case 'thuong':
+          _them(
+            KeDich.thuong(
+              banDo: banDo,
+              hoatAnh: taiNguyen.quaiThuong,
+              viTri: d.viTri.clone(),
+              viTriNguoiChoi: viTriNguoiChoi,
+              timDuong: timDuong,
+              heSoTocDo: heSoTocDo,
+            ),
+          );
+          break;
+
+        case 'giap':
+          _them(
+            KeDich.giap(
+              banDo: banDo,
+              hoatAnh: taiNguyen.quaiGiap,
+              viTri: d.viTri.clone(),
+              viTriNguoiChoi: viTriNguoiChoi,
+              timDuong: timDuong,
+              heSoTocDo: heSoTocDo,
+            ),
+          );
+          break;
+
+        case 'khong_lo':
+          _them(
+            KeDich.khongLo(
+              banDo: banDo,
+              hoatAnh: taiNguyen.quaiKhongLo,
+              viTri: d.viTri.clone(),
+              viTriNguoiChoi: viTriNguoiChoi,
+              timDuong: timDuong,
+              heSoTocDo: heSoTocDo,
+            ),
+          );
+          break;
       }
     }
 

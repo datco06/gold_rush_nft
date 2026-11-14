@@ -22,6 +22,9 @@ class TaiNguyen {
   final Map<String, Map<HuongDi, SpriteAnimation>> georgeTheoTep = {};
   late final Map<HuongDi, SpriteAnimation> zombie;
   late final Map<HuongDi, SpriteAnimation> skeleton;
+  late final Map<HuongDi, SpriteAnimation> quaiThuong;
+  late final Map<HuongDi, SpriteAnimation> quaiGiap;
+  late final Map<HuongDi, SpriteAnimation> quaiKhongLo;
   late final SpriteAnimation dongXu;
   late final Sprite joystickNen;
   late final Sprite joystickNum;
@@ -31,6 +34,9 @@ class TaiNguyen {
     final anhGeorge = await Flame.images.load('george.png');
     final anhZombie = await Flame.images.load('zombie.png');
     final anhSkeleton = await Flame.images.load('skeleton.png');
+    final anhQuaiThuong = await Flame.images.load('quai_thuong.png');
+    final anhQuaiGiap = await Flame.images.load('quai_giap.png');
+    final anhQuaiKhongLo = await Flame.images.load('quai_khong_lo.png');
     final anhDongXu = await Flame.images.load('dong_xu.png');
 
     george = _bonHuong(anhGeorge, 0.12);
@@ -47,6 +53,9 @@ class TaiNguyen {
     }
     zombie = _bonHuong(anhZombie, 0.18);
     skeleton = _bonHuong(anhSkeleton, 0.14);
+    quaiThuong = _bonHuong(anhQuaiThuong, 0.18, frameSize: 64);
+    quaiGiap = _bonHuong(anhQuaiGiap, 0.16, frameSize: 64);
+    quaiKhongLo = _bonHuong(anhQuaiKhongLo, 0.2, frameSize: 64);
 
     dongXu = SpriteAnimation.fromFrameData(
       anhDongXu,
@@ -68,6 +77,9 @@ class TaiNguyen {
     georgeTheoTep[georgeGoc.tepAnh] = george;
     zombie = _bonHuong(anh, 0.18);
     skeleton = _bonHuong(anh, 0.14);
+    quaiThuong = _bonHuong(anh, 0.18);
+    quaiGiap = _bonHuong(anh, 0.16);
+    quaiKhongLo = _bonHuong(anh, 0.2);
     dongXu = SpriteAnimation.fromFrameData(
       anh,
       SpriteAnimationData.sequenced(
@@ -86,15 +98,19 @@ class TaiNguyen {
   /// `texturePosition` là góc trên-trái của hàng cần cắt. Hàng thứ `i` bắt đầu
   /// ở toạ độ y = i × 16. Đây là chỗ hay nhầm nhất khi làm việc với sprite
   /// sheet: nhầm hàng thì nhân vật đi xuống mà hoạt ảnh lại quay lưng.
-  Map<HuongDi, SpriteAnimation> _bonHuong(ui.Image anh, double buocThoiGian) {
+  Map<HuongDi, SpriteAnimation> _bonHuong(
+    ui.Image anh,
+    double buocThoiGian, {
+    double frameSize = CauHinh.kichThuocO,
+  }) {
     SpriteAnimation hang(int i) => SpriteAnimation.fromFrameData(
       anh,
       SpriteAnimationData.sequenced(
         amount: 4,
         amountPerRow: 4,
         stepTime: buocThoiGian,
-        textureSize: Vector2.all(CauHinh.kichThuocO),
-        texturePosition: Vector2(0, i * CauHinh.kichThuocO),
+        textureSize: Vector2.all(frameSize),
+        texturePosition: Vector2(0, i * frameSize),
       ),
     );
 

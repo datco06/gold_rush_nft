@@ -132,6 +132,72 @@ class KeDich extends NhanVat implements CoTheBiDanh {
     );
   }
 
+  factory KeDich.thuong({
+    required BanDo banDo,
+    required Map<HuongDi, SpriteAnimation> hoatAnh,
+    required Vector2 viTri,
+    required Vector2 Function() viTriNguoiChoi,
+    TimDuong? timDuong,
+    double Function()? heSoTocDo,
+  }) {
+    return KeDich(
+      banDo: banDo,
+      hoatAnh: hoatAnh,
+      viTri: viTri,
+      viTriNguoiChoi: viTriNguoiChoi,
+      timDuong: timDuong,
+      heSoTocDo: heSoTocDo,
+      tocDo: CauHinh.tocDoZombie,
+      mauToiDa: 60,
+      tamNhin: CauHinh.tamNhinZombie,
+      mauVunNo: const Color(0xFFB7D46A),
+    );
+  }
+
+  factory KeDich.giap({
+    required BanDo banDo,
+    required Map<HuongDi, SpriteAnimation> hoatAnh,
+    required Vector2 viTri,
+    required Vector2 Function() viTriNguoiChoi,
+    TimDuong? timDuong,
+    double Function()? heSoTocDo,
+  }) {
+    return KeDich(
+      banDo: banDo,
+      hoatAnh: hoatAnh,
+      viTri: viTri,
+      viTriNguoiChoi: viTriNguoiChoi,
+      timDuong: timDuong,
+      heSoTocDo: heSoTocDo,
+      tocDo: CauHinh.tocDoSkeleton,
+      mauToiDa: 100,
+      tamNhin: CauHinh.tamNhinSkeleton,
+      mauVunNo: const Color(0xFFD8E5F2),
+    );
+  }
+
+  factory KeDich.khongLo({
+    required BanDo banDo,
+    required Map<HuongDi, SpriteAnimation> hoatAnh,
+    required Vector2 viTri,
+    required Vector2 Function() viTriNguoiChoi,
+    TimDuong? timDuong,
+    double Function()? heSoTocDo,
+  }) {
+    return KeDich(
+      banDo: banDo,
+      hoatAnh: hoatAnh,
+      viTri: viTri,
+      viTriNguoiChoi: viTriNguoiChoi,
+      timDuong: timDuong,
+      heSoTocDo: heSoTocDo,
+      tocDo: CauHinh.tocDoZombie,
+      mauToiDa: 300,
+      tamNhin: CauHinh.tamNhinZombie,
+      mauVunNo: const Color(0xFF79B7AA),
+    );
+  }
+
   @override
   Future<void> onLoad() async {
     add(hopVaCham());
@@ -234,15 +300,15 @@ class KeDich extends NhanVat implements CoTheBiDanh {
 
   /// Ô chứa một điểm thế giới.
   static O _oTai(Vector2 p) => (
-        cot: (p.x / CauHinh.kichThuocO).floor(),
-        hang: (p.y / CauHinh.kichThuocO).floor(),
-      );
+    cot: (p.x / CauHinh.kichThuocO).floor(),
+    hang: (p.y / CauHinh.kichThuocO).floor(),
+  );
 
   /// Tâm của một ô, tính bằng pixel thế giới.
   static Vector2 _tamO(O o) => Vector2(
-        (o.cot + 0.5) * CauHinh.kichThuocO,
-        (o.hang + 0.5) * CauHinh.kichThuocO,
-      );
+    (o.cot + 0.5) * CauHinh.kichThuocO,
+    (o.hang + 0.5) * CauHinh.kichThuocO,
+  );
 
   /// Hướng đi tới [dich] theo đường A*, hoặc null nếu không có A*, không có
   /// đường, hay đã ở cùng ô với đích (khi đó người gọi tự xử lý chặng cuối).
@@ -308,7 +374,10 @@ class KeDich extends NhanVat implements CoTheBiDanh {
     if (den.length < 0.001) return Vector2.zero();
 
     final chuan = den.normalized();
-    final thuTruoc = Vector2(position.x + chuan.x * 6, position.y + chuan.y * 6 + 4);
+    final thuTruoc = Vector2(
+      position.x + chuan.x * 6,
+      position.y + chuan.y * 6 + 4,
+    );
 
     if (banDo.diDuoc(thuTruoc, NhanVat.hopChan)) {
       return chuan;
