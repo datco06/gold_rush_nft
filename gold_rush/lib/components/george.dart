@@ -116,16 +116,20 @@ class George extends NhanVat with KeyboardHandler {
       if (k == LogicalKeyboardKey.keyU) nangKyNang(LoaiKyNang.dash);
     }
 
-    final trai = keysPressed.contains(LogicalKeyboardKey.arrowLeft) ||
+    final trai =
+        keysPressed.contains(LogicalKeyboardKey.arrowLeft) ||
         keysPressed.contains(LogicalKeyboardKey.keyA);
 
-    final phai = keysPressed.contains(LogicalKeyboardKey.arrowRight) ||
+    final phai =
+        keysPressed.contains(LogicalKeyboardKey.arrowRight) ||
         keysPressed.contains(LogicalKeyboardKey.keyD);
 
-    final len = keysPressed.contains(LogicalKeyboardKey.arrowUp) ||
+    final len =
+        keysPressed.contains(LogicalKeyboardKey.arrowUp) ||
         keysPressed.contains(LogicalKeyboardKey.keyW);
 
-    final xuong = keysPressed.contains(LogicalKeyboardKey.arrowDown) ||
+    final xuong =
+        keysPressed.contains(LogicalKeyboardKey.arrowDown) ||
         keysPressed.contains(LogicalKeyboardKey.keyS);
 
     _huongBanPhim
@@ -218,7 +222,8 @@ class George extends NhanVat with KeyboardHandler {
     }
 
     // Tấn công cận chiến
-    final mucTieu = parent?.children.whereType<CoTheBiDanh>().toList() ??
+    final mucTieu =
+        parent?.children.whereType<CoTheBiDanh>().toList() ??
         const <CoTheBiDanh>[];
 
     for (final m in mucTieu) {
@@ -385,11 +390,11 @@ class George extends NhanVat with KeyboardHandler {
   // --------------------------------------------------
 
   Vector2 get huongNhin => switch (current) {
-        HuongDi.trai => Vector2(-1, 0),
-        HuongDi.phai => Vector2(1, 0),
-        HuongDi.len => Vector2(0, -1),
-        _ => Vector2(0, 1),
-      };
+    HuongDi.trai => Vector2(-1, 0),
+    HuongDi.phai => Vector2(1, 0),
+    HuongDi.len => Vector2(0, -1),
+    _ => Vector2(0, 1),
+  };
 
   // --------------------------------------------------
   // XỬ LÝ MỤC TIÊU BỊ HẠ, VẬT PHẨM RƠI
@@ -407,7 +412,8 @@ class George extends NhanVat with KeyboardHandler {
       parent?.add(
         VatPhamRoi(
           phanThuong: p,
-          viTri: m.viTriDanh +
+          viTri:
+              m.viTriDanh +
               Vector2(_rnd.nextDouble() * 8 - 4, _rnd.nextDouble() * 8 - 4),
         ),
       );
@@ -457,7 +463,7 @@ class George extends NhanVat with KeyboardHandler {
     if (other is KeDich) {
       if (dangBatTu) return;
       if (other.noTung()) {
-        nhanSatThuong();
+        nhanSatThuong(other.satThuongCham);
       }
     }
   }

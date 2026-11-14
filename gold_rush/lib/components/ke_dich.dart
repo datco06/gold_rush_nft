@@ -45,6 +45,7 @@ class KeDich extends NhanVat implements CoTheBiDanh {
   final double tocDo;
   final double tamNhin;
   final Color mauVunNo;
+  final int satThuongCham;
   final SucKhoe sucKhoe;
 
   /// Bộ tìm đường dùng chung cho mọi kẻ địch. null = không dùng A*.
@@ -78,10 +79,12 @@ class KeDich extends NhanVat implements CoTheBiDanh {
     required this.tocDo,
     required this.tamNhin,
     required this.mauVunNo,
+    int? satThuongCham,
     int mauToiDa = CauHinh.mauZombie,
     this.timDuong,
     double Function()? heSoTocDo,
   }) : heSoTocDo = heSoTocDo ?? _mot,
+       satThuongCham = satThuongCham ?? CauHinh.mauMatMoiLanTrung,
        sucKhoe = SucKhoe(mauToiDa);
 
   static double _mot() => 1.0;
@@ -151,6 +154,7 @@ class KeDich extends NhanVat implements CoTheBiDanh {
       mauToiDa: 60,
       tamNhin: CauHinh.tamNhinZombie,
       mauVunNo: const Color(0xFFB7D46A),
+      satThuongCham: CauHinh.mauMatMoiLanTrung + 5,
     );
   }
 
@@ -173,6 +177,7 @@ class KeDich extends NhanVat implements CoTheBiDanh {
       mauToiDa: 100,
       tamNhin: CauHinh.tamNhinSkeleton,
       mauVunNo: const Color(0xFFD8E5F2),
+      satThuongCham: CauHinh.mauMatMoiLanTrung + 10,
     );
   }
 
@@ -195,6 +200,7 @@ class KeDich extends NhanVat implements CoTheBiDanh {
       mauToiDa: 300,
       tamNhin: CauHinh.tamNhinZombie,
       mauVunNo: const Color(0xFF79B7AA),
+      satThuongCham: CauHinh.mauMatMoiLanTrung + 15,
     );
   }
 
