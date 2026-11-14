@@ -27,6 +27,12 @@ class George extends NhanVat with KeyboardHandler {
 
   int diem = 0;
   int mau = CauHinh.mauToiDa;
+  int _mauToiDaTrangBi = CauHinh.mauToiDa;
+  int _satThuongBan = 0;
+  double _tamBan = 0;
+  bool _xuyenPha = false;
+  double _giamSatThuong = 0;
+  double _heSoTocDoTrangBi = 1.0;
 
   final HoiChieu _hoiDanh = HoiChieu(CauHinh.thoiGianHoiDanh);
 
@@ -70,6 +76,26 @@ class George extends NhanVat with KeyboardHandler {
   bool get conSong => mau > 0;
 
   bool get dangBatTu => _batTu > 0;
+
+  int get mauToiDaHienTai => _mauToiDaTrangBi;
+
+  void datChiSoTrangBi({
+    int satThuong = 0,
+    double tamBan = 0,
+    int hpCongThem = 0,
+    double giamSatThuong = 0,
+    double tocDoCongThem = 0,
+    bool xuyenPha = false,
+  }) {
+    final maxCu = _mauToiDaTrangBi;
+    _mauToiDaTrangBi = CauHinh.mauToiDa + hpCongThem;
+    _satThuongBan = satThuong;
+    _tamBan = tamBan;
+    _xuyenPha = xuyenPha;
+    _giamSatThuong = giamSatThuong.clamp(0.0, 1.0);
+    _heSoTocDoTrangBi = 1.0 + tocDoCongThem;
+    mau = (mau + (_mauToiDaTrangBi - maxCu)).clamp(0, _mauToiDaTrangBi).toInt();
+  }
 
   @override
   Future<void> onLoad() async {
@@ -252,14 +278,18 @@ class George extends NhanVat with KeyboardHandler {
     if (cha == null) return false;
 
     final huong = huongNhin;
-    final vk = trangBi.hienTai;
     cha.add(
       DanBan(
         banDo: banDo,
         viTri: position + huong * 8,
         huong: huong,
-        satThuong: vk.satThuong + capDo.thuongSatThuong,
-        tamBay: CauHinh.kichThuocO * 4,
+        satThuong:
+            (_satThuongBan > 0 ? _satThuongBan : CauHinh.satThuongGoc) +
+            capDo.thuongSatThuong,
+        tamBay: _tamBan > 0
+            ? _tamBan * CauHinh.kichThuocO
+            : CauHinh.kichThuocO * 4,
+        xuyenPha: _xuyenPha,
         khiHaMucTieu: _khiHaMucTieu,
       ),
     );
@@ -320,7 +350,9 @@ class George extends NhanVat with KeyboardHandler {
 
     capNhatHuong(huong);
 
-    final coDi = thuDiChuyen(huong * CauHinh.tocDoGeorge * dt);
+    final coDi = thuDiChuyen(
+      huong * CauHinh.tocDoGeorge * _heSoTocDoTrangBi * dt,
+    );
 
     datDangDi(coDi);
 
@@ -489,7 +521,8 @@ class George extends NhanVat with KeyboardHandler {
     // Khiên chặn mọi đòn trong lúc đang bật.
     if (kyNang.dangDung(LoaiKyNang.shield)) return;
 
-    mau -= luong;
+    final satThuongThucTe = (luong * (1 - _giamSatThuong)).round();
+    mau -= satThuongThucTe;
 
     if (mau < 0) {
       mau = 0;

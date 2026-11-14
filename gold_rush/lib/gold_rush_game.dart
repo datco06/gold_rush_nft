@@ -34,6 +34,7 @@ import 'components/ke_dich.dart';
 import 'components/vat_pham_roi.dart' hide LoaiVatPham;
 import 'dieu_khien/nut_tam_dung.dart';
 import 'kho_do/vat_pham_hien_thi.dart';
+import 'kho_do/danh_sach_trang_bi.dart';
 import 'man_choi.dart';
 import 'tai_nguyen.dart';
 import 'the_gioi.dart';
@@ -247,6 +248,7 @@ class GoldRushGame extends FlameGame
       moTa: 'Cổ vật phát sáng rực rỡ thu thập được từ đền cổ.',
       thuocTinh: const {'Tăng tỉ lệ rơi vàng': '+15%'},
     ),
+    ...danhSachTrangBiMoi(),
   ]);
 
   Future<void> trangBiVatPham(String itemId) async {
@@ -254,11 +256,17 @@ class GoldRushGame extends FlameGame
     final idx = ds.indexWhere((vp) => vp.id == itemId);
     if (idx < 0) return;
     final vp = ds[idx];
-    if (vp.loai != LoaiVatPham.vuKhi && vp.loai != LoaiVatPham.giap) return;
+    if (vp.loai != LoaiVatPham.vuKhi &&
+        vp.loai != LoaiVatPham.giap &&
+        vp.loai != LoaiVatPham.giay) {
+      return;
+    }
 
     final OTrangBi o;
     if (vp.loai == LoaiVatPham.giap) {
       o = OTrangBi.giap;
+    } else if (vp.loai == LoaiVatPham.giay) {
+      o = OTrangBi.giay;
     } else if (vp.bieuTuong == BieuTuongVatPham.cung) {
       o = OTrangBi.vuKhiPhu;
     } else {
@@ -274,6 +282,7 @@ class GoldRushGame extends FlameGame
         else
           item,
     ];
+    _apDungTrangBiChoGeorge();
   }
 
   Future<void> thaoVatPham(String itemId) async {
@@ -282,6 +291,31 @@ class GoldRushGame extends FlameGame
       for (final item in ds)
         if (item.id == itemId) item.voiTrangBi(null) else item,
     ];
+    _apDungTrangBiChoGeorge();
+  }
+
+  void _apDungTrangBiChoGeorge() {
+    final g = george;
+    if (g == null) return;
+
+    VatPhamHienThi? tim(OTrangBi o) {
+      for (final vp in danhSachVatPham.value) {
+        if (vp.oDangTrangBi == o) return vp;
+      }
+      return null;
+    }
+
+    final sung = tim(OTrangBi.vuKhiChinh) ?? tim(OTrangBi.vuKhiPhu);
+    final giap = tim(OTrangBi.giap);
+    final giay = tim(OTrangBi.giay);
+    g.datChiSoTrangBi(
+      satThuong: sung?.satThuong ?? 0,
+      tamBan: sung?.tamBan ?? 0,
+      hpCongThem: giap?.hpCongThem ?? 0,
+      giamSatThuong: giap?.giamSatThuong ?? 0,
+      tocDoCongThem: giay?.tocDoCongThem ?? 0,
+      xuyenPha: sung?.xuyenPha ?? false,
+    );
   }
 
   /// Phiên ví dùng chung, không tạo riêng cho từng màn hình.
@@ -561,6 +595,7 @@ class GoldRushGame extends FlameGame
       khiChiSoDoi: _khiChiSoDoi,
       khiChet: _khiGeorgeChet,
     );
+    _apDungTrangBiChoGeorge();
 
     _them(george!);
 

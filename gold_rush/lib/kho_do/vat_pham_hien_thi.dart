@@ -1,11 +1,11 @@
 /// Loại vật phẩm dùng để hiển thị và phân nhóm.
-enum LoaiVatPham { vuKhi, giap, vatPham }
+enum LoaiVatPham { vuKhi, giap, giay, vatPham }
 
 /// Phân loại dành riêng cho giao diện túi đồ.
 ///
 /// Giá trị này không thay đổi quy tắc gameplay. Khi nguồn dữ liệu chưa cung
 /// cấp, UI suy ra từ [LoaiVatPham] và [BieuTuongVatPham].
-enum DanhMucVatPham { vuKhi, giap, phuKien, tieuHao, nguyenLieu, nhiemVu }
+enum DanhMucVatPham { vuKhi, giap, giay, phuKien, tieuHao, nguyenLieu, nhiemVu }
 
 /// Độ hiếm do nguồn dữ liệu cung cấp.
 enum DoHiemVatPham { thuong, khongPhoBien, hiem, suThi, huyenThoai }
@@ -14,7 +14,7 @@ enum DoHiemVatPham { thuong, khongPhoBien, hiem, suThi, huyenThoai }
 enum NguonVatPham { game, nft }
 
 /// Ô trang bị đề xuất để thống nhất với module Gameplay.
-enum OTrangBi { vuKhiChinh, vuKhiPhu, giap }
+enum OTrangBi { vuKhiChinh, vuKhiPhu, giap, giay }
 
 /// Biểu tượng dự phòng khi vật phẩm chưa có ảnh.
 /// Không quyết định cơ chế gameplay.
@@ -46,6 +46,13 @@ class VatPhamHienThi {
   /// Thuộc tính hiển thị do module nghiệp vụ cung cấp.
   final Map<String, String> thuocTinh;
 
+  final int satThuong;
+  final double tamBan;
+  final int hpCongThem;
+  final double giamSatThuong;
+  final double tocDoCongThem;
+  final bool xuyenPha;
+
   /// Null nếu vật phẩm chưa được trang bị.
   /// UI chờ dữ liệu xác nhận, không tự đổi giá trị này.
   final OTrangBi? oDangTrangBi;
@@ -70,6 +77,12 @@ class VatPhamHienThi {
     this.moTa = '',
     this.duongDanAnh,
     Map<String, String> thuocTinh = const {},
+    this.satThuong = 0,
+    this.tamBan = 0,
+    this.hpCongThem = 0,
+    this.giamSatThuong = 0,
+    this.tocDoCongThem = 0,
+    this.xuyenPha = false,
     this.oDangTrangBi,
     this.laDuLieuMau = false,
     this.chainId,
@@ -113,6 +126,8 @@ class VatPhamHienThi {
         return DanhMucVatPham.vuKhi;
       case LoaiVatPham.giap:
         return DanhMucVatPham.giap;
+      case LoaiVatPham.giay:
+        return DanhMucVatPham.giay;
       case LoaiVatPham.vatPham:
         return bieuTuong == BieuTuongVatPham.binhHoiPhuc
             ? DanhMucVatPham.tieuHao
@@ -133,6 +148,12 @@ class VatPhamHienThi {
       soLuong: soLuong,
       duongDanAnh: duongDanAnh,
       thuocTinh: thuocTinh,
+      satThuong: satThuong,
+      tamBan: tamBan,
+      hpCongThem: hpCongThem,
+      giamSatThuong: giamSatThuong,
+      tocDoCongThem: tocDoCongThem,
+      xuyenPha: xuyenPha,
       oDangTrangBi: o,
       laDuLieuMau: laDuLieuMau,
       chainId: chainId,

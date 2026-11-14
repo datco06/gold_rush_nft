@@ -16,6 +16,7 @@ class DanBan extends PositionComponent with CollisionCallbacks {
   final Vector2 huong;
   final int satThuong;
   final double tamBay;
+  final bool xuyenPha;
 
   /// true = đạn của Boss (trúng George); false = mũi tên của người chơi.
   final bool tuKeDich;
@@ -28,6 +29,7 @@ class DanBan extends PositionComponent with CollisionCallbacks {
 
   double _daBay = 0;
   bool _xong = false;
+  final Set<CoTheBiDanh> _mucTieuDaTrung = <CoTheBiDanh>{};
 
   DanBan({
     required this.banDo,
@@ -35,6 +37,7 @@ class DanBan extends PositionComponent with CollisionCallbacks {
     required Vector2 huong,
     required this.satThuong,
     required this.tamBay,
+    this.xuyenPha = false,
     this.khiHaMucTieu,
     this.tuKeDich = false,
     this.gayDameNguoiChoi,
@@ -80,9 +83,11 @@ class DanBan extends PositionComponent with CollisionCallbacks {
 
     // Mũi tên của người chơi: trúng quái hoặc Boss.
     if (other is KeDich || other is Boss) {
-      _huy();
       final m = other as CoTheBiDanh;
+      if (_mucTieuDaTrung.contains(m)) return;
+      _mucTieuDaTrung.add(m);
       if (m.nhanSatThuong(satThuong)) khiHaMucTieu?.call(m);
+      if (!xuyenPha || _mucTieuDaTrung.length >= 2) _huy();
     }
   }
 

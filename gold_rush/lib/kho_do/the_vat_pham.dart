@@ -60,6 +60,8 @@ class _TheVatPhamState extends State<TheVatPham> {
         return Icons.hardware_rounded;
       case LoaiVatPham.giap:
         return Icons.shield_outlined;
+      case LoaiVatPham.giay:
+        return Icons.directions_run_rounded;
       case LoaiVatPham.vatPham:
         return Icons.inventory_2_outlined;
     }
@@ -73,6 +75,8 @@ class _TheVatPhamState extends State<TheVatPham> {
         return 'Vũ khí phụ';
       case OTrangBi.giap:
         return 'Giáp';
+      case OTrangBi.giay:
+        return 'Giày';
       case null:
         return 'Chưa trang bị';
     }
@@ -86,6 +90,31 @@ class _TheVatPhamState extends State<TheVatPham> {
     return SizedBox.square(
       dimension: 48,
       child: CustomPaint(painter: _HinhVatPham(vatPham.bieuTuong)),
+    );
+  }
+
+  /// Các sprite vật phẩm là sheet 4x4; thẻ túi đồ chỉ hiển thị frame đầu.
+  Widget _hinhVatPham(String asset) {
+    return SizedBox.square(
+      dimension: 68,
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: 256,
+          minHeight: 256,
+          maxWidth: 256,
+          maxHeight: 256,
+          child: Image.asset(
+            asset,
+            width: 256,
+            height: 256,
+            fit: BoxFit.none,
+            filterQuality: FilterQuality.none,
+            errorBuilder: (_, _, _) =>
+                const Icon(Icons.broken_image_outlined, color: MauGame.chuPhu),
+          ),
+        ),
+      ),
     );
   }
 
@@ -158,17 +187,7 @@ class _TheVatPhamState extends State<TheVatPham> {
                             child: Center(
                               child: anh == null || anh.trim().isEmpty
                                   ? _hinhDuPhong()
-                                  : Image.asset(
-                                      anh,
-                                      width: 68,
-                                      height: 68,
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.none,
-                                      errorBuilder: (_, _, _) => const Icon(
-                                        Icons.broken_image_outlined,
-                                        color: MauGame.chuPhu,
-                                      ),
-                                    ),
+                                  : _hinhVatPham(anh),
                             ),
                           ),
                           Text(

@@ -32,6 +32,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/trang_bi/
     - assets/images/huy_hieu/
     - assets/images/world_map/
     - assets/tiles/

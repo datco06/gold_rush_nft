@@ -1422,6 +1422,7 @@ String _slotLabel(OTrangBi o) => switch (o) {
   OTrangBi.vuKhiChinh => 'Vũ khí chính',
   OTrangBi.vuKhiPhu => 'Vũ khí phụ',
   OTrangBi.giap => 'Giáp',
+  OTrangBi.giay => 'Giày',
 };
 
 IconData _iconForVatPham(VatPhamHienThi vp) => switch (vp.bieuTuong) {
@@ -1687,7 +1688,10 @@ class _TabVuKhiState extends State<_TabVuKhi> {
       builder: (context, items, _) {
         final weapons = items
             .where(
-              (v) => v.loai == LoaiVatPham.vuKhi || v.loai == LoaiVatPham.giap,
+              (v) =>
+                  v.loai == LoaiVatPham.vuKhi ||
+                  v.loai == LoaiVatPham.giap ||
+                  v.loai == LoaiVatPham.giay,
             )
             .toList();
 

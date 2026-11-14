@@ -754,12 +754,14 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
 
   Widget _hanhDongVatPham(VatPhamHienThi vp) {
     final coTheTrangBi =
-        vp.loai == LoaiVatPham.vuKhi || vp.loai == LoaiVatPham.giap;
+        vp.loai == LoaiVatPham.vuKhi ||
+        vp.loai == LoaiVatPham.giap ||
+        vp.loai == LoaiVatPham.giay;
 
     if (!coTheTrangBi) {
       return const _GhiChu(
         noiDung:
-            'Vật phẩm này không thuộc nhóm vũ khí hoặc giáp. '
+            'Vật phẩm này không thuộc nhóm vũ khí, giáp hoặc giày. '
             'Chưa tích hợp thao tác sử dụng vật phẩm.',
       );
     }
@@ -848,7 +850,9 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
     final hienTai = _vatPhamDangChon;
     if (hienTai == null || hienTai.id != vp.id) return;
 
-    if (hienTai.loai != LoaiVatPham.vuKhi && hienTai.loai != LoaiVatPham.giap) {
+    if (hienTai.loai != LoaiVatPham.vuKhi &&
+        hienTai.loai != LoaiVatPham.giap &&
+        hienTai.loai != LoaiVatPham.giay) {
       return;
     }
 
@@ -900,6 +904,8 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
         return 'Vũ khí phụ';
       case OTrangBi.giap:
         return 'Giáp';
+      case OTrangBi.giay:
+        return 'Giày';
       case null:
         return 'Chưa trang bị';
     }
@@ -1088,6 +1094,8 @@ String _tenDanhMuc(DanhMucVatPham danhMuc) {
       return 'Vũ khí';
     case DanhMucVatPham.giap:
       return 'Giáp';
+    case DanhMucVatPham.giay:
+      return 'Giày';
     case DanhMucVatPham.phuKien:
       return 'Phụ kiện';
     case DanhMucVatPham.tieuHao:
@@ -1105,6 +1113,8 @@ IconData _iconDanhMuc(DanhMucVatPham danhMuc) {
       return Icons.hardware_rounded;
     case DanhMucVatPham.giap:
       return Icons.shield_outlined;
+    case DanhMucVatPham.giay:
+      return Icons.directions_run_rounded;
     case DanhMucVatPham.phuKien:
       return Icons.circle_outlined;
     case DanhMucVatPham.tieuHao:
