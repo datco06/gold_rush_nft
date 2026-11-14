@@ -1,6 +1,7 @@
 import 'vat_pham_hien_thi.dart';
 
-List<VatPhamHienThi> danhSachTrangBiMoi() => [
+/// Catalog đầy đủ dành cho Cửa hàng; không tự đưa toàn bộ vào Kho đồ.
+List<VatPhamHienThi> danhSachTrangBiCuaHang() => [
   _sung(
     'sung_cap_1',
     'Súng Lục Mặc Định',
@@ -210,6 +211,10 @@ List<VatPhamHienThi> danhSachTrangBiMoi() => [
     0.28,
   ),
 ];
+
+/// Vật phẩm mở sẵn trong Kho đồ khi bắt đầu game.
+/// Các súng/giáp/giày còn lại chỉ hiện sau khi Cửa hàng cấp quyền sở hữu.
+List<VatPhamHienThi> danhSachTrangBiMoi() => [danhSachTrangBiCuaHang().first];
 
 VatPhamHienThi _sung(
   String id,
