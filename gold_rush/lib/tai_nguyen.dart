@@ -20,6 +20,7 @@ class TaiNguyen {
   /// Hoạt ảnh của George theo tên tệp sprite — George gốc + các nhân vật mua trong cửa
   /// hàng (lib/blockchain/nhan_vat.dart). Thiếu tệp nào thì bỏ qua tệp đó.
   final Map<String, Map<HuongDi, SpriteAnimation>> georgeTheoTep = {};
+  final Map<String, Map<HuongDi, SpriteAnimation>> trangBiTheoTep = {};
   late final Map<HuongDi, SpriteAnimation> zombie;
   late final Map<HuongDi, SpriteAnimation> skeleton;
   late final Map<HuongDi, SpriteAnimation> quaiThuong;
@@ -56,6 +57,41 @@ class TaiNguyen {
     quaiThuong = _bonHuong(anhQuaiThuong, 0.18, frameSize: 64);
     quaiGiap = _bonHuong(anhQuaiGiap, 0.16, frameSize: 64);
     quaiKhongLo = _bonHuong(anhQuaiKhongLo, 0.2, frameSize: 64);
+
+    // Nạp sprite sheet trang bị theo đúng 4 hướng x 4 frame.
+    const trangBiFiles = [
+      'sung_cap_1_sprite_4x4.png',
+      'sung_cap_2_sprite_4x4.png',
+      'sung_cap_3_sprite_4x4.png',
+      'sung_manh_1_sprite_4x4.png',
+      'sung_manh_2_sprite_4x4.png',
+      'sung_manh_3_sprite_4x4.png',
+      'sung_hiem_xuyen_pha.png',
+      'sung_hiem_bao_tinh_the.png',
+      'sung_hiem_hac_long.png',
+      'giap_thuong_cap_1.png',
+      'giap_thuong_cap_2.png',
+      'giap_thuong_cap_3.png',
+      'giap_manh_cap_1.png',
+      'giap_manh_cap_2.png',
+      'giap_manh_cap_3.png',
+      'giap_hiem_hac_long.png',
+      'giap_hiem_tinh_the.png',
+      'giap_hiem_hoang_kim.png',
+      'giay_thuong_cap_1.png',
+      'giay_thuong_cap_2.png',
+      'giay_thuong_cap_3.png',
+      'giay_manh_cap_1.png',
+      'giay_manh_cap_2.png',
+      'giay_manh_cap_3.png',
+      'giay_hiem_hac_long.png',
+      'giay_hiem_tinh_the.png',
+      'giay_hiem_phuong_hoang.png',
+    ];
+    for (final tep in trangBiFiles) {
+      final anh = await Flame.images.load('trang_bi/$tep');
+      trangBiTheoTep[tep] = _bonHuong(anh, 0.12, frameSize: 64);
+    }
 
     dongXu = SpriteAnimation.fromFrameData(
       anhDongXu,

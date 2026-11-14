@@ -15,6 +15,7 @@ import 'dan_ban.dart';
 import 'dong_xu.dart';
 import 'ke_dich.dart';
 import 'nhan_vat.dart';
+import 'trang_bi_george.dart';
 import 'vat_pham_roi.dart';
 
 /// Nhân vật chính.
@@ -24,6 +25,10 @@ class George extends NhanVat with KeyboardHandler {
 
   /// Gọi khi nhân vật chết.
   final void Function() khiChet;
+  final Map<HuongDi, SpriteAnimation> trangBiVuKhi;
+  final Map<HuongDi, SpriteAnimation> trangBiGiap;
+  final Map<HuongDi, SpriteAnimation> trangBiGiay;
+  late final TrangBiGeorge _lopTrangBi;
 
   int diem = 0;
   int mau = CauHinh.mauToiDa;
@@ -71,6 +76,9 @@ class George extends NhanVat with KeyboardHandler {
     required super.viTri,
     required this.khiChiSoDoi,
     required this.khiChet,
+    this.trangBiVuKhi = const {},
+    this.trangBiGiap = const {},
+    this.trangBiGiay = const {},
   });
 
   bool get conSong => mau > 0;
@@ -97,10 +105,38 @@ class George extends NhanVat with KeyboardHandler {
     mau = (mau + (_mauToiDaTrangBi - maxCu)).clamp(0, _mauToiDaTrangBi).toInt();
   }
 
+  void capNhatTrangBiHienThi({
+    Map<HuongDi, SpriteAnimation>? vuKhi,
+    Map<HuongDi, SpriteAnimation>? giap,
+    Map<HuongDi, SpriteAnimation>? giay,
+  }) {
+    if (isMounted) {
+      _lopTrangBi.capNhatTrangBi(vuKhi: vuKhi, giap: giap, giay: giay);
+    }
+  }
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     add(hopVaCham());
+    _lopTrangBi = TrangBiGeorge(
+      vuKhi: trangBiVuKhi.isEmpty ? null : trangBiVuKhi,
+      giap: trangBiGiap.isEmpty ? null : trangBiGiap,
+      giay: trangBiGiay.isEmpty ? null : trangBiGiay,
+    );
+    add(_lopTrangBi);
+  }
+
+  @override
+  void capNhatHuong(Vector2 huong) {
+    super.capNhatHuong(huong);
+    _lopTrangBi.capNhatHuong(current ?? HuongDi.xuong);
+  }
+
+  @override
+  void datDangDi(bool dangDi) {
+    super.datDangDi(dangDi);
+    _lopTrangBi.datDangDi(dangDi);
   }
 
   // --------------------------------------------------
@@ -278,6 +314,7 @@ class George extends NhanVat with KeyboardHandler {
     if (cha == null) return false;
 
     final huong = huongNhin;
+    _lopTrangBi.phatBan();
     cha.add(
       DanBan(
         banDo: banDo,

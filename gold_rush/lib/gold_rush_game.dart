@@ -7,6 +7,7 @@ import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai/dieu_chinh_do_kho.dart';
 import 'ai/gui_nhat_ky.dart';
@@ -164,6 +165,7 @@ class GoldRushGame extends FlameGame
   static const String phienBanApp = '1.3.0';
 
   static const String tepMoHinhDoKho = 'assets/models/do_kho_v1.json';
+  static const String _khoaTrangBi = 'gold_rush.equipment.v1';
 
   late TimDuong timDuong;
 
@@ -256,6 +258,7 @@ class GoldRushGame extends FlameGame
     final idx = ds.indexWhere((vp) => vp.id == itemId);
     if (idx < 0) return;
     final vp = ds[idx];
+    if (vp.nguon == NguonVatPham.nft && vp.tokenId == null) return;
     if (vp.loai != LoaiVatPham.vuKhi &&
         vp.loai != LoaiVatPham.giap &&
         vp.loai != LoaiVatPham.giay) {
@@ -283,6 +286,7 @@ class GoldRushGame extends FlameGame
           item,
     ];
     _apDungTrangBiChoGeorge();
+    await _luuTrangBi();
   }
 
   Future<void> thaoVatPham(String itemId) async {
@@ -292,6 +296,48 @@ class GoldRushGame extends FlameGame
         if (item.id == itemId) item.voiTrangBi(null) else item,
     ];
     _apDungTrangBiChoGeorge();
+    await _luuTrangBi();
+  }
+
+  Future<void> _luuTrangBi() async {
+    final dangMac = <String, String>{};
+    for (final vp in danhSachVatPham.value) {
+      final o = vp.oDangTrangBi;
+      if (o != null) dangMac[o.name] = vp.id;
+    }
+    await SharedPreferencesAsync().setString(_khoaTrangBi, jsonEncode(dangMac));
+  }
+
+  Future<void> _napTrangBiDaLuu() async {
+    try {
+      final raw = await SharedPreferencesAsync().getString(_khoaTrangBi);
+      if (raw == null) return;
+      final data = jsonDecode(raw);
+      if (data is! Map) return;
+      var ds = [
+        for (final item in danhSachVatPham.value) item.voiTrangBi(null),
+      ];
+      for (final entry in data.entries) {
+        if (entry.key is! String || entry.value is! String) continue;
+        OTrangBi? slot;
+        for (final value in OTrangBi.values) {
+          if (value.name == entry.key) slot = value;
+        }
+        if (slot == null) continue;
+        ds = [
+          for (final item in ds)
+            if (item.id == entry.value)
+              item.voiTrangBi(slot)
+            else if (item.oDangTrangBi == slot)
+              item.voiTrangBi(null)
+            else
+              item,
+        ];
+      }
+      danhSachVatPham.value = ds;
+    } catch (_) {
+      // Dữ liệu lưu cũ/hỏng không được chặn việc vào game.
+    }
   }
 
   void _apDungTrangBiChoGeorge() {
@@ -308,6 +354,11 @@ class GoldRushGame extends FlameGame
     final sung = tim(OTrangBi.vuKhiChinh) ?? tim(OTrangBi.vuKhiPhu);
     final giap = tim(OTrangBi.giap);
     final giay = tim(OTrangBi.giay);
+    Map<HuongDi, SpriteAnimation> hoatAnh(VatPhamHienThi? vp) {
+      final tep = vp?.duongDanAnh?.split('/').last;
+      return tep == null ? const {} : taiNguyen.trangBiTheoTep[tep] ?? const {};
+    }
+
     g.datChiSoTrangBi(
       satThuong: sung?.satThuong ?? 0,
       tamBan: sung?.tamBan ?? 0,
@@ -315,6 +366,11 @@ class GoldRushGame extends FlameGame
       giamSatThuong: giap?.giamSatThuong ?? 0,
       tocDoCongThem: giay?.tocDoCongThem ?? 0,
       xuyenPha: sung?.xuyenPha ?? false,
+    );
+    g.capNhatTrangBiHienThi(
+      vuKhi: hoatAnh(sung),
+      giap: hoatAnh(giap),
+      giay: hoatAnh(giay),
     );
   }
 
@@ -364,6 +420,7 @@ class GoldRushGame extends FlameGame
   Future<void> onLoad() async {
     await taiNguyen.nap();
     await AmThanh.napTruoc();
+    await _napTrangBiDaLuu();
 
     await _napDanhSachMan();
     await tienTrinhWorldMap.nap(danhSachMan);
@@ -588,12 +645,33 @@ class GoldRushGame extends FlameGame
       orElse: () => DiemXuatHien('george', banDo.kichThuoc / 2),
     );
 
+    VatPhamHienThi? timTrangBi(OTrangBi o) {
+      for (final vp in danhSachVatPham.value) {
+        if (vp.oDangTrangBi == o) return vp;
+      }
+      return null;
+    }
+
+    String? tenTep(VatPhamHienThi? vp) => vp?.duongDanAnh?.split('/').last;
+    Map<HuongDi, SpriteAnimation> hoatAnhTrangBi(VatPhamHienThi? vp) {
+      final tep = tenTep(vp);
+      return tep == null ? const {} : taiNguyen.trangBiTheoTep[tep] ?? const {};
+    }
+
+    final sung =
+        timTrangBi(OTrangBi.vuKhiChinh) ?? timTrangBi(OTrangBi.vuKhiPhu);
+    final giap = timTrangBi(OTrangBi.giap);
+    final giay = timTrangBi(OTrangBi.giay);
+
     george = George(
       banDo: banDo,
       hoatAnh: taiNguyen.georgeTheoTep[nhanVatDangDung] ?? taiNguyen.george,
       viTri: diemGeorge.viTri.clone(),
       khiChiSoDoi: _khiChiSoDoi,
       khiChet: _khiGeorgeChet,
+      trangBiVuKhi: hoatAnhTrangBi(sung),
+      trangBiGiap: hoatAnhTrangBi(giap),
+      trangBiGiay: hoatAnhTrangBi(giay),
     );
     _apDungTrangBiChoGeorge();
 
