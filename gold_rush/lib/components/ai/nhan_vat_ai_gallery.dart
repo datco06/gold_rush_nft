@@ -278,7 +278,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
                         key: ValueKey('ai-image-${nv.characterId}'),
                         fit: BoxFit.contain,
                         filterQuality: FilterQuality.none,
-                        semanticLabel: 'Ảnh nhân vật AI ${nv.name}',
+                        semanticLabel: PhamViNgonNgu.of(context).dich('Ảnh nhân vật AI ${nv.name}'),
                         errorBuilder: (_, _, _) => const Center(
                           child: Icon(Icons.broken_image_outlined),
                         ),
@@ -288,7 +288,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
           ),
           const SizedBox(height: 7),
           ChuGame(
-            nv.name,
+            nv.name, dichNoiDung: false,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
@@ -332,7 +332,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
                       height: 128,
                       fit: BoxFit.contain,
                       filterQuality: FilterQuality.none,
-                      semanticLabel: 'Ảnh chi tiết nhân vật AI ${nv.name}',
+                      semanticLabel: PhamViNgonNgu.of(context).dich('Ảnh chi tiết nhân vật AI ${nv.name}'),
                     ),
                   ),
                 const SizedBox(height: 12),

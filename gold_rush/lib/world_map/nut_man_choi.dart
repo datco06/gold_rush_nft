@@ -62,9 +62,9 @@ class _NutManChoiState extends State<NutManChoi> {
       child: Semantics(
         button: true,
         selected: widget.dangChon,
-        label: 'Màn ${widget.man.id}, ${widget.man.ten}, $_trangThai',
+        label: PhamViNgonNgu.of(context).dich('Màn ${widget.man.id}, ${PhamViNgonNgu.of(context).dich(widget.man.ten)}, ${PhamViNgonNgu.of(context).dich(_trangThai)}'),
         child: Tooltip(
-          message: PhamViNgonNgu.of(context).dich('${widget.man.ten} · $_trangThai'),
+          message: PhamViNgonNgu.of(context).dich('${PhamViNgonNgu.of(context).dich(widget.man.ten)} · ${PhamViNgonNgu.of(context).dich(_trangThai)}'),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => widget.khiChon(widget.man),
@@ -87,7 +87,7 @@ class _NutManChoiState extends State<NutManChoi> {
                           child: Center(
                             child: Text.rich(
                               TextSpan(
-                                text: widget.gon ? '' : 'Màn ',
+                                text: widget.gon ? '' : PhamViNgonNgu.of(context).dich('Màn '),
                                 style: const TextStyle(fontSize: 8.5),
                                 children: [
                                   TextSpan(

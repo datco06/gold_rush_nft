@@ -54,6 +54,8 @@ class NgonNgu extends ChangeNotifier {
     if (_ma == 'vi') return source;
     final exact = banDichAnh[source];
     if (exact != null) return exact;
+    final uppercase = _nhanVietHoa[source];
+    if (uppercase != null) return uppercase;
     for (final template in _mauDich) {
       final match = template.pattern.firstMatch(source);
       if (match == null) continue;
@@ -67,14 +69,23 @@ class NgonNgu extends ChangeNotifier {
   }
 }
 
-final _mauDich = banDichAnh.entries
-    .where((e) => e.key.contains(RegExp(r'\{\d+\}')))
-    .map((e) => _MauDich(e.key, e.value))
-    .toList();
+final _nhanVietHoa = {
+  for (final entry in banDichAnh.entries)
+    if (!entry.key.contains(RegExp(r'\{\d+\}')))
+      entry.key.toUpperCase(): entry.value.toUpperCase(),
+};
+
+final _mauDich =
+    banDichAnh.entries
+        .where((e) => e.key.contains(RegExp(r'\{\d+\}')))
+        .map((e) => _MauDich(e.key, e.value))
+        .toList()
+      ..sort((a, b) => b.literalLength.compareTo(a.literalLength));
 
 class _MauDich {
   _MauDich(String source, this.english)
     : translateValues = _nhanCoThamSo.contains(source),
+      literalLength = source.replaceAll(RegExp(r'\{\d+\}'), '').length,
       pattern = RegExp(
         '^${source.splitMapJoin(RegExp(r'\{\d+\}'), onMatch: (_) => '(.*?)', onNonMatch: RegExp.escape)}\u0024',
         dotAll: true,
@@ -82,17 +93,27 @@ class _MauDich {
   final RegExp pattern;
   final String english;
   final bool translateValues;
+  final int literalLength;
 }
 
 // Only controlled enum/catalog labels are translated inside interpolations.
 // Player names, wallet addresses, transaction hashes and AI prose stay verbatim.
 const _nhanCoThamSo = {
-  'Độ khó • {0}', 'Độ khó đề xuất • {0}', 'Nguồn sinh • {0}',
-  'Nguồn đề xuất • {0}', 'Điểm hiệu suất • {0}', 'Trạng thái: {0}',
-  'Đang trang bị: {0}', '{0} (Trống)', '{0} (Chưa hỗ trợ)',
-  '{0} (Trống — bấm để mở Kho đồ)', 'MÀN {0} · {1}',
-  'Màn phiêu lưu local · {0}', 'Màn luyện tập · {0}',
-  'Màn có đặt cọc · {0}', 'Bạn nhận được {0} ×{1}.',
+  'Độ khó • {0}',
+  'Độ khó đề xuất • {0}',
+  'Nguồn sinh • {0}',
+  'Nguồn đề xuất • {0}',
+  'Điểm hiệu suất • {0}',
+  'Trạng thái: {0}',
+  'Đang trang bị: {0}',
+  '{0} (Trống)',
+  '{0} (Chưa hỗ trợ)',
+  '{0} (Trống — bấm để mở Kho đồ)',
+  'MÀN {0} · {1}',
+  'Màn phiêu lưu local · {0}',
+  'Màn luyện tập · {0}',
+  'Màn có đặt cọc · {0}',
+  'Bạn nhận được {0} ×{1}.',
 };
 
 class PhamViNgonNgu extends InheritedNotifier<NgonNgu> {
@@ -102,9 +123,9 @@ class PhamViNgonNgu extends InheritedNotifier<NgonNgu> {
     required super.child,
   }) : super(notifier: ngonNgu);
 
-  static NgonNgu of(BuildContext context) => context
-      .dependOnInheritedWidgetOfExactType<PhamViNgonNgu>()
-      ?.notifier ?? NgonNgu.chung;
+  static NgonNgu of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PhamViNgonNgu>()?.notifier ??
+      NgonNgu.chung;
 }
 
 class ChonNgonNgu extends StatelessWidget {
@@ -127,7 +148,8 @@ class ChonNgonNgu extends StatelessWidget {
 
 /// Same Text styling and const call sites; only presentation depends on language.
 class ChuGame extends StatelessWidget {
-  const ChuGame(this.data, {
+  const ChuGame(
+    this.data, {
     super.key,
     this.style,
     this.strutStyle,
@@ -177,7 +199,9 @@ class ChuGame extends StatelessWidget {
       textWidthBasis: textWidthBasis,
       textHeightBehavior: textHeightBehavior,
       selectionColor: selectionColor,
-      semanticsLabel: semanticsLabel == null ? null : language.dich(semanticsLabel!),
+      semanticsLabel: semanticsLabel == null
+          ? null
+          : language.dich(semanticsLabel!),
     );
   }
 }

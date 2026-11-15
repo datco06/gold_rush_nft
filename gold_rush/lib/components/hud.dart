@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../cau_hinh.dart';
 import '../man_choi.dart';
+import '../ngon_ngu/ngon_ngu.dart';
 
 /// Thanh máu, điểm số, số xu còn lại và đồng hồ đếm ngược (màn có giới hạn thời gian).
 ///
@@ -16,6 +17,7 @@ class Hud extends PositionComponent {
   final int Function() layMau;
   final int Function() layDiem;
   final int Function() layXuConLai;
+  final NgonNgu ngonNgu;
 
   /// Số giây còn lại; null = màn không giới hạn thời gian (ẩn đồng hồ).
   final double? Function() layGiayConLai;
@@ -36,7 +38,9 @@ class Hud extends PositionComponent {
     required this.layDiem,
     required this.layXuConLai,
     required this.layGiayConLai,
-  }) : super(priority: 100);
+    NgonNgu? ngonNgu,
+  }) : ngonNgu = ngonNgu ?? NgonNgu.chung,
+       super(priority: 100);
 
   /// Dưới 15 giây: đồng hồ chuyển đỏ.
   static final TextPaint _kieuGioGap = TextPaint(
@@ -64,12 +68,12 @@ class Hud extends PositionComponent {
   @override
   Future<void> onLoad() async {
     _chuDiem = TextComponent(
-      text: 'ĐIỂM 0',
+      text: '${ngonNgu.dich('ĐIỂM')} 0',
       textRenderer: _kieuChu,
       anchor: Anchor.topRight,
     );
     _chuXu = TextComponent(
-      text: 'XU 0',
+      text: '${ngonNgu.dich('XU')} 0',
       textRenderer: _kieuChu,
       anchor: Anchor.topRight,
     );
@@ -104,8 +108,8 @@ class Hud extends PositionComponent {
     // nhưng khiến người chơi cảm nhận được cú đánh vừa nhận.
     _mauHienThi += (mucTieu - _mauHienThi) * (dt * 8).clamp(0.0, 1.0);
 
-    _chuDiem.text = 'ĐIỂM ${layDiem()}';
-    _chuXu.text = 'XU CÒN ${layXuConLai()}';
+    _chuDiem.text = '${ngonNgu.dich('ĐIỂM')} ${layDiem()}';
+    _chuXu.text = '${ngonNgu.dich('XU CÒN')} ${layXuConLai()}';
     final con = layGiayConLai();
     _chuGio.text = con == null ? '' : '⏱ ${dinhDangGiay(con)}';
     final gap = con != null && con < 15;

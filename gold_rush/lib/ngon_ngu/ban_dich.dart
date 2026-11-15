@@ -1,55 +1,75 @@
 /// UI text only. Protocol fields and signed messages are never translated.
 const banDichAnh = <String, String>{
   'ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...': 'CHECKING ADVENTURER PROFILE...',
-  'Hành trình đang tạm dừng để đối chiếu phiên và ví.': 'Your adventure is paused while we check your session and wallet.',
+  'Hành trình đang tạm dừng để đối chiếu phiên và ví.':
+      'Your adventure is paused while we check your session and wallet.',
   'CHƯA THỂ KIỂM TRA HỒ SƠ': 'UNABLE TO CHECK PROFILE',
-  'Hành trình đang khóa. Hãy kiểm tra kết nối và thử lại.': 'Your adventure is locked. Check your connection and try again.',
-  'Đang đối chiếu phiên đăng nhập và ví MetaMask.': 'Checking your session and MetaMask wallet.',
+  'Hành trình đang khóa. Hãy kiểm tra kết nối và thử lại.':
+      'Your adventure is locked. Check your connection and try again.',
+  'Đang đối chiếu phiên đăng nhập và ví MetaMask.':
+      'Checking your session and MetaMask wallet.',
   'ĐANG ĐĂNG XUẤT...': 'SIGNING OUT...',
-  'Hành trình đã khóa. Đang chờ máy chủ xác nhận.': 'Your adventure is locked. Waiting for server confirmation.',
+  'Hành trình đã khóa. Đang chờ máy chủ xác nhận.':
+      'Your adventure is locked. Waiting for server confirmation.',
   'THỬ LẠI': 'RETRY',
   'Vui lòng chờ…': 'Please wait…',
-  'Hãy hoàn tất dấu tiếng Việt trước khi gửi tên.': 'Finish composing your name before submitting.',
-  'Chưa thể hoàn tất thao tác. Hãy kiểm tra trạng thái phiên trước khi thử lại.': 'Unable to finish. Check your session before trying again.',
-  'Hồ sơ đã sẵn sàng nhưng chưa thể mở hành trình. Hãy thử tiếp tục lại.': 'Your profile is ready. Try continuing your adventure again.',
+  'Hãy hoàn tất dấu tiếng Việt trước khi gửi tên.':
+      'Finish composing your name before submitting.',
+  'Chưa thể hoàn tất thao tác. Hãy kiểm tra trạng thái phiên trước khi thử lại.':
+      'Unable to finish. Check your session before trying again.',
+  'Hồ sơ đã sẵn sàng nhưng chưa thể mở hành trình. Hãy thử tiếp tục lại.':
+      'Your profile is ready. Try continuing your adventure again.',
   'Chưa thể quay lại. Hãy thử lại.': 'Unable to go back. Please try again.',
   'MỘT CÁI TÊN · MỘT HÀNH TRÌNH': 'ONE NAME · ONE ADVENTURE',
   'HỒ SƠ ĐÃ ĐƯỢC TẠO!': 'PROFILE CREATED!',
   'BẠN ĐÃ ĐĂNG NHẬP': 'YOU ARE SIGNED IN',
   'TẠO HỒ SƠ NHÀ THÁM HIỂM': 'CREATE ADVENTURER PROFILE',
-  'Ví MetaMask của bạn đã được xác minh!': 'Your MetaMask wallet has been verified!',
-  'Hãy chọn tên nhân vật để bắt đầu hành trình săn vàng.': 'Choose a character name to start your gold hunting adventure.',
+  'Ví MetaMask của bạn đã được xác minh!':
+      'Your MetaMask wallet has been verified!',
+  'Hãy chọn tên nhân vật để bắt đầu hành trình săn vàng.':
+      'Choose a character name to start your gold hunting adventure.',
   'TÊN NHÀ THÁM HIỂM': 'ADVENTURER NAME',
   'Nhập tên nhà thám hiểm': 'Enter your adventurer name',
   'Đang ghép dấu tiếng Việt…': 'Composing text…',
-  '3–20 ký tự sau chuẩn hóa; máy chủ xác nhận.': '3–20 characters after normalization; validated by the server.',
+  '3–20 ký tự sau chuẩn hóa; máy chủ xác nhận.':
+      '3–20 characters after normalization; validated by the server.',
   '3–20 ký tự; dùng chữ có dấu, chữ số, khoảng trắng, _ hoặc -. Tên được chuẩn hóa khi tạo hồ sơ; máy chủ kiểm tra tên trùng.': '3–20 characters: letters, numbers, spaces, _ or -. Names are normalized and checked for duplicates by the server.',
-  'Hồ sơ đã được máy chủ xác nhận. Hành trình săn vàng đang chờ bạn.': 'Your profile is confirmed. Your gold hunting adventure awaits.',
-  'Quyền tạo nhân vật đã hết hạn. Hãy quay lại để xác minh MetaMask.': 'Registration has expired. Go back to verify MetaMask again.',
-  'Đang kiểm tra trạng thái xác thực. Vui lòng chờ.': 'Checking authentication. Please wait.',
+  'Hồ sơ đã được máy chủ xác nhận. Hành trình săn vàng đang chờ bạn.':
+      'Your profile is confirmed. Your gold hunting adventure awaits.',
+  'Quyền tạo nhân vật đã hết hạn. Hãy quay lại để xác minh MetaMask.':
+      'Registration has expired. Go back to verify MetaMask again.',
+  'Đang kiểm tra trạng thái xác thực. Vui lòng chờ.':
+      'Checking authentication. Please wait.',
   'Cần xác minh lại MetaMask trước khi tạo hồ sơ. Hãy quay lại màn hình chào mừng.': 'Verify MetaMask again before creating your profile. Return to the welcome screen.',
   'BẮT ĐẦU HÀNH TRÌNH': 'START ADVENTURE',
   'TIẾP TỤC HÀNH TRÌNH': 'CONTINUE ADVENTURE',
   'Đang tạo hồ sơ nhà thám hiểm...': 'Creating adventurer profile...',
   'QUAY LẠI': 'GO BACK',
   'QUAY LẠI XÁC MINH': 'BACK TO VERIFICATION',
-  'Chỉ chọn tên nhân vật. Không cần mật khẩu hoặc khóa bí mật.': 'Choose a character name. No password or secret key is required.',
-  'Tên nhập vào quá dài. Hãy dùng tối đa 256 ký tự trước chuẩn hóa.': 'Name is too long. Use at most 256 characters before normalization.',
+  'Chỉ chọn tên nhân vật. Không cần mật khẩu hoặc khóa bí mật.':
+      'Choose a character name. No password or secret key is required.',
+  'Tên nhập vào quá dài. Hãy dùng tối đa 256 ký tự trước chuẩn hóa.':
+      'Name is too long. Use at most 256 characters before normalization.',
   'Tên không được chứa emoji, ký tự ẩn hoặc ký tự đặc biệt ngoài _ và -.': 'Names cannot contain emoji, hidden characters, or symbols other than _ and -.',
-  'Tên cần có ít nhất một chữ cái hoặc chữ số.': 'Names must contain at least one letter or number.',
+  'Tên cần có ít nhất một chữ cái hoặc chữ số.':
+      'Names must contain at least one letter or number.',
   'VÍ ĐÃ XÁC MINH': 'WALLET VERIFIED',
-  'Chưa thể hoàn tất thao tác. Hãy thử lại.': 'Unable to finish. Please try again.',
+  'Chưa thể hoàn tất thao tác. Hãy thử lại.':
+      'Unable to finish. Please try again.',
   'THỬ ĐĂNG XUẤT LẠI': 'RETRY SIGN OUT',
   'TẠO NHÂN VẬT': 'CREATE CHARACTER',
   'BẮT ĐẦU PHIÊU LƯU': 'START ADVENTURE',
   'KIỂM TRA LẠI PHIÊN': 'CHECK SESSION AGAIN',
   'THỬ KẾT NỐI LẠI': 'RETRY CONNECTION',
   'KẾT NỐI METAMASK': 'CONNECT METAMASK',
-  'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN': 'EVERY ADVENTURE BEGINS WITH A SINGLE STEP',
+  'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN':
+      'EVERY ADVENTURE BEGINS WITH A SINGLE STEP',
   'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN\nv1.3.0 · Gold Rush · Hành trình số': 'EVERY ADVENTURE BEGINS WITH A SINGLE STEP\nv1.3.0 · Gold Rush · Digital adventure',
   'CHÀO MỪNG\nNHÀ THÁM HIỂM!': 'WELCOME,\nADVENTURER!',
-  'Khám phá thế giới Gold Rush, thu thập kho báu và bắt đầu hành trình của bạn.': 'Explore Gold Rush, collect treasures and begin your adventure.',
-  'Đăng nhập an toàn bằng ví MetaMask để lưu tài khoản phiêu lưu.': 'Sign in securely with MetaMask to save your adventure account.',
+  'Khám phá thế giới Gold Rush, thu thập kho báu và bắt đầu hành trình của bạn.':
+      'Explore Gold Rush, collect treasures and begin your adventure.',
+  'Đăng nhập an toàn bằng ví MetaMask để lưu tài khoản phiêu lưu.':
+      'Sign in securely with MetaMask to save your adventure account.',
   'ĐANG KIỂM TRA PHIÊN': 'CHECKING SESSION',
   'ĐANG KẾT NỐI VÍ': 'CONNECTING WALLET',
   'ĐANG CHUẨN BỊ XÁC THỰC': 'PREPARING SIGN IN',
@@ -63,14 +83,19 @@ const banDichAnh = <String, String>{
   'Đang kiểm tra phiên đăng nhập...': 'Checking your session...',
   'Đang kết nối ví MetaMask...': 'Connecting to MetaMask...',
   'Đang chuẩn bị xác thực...': 'Preparing sign in...',
-  'Vui lòng xác nhận chữ ký trong MetaMask.': 'Please confirm the signature in MetaMask.',
+  'Vui lòng xác nhận chữ ký trong MetaMask.':
+      'Please confirm the signature in MetaMask.',
   'Đang xác minh chữ ký...': 'Verifying signature...',
-  'Ví của bạn đã được xác minh. Hãy tạo tên nhân vật.': 'Your wallet is verified. Choose a character name.',
+  'Ví của bạn đã được xác minh. Hãy tạo tên nhân vật.':
+      'Your wallet is verified. Choose a character name.',
   'Đang tạo nhân vật của bạn...': 'Creating your character...',
-  'Phiên cần được kiểm tra lại trước khi bắt đầu.': 'Your session must be checked before starting.',
+  'Phiên cần được kiểm tra lại trước khi bắt đầu.':
+      'Your session must be checked before starting.',
   'Đang đăng xuất...': 'Signing out...',
-  'Hành trình đang khóa cho đến khi đối chiếu lại phiên.': 'Your adventure is locked until your session is checked.',
-  'Chưa thể kết nối hành trình. Bạn có thể thử lại.': 'Unable to connect. You can try again.',
+  'Hành trình đang khóa cho đến khi đối chiếu lại phiên.':
+      'Your adventure is locked until your session is checked.',
+  'Chưa thể kết nối hành trình. Bạn có thể thử lại.':
+      'Unable to connect. You can try again.',
   'LỜI MỜI TỪ VÙNG ĐẤT VÀNG': 'A CALL FROM THE LAND OF GOLD',
   'Một thế giới mỏ vàng pixel, nơi mỗi chuyến đào là một ván chơi và mỗi nhân vật là một câu chuyện do AI vẽ nên.': 'A pixel mining world where every dig is an adventure and every character tells an AI illustrated story.',
   '6 màn phiêu lưu': '6 adventure stages',
@@ -84,26 +109,34 @@ const banDichAnh = <String, String>{
   'Nhạc nền': 'Background music',
   'Bản nhạc lặp 8 giây, sinh bằng mã nguồn': 'An 8-second generated music loop',
   'Hiệu ứng âm thanh': 'Sound effects',
-  'Tiếng nhặt xu, bước chân, kẻ địch nổ': 'Coin pickups, footsteps and enemy effects',
+  'Tiếng nhặt xu, bước chân, kẻ địch nổ':
+      'Coin pickups, footsteps and enemy effects',
   'Độ khó thích ứng (AI)': 'Adaptive difficulty (AI)',
   'Chưa có mô hình trong assets/models/': 'No model found in assets/models/',
-  'Kẻ địch nhanh/chậm trong khoảng 80–115% theo phong độ của bạn': 'Enemy speed adapts between 80–115% based on your performance',
+  'Kẻ địch nhanh/chậm trong khoảng 80–115% theo phong độ của bạn':
+      'Enemy speed adapts between 80–115% based on your performance',
   'Đăng xuất & Ngắt kết nối ví': 'Sign out & disconnect wallet',
   'Quay lại': 'Back',
   '\nĐồng hồ trong game đã dừng, nhưng máy chủ tính giờ thật: {0}\nVề menu bây giờ là bỏ ván — MẤT {1} vàng cọc.': '\nThe game clock is paused, but the server uses real time: {0}\nReturning to the menu forfeits this run — you LOSE the {1} gold deposit.',
-  'ĐÃ QUÁ hạn nộp — ván này sẽ không được trả vàng.': 'Submission deadline passed — this run will not award gold.',
+  'ĐÃ QUÁ hạn nộp — ván này sẽ không được trả vàng.':
+      'Submission deadline passed — this run will not award gold.',
   'còn {0} để chơi xong.': '{0} left to finish.',
   'TẠM DỪNG': 'PAUSED',
-  'Màn {0} · {1} · Điểm hiện tại: {2} · Xu hiện tại: {3} / {4}{5}': 'Stage {0} · {1} · Score: {2} · Coins: {3} / {4}{5}',
+  'Màn {0} · {1} · Điểm hiện tại: {2} · Xu hiện tại: {3} / {4}{5}':
+      'Stage {0} · {1} · Score: {2} · Coins: {3} / {4}{5}',
   'Chơi tiếp': 'Resume',
   'Cài đặt': 'Settings',
   'Về menu': 'Main menu',
   'Bỏ ván (mất cọc)': 'Abandon run (lose deposit)',
-  'George đã gom hết vàng và thoát ra an toàn.': 'George collected all the gold and escaped safely.',
-  'HOÀN THÀNH màn {0}! Nhận lại {1} cọc + {2} xu + {3} thưởng.': 'STAGE {0} COMPLETE! Receive {1} deposit + {2} coins + {3} bonus.',
+  'George đã gom hết vàng và thoát ra an toàn.':
+      'George collected all the gold and escaped safely.',
+  'HOÀN THÀNH màn {0}! Nhận lại {1} cọc + {2} xu + {3} thưởng.':
+      'STAGE {0} COMPLETE! Receive {1} deposit + {2} coins + {3} bonus.',
   'Hết giờ!': 'Time is up!',
-  'George đã gục ngã giữa đường tìm vàng.': 'George fell during his search for gold.',
-  '{0} Không hoàn thành màn {1} — mất {2} vàng cọc.': '{0} Stage {1} was not completed — {2} gold deposit lost.',
+  'George đã gục ngã giữa đường tìm vàng.':
+      'George fell during his search for gold.',
+  '{0} Không hoàn thành màn {1} — mất {2} vàng cọc.':
+      '{0} Stage {1} was not completed — {2} gold deposit lost.',
   'THẮNG RỒI!': 'VICTORY!',
   'HẾT GIỜ': 'TIME UP',
   'KẾT THÚC': 'GAME OVER',
@@ -123,7 +156,8 @@ const banDichAnh = <String, String>{
   'Bạn đã nhận được huy hiệu mới!': 'You earned a new badge!',
   '✓ Đã ghi nhận huy hiệu SBT': '✓ SBT badge recorded',
   'ĐÓNG': 'CLOSE',
-  'Ô {0} chưa được hỗ trợ trong phiên bản hiện tại.': 'The {0} slot is not supported in this version.',
+  'Ô {0} chưa được hỗ trợ trong phiên bản hiện tại.':
+      'The {0} slot is not supported in this version.',
   'Nhấn ENTER để bắt đầu ván mới': 'Press ENTER to start a new run',
   'Cửa hàng nhân vật': 'Character shop',
   'Cài đặt & Đăng xuất': 'Settings & sign out',
@@ -154,9 +188,12 @@ const banDichAnh = <String, String>{
   'Ví: {0}': 'Wallet: {0}',
   '{0} vàng': '{0} gold',
   'Không thể chọn nhân vật lúc này.': 'Cannot select a character right now.',
-  'Phiên ví đang xử lý thao tác khác.': 'The wallet is processing another action.',
-  'Nhân vật không thuộc danh mục hiện tại.': 'This character is not in the current catalog.',
-  'Chưa xác nhận quyền sở hữu nhân vật.': 'Character ownership has not been verified.',
+  'Phiên ví đang xử lý thao tác khác.':
+      'The wallet is processing another action.',
+  'Nhân vật không thuộc danh mục hiện tại.':
+      'This character is not in the current catalog.',
+  'Chưa xác nhận quyền sở hữu nhân vật.':
+      'Character ownership has not been verified.',
   'Nhà Thám Hiểm Vàng': 'Gold Adventurer',
   'HỒ SƠ': 'PROFILE',
   'Đóng Hồ sơ': 'Close profile',
@@ -182,9 +219,11 @@ const banDichAnh = <String, String>{
   'Đang dùng': 'In use',
   'Tháo trang bị': 'Unequip',
   'Trang bị': 'Equip',
-  'Nhân vật chỉ thay đổi ngoại hình, không ảnh hưởng sức mạnh.': 'Characters only change appearance, not combat power.',
+  'Nhân vật chỉ thay đổi ngoại hình, không ảnh hưởng sức mạnh.':
+      'Characters only change appearance, not combat power.',
   'Tạo ảnh nhân vật AI': 'Create AI character image',
-  'Cấu hình API ảnh nhân vật không hợp lệ.': 'Invalid character image API configuration.',
+  'Cấu hình API ảnh nhân vật không hợp lệ.':
+      'Invalid character image API configuration.',
   'ĐANG DÙNG': 'IN USE',
   'Chưa có dữ liệu': 'No data yet',
   'Chưa trang bị': 'Not equipped',
@@ -200,7 +239,8 @@ const banDichAnh = <String, String>{
   'Miễn phí': 'Free',
   'Đã mặc': 'Equipped',
   'Cần kết nối MetaMask để mua vật phẩm.': 'Connect MetaMask to buy items.',
-  'Đã mua {0}; NFT đã được thêm vào Kho đồ.': 'Purchased {0}; the NFT has been added to Inventory.',
+  'Đã mua {0}; NFT đã được thêm vào Kho đồ.':
+      'Purchased {0}; the NFT has been added to Inventory.',
   '{0} HP  ·  {1} ô  ·  cơ bản': '{0} HP  ·  {1} tiles  ·  base',
   '+{0} HP  ·  giảm {1}%': '+{0} HP  ·  {1}% reduction',
   '+{0}% tốc độ chạy': '+{0}% movement speed',
@@ -223,23 +263,30 @@ const banDichAnh = <String, String>{
   'TRUNG TÂM\nQUÀ TẶNG': 'GIFT\nCENTER',
   'Khám phá những mã quà đặc biệt\nvà nhận phần thưởng vào ví Gold Rush.': 'Discover special gift codes\nand receive rewards in your Gold Rush wallet.',
   'MỞ CAMERA QUÉT QR': 'OPEN QR SCANNER',
-  '✧ Quét mã QR hợp lệ để nhận quà ✧': '✧ Scan a valid QR code to claim a gift ✧',
+  '✧ Quét mã QR hợp lệ để nhận quà ✧':
+      '✧ Scan a valid QR code to claim a gift ✧',
   'Tìm vật phẩm...': 'Search items...',
   'Quay lại Menu': 'Back to menu',
-  'Đang xử lý. Vui lòng chờ trước khi đóng Kho đồ.': 'Processing. Please wait before closing Inventory.',
+  'Đang xử lý. Vui lòng chờ trước khi đóng Kho đồ.':
+      'Processing. Please wait before closing Inventory.',
   'Dữ liệu trang bị chưa nhất quán': 'Equipment data is inconsistent',
   'TRANG BỊ ĐANG DÙNG': 'EQUIPPED ITEMS',
-  'Trang bị đang dùng được hiển thị theo dữ liệu hệ thống cung cấp.': 'Equipped items are shown using data provided by the system.',
+  'Trang bị đang dùng được hiển thị theo dữ liệu hệ thống cung cấp.':
+      'Equipped items are shown using data provided by the system.',
   'TÚI VẬT PHẨM': 'ITEM BAG',
-  'Đã làm mới Kho đồ theo Blockchain.': 'Inventory refreshed from the blockchain.',
+  'Đã làm mới Kho đồ theo Blockchain.':
+      'Inventory refreshed from the blockchain.',
   'Đang làm mới…': 'Refreshing…',
   'LÀM MỚI KHO ĐỒ': 'REFRESH INVENTORY',
-  'Có dữ liệu DEMO trong danh sách. Đây không phải bằng chứng sở hữu vật phẩm của người chơi.': 'This list contains DEMO data. It is not proof of item ownership.',
+  'Có dữ liệu DEMO trong danh sách. Đây không phải bằng chứng sở hữu vật phẩm của người chơi.':
+      'This list contains DEMO data. It is not proof of item ownership.',
   'Túi vật phẩm đang trống': 'Your item bag is empty',
-  'Vật phẩm sẽ xuất hiện tại đây khi hệ thống cung cấp dữ liệu kho đồ.': 'Items will appear here when inventory data is available.',
+  'Vật phẩm sẽ xuất hiện tại đây khi hệ thống cung cấp dữ liệu kho đồ.':
+      'Items will appear here when inventory data is available.',
   'Không tải được kho đồ.': 'Unable to load Inventory.',
   'CHI TIẾT VẬT PHẨM': 'ITEM DETAILS',
-  'Chọn một vật phẩm trong danh sách để xem thông tin.': 'Select an item to view its details.',
+  'Chọn một vật phẩm trong danh sách để xem thông tin.':
+      'Select an item to view its details.',
   'Hoán đổi': 'Transfer',
   'DEMO — dữ liệu minh họa': 'DEMO — sample data',
   'Loại': 'Type',
@@ -258,16 +305,19 @@ const banDichAnh = <String, String>{
   'Chưa nhập địa chỉ': 'No address entered',
   'Địa chỉ ví người nhận không hợp lệ.': 'Invalid recipient wallet address.',
   'Chưa kết nối xử lý chuyển NFT.': 'NFT transfer is not connected yet.',
-  'Đã chuyển {0} ×{1} NFT thành công.': 'Successfully transferred {0} ×{1} NFT.',
+  'Đã chuyển {0} ×{1} NFT thành công.':
+      'Successfully transferred {0} ×{1} NFT.',
   'Chuyển NFT thất bại: {0}': 'NFT transfer failed: {0}',
   'Đang chuyển…': 'Transferring…',
   'Xác nhận chuyển': 'Confirm transfer',
   'FROM · VÍ NGƯỜI GỬI': 'FROM · SENDER WALLET',
   'CỦA BẠN': 'YOURS',
   'TO · ĐỊA CHỈ VÍ NGƯỜI NHẬN': 'TO · RECIPIENT WALLET ADDRESS',
-  'Nhập địa chỉ ví Ethereum 0x... của người nhận.': 'Enter the recipient\'s Ethereum wallet address (0x...).',
+  'Nhập địa chỉ ví Ethereum 0x... của người nhận.':
+      'Enter the recipient\'s Ethereum wallet address (0x...).',
   'SỐ LƯỢNG NFT MUỐN CHUYỂN': 'NFT QUANTITY TO TRANSFER',
-  'Sở hữu: {0} NFT · Tối đa chuyển: {1}': 'Owned: {0} NFT · Transfer limit: {1}',
+  'Sở hữu: {0} NFT · Tối đa chuyển: {1}':
+      'Owned: {0} NFT · Transfer limit: {1}',
   'Phí giao dịch: Hardhat ETH thử nghiệm. Phí gas thực tế sẽ được ví hiển thị khi gửi giao dịch.': 'Fees use test Hardhat ETH. Your wallet will show the actual gas fee when submitting.',
   'Tiếp tục': 'Continue',
   '✦ CHUYỂN NFT': '✦ TRANSFER NFT',
@@ -276,15 +326,18 @@ const banDichAnh = <String, String>{
   'Vật phẩm này không thuộc nhóm vũ khí, giáp hoặc giày. Chưa tích hợp thao tác sử dụng vật phẩm.': 'This item is not a weapon, armor or boots. Item usage is not integrated yet.',
   'Đang xử lý…': 'Processing…',
   'Chưa kết nối xử lý trang bị. Nút sẽ hoạt động khi module nghiệp vụ cung cấp callback.': 'Equipment actions are not connected yet. This button requires a gameplay callback.',
-  'Yêu cầu đã được xác nhận. Trạng thái hiển thị theo dữ liệu cập nhật từ hệ thống.': 'Request confirmed. The display follows updated system data.',
-  'Thao tác không thành công. Giao diện không tự thay đổi trang bị; bạn có thể thử lại.': 'Action failed. Equipment remains unchanged; you can try again.',
+  'Yêu cầu đã được xác nhận. Trạng thái hiển thị theo dữ liệu cập nhật từ hệ thống.':
+      'Request confirmed. The display follows updated system data.',
+  'Thao tác không thành công. Giao diện không tự thay đổi trang bị; bạn có thể thử lại.':
+      'Action failed. Equipment remains unchanged; you can try again.',
   'NHÂN VẬT ĐANG DÙNG': 'ACTIVE CHARACTER',
   'Chưa xác nhận được nhân vật đang dùng': 'Active character not verified',
   'Chưa có dữ liệu nhân vật': 'No character data yet',
   'Lựa chọn được đọc từ hệ thống. Nhân vật cửa hàng cần được phiên ví xác nhận quyền sở hữu.': 'Selection is provided by the system. Shop characters require wallet ownership verification.',
   'BỘ SƯU TẬP NHÂN VẬT': 'CHARACTER COLLECTION',
   'Chưa có danh sách nhân vật': 'No character list yet',
-  'George và nhân vật cửa hàng sẽ hiển thị khi nguồn dữ liệu sẵn sàng.': 'George and shop characters will appear when data is available.',
+  'George và nhân vật cửa hàng sẽ hiển thị khi nguồn dữ liệu sẵn sàng.':
+      'George and shop characters will appear when data is available.',
   'Không tải được danh sách nhân vật.': 'Unable to load the character list.',
   'NHÂN VẬT AI': 'AI CHARACTERS',
   'Khu vực dành cho nhân vật do AI tạo.': 'Your AI generated characters.',
@@ -302,24 +355,35 @@ const banDichAnh = <String, String>{
   '{0} · ĐANG DÙNG': '{0} · IN USE',
   'Đang tải dữ liệu…': 'Loading data…',
   'Thử lại': 'Retry',
-  'Chọn ngoại hình nhân vật. Lựa chọn được áp dụng từ ván chơi tiếp theo.': 'Choose your character appearance. Changes apply from the next run.',
-  'Phiên ví đang xử lý. Vui lòng đợi trước khi chọn nhân vật.': 'The wallet is busy. Please wait before selecting a character.',
+  'Chọn ngoại hình nhân vật. Lựa chọn được áp dụng từ ván chơi tiếp theo.':
+      'Choose your character appearance. Changes apply from the next run.',
+  'Phiên ví đang xử lý. Vui lòng đợi trước khi chọn nhân vật.':
+      'The wallet is busy. Please wait before selecting a character.',
   'Đang xác nhận lựa chọn nhân vật…': 'Confirming character selection…',
-  'Chưa kết nối thao tác chọn nhân vật.': 'Character selection is not connected yet.',
+  'Chưa kết nối thao tác chọn nhân vật.':
+      'Character selection is not connected yet.',
   'Nhân vật mặc định': 'Default character',
   'Đã sở hữu theo phiên ví': 'Owned according to your wallet session',
   'Chọn nhân vật': 'Select character',
-  'Chưa xác nhận được quyền sở hữu nhân vật.': 'Character ownership has not been verified.',
-  'Tài khoản ví đã thay đổi. Vui lòng kiểm tra lại danh sách nhân vật.': 'Your wallet account changed. Please check the character list again.',
-  'Không chọn được nhân vật. Vui lòng kiểm tra dữ liệu và thử lại.': 'Unable to select character. Check the data and try again.',
+  'Chưa xác nhận được quyền sở hữu nhân vật.':
+      'Character ownership has not been verified.',
+  'Tài khoản ví đã thay đổi. Vui lòng kiểm tra lại danh sách nhân vật.':
+      'Your wallet account changed. Please check the character list again.',
+  'Không chọn được nhân vật. Vui lòng kiểm tra dữ liệu và thử lại.':
+      'Unable to select character. Check the data and try again.',
   'Không tải được ảnh nhân vật': 'Unable to load character image',
   'Chưa có vật phẩm.': 'No items yet.',
-  'Máy chủ phản hồi quá lâu. Hãy thử làm mới.': 'The server took too long. Try refreshing.',
+  'Máy chủ phản hồi quá lâu. Hãy thử làm mới.':
+      'The server took too long. Try refreshing.',
   'Không tải được danh sách nhân vật AI.': 'Unable to load AI characters.',
-  'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.': 'Your session has expired. Please sign in again.',
-  'Phiên hiện tại không có quyền xem danh sách này.': 'Your current session cannot view this list.',
-  'Đăng nhập ví MetaMask SIWE để xem nhân vật AI đã lưu.': 'Sign in with MetaMask SIWE to view saved AI characters.',
-  'Bạn chưa tạo nhân vật AI nào. Hãy tạo nhân vật đầu tiên.': 'You have no AI characters yet. Create your first one.',
+  'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.':
+      'Your session has expired. Please sign in again.',
+  'Phiên hiện tại không có quyền xem danh sách này.':
+      'Your current session cannot view this list.',
+  'Đăng nhập ví MetaMask SIWE để xem nhân vật AI đã lưu.':
+      'Sign in with MetaMask SIWE to view saved AI characters.',
+  'Bạn chưa tạo nhân vật AI nào. Hãy tạo nhân vật đầu tiên.':
+      'You have no AI characters yet. Create your first one.',
   'Tạo nhân vật AI': 'Create AI character',
   'Làm mới': 'Refresh',
   'Ảnh nhân vật AI {0}': 'AI character image: {0}',
@@ -327,8 +391,10 @@ const banDichAnh = <String, String>{
   'Xem chi tiết': 'View details',
   'Ảnh chi tiết nhân vật AI {0}': 'AI character detail image: {0}',
   'Trạng thái: Đã lưu trong Backend': 'Status: Saved on the server',
-  'Loại tài sản: Nhân vật AI, không phải NFT': 'Asset type: AI character, not an NFT',
-  'Gameplay: Chưa có sprite sheet 4×4 để trang bị': 'Gameplay: No equippable 4×4 sprite sheet yet',
+  'Loại tài sản: Nhân vật AI, không phải NFT':
+      'Asset type: AI character, not an NFT',
+  'Gameplay: Chưa có sprite sheet 4×4 để trang bị':
+      'Gameplay: No equippable 4×4 sprite sheet yet',
   'Mã: {0}': 'ID: {0}',
   'Ngày tạo: {0}': 'Created: {0}',
   'Súng Lục Mặc Định': 'Default Pistol',
@@ -358,35 +424,43 @@ const banDichAnh = <String, String>{
   'Giày Hắc Long': 'Black Dragon Boots',
   'Giày Tinh Thể Huyền Bí': 'Mystic Crystal Boots',
   'Giày Phượng Hoàng Hoàng Kim': 'Golden Phoenix Boots',
-  'Đạn xuyên tối đa 2 quái trên cùng đường bắn.': 'Bullets pierce up to 2 enemies in a straight line.',
-  'Súng dùng để bắn quái theo hướng nhìn.': 'Shoots enemies in the direction you face.',
+  'Đạn xuyên tối đa 2 quái trên cùng đường bắn.':
+      'Bullets pierce up to 2 enemies in a straight line.',
+  'Súng dùng để bắn quái theo hướng nhìn.':
+      'Shoots enemies in the direction you face.',
   'Sát thương': 'Damage',
   '{0} HP/viên': '{0} HP/shot',
   'Tầm bắn': 'Range',
   '{0} ô': '{0} tiles',
   'Xuyên mục tiêu': 'Piercing',
   'Tối đa 2 quái': 'Up to 2 enemies',
-  'Tăng HP tối đa và giảm sát thương khi quái va chạm.': 'Increases max HP and reduces collision damage from enemies.',
+  'Tăng HP tối đa và giảm sát thương khi quái va chạm.':
+      'Increases max HP and reduces collision damage from enemies.',
   'HP cộng thêm': 'Bonus HP',
   'Giảm sát thương': 'Damage reduction',
   'Tăng tốc độ chạy của George.': 'Increases George\'s movement speed.',
   'Tốc độ chạy': 'Movement speed',
   'Thợ mỏ tập sự': 'Apprentice Miner',
-  'Hoàn thành và chiến thắng màn 1 lần đầu tiên.': 'Win stage 1 for the first time.',
+  'Hoàn thành và chiến thắng màn 1 lần đầu tiên.':
+      'Win stage 1 for the first time.',
   'Chiến binh dũng cảm': 'Brave Warrior',
-  'Hoàn thành và chiến thắng màn 6 lần đầu tiên.': 'Win stage 6 for the first time.',
+  'Hoàn thành và chiến thắng màn 6 lần đầu tiên.':
+      'Win stage 6 for the first time.',
   'Kẻ chinh phục Boss': 'Boss Conqueror',
   'Hoàn thành màn 9 thành công.': 'Complete stage 9.',
   'Bậc thầy chinh phục': 'Master Conqueror',
-  'Hoàn thành và chiến thắng màn 15 lần đầu tiên.': 'Win stage 15 for the first time.',
+  'Hoàn thành và chiến thắng màn 15 lần đầu tiên.':
+      'Win stage 15 for the first time.',
   'Huyền Thoại Gold Rush': 'Gold Rush Legend',
-  'Hoàn thành và chiến thắng màn 20, kết thúc hành trình phiêu lưu.': 'Win stage 20 and complete your adventure.',
+  'Hoàn thành và chiến thắng màn 20, kết thúc hành trình phiêu lưu.':
+      'Win stage 20 and complete your adventure.',
   'Xem đề xuất': 'View recommendation',
   'Đang tải…': 'Loading…',
   'Cập nhật đề xuất': 'Refresh recommendation',
   'Đề xuất độ khó màn {0}': 'Stage {0} difficulty recommendation',
   'Đang lấy đề xuất': 'Loading recommendation',
-  'Xem gợi ý độ khó dựa trên lịch sử chơi.': 'View difficulty recommendations based on your play history.',
+  'Xem gợi ý độ khó dựa trên lịch sử chơi.':
+      'View difficulty recommendations based on your play history.',
   'Dễ': 'Easy',
   'Trung bình': 'Medium',
   'Khó': 'Hard',
@@ -401,23 +475,32 @@ const banDichAnh = <String, String>{
   'Ván được đánh giá • {0}': 'Runs evaluated • {0}',
   'Nguồn đề xuất • {0}': 'Recommendation source • {0}',
   'Máy chủ cần xác minh người chơi.': 'The server needs to verify the player.',
-  'Bạn chưa có quyền xem đề xuất cho màn này.': 'You cannot view recommendations for this stage yet.',
-  'Đang có nhiều yêu cầu. Bạn có thể thử lại sau.': 'Too many requests. Please try again later.',
+  'Bạn chưa có quyền xem đề xuất cho màn này.':
+      'You cannot view recommendations for this stage yet.',
+  'Đang có nhiều yêu cầu. Bạn có thể thử lại sau.':
+      'Too many requests. Please try again later.',
   'Chưa cấu hình máy chủ AI.': 'The AI server is not configured.',
   'Thông tin màn chơi chưa hợp lệ.': 'Invalid stage information.',
-  'Máy chủ phản hồi quá lâu. Hãy thử lại sau.': 'The server took too long. Please try again later.',
-  'Không kết nối được máy chủ. Hãy kiểm tra mạng và thử lại.': 'Cannot connect to the server. Check your connection and try again.',
-  'Máy chủ chưa chấp nhận yêu cầu đề xuất ({0}).': 'The server rejected the recommendation request ({0}).',
-  'Dịch vụ đề xuất chưa sẵn sàng. Hãy thử lại sau.': 'The recommendation service is unavailable. Try again later.',
-  'Chưa đọc được đề xuất. Hãy thử lại sau.': 'Unable to read the recommendation. Try again later.',
+  'Máy chủ phản hồi quá lâu. Hãy thử lại sau.':
+      'The server took too long. Please try again later.',
+  'Không kết nối được máy chủ. Hãy kiểm tra mạng và thử lại.':
+      'Cannot connect to the server. Check your connection and try again.',
+  'Máy chủ chưa chấp nhận yêu cầu đề xuất ({0}).':
+      'The server rejected the recommendation request ({0}).',
+  'Dịch vụ đề xuất chưa sẵn sàng. Hãy thử lại sau.':
+      'The recommendation service is unavailable. Try again later.',
+  'Chưa đọc được đề xuất. Hãy thử lại sau.':
+      'Unable to read the recommendation. Try again later.',
   'Nhiệm vụ màn {0}': 'Stage {0} quest',
   'Đang tạo nhiệm vụ…': 'Creating quest…',
-  'Tạo một đề xuất nhiệm vụ phù hợp với màn chơi.': 'Create a quest recommendation for this stage.',
+  'Tạo một đề xuất nhiệm vụ phù hợp với màn chơi.':
+      'Create a quest recommendation for this stage.',
   'Tạo nhiệm vụ': 'Create quest',
   'Tạo nhiệm vụ mới': 'Create new quest',
   'Thu thập {0} xu': 'Collect {0} coins',
   'Hoàn thành màn trước thời hạn': 'Complete the stage before the deadline',
-  'Hoàn thành màn, trúng đòn tối đa {0} lần': 'Complete the stage taking at most {0} hits',
+  'Hoàn thành màn, trúng đòn tối đa {0} lần':
+      'Complete the stage taking at most {0} hits',
   'Mẫu demo': 'Demo template',
   'Ngữ cảnh demo': 'Demo context',
   'Ngữ cảnh đã xác minh': 'Verified context',
@@ -426,46 +509,70 @@ const banDichAnh = <String, String>{
   'Thưởng • {0} vàng': 'Reward • {0} gold',
   'Nguồn sinh • {0}': 'Generation source • {0}',
   'Trạng thái • Được đề xuất': 'Status • Recommended',
-  'Màn này chưa được ngữ cảnh người chơi cho phép.': 'Your player context does not allow this stage yet.',
+  'Màn này chưa được ngữ cảnh người chơi cho phép.':
+      'Your player context does not allow this stage yet.',
   'Cần xác thực người chơi với máy chủ.': 'Player authentication is required.',
-  'Máy chủ đang giới hạn yêu cầu. Hãy thử lại sau.': 'The server is limiting requests. Try again later.',
-  'Chưa cấu hình GOLD_RUSH_API. Tính năng nhiệm vụ đang offline.': 'GOLD_RUSH_API is not configured. Quests are offline.',
+  'Máy chủ đang giới hạn yêu cầu. Hãy thử lại sau.':
+      'The server is limiting requests. Try again later.',
+  'Chưa cấu hình GOLD_RUSH_API. Tính năng nhiệm vụ đang offline.':
+      'GOLD_RUSH_API is not configured. Quests are offline.',
   'Thông tin yêu cầu nhiệm vụ không hợp lệ.': 'Invalid quest request.',
-  'Máy chủ phản hồi quá lâu. Có thể thử lại cùng yêu cầu.': 'The server took too long. You can retry the same request.',
-  'Máy chủ từ chối yêu cầu nhiệm vụ ({0}).': 'The server rejected the quest request ({0}).',
-  'Dịch vụ nhiệm vụ chưa sẵn sàng. Hãy thử lại sau.': 'The quest service is unavailable. Try again later.',
-  'Phản hồi nhiệm vụ không hợp lệ. Hãy tạo yêu cầu mới.': 'Invalid quest response. Create a new request.',
+  'Máy chủ phản hồi quá lâu. Có thể thử lại cùng yêu cầu.':
+      'The server took too long. You can retry the same request.',
+  'Máy chủ từ chối yêu cầu nhiệm vụ ({0}).':
+      'The server rejected the quest request ({0}).',
+  'Dịch vụ nhiệm vụ chưa sẵn sàng. Hãy thử lại sau.':
+      'The quest service is unavailable. Try again later.',
+  'Phản hồi nhiệm vụ không hợp lệ. Hãy tạo yêu cầu mới.':
+      'Invalid quest response. Create a new request.',
   'Thợ mỏ vàng AI': 'AI gold miner',
-  'Tài khoản ví MetaMask đã thay đổi. Vui lòng đăng nhập lại SIWE.': 'Your MetaMask account changed. Please sign in with SIWE again.',
+  'Tài khoản ví MetaMask đã thay đổi. Vui lòng đăng nhập lại SIWE.':
+      'Your MetaMask account changed. Please sign in with SIWE again.',
   'Đăng nhập MetaMask SIWE thành công!': 'MetaMask SIWE sign in successful!',
   'Không thể hoàn tất đăng nhập: {0}': 'Unable to complete sign in: {0}',
-  'Chưa tìm thấy tiện ích MetaMask trên trình duyệt.': 'MetaMask was not found in this browser.',
-  'Không thể khởi tạo thử thách SIWE từ máy chủ.': 'Unable to create a SIWE challenge on the server.',
+  'Chưa tìm thấy tiện ích MetaMask trên trình duyệt.':
+      'MetaMask was not found in this browser.',
+  'Không thể khởi tạo thử thách SIWE từ máy chủ.':
+      'Unable to create a SIWE challenge on the server.',
   'Xác thực chữ ký SIWE thất bại.': 'SIWE signature verification failed.',
   'Bạn đã hủy ký xác thực SIWE.': 'You cancelled the SIWE signature.',
   'Lỗi ví: {0}': 'Wallet error: {0}',
   'Đã đăng xuất phiên MetaMask an toàn.': 'MetaMask session signed out safely.',
-  'Cần hoàn thành đủ 6 màn chơi để mở khóa tạo nhân vật AI ({0}/6).': 'Complete all 6 stages to unlock AI character creation ({0}/6).',
-  'Cần đăng nhập MetaMask SIWE trước khi lưu nhân vật.': 'Sign in with MetaMask SIWE before saving a character.',
-  'Tên nhân vật phải từ 1 đến 32 ký tự.': 'Character names must contain 1–32 characters.',
-  'Ảnh đã tạo xong và được tự động lưu vào tài khoản!': 'Image created and automatically saved to your account!',
-  'Đã lưu nhân vật "{0}" thành công vào tài khoản!': 'Character "{0}" saved to your account!',
+  'Cần hoàn thành đủ 6 màn chơi để mở khóa tạo nhân vật AI ({0}/6).':
+      'Complete all 6 stages to unlock AI character creation ({0}/6).',
+  'Cần đăng nhập MetaMask SIWE trước khi lưu nhân vật.':
+      'Sign in with MetaMask SIWE before saving a character.',
+  'Tên nhân vật phải từ 1 đến 32 ký tự.':
+      'Character names must contain 1–32 characters.',
+  'Ảnh đã tạo xong và được tự động lưu vào tài khoản!':
+      'Image created and automatically saved to your account!',
+  'Đã lưu nhân vật "{0}" thành công vào tài khoản!':
+      'Character "{0}" saved to your account!',
   'Lưu nhân vật thất bại ({0}).': 'Failed to save character ({0}).',
   'Lỗi kết nối': 'Connection error',
-  'Cần đăng nhập MetaMask SIWE để đăng ký on-chain.': 'Sign in with MetaMask SIWE to register on-chain.',
-  'Máy chủ từ chối cấp Voucher EIP-712.': 'The server refused to issue an EIP-712 voucher.',
-  'Đã gửi giao dịch on-chain! Tx: {0}…': 'On-chain transaction submitted! Tx: {0}…',
-  'Xác minh thành công! Nhân vật đã được ghi nhận On-Chain.': 'Verified! Your character has been registered on-chain.',
-  'Giao dịch đang chờ xác nhận trên blockchain ({0}).': 'Transaction awaiting blockchain confirmation ({0}).',
-  'Chưa xác minh được giao dịch với Backend.': 'Unable to verify the transaction with the server yet.',
-  'Bạn đã hủy xác nhận giao dịch trên MetaMask.': 'You cancelled the transaction in MetaMask.',
+  'Cần đăng nhập MetaMask SIWE để đăng ký on-chain.':
+      'Sign in with MetaMask SIWE to register on-chain.',
+  'Máy chủ từ chối cấp Voucher EIP-712.':
+      'The server refused to issue an EIP-712 voucher.',
+  'Đã gửi giao dịch on-chain! Tx: {0}…':
+      'On-chain transaction submitted! Tx: {0}…',
+  'Xác minh thành công! Nhân vật đã được ghi nhận On-Chain.':
+      'Verified! Your character has been registered on-chain.',
+  'Giao dịch đang chờ xác nhận trên blockchain ({0}).':
+      'Transaction awaiting blockchain confirmation ({0}).',
+  'Chưa xác minh được giao dịch với Backend.':
+      'Unable to verify the transaction with the server yet.',
+  'Bạn đã hủy xác nhận giao dịch trên MetaMask.':
+      'You cancelled the transaction in MetaMask.',
   'Lỗi MetaMask: {0}': 'MetaMask error: {0}',
   'Đăng ký on-chain gặp sự cố: {0}': 'On-chain registration failed: {0}',
-  'Đã sao chép SHA-256 Character Hash vào bộ nhớ tạm!': 'SHA-256 character hash copied to clipboard!',
+  'Đã sao chép SHA-256 Character Hash vào bộ nhớ tạm!':
+      'SHA-256 character hash copied to clipboard!',
   'Đang tạo ảnh…': 'Generating image…',
   'Đang tải ảnh…': 'Loading image…',
   'Tạo nhân vật': 'Create character',
-  'Mô tả nhân vật bạn muốn xem, như một thợ mỏ đội mũ vàng.': 'Describe your character, for example a miner wearing a yellow helmet.',
+  'Mô tả nhân vật bạn muốn xem, như một thợ mỏ đội mũ vàng.':
+      'Describe your character, for example a miner wearing a yellow helmet.',
   'Mô tả nhân vật': 'Character description',
   'Tối đa 500 ký tự.': 'Up to 500 characters.',
   'Hãy nhập mô tả nhân vật.': 'Please enter a character description.',
@@ -474,7 +581,8 @@ const banDichAnh = <String, String>{
   'Ảnh từ mô hình AI': 'AI generated image',
   'Phiên demo': 'Demo session',
   'Phiên đã xác minh': 'Verified session',
-  'Ảnh mẫu được chọn theo mô tả.': 'A sample image selected based on your description.',
+  'Ảnh mẫu được chọn theo mô tả.':
+      'A sample image selected based on your description.',
   'Ảnh xem trước nhân vật': 'Character image preview',
   'Chưa hiển thị được ảnh.': 'Unable to display the image yet.',
   'Ảnh tĩnh để xem trước.': 'Static preview image.',
@@ -494,31 +602,43 @@ const banDichAnh = <String, String>{
   'LƯU Ý: Ảnh preview 128×128 pixel-art là ảnh tĩnh minh hoạ, CHƯA PHẢI sprite sheet điều khiển được trong game Flame.': 'NOTE: The 128×128 pixel art preview is a static illustration, NOT a playable Flame sprite sheet.',
   'Đã lưu: {0}': 'Saved: {0}',
   'Sao chép SHA-256': 'Copy SHA-256',
-  'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. {0}{1}': 'Your character is in Inventory > AI Characters. {0}{1}',
+  'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. {0}{1}':
+      'Your character is in Inventory > AI Characters. {0}{1}',
   'Đăng ký on-chain: token #{0}': 'On-chain registration: token #{0}',
   'Trạng thái on-chain: {0}': 'On-chain status: {0}',
-  'Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet 4×4 để điều khiển trong gameplay.': 'The image is a static 128×128 PNG, not a playable 4×4 sprite sheet.',
+  'Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet 4×4 để điều khiển trong gameplay.':
+      'The image is a static 128×128 PNG, not a playable 4×4 sprite sheet.',
   'VỀ KHO ĐỒ XEM NHÂN VẬT': 'VIEW CHARACTER IN INVENTORY',
   'Tên nhân vật': 'Character name',
-  'Tối đa 32 ký tự để lưu vào CSDL Backend.': 'Up to 32 characters for server storage.',
+  'Tối đa 32 ký tự để lưu vào CSDL Backend.':
+      'Up to 32 characters for server storage.',
   'CẦN ĐĂNG NHẬP ĐỂ LƯU': 'SIGN IN TO SAVE',
   'Đang lưu…': 'Saving…',
   'LƯU NHÂN VẬT VÀO TÀI KHOẢN': 'SAVE CHARACTER TO ACCOUNT',
   'NHÂN VẬT ({0})': 'CHARACTERS ({0})',
-  'Đăng nhập ví MetaMask SIWE để xem danh sách nhân vật đã lưu.': 'Sign in with MetaMask SIWE to view saved characters.',
+  'Đăng nhập ví MetaMask SIWE để xem danh sách nhân vật đã lưu.':
+      'Sign in with MetaMask SIWE to view saved characters.',
   'Bạn chưa lưu nhân vật AI nào. Hãy tạo ảnh và bấm "LƯU NHÂN VẬT"!': 'No saved AI characters yet. Generate an image and select "SAVE CHARACTER"!',
   'Kiểm tra lại trạng thái': 'Check status again',
   'Đăng ký On-Chain (EIP-712)': 'Register On-Chain (EIP-712)',
-  'Bạn chưa có quyền sử dụng ảnh này.': 'You do not have permission to use this image.',
-  'Ảnh đã hết hạn hoặc không còn khả dụng. Hãy tạo ảnh mới.': 'This image expired or is unavailable. Generate a new image.',
+  'Bạn chưa có quyền sử dụng ảnh này.':
+      'You do not have permission to use this image.',
+  'Ảnh đã hết hạn hoặc không còn khả dụng. Hãy tạo ảnh mới.':
+      'This image expired or is unavailable. Generate a new image.',
   'Yêu cầu này đã dùng cho mô tả khác. Hãy tạo ảnh mới.': 'This request was used for a different description. Generate a new image.',
   'Mô tả nhân vật chưa hợp lệ.': 'Invalid character description.',
-  'Máy chủ phản hồi quá lâu. Bạn có thể thử lại.': 'The server took too long. You can try again.',
-  'Máy chủ chưa chấp nhận yêu cầu ảnh ({0}).': 'The server rejected the image request ({0}).',
-  'Dịch vụ ảnh chưa sẵn sàng. Bạn có thể thử lại sau.': 'The image service is unavailable. Try again later.',
-  'Ảnh nhận được không hợp lệ. Hãy tạo ảnh mới.': 'Invalid image received. Generate a new image.',
-  'Phản hồi tạo ảnh không hợp lệ. Hãy tạo ảnh mới.': 'Invalid image generation response. Generate a new image.',
-  'Chưa có dữ liệu màn chơi. Hãy quay lại Menu và thử lại.': 'No stage data. Return to the menu and try again.',
+  'Máy chủ phản hồi quá lâu. Bạn có thể thử lại.':
+      'The server took too long. You can try again.',
+  'Máy chủ chưa chấp nhận yêu cầu ảnh ({0}).':
+      'The server rejected the image request ({0}).',
+  'Dịch vụ ảnh chưa sẵn sàng. Bạn có thể thử lại sau.':
+      'The image service is unavailable. Try again later.',
+  'Ảnh nhận được không hợp lệ. Hãy tạo ảnh mới.':
+      'Invalid image received. Generate a new image.',
+  'Phản hồi tạo ảnh không hợp lệ. Hãy tạo ảnh mới.':
+      'Invalid image generation response. Generate a new image.',
+  'Chưa có dữ liệu màn chơi. Hãy quay lại Menu và thử lại.':
+      'No stage data. Return to the menu and try again.',
   'Chưa mở': 'Locked',
   'Đã mở': 'Unlocked',
   'Đã hoàn thành': 'Completed',
@@ -527,16 +647,21 @@ const banDichAnh = <String, String>{
   'Đóng thông tin màn': 'Close stage details',
   'Trạng thái: {0}': 'Status: {0}',
   'Tiến trình mở khóa chưa được kết nối. Hiện giữ quyền chọn màn như phiên bản gốc.': 'Unlock progress is not connected. Stage selection follows the original version.',
-  'Thắng để mở màn kế tiếp. Tiến trình được lưu trên máy.': 'Win to unlock the next stage. Progress is saved on this device.',
-  'Màn có cọc cần cấu hình máy chủ và kết nối ví.': 'Deposit stages require a configured server and connected wallet.',
+  'Thắng để mở màn kế tiếp. Tiến trình được lưu trên máy.':
+      'Win to unlock the next stage. Progress is saved on this device.',
+  'Màn có cọc cần cấu hình máy chủ và kết nối ví.':
+      'Deposit stages require a configured server and connected wallet.',
   'Vàng: {0}': 'Gold: {0}',
   'Màn chưa mở': 'Stage locked',
   'Hoàn thành màn trước để mở khóa màn này. Tiến trình được lưu trên máy.': 'Complete the previous stage to unlock this one. Progress is saved on this device.',
   'Chơi': 'Play',
-  'Vui lòng hoàn tất thao tác đang xử lý.': 'Please finish the current action first.',
+  'Vui lòng hoàn tất thao tác đang xử lý.':
+      'Please finish the current action first.',
   'Cọc {0}': 'Deposit {0}',
-  'Cần cấu hình máy chủ và kết nối ví để vào màn có cọc.': 'Configure the server and connect your wallet to enter deposit stages.',
-  'Chưa đủ vàng để đặt cọc {0} vàng.': 'Not enough gold for a {0} gold deposit.',
+  'Cần cấu hình máy chủ và kết nối ví để vào màn có cọc.':
+      'Configure the server and connect your wallet to enter deposit stages.',
+  'Chưa đủ vàng để đặt cọc {0} vàng.':
+      'Not enough gold for a {0} gold deposit.',
   'MÀN {0} · {1}': 'STAGE {0} · {1}',
   'Màn phiêu lưu local · {0}': 'Local adventure · {0}',
   'Màn luyện tập · {0}': 'Practice stage · {0}',
@@ -548,27 +673,35 @@ const banDichAnh = <String, String>{
   'Đặt cọc': 'Deposit',
   'Thưởng thêm': 'Bonus',
   'Hoàn thành hợp lệ: {0} vàng = {1} hoàn cọc + {2} xu + {3} thưởng. Chết, hết giờ hoặc bỏ ván sẽ mất cọc.': 'Valid completion: {0} gold = {1} deposit refund + {2} coins + {3} bonus. Death, timeout or abandoning the run forfeits the deposit.',
-  'Không đăng ký được màn chơi với máy chủ: {0}': 'Unable to register the stage with the server: {0}',
+  'Không đăng ký được màn chơi với máy chủ: {0}':
+      'Unable to register the stage with the server: {0}',
   'Không nạp được bản đồ {0}.': 'Unable to load map {0}.',
   'Không mở được màn {0}. {1}': 'Unable to open stage {0}. {1}',
   'Vé số {0} đã đăng ký với máy chủ nên cọc của vé này không lấy lại được — báo giảng viên kèm thông báo lỗi trong console.': 'Ticket {0} is registered with the server, so its deposit cannot be recovered — report the console error to your instructor.',
   'Đã hoàn lại {0} vàng cọc.': 'Refunded {0} gold deposit.',
-  'Không nạp được bản đồ {0} — chưa trừ vàng.': 'Unable to load map {0} — no gold deducted.',
+  'Không nạp được bản đồ {0} — chưa trừ vàng.':
+      'Unable to load map {0} — no gold deducted.',
   'Vào màn {0} · {1}?': 'Enter stage {0} · {1}?',
   '{0}{1}• Nhặt đủ {2} xu trong {3}: nhận lại {4} cọc + {5} xu + {6} thưởng = {7} vàng.\n• Chết, hết giờ, thoát ván hoặc đóng trình duyệt: mất {8} vàng cọc.\n{9}{10}Vàng chỉ dùng trong game, không chuyển nhượng, không quy đổi ra tiền.': '{0}{1}• Collect {2} coins within {3}: receive {4} deposit + {5} coins + {6} bonus = {7} gold.\n• Death, timeout, leaving or closing the browser: lose {8} gold deposit.\n{9}{10}Gold is for in-game use only, cannot be transferred or exchanged for money.',
   '• Dùng lại vé số {0} đã đặt cọc {1} vàng — KHÔNG trừ thêm, không cần MetaMask.\n': '• Reuse ticket {0} with a {1} gold deposit — NO extra deduction or MetaMask action.\n',
-  '• Trừ ngay {0} vàng tiền cọc (một giao dịch MetaMask).\n': '• Deduct {0} gold deposit now (one MetaMask transaction).\n',
-  '• Trừ ngay {0} vàng tiền cọc từ ví.\n': '• Deduct {0} gold deposit from your wallet now.\n',
+  '• Trừ ngay {0} vàng tiền cọc (một giao dịch MetaMask).\n':
+      '• Deduct {0} gold deposit now (one MetaMask transaction).\n',
+  '• Trừ ngay {0} vàng tiền cọc từ ví.\n':
+      '• Deduct {0} gold deposit from your wallet now.\n',
   '• Vé số {0} của màn này đã dùng cho một ván không hoàn thành — cần vé mới.\n': '• Ticket {0} was used for an incomplete run — a new ticket is required.\n',
-  '• {0} phiếu vàng đang chờ sẽ được nhận trong CÙNG giao dịch.\n': '• {0} pending gold vouchers will be claimed in the SAME transaction.\n',
+  '• {0} phiếu vàng đang chờ sẽ được nhận trong CÙNG giao dịch.\n':
+      '• {0} pending gold vouchers will be claimed in the SAME transaction.\n',
   '• Vé màn {0} đang mở (chưa hoàn thành) sẽ bị bỏ — cọc {1} của vé đó mất.\n': '• Your open ticket for stage {0} will be discarded — its {1} deposit is forfeited.\n',
   'Thôi': 'Cancel',
   'Vào màn': 'Enter stage',
   'Đặt cọc {0}': 'Deposit {0}',
   'Chưa có dữ liệu màn chơi.': 'No stage data yet.',
-  'Khu vực này hiện hỗ trợ tối đa 20 màn.': 'This region currently supports up to 20 stages.',
-  'Chưa có đủ dữ liệu tiến trình các màn.': 'Stage progress data is incomplete.',
-  'Chưa nạp được ảnh bản đồ. Bấm để thử lại.': 'Unable to load the map image. Tap to retry.',
+  'Khu vực này hiện hỗ trợ tối đa 20 màn.':
+      'This region currently supports up to 20 stages.',
+  'Chưa có đủ dữ liệu tiến trình các màn.':
+      'Stage progress data is incomplete.',
+  'Chưa nạp được ảnh bản đồ. Bấm để thử lại.':
+      'Unable to load the map image. Tap to retry.',
   'Định vị George': 'Locate George',
   'Thu nhỏ': 'Zoom out',
   'Phóng to': 'Zoom in',
@@ -585,9 +718,171 @@ const banDichAnh = <String, String>{
   'Thung Lũng Cổ Ngữ': 'Valley of Ancient Runes',
   'Vùng kho báu': 'Treasure Region',
   'Đỉnh Kho Báu Hoàng Kim': 'Golden Treasure Peak',
-  'Chưa đọc được tiến trình đã lưu. Tạm bắt đầu từ màn 1.': 'Unable to read saved progress. Starting from stage 1 for now.',
+  'Chưa đọc được tiến trình đã lưu. Tạm bắt đầu từ màn 1.':
+      'Unable to read saved progress. Starting from stage 1 for now.',
   'Đã mở màn tiếp theo trong phiên này nhưng chưa lưu được trên máy.': 'The next stage is unlocked for this session, but could not be saved on this device.',
   'Màn {0}, {1}, {2}': 'Stage {0}, {1}, {2}',
   'Màn ': 'Stage ',
+  'ĐIỂM': 'SCORE',
+  'XU': 'COINS',
+  'XU CÒN': 'COINS LEFT',
+  'Đang nạp Gold Rush...': 'Loading Gold Rush...',
+  'Không nạp được game.\n\n{0}\n\nKiểm tra lại phần assets trong pubspec.yaml và các tệp trong thư mục assets/.': 'Unable to load the game.\n\n{0}\n\nCheck pubspec.yaml and the files in assets/.',
+  'Đồng cỏ': 'Meadow',
+  'Rừng thưa': 'Woodland',
+  'Hang đá': 'Rocky Cave',
+  'Rừng rậm': 'Deep Forest',
+  'Thung lũng xương': 'Bone Valley',
+  'Mỏ vàng': 'Gold Mine',
+  'Màn luyện tập.': 'Practice stage.',
+  'Màn luyện tập: không giới hạn thời gian, thua không mất gì.':
+      'Practice stage: no time limit and no loss on defeat.',
+  'Cây cối lưa thưa, ít quái — làm quen với đồng hồ.':
+      'Sparse trees and few enemies — get used to the clock.',
+  'Nhiều ngõ cụt; bộ xương bắt đầu đông hơn.':
+      'Many dead ends; more skeletons appear.',
+  'Vật cản dày đặc, phải tính đường trước khi đi.':
+      'Dense obstacles — plan your route before moving.',
+  'Bảy bộ xương canh giữ, chạy nhanh hơn.':
+      'Seven faster skeletons stand guard.',
+  'Màn cuối: 24 xu, 13 kẻ địch, kẻ địch nhanh hơn 20%.':
+      'Final stage: 24 coins, 13 enemies, enemies move 20% faster.',
+  'Yêu cầu cũ vẫn đang xử lý. Chưa thể xác nhận thu hồi phiên; hãy thử đăng xuất lại sau.': 'A previous request is still pending. Session revocation is unconfirmed; try signing out again later.',
+  'Quyền tạo nhân vật đã hết hạn. Hãy ký xác thực mới.':
+      'Registration permission expired. Sign a new authentication message.',
+  'Phiên đã hết hạn. Hãy kết nối và ký xác thực lại.':
+      'Your session expired. Connect and sign in again.',
+  'Thông điệp đăng nhập đã hết hạn. Hãy lấy thông điệp mới.':
+      'The sign in message expired. Request a new message.',
+  'Hãy ký xác thực ví trước khi tạo nhân vật.':
+      'Sign in with your wallet before creating a character.',
+  'Tên nhà thám hiểm đã được sử dụng. Hãy chọn tên khác.':
+      'This adventurer name is taken. Choose another name.',
+  'Tên nhân vật không hợp lệ. Hãy kiểm tra rồi thử lại.':
+      'Invalid character name. Check it and try again.',
+  'Phiên máy chủ không khớp ví, mạng hoặc hồ sơ vừa xác thực. Hãy đăng nhập lại.': 'The server session does not match your verified wallet, network or profile. Sign in again.',
+  'Chưa có phiên đăng nhập hợp lệ. Hãy ký xác thực ví.':
+      'No valid session. Sign in with your wallet.',
+  'Quyền xác thực đã hết hạn. Hãy ký xác thực mới.':
+      'Authentication permission expired. Sign in again.',
+  'Ví đã thay đổi. Hãy xác thực lại ví đang chọn.':
+      'Your wallet changed. Verify the selected wallet again.',
+  'Mạng ví đã thay đổi. Hãy ký xác thực lại.':
+      'Your wallet network changed. Sign in again.',
+  'Ví mất kết nối hoặc trả sự kiện không hợp lệ.':
+      'Your wallet disconnected or returned an invalid event.',
+  'Yêu cầu cũ chưa kết thúc. Chưa xác nhận thu hồi phiên; hãy thử đăng xuất lại sau.': 'A previous request is unfinished. Session revocation is unconfirmed; try signing out again later.',
+  'Chưa đối chiếu được cookie sau yêu cầu lỗi. Quyền đăng ký có thể còn trên máy chủ; chưa thể xác nhận đăng xuất.': 'Unable to check cookies after a failed request. Registration permission may still exist on the server; sign out is unconfirmed.',
+  '{0} Gameplay đã khóa; chưa xác nhận phiên máy chủ được thu hồi.':
+      '{0} Gameplay is locked; server session revocation is unconfirmed.',
+  'Bạn đã từ chối ký thông điệp đăng nhập.':
+      'You declined the sign in signature.',
+  'Bạn đã từ chối kết nối MetaMask.': 'You declined the MetaMask connection.',
+  'Mạng Blockchain này chưa được phép đăng nhập.':
+      'Sign in is not allowed on this blockchain network.',
+  'Địa chỉ trang không được máy chủ cho phép đăng nhập.':
+      'This site origin is not allowed to sign in.',
+  'Chữ ký đăng nhập không hợp lệ. Hãy ký thông điệp mới.':
+      'Invalid sign in signature. Sign a new message.',
+  'Quyền tạo nhân vật không còn hợp lệ. Hãy ký xác thực mới.':
+      'Registration permission is invalid. Sign in again.',
+  'Phiên đã hết hạn. Hãy ký xác thực lại.':
+      'Your session expired. Sign in again.',
+  'Không thể hoàn tất xác thực. Hãy kiểm tra kết nối và thử lại.':
+      'Unable to authenticate. Check your connection and try again.',
+  'Tên nhà thám hiểm đã được sử dụng.': 'This adventurer name is taken.',
+  'Tên nhân vật không hợp lệ.': 'Invalid character name.',
+  'CSRF không hợp lệ. Cần đối chiếu lại phiên.':
+      'Invalid CSRF token. Your session must be checked again.',
+  'Ví đã có tài khoản. Hãy xác thực lại để đăng nhập.':
+      'This wallet already has an account. Authenticate again to sign in.',
+  'Challenge đã được sử dụng. Hãy bắt đầu xác thực mới.':
+      'The challenge was already used. Start a new sign in.',
+  'Cấu hình HTTP Auth không hợp lệ.':
+      'Invalid authentication HTTP configuration.',
+  'Dữ liệu gửi tới Auth không hợp lệ.': 'Invalid authentication request data.',
+  'Không liên lạc được Auth. Kiểm tra Backend, mạng và CORS.':
+      'Cannot reach authentication. Check the server, connection and CORS.',
+  'Auth chưa trả lời trong thời hạn; chưa xác định kết quả trên máy chủ.':
+      'Authentication timed out; the server outcome is unknown.',
+  'Máy chủ từ chối dữ liệu yêu cầu.': 'The server rejected the request data.',
+  'Phiên hoặc quyền xác thực không còn hợp lệ.':
+      'Your session or authentication permission is invalid.',
+  'Yêu cầu không được phép. Kiểm tra Origin và CSRF.':
+      'Request not allowed. Check Origin and CSRF.',
+  'Dữ liệu Auth xung đột; cần kiểm tra lại luồng xác thực.':
+      'Authentication data conflict; check the sign in flow again.',
+  'Challenge hoặc quyền xác thực đã hết hạn.':
+      'The challenge or authentication permission expired.',
+  'Quá nhiều yêu cầu. Hãy thử lại sau theo hướng dẫn máy chủ.':
+      'Too many requests. Retry later as instructed by the server.',
+  'Máy chủ Auth tạm thời không sẵn sàng.':
+      'The authentication server is temporarily unavailable.',
+  'Máy chủ trả HTTP status ngoài hợp đồng Auth.':
+      'The server returned an unexpected authentication HTTP status.',
+  'Dữ liệu Auth trả về không đúng hợp đồng.':
+      'Invalid authentication response format.',
+  'Yêu cầu Auth trước vẫn đang xử lý; chưa được gửi mutation mới.': 'A previous authentication request is pending; a new mutation cannot be sent yet.',
+  'HTTP client Auth đã được đóng.': 'The authentication HTTP client is closed.',
+  'Chưa thấy MetaMask. Hãy cài tiện ích rồi tải lại trang.':
+      'MetaMask not found. Install the extension and reload the page.',
+  'Ví đang có không được nhận diện là MetaMask.':
+      'The available wallet is not recognized as MetaMask.',
+  'Có nhiều provider MetaMask. Cần chọn rõ một provider.':
+      'Multiple MetaMask providers found. Select a provider explicitly.',
+  'Provider thiếu API request hoặc API quản lý sự kiện cần thiết.':
+      'The wallet provider lacks the required request or event API.',
+  'Bạn đã từ chối yêu cầu trong MetaMask.':
+      'You declined the request in MetaMask.',
+  'MetaMask đang có yêu cầu chờ xử lý. Hãy xem popup đang mở.':
+      'MetaMask has a pending request. Check the open popup.',
+  'Chưa có tài khoản được cấp quyền. Hãy bấm kết nối MetaMask.':
+      'No authorized account. Select Connect MetaMask.',
+  'Tài khoản ví đã đổi. Hãy lấy challenge mới và xác thực lại.':
+      'Your wallet account changed. Request a new challenge and sign in again.',
+  'Mạng ví đã đổi. Hãy lấy challenge mới và xác thực lại.':
+      'Your wallet network changed. Request a new challenge and sign in again.',
+  'Địa chỉ ví phải là 20 byte hexadecimal.':
+      'Wallet addresses must contain 20 hexadecimal bytes.',
+  'MetaMask trả chain ID không hợp lệ.':
+      'MetaMask returned an invalid chain ID.',
+  'Thông điệp phải giữ nguyên UTF-8, không rỗng và tối đa 4096 byte.': 'The message must preserve UTF-8, be nonempty and contain at most 4096 bytes.',
+  'MetaMask trả dữ liệu không đúng định dạng.':
+      'MetaMask returned an invalid response format.',
+  'Provider MetaMask đã mất kết nối.': 'The MetaMask provider disconnected.',
+  'Không giao tiếp được với provider MetaMask.':
+      'Cannot communicate with the MetaMask provider.',
+  'MetaMask chưa trả lời. Popup có thể vẫn đang mở; không tự gửi yêu cầu mới.': 'MetaMask has not responded. The popup may still be open; do not send another request automatically.',
+  'Adapter MetaMask đã được đóng.': 'The MetaMask adapter is closed.',
+  'Dịch vụ tiến trình tạm thời chưa sẵn sàng (503).':
+      'The progress service is temporarily unavailable (503).',
+  'Không thể kết nối máy chủ để tải tiến trình.':
+      'Cannot connect to the server to load progress.',
+  'Lỗi không xác định khi tải tiến trình.': 'Unknown error loading progress.',
+  'Bằng chứng ván chơi đã được sử dụng trước đó (409).':
+      'This run evidence was already used (409).',
+  'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại SIWE.':
+      'Your session expired. Please sign in with SIWE again.',
+  'Hệ thống xác minh tạm thời chưa sẵn sàng (503).':
+      'The verification service is temporarily unavailable (503).',
+  'BẮN': 'FIRE',
+  'Nhà tìm vàng nguyên bản.': 'The original gold hunter.',
+  'Thợ mỏ': 'Miner',
+  'Mũ bảo hộ vàng, áo xanh công nhân.': 'Yellow hard hat and blue work shirt.',
+  'Cao bồi': 'Cowboy',
+  'Áo da nâu, khăn đỏ.': 'Brown leather coat and red scarf.',
+  'Hiệp sĩ vàng': 'Golden Knight',
+  'Giáp ánh kim — dành cho người nhặt chăm nhất.':
+      'Shining armor — for the most dedicated collectors.',
+  'THUONG': 'COMMON',
+  'KHONGPHOBIEN': 'UNCOMMON',
+  'HIEM': 'RARE',
+  'SUTHI': 'EPIC',
+  'HUYENTHOAI': 'LEGENDARY',
+  'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet 4×4 để điều khiển trong gameplay.': 'Your character is in Inventory > AI Characters. The image is a static 128×128 PNG, not a playable 4×4 sprite sheet.',
+  'Vàng: {0}{1}': 'Gold: {0}{1}',
+  '\nChờ nhận: {0} (tự gộp vào giao dịch)':
+      '\nPending: {0} (automatically included in the transaction)',
+  'Bạn nhận được {0} ×{1}.': 'You received {0} ×{1}.',
   'Kho đồ': 'Inventory',
 };

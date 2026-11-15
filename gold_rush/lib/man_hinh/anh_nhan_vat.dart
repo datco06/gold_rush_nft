@@ -837,7 +837,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                             filterQuality: FilterQuality.none,
                                             fit: BoxFit.contain,
                                             semanticLabel:
-                                                'Ảnh xem trước nhân vật',
+                                                PhamViNgonNgu.of(context).dich('Ảnh xem trước nhân vật'),
                                             errorBuilder: (_, _, _) =>
                                                 const Center(
                                                   child: ChuGame(
@@ -1422,7 +1422,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                   children: [
                     Expanded(
                       child: ChuGame(
-                        nv.name,
+                        nv.name, dichNoiDung: false,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,

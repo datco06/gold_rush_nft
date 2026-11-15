@@ -83,22 +83,23 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
     return PhamViNgonNgu(
       ngonNgu: NgonNgu.chung,
       child: MaterialApp(
-      title: 'Gold Rush',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: CauHinh.mauChinh,
+        title: 'Gold Rush',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
           brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: CauHinh.mauChinh,
+            brightness: Brightness.dark,
+          ),
+          scaffoldBackgroundColor: CauHinh.mauNen,
         ),
-        scaffoldBackgroundColor: CauHinh.mauNen,
-      ),
-      home: AuthGate(
-        controller: _auth,
-        retainGameDuringSessionCheck: true,
-        authenticatedBuilder: (_) => ManHinhGame(auth: _auth, wallet: _wallet),
-      ),
+        home: AuthGate(
+          controller: _auth,
+          retainGameDuringSessionCheck: true,
+          authenticatedBuilder: (_) =>
+              ManHinhGame(auth: _auth, wallet: _wallet),
+        ),
       ),
     );
   }
@@ -198,7 +199,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
                 children: [
                   CircularProgressIndicator(color: CauHinh.mauChinh),
                   SizedBox(height: 16),
-                  Text(
+                  ChuGame(
                     'Đang nạp Gold Rush...',
                     style: TextStyle(color: CauHinh.mauChu),
                   ),
@@ -211,7 +212,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(28),
-                child: Text(
+                child: ChuGame(
                   'Không nạp được game.\n\n$loi\n\n'
                   'Kiểm tra lại phần assets trong pubspec.yaml '
                   'và các tệp trong thư mục assets/.',

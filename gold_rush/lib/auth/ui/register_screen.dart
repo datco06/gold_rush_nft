@@ -562,7 +562,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         ),
                                       ] else if (valid) ...[
                                         ChuGame(
-                                          controller.user!.username,
+                                          controller.user!.username, dichNoiDung: false,
                                           textAlign: TextAlign.center,
                                           style: const TextStyle(
                                             color: _RegisterColors.gold,

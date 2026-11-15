@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../gold_rush_game.dart';
+import '../ngon_ngu/ngon_ngu.dart';
 
 /// Nút bắn nổi trên màn chơi.
 class NutBan extends StatelessWidget {
@@ -22,7 +23,7 @@ class NutBan extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               Image.asset('assets/images/joystick_nen.png'),
-              const Text(
+              const ChuGame(
                 'BẮN',
                 style: TextStyle(
                   color: Color(0xFFF2F4F7),

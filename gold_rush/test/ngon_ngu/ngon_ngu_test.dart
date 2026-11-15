@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
@@ -5,15 +7,18 @@ import 'package:gold_rush/main.dart';
 import 'package:gold_rush/components/ui/gold_rush_top_bar.dart';
 
 void main() {
-  test('defaults to Vietnamese and restores only supported languages', () async {
-    final language = NgonNgu(doc: () async => 'fr', ghi: (_) async {});
-    expect(language.ma, 'vi');
-    await language.nap();
-    expect(language.ma, 'vi');
-    final english = NgonNgu(doc: () async => 'en', ghi: (_) async {});
-    await english.nap();
-    expect(english.ma, 'en');
-  });
+  test(
+    'defaults to Vietnamese and restores only supported languages',
+    () async {
+      final language = NgonNgu(doc: () async => 'fr', ghi: (_) async {});
+      expect(language.ma, 'vi');
+      await language.nap();
+      expect(language.ma, 'vi');
+      final english = NgonNgu(doc: () async => 'en', ghi: (_) async {});
+      await english.nap();
+      expect(english.ma, 'en');
+    },
+  );
 
   test('switches immediately and serializes preference writes', () async {
     final saved = <String>[];
@@ -44,6 +49,22 @@ void main() {
     expect(language.ma, 'en');
   });
 
+  test('saved choice survives a new controller and a slow load cannot undo a click', () async {
+    String? saved;
+    final first = NgonNgu(doc: () async => saved, ghi: (v) async => saved = v);
+    await first.doi('en');
+    final restored = NgonNgu(doc: () async => saved, ghi: (_) async {});
+    await restored.nap();
+    expect(restored.ma, 'en');
+    final read = Completer<String?>();
+    final slow = NgonNgu(doc: () => read.future, ghi: (_) async {});
+    final load = slow.nap();
+    await slow.doi('en');
+    read.complete('vi');
+    await load;
+    expect(slow.ma, 'en');
+  });
+
   test('translates known labels but preserves unknown content', () {
     final language = NgonNgu(doc: () async => null, ghi: (_) async {});
     expect(language.dich('Kho đồ'), 'Kho đồ');
@@ -58,15 +79,51 @@ void main() {
     expect(language.dich('25 vàng'), '25 gold');
     expect(language.dich('Ví: Alice \$5 {0}'), 'Wallet: Alice \$5 {0}');
     expect(language.dich('CÀI ĐẶT'), 'SETTINGS');
+    expect(language.dich('Độ khó • Dễ'), 'Difficulty • Easy');
+    expect(language.dich('Người chơi: Vàng'), 'Player: Vàng');
+    expect(language.dich('Thưởng • 20 vàng'), 'Reward • 20 gold');
+    expect(language.dich('LÀNG KHỞI ĐẦU'), 'STARTING VILLAGE');
+    expect(language.dich('Bạn nhận được Súng Lục Mặc Định ×2.'), 'You received Default Pistol ×2.');
+    expect(
+      language.dich('Màn luyện tập · Làng khởi đầu'),
+      'Practice stage · Starting Village',
+    );
+  });
+
+  testWidgets('custom names identical to UI labels stay unchanged', (
+    tester,
+  ) async {
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    await tester.pumpWidget(
+      PhamViNgonNgu(
+        ngonNgu: language,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                ChuGame('Vàng', dichNoiDung: false),
+                ChuGame('Cửa hàng'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await language.doi('en');
+    await tester.pump();
+    expect(find.text('Vàng'), findsOneWidget);
+    expect(find.text('Shop'), findsOneWidget);
   });
 
   testWidgets('text reacts without remounting child state', (tester) async {
     final language = NgonNgu(doc: () async => null, ghi: (_) async {});
     var mounts = 0;
-    await tester.pumpWidget(PhamViNgonNgu(
-      ngonNgu: language,
-      child: MaterialApp(home: _Probe(onMount: () => mounts++)),
-    ));
+    await tester.pumpWidget(
+      PhamViNgonNgu(
+        ngonNgu: language,
+        child: MaterialApp(home: _Probe(onMount: () => mounts++)),
+      ),
+    );
     expect(find.text('Kho đồ'), findsOneWidget);
     await language.doi('en');
     await tester.pump();
@@ -75,15 +132,24 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('selector switches both ways and persists the choice', (tester) async {
+  testWidgets('selector switches both ways and persists the choice', (
+    tester,
+  ) async {
     final saved = <String>[];
-    final language = NgonNgu(doc: () async => null, ghi: (v) async => saved.add(v));
-    await tester.pumpWidget(PhamViNgonNgu(
-      ngonNgu: language,
-      child: const MaterialApp(home: Scaffold(body: Column(children: [
-        ChonNgonNgu(), ChuGame('Kho đồ'),
-      ]))),
-    ));
+    final language = NgonNgu(
+      doc: () async => null,
+      ghi: (v) async => saved.add(v),
+    );
+    await tester.pumpWidget(
+      PhamViNgonNgu(
+        ngonNgu: language,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Column(children: [ChonNgonNgu(), ChuGame('Kho đồ')]),
+          ),
+        ),
+      ),
+    );
     await tester.tap(find.text('English'));
     await tester.pumpAndSettle();
     expect(find.text('Inventory'), findsOneWidget);
@@ -94,7 +160,9 @@ void main() {
     expect(saved.last, 'vi');
   });
 
-  testWidgets('welcome switches language without entering gameplay', (tester) async {
+  testWidgets('welcome switches language without entering gameplay', (
+    tester,
+  ) async {
     await NgonNgu.chung.doi('vi');
     await tester.pumpWidget(const UngDungGoldRush());
     await tester.pump(const Duration(milliseconds: 300));
@@ -106,19 +174,25 @@ void main() {
     await NgonNgu.chung.doi('vi');
   });
 
-  testWidgets('navigation uses translated labels and keeps player identity', (tester) async {
+  testWidgets('navigation uses translated labels and keeps player identity', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final language = NgonNgu(doc: () async => null, ghi: (_) async {});
     await language.doi('en');
-    await tester.pumpWidget(PhamViNgonNgu(
-      ngonNgu: language,
-      child: const MaterialApp(home: Scaffold(body: GoldRushTopBar(
-        playerName: 'Alice', walletAddress: '0x1234',
-      ))),
-    ));
+    await tester.pumpWidget(
+      PhamViNgonNgu(
+        ngonNgu: language,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: GoldRushTopBar(playerName: 'Alice', walletAddress: '0x1234'),
+          ),
+        ),
+      ),
+    );
     expect(find.text('Inventory'), findsOneWidget);
     expect(find.text('Shop'), findsOneWidget);
     expect(find.text('Alice'), findsOneWidget);
@@ -143,4 +217,3 @@ class _ProbeState extends State<_Probe> {
   @override
   Widget build(BuildContext context) => const ChuGame('Kho đồ');
 }
-
