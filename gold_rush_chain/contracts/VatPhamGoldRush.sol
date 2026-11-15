@@ -6,9 +6,8 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title Gold Rush Equipment — trang bị ERC-1155 nhận bằng phiếu Backend.
-/// @dev Độc lập với CuaHangGoldRush và ThanhTuuSBT. Cho chuyển nhượng theo chuẩn
-/// ERC-1155; không có mua bán, thu vàng, burn hay logic sức mạnh/trang bị.
+/// @title Gold Rush Equipment — trang bị ERC-1155 nhận bằng phiếu Backend hoặc Cửa hàng.
+/// @dev Cho chuyển nhượng theo chuẩn ERC-1155; không chứa logic sức mạnh/trang bị.
 contract VatPhamGoldRush is ERC1155, EIP712, Ownable {
     string public constant name = "Gold Rush Equipment";
 
@@ -35,6 +34,9 @@ contract VatPhamGoldRush is ERC1155, EIP712, Ownable {
     /// @notice Địa chỉ EOA của Backend được ủy quyền ký phiếu.
     address public signer;
 
+    /// @notice Cửa hàng được phép mint sau khi đã burn vàng atomically.
+    address public store;
+
     mapping(uint256 => bool) public registered;
     mapping(uint256 => uint256) public maxSupply;
 
@@ -52,6 +54,7 @@ contract VatPhamGoldRush is ERC1155, EIP712, Ownable {
     event MaxSupplyUpdated(uint256 indexed tokenId, uint256 previousMaxSupply, uint256 newMaxSupply);
     event ItemClaimed(address indexed player, uint256 indexed tokenId, uint256 amount, bytes32 indexed nonce);
     event SignerUpdated(address indexed previousSigner, address indexed newSigner);
+    event StoreUpdated(address indexed previousStore, address indexed newStore);
 
     error InvalidSigner();
     error InvalidTokenId(uint256 tokenId);
@@ -66,6 +69,8 @@ contract VatPhamGoldRush is ERC1155, EIP712, Ownable {
     error InvalidAmount();
     error MaxSupplyExceeded(uint256 tokenId, uint256 requested, uint256 remaining);
     error InvalidSignature();
+    error InvalidStore();
+    error StoreUnauthorized();
 
     /// @param initialOwner Chủ hợp đồng có quyền đăng ký/cấu hình vật phẩm và đổi signer.
     /// @param initialSigner Địa chỉ Backend ký phiếu, phải khác địa chỉ zero.
@@ -142,21 +147,27 @@ contract VatPhamGoldRush is ERC1155, EIP712, Ownable {
         _requireRegistered(p.tokenId);
         if (p.amount == 0) revert InvalidAmount();
 
-        uint256 minted = totalMinted[p.tokenId];
-        uint256 remaining = maxSupply[p.tokenId] - minted;
-        // So với phần còn lại trước khi cộng để cả amount cực lớn cũng không gây tràn.
-        if (p.amount > remaining) revert MaxSupplyExceeded(p.tokenId, p.amount, remaining);
-
         (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(hashVoucher(p), signature);
         if (err != ECDSA.RecoverError.NoError || recovered != signer) revert InvalidSignature();
 
-        // Checks-effects-interactions: tiêu thụ nonce và nguồn cung TRƯỚC callback
-        // onERC1155Received, ngăn nhận lại cùng phiếu hoặc vượt cap khi gọi lại.
-        // Nếu receiver từ chối token, toàn bộ trạng thái này cũng được hoàn tác.
         usedNonces[p.nonce] = true;
-        totalMinted[p.tokenId] = minted + p.amount;
-        _mint(p.player, p.tokenId, p.amount, "");
+        _mintItem(p.player, p.tokenId, p.amount);
         emit ItemClaimed(p.player, p.tokenId, p.amount, p.nonce);
+    }
+
+    /// @notice Mint vật phẩm sau khi CuaHangGoldRush đã đốt vàng.
+    /// @dev Chỉ cửa hàng đã cấu hình được gọi; token vẫn là ERC-1155 transferable.
+    function mintFromStore(address player, uint256 tokenId, uint256 amount) external {
+        if (msg.sender != store) revert StoreUnauthorized();
+        if (player == address(0)) revert WrongPlayer();
+        _mintItem(player, tokenId, amount);
+    }
+
+    function setStore(address newStore) external onlyOwner {
+        if (newStore == address(0)) revert InvalidStore();
+        address previous = store;
+        store = newStore;
+        emit StoreUpdated(previous, newStore);
     }
 
     /// @notice Chỉ owner được đổi signer. Phiếu khóa cũ bị từ chối khi khóa đó
@@ -166,6 +177,20 @@ contract VatPhamGoldRush is ERC1155, EIP712, Ownable {
         address previous = signer;
         signer = newSigner;
         emit SignerUpdated(previous, newSigner);
+    }
+
+    function _mintItem(address player, uint256 tokenId, uint256 amount) internal {
+        _requireRegistered(tokenId);
+        if (amount == 0) revert InvalidAmount();
+
+        uint256 minted = totalMinted[tokenId];
+        uint256 remaining = maxSupply[tokenId] - minted;
+        // So với phần còn lại trước khi cộng để cả amount cực lớn cũng không gây tràn.
+        if (amount > remaining) revert MaxSupplyExceeded(tokenId, amount, remaining);
+
+        // Ghi nguồn cung trước callback ERC-1155; revert receiver sẽ hoàn tác toàn bộ.
+        totalMinted[tokenId] = minted + amount;
+        _mint(player, tokenId, amount, "");
     }
 
     function _requireRegistered(uint256 tokenId) private view {

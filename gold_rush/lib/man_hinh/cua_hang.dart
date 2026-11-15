@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../blockchain/phien_vi.dart';
+import '../blockchain/vi.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_trang_bi.dart';
@@ -25,6 +26,12 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
 
   GoldRushGame get _game => widget.game;
   PhienVi? get _phienVi => _game.phienVi;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _dongBoNFT());
+  }
 
   List<VatPhamHienThi> get _vatPhamHienThi {
     return _danhMuc.where((item) {
@@ -112,7 +119,13 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
         Expanded(child: _buildCatalog()),
         if (selected != null) ...[
           const SizedBox(width: 14),
-          SizedBox(width: 344, child: _ItemDetail(item: selected)),
+          SizedBox(
+            width: 344,
+            child: _ItemDetail(
+              item: selected,
+              onBuy: () => _muaVatPham(selected),
+            ),
+          ),
         ],
       ],
     );
@@ -126,7 +139,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
           _buildCatalog(),
           if (selected != null) ...[
             const SizedBox(height: 14),
-            _ItemDetail(item: selected),
+            _ItemDetail(item: selected, onBuy: () => _muaVatPham(selected)),
           ],
         ],
       ),
@@ -176,10 +189,10 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                     return _StoreItemCard(
                       item: item,
                       price: _priceFor(item),
-                      owned: _isOwned(item),
+                      quantity: _quantityFor(item),
                       selected: item.id == _idDangChon,
                       onTap: () => setState(() => _idDangChon = item.id),
-                      onBuy: () => _showBuyMessage(item),
+                      onBuy: () => _muaVatPham(item),
                     );
                   },
                 ),
@@ -190,22 +203,59 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
     );
   }
 
-  bool _isOwned(VatPhamHienThi item) {
-    return _game.danhSachVatPham.value.any((owned) => owned.id == item.id);
-  }
+  int _quantityFor(VatPhamHienThi item) =>
+      _game.danhSachVatPham.value
+          .where((owned) => owned.id == item.id)
+          .firstOrNull
+          ?.soLuong ??
+      0;
 
   int _priceFor(VatPhamHienThi item) => _priceForItem(item);
 
-  void _showBuyMessage(VatPhamHienThi item) {
-    final price = _priceFor(item);
+  int _tokenIdFor(VatPhamHienThi item) => _danhMuc.indexOf(item) + 1;
+
+  Future<void> _dongBoNFT() async {
     final pv = _phienVi;
-    final message = _isOwned(item)
-        ? '${item.ten} đã có trong kho đồ.'
-        : price == 0
-        ? '${item.ten} đã sẵn sàng trong kho đồ.'
-        : pv != null && pv.vang < BigInt.from(price)
-        ? 'Chưa đủ vàng để mua ${item.ten}.'
-        : 'Đã chọn ${item.ten}. Giao dịch mua vật phẩm sẽ được nối với cửa hàng.';
+    final diaChi = pv?.diaChi;
+    final cuaHang = pv?.cuaHang;
+    if (pv == null || !pv.daKetNoi || diaChi == null || cuaHang == null) return;
+
+    for (final item in _danhMuc) {
+      try {
+        final soLuong = await cuaHang.soLuongVatPham(diaChi, _tokenIdFor(item));
+        if (soLuong > BigInt.zero && mounted) {
+          _game.dongBoSoLuongVatPham(item, soLuong.toInt());
+        }
+      } on LoiVi {
+        return;
+      }
+    }
+  }
+
+  Future<void> _muaVatPham(VatPhamHienThi item) async {
+    final pv = _phienVi;
+    if (pv == null || !pv.daKetNoi) {
+      _baoMua('Cần kết nối MetaMask để mua vật phẩm.');
+      return;
+    }
+
+    final thanhCong = await pv.muaVatPham(
+      tokenId: _tokenIdFor(item),
+      ten: item.ten,
+    );
+    if (!thanhCong) {
+      if (mounted && pv.thongBao != null && pv.thongBao!.isNotEmpty) {
+        _baoMua(pv.thongBao!);
+      }
+      return;
+    }
+    if (!mounted) return;
+    _game.themVatPhamVaoKho(item);
+    _baoMua('Đã mua ${item.ten}; NFT đã được thêm vào Kho đồ.');
+  }
+
+  void _baoMua(String message) {
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -448,7 +498,7 @@ class _StoreItemCard extends StatelessWidget {
   const _StoreItemCard({
     required this.item,
     required this.price,
-    required this.owned,
+    required this.quantity,
     required this.selected,
     required this.onTap,
     required this.onBuy,
@@ -456,7 +506,7 @@ class _StoreItemCard extends StatelessWidget {
 
   final VatPhamHienThi item;
   final int price;
-  final bool owned;
+  final int quantity;
   final bool selected;
   final VoidCallback onTap;
   final VoidCallback onBuy;
@@ -511,12 +561,8 @@ class _StoreItemCard extends StatelessWidget {
                         letterSpacing: 1.2,
                       ),
                     )
-                  else if (owned)
-                    const Icon(
-                      Icons.check_circle_outline,
-                      color: Color(0xFF35D6A0),
-                      size: 15,
-                    ),
+                  else if (quantity > 0)
+                    _QuantityTag(quantity),
                 ],
               ),
               const SizedBox(height: 8),
@@ -573,10 +619,10 @@ class _StoreItemCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (!owned && price > 0)
+                  if (price > 0)
                     _BuyButton(onPressed: onBuy)
                   else
-                    _OwnedButton(label: isDefault ? 'Đã mặc' : 'Đã có'),
+                    _OwnedButton(label: isDefault ? 'Đã mặc' : 'Miễn phí'),
                 ],
               ),
             ],
@@ -629,6 +675,31 @@ class _OwnedButton extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       ),
       child: Text(label),
+    );
+  }
+}
+
+class _QuantityTag extends StatelessWidget {
+  const _QuantityTag(this.quantity);
+
+  final int quantity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0x1435D6A0),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        '×$quantity',
+        style: const TextStyle(
+          color: Color(0xFF35D6A0),
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 }
@@ -707,9 +778,10 @@ class _VatPhamImage extends StatelessWidget {
 }
 
 class _ItemDetail extends StatelessWidget {
-  const _ItemDetail({required this.item});
+  const _ItemDetail({required this.item, required this.onBuy});
 
   final VatPhamHienThi item;
+  final VoidCallback onBuy;
 
   @override
   Widget build(BuildContext context) {
@@ -827,15 +899,7 @@ class _ItemDetail extends StatelessWidget {
                 ),
               ),
               FilledButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Đã chọn ${item.ten} để mua.'),
-                      backgroundColor: const Color(0xFF142B38),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onPressed: price == 0 ? null : onBuy,
                 icon: const Icon(Icons.shopping_cart_outlined, size: 15),
                 label: const Text('Mua'),
                 style: FilledButton.styleFrom(
@@ -865,6 +929,8 @@ class _ItemDetail extends StatelessWidget {
 }
 
 int _priceForItem(VatPhamHienThi item) {
+  if (item.doHiem == DoHiemVatPham.hiem) return 100000;
+
   const prices = <String, int>{
     'sung_cap_1': 0,
     'sung_cap_2': 50,
@@ -872,9 +938,6 @@ int _priceForItem(VatPhamHienThi item) {
     'sung_manh_1': 260,
     'sung_manh_2': 480,
     'sung_manh_3': 420,
-    'sung_hiem_1': 680,
-    'sung_hiem_2': 900,
-    'sung_hiem_3': 1200,
   };
   if (prices.containsKey(item.id)) return prices[item.id]!;
   switch (item.doHiem) {

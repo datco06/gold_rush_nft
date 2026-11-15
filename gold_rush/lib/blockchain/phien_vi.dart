@@ -35,7 +35,8 @@ class PhienVi extends ChangeNotifier {
   /// Nạp số vàng đã lưu từ bộ nhớ máy.
   Future<void> napVangDaLuu() async {
     try {
-      final s = await SharedPreferencesAsync().getString(_khoaVang) ??
+      final s =
+          await SharedPreferencesAsync().getString(_khoaVang) ??
           await SharedPreferencesAsync().getString(_khoaVangChung);
       if (s != null) {
         final v = BigInt.tryParse(s);
@@ -192,7 +193,12 @@ class PhienVi extends ChangeNotifier {
     cauHinh = ch;
     diaChi = dc;
     await napVangDaLuu();
-    cuaHang = CuaHangChuoi(vi: vi, hopDong: ch.hopDong, bo: bo);
+    cuaHang = CuaHangChuoi(
+      vi: vi,
+      hopDong: ch.hopDong,
+      hopDongVatPham: ch.hopDongVatPham,
+      bo: bo,
+    );
     if (_daDong) return;
     _ngheVi ??= vi.suKien.listen(_khiViDoi);
     await _taiLaiNoi(); // gồm cả xin phiếu cho các ván chơi lúc chưa kết nối
@@ -217,7 +223,12 @@ class PhienVi extends ChangeNotifier {
         cauHinh = ch;
         diaChi = ds.first;
         await napVangDaLuu();
-        cuaHang = CuaHangChuoi(vi: vi, hopDong: ch.hopDong, bo: bo);
+        cuaHang = CuaHangChuoi(
+          vi: vi,
+          hopDong: ch.hopDong,
+          hopDongVatPham: ch.hopDongVatPham,
+          bo: bo,
+        );
         _ngheVi ??= vi.suKien.listen(_khiViDoi);
         await _taiLaiNoi();
       }, xong: 'Đã đồng bộ ví đăng nhập.');
@@ -400,6 +411,26 @@ class PhienVi extends ChangeNotifier {
         );
         await _taiLaiNoi();
       }, xong: 'Đã mua ${nv.ten}.');
+
+  /// Mua vật phẩm nhiều lần được; mỗi lần thành công NFT ERC-1155 tăng số lượng.
+  Future<bool> muaVatPham({
+    required int tokenId,
+    required String ten,
+    int soLuong = 1,
+  }) => _lamViec('Chuẩn bị mua $ten ×$soLuong…', () async {
+    if (!daKetNoi) {
+      throw const LoiVi('Cần kết nối MetaMask để mua vật phẩm.');
+    }
+    await _taiLaiNoi();
+    await cuaHang!.muaVatPham(
+      diaChi: diaChi!,
+      tokenId: tokenId,
+      soLuong: soLuong,
+      phieu: phieuCho,
+      baoTienDo: _bao,
+    );
+    await _taiLaiNoi();
+  }, xong: 'Đã mua $ten ×$soLuong.');
 
   /// Chuẩn bị một màn có cọc: có vé dùng được thì dùng lại, không thì (nhận phiếu chờ +) mua vé
   /// trong MỘT giao dịch, rồi đăng ký bắt đầu với máy chủ. Trả về số vé và giờ THẬT ngay trước khi

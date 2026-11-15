@@ -11,11 +11,13 @@ import 'vi.dart';
 class CauHinhChuoi {
   final int chainId;
   final String hopDong;
+  final String? hopDongVatPham;
   final String trongTai;
 
   const CauHinhChuoi({
     required this.chainId,
     required this.hopDong,
+    this.hopDongVatPham,
     required this.trongTai,
   });
 }
@@ -29,11 +31,8 @@ class MayChuPhieu {
   final String? Function()? layCsrfToken;
   static const Duration _hetGio = Duration(seconds: 10);
 
-  MayChuPhieu({
-    required this.mayChu,
-    http.Client? client,
-    this.layCsrfToken,
-  }) : _client = client ?? taoHttpClientTrinhDuyet();
+  MayChuPhieu({required this.mayChu, http.Client? client, this.layCsrfToken})
+    : _client = client ?? taoHttpClientTrinhDuyet();
 
   Map<String, String> _headers() {
     final h = <String, String>{'Content-Type': 'application/json'};
@@ -45,10 +44,13 @@ class MayChuPhieu {
   }
 
   Future<CauHinhChuoi> cauHinh() async {
-    final j = await _json(() => _client.get(Uri.parse('$mayChu/api/vang/cau-hinh')));
+    final j = await _json(
+      () => _client.get(Uri.parse('$mayChu/api/vang/cau-hinh')),
+    );
     return CauHinhChuoi(
       chainId: j['chain_id'] as int,
       hopDong: j['hop_dong'] as String,
+      hopDongVatPham: j['hop_dong_vat_pham'] as String?,
       trongTai: j['trong_tai'] as String,
     );
   }
@@ -73,7 +75,9 @@ class MayChuPhieu {
 
   /// Vé (ví, số vé) đã được dùng để bắt đầu một ván chưa.
   Future<bool> veDaDung({required String vi, required int ve}) async {
-    final j = await _json(() => _client.get(Uri.parse('$mayChu/api/man/ve?vi=$vi&ve=$ve')));
+    final j = await _json(
+      () => _client.get(Uri.parse('$mayChu/api/man/ve?vi=$vi&ve=$ve')),
+    );
     return j['da_dung'] == true;
   }
 
@@ -92,11 +96,15 @@ class MayChuPhieu {
 
   /// Mọi phiếu đã cấp cho ví trong 7 ngày (đã ký lại hạn mới) — app tự lọc phiếu đã nhận.
   Future<List<PhieuCho>> phieuChoNhan(String vi) async {
-    final j = await _json(() => _client.get(Uri.parse('$mayChu/api/vang/cho-nhan?vi=$vi')));
-    return _doc(() => [
-          for (final p in j['phieu'] as List<dynamic>)
-            _phieuTu(p as Map<String, dynamic>, p['ma_van'] as String),
-        ]);
+    final j = await _json(
+      () => _client.get(Uri.parse('$mayChu/api/vang/cho-nhan?vi=$vi')),
+    );
+    return _doc(
+      () => [
+        for (final p in j['phieu'] as List<dynamic>)
+          _phieuTu(p as Map<String, dynamic>, p['ma_van'] as String),
+      ],
+    );
   }
 
   /// Dữ liệu máy chủ sai dạng (khác phiên bản?) → LoiVi, không để TypeError lọt ra ngoài.
@@ -104,15 +112,17 @@ class MayChuPhieu {
     try {
       return f();
     } catch (_) {
-      throw const LoiVi('Máy chủ trả dữ liệu không đúng dạng — app và máy chủ có cùng phiên bản không?');
+      throw const LoiVi(
+        'Máy chủ trả dữ liệu không đúng dạng — app và máy chủ có cùng phiên bản không?',
+      );
     }
   }
 
   PhieuCho _phieuTu(Map<String, dynamic> j, String maVan) => PhieuCho(
-        phieu: PhieuVang.tuJson(j['phieu'] as Map<String, dynamic>),
-        chuKy: j['chu_ky'] as String,
-        maVan: maVan,
-      );
+    phieu: PhieuVang.tuJson(j['phieu'] as Map<String, dynamic>),
+    chuKy: j['chu_ky'] as String,
+    maVan: maVan,
+  );
 
   Future<Map<String, dynamic>> _json(
     Future<http.Response> Function() goi, {
@@ -123,10 +133,13 @@ class MayChuPhieu {
     try {
       r = await goi().timeout(_hetGio);
     } catch (_) {
-      throw LoiVi('Không liên lạc được máy chủ trọng tài ($mayChu). Kiểm tra uvicorn đang chạy.');
+      throw LoiVi(
+        'Không liên lạc được máy chủ trọng tài ($mayChu). Kiểm tra uvicorn đang chạy.',
+      );
     }
     final than = utf8.decode(r.bodyBytes, allowMalformed: true);
-    if (r.statusCode == thanhCong) return _doc(() => jsonDecode(than) as Map<String, dynamic>);
+    if (r.statusCode == thanhCong)
+      return _doc(() => jsonDecode(than) as Map<String, dynamic>);
     final chiTiet = switch (r.statusCode) {
       404 => 'Máy chủ chưa có nhật ký ván này — chơi xong một ván khi đã cấu hình máy chủ.',
       409 => khi409,
@@ -135,7 +148,10 @@ class MayChuPhieu {
       503 => 'Máy chủ chưa bật cửa hàng (thiếu khoá trọng tài, địa chỉ hợp đồng hoặc man_choi.json).',
       _ => 'Máy chủ trả về lỗi ${r.statusCode}.',
     };
-    throw LoiVi(chiTiet, ma: r.statusCode); // ma = mã HTTP (409: vé/ván đã dùng)
+    throw LoiVi(
+      chiTiet,
+      ma: r.statusCode,
+    ); // ma = mã HTTP (409: vé/ván đã dùng)
   }
 }
 
@@ -147,7 +163,8 @@ String lyDoTu(String than) {
       return '${(d['ly_do'] as List).first}';
     }
     if (d is String) return d;
-    if (d is List && d.isNotEmpty) return '${(d.first as Map?)?['msg'] ?? d.first}';
+    if (d is List && d.isNotEmpty)
+      return '${(d.first as Map?)?['msg'] ?? d.first}';
   } catch (_) {
     // không phải JSON
   }

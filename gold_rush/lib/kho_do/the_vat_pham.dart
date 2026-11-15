@@ -218,7 +218,7 @@ class _TheVatPhamState extends State<TheVatPham> {
                         ],
                       ),
                     ),
-                    if (vp.soLuong > 1)
+                    if (vp.soLuong >= 1)
                       Positioned(
                         right: 6,
                         bottom: 6,

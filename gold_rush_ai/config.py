@@ -23,6 +23,7 @@ MAX_NHAT_KY_KB = int(os.environ.get("MAX_NHAT_KY_KB", "64"))
 TRONG_TAI_KHOA = os.environ.get("TRONG_TAI_KHOA", "")
 CHAIN_ID = int(os.environ.get("CHAIN_ID", "31337"))                  # 31337 Hardhat · 11155111 Sepolia
 HOP_DONG_CUA_HANG = os.environ.get("HOP_DONG_CUA_HANG", "")         # địa chỉ sau khi triển khai
+HOP_DONG_VAT_PHAM = os.environ.get("HOP_DONG_VAT_PHAM", "")         # ERC-1155 vật phẩm transferable
 BLOCKCHAIN_RPC_URL = os.environ.get("BLOCKCHAIN_RPC_URL", os.environ.get("AI_BLOCKCHAIN_RPC_URL", ""))
 RPC_TIMEOUT_SECONDS = float(os.environ.get("RPC_TIMEOUT_SECONDS", "5.0"))
 BAN_DO_DIR = Path(os.environ.get("BAN_DO_DIR", APP_FLUTTER / "assets" / "tiles"))

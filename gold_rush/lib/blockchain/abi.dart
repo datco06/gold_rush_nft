@@ -19,6 +19,9 @@ const String chonVaoMan = '8680c8b8';
 /// mua(uint256)
 const String chonMua = '27654f7a';
 
+/// muaVatPham(uint256,uint256)
+const String chonMuaVatPham = '10a169cc';
+
 /// multicall(bytes[]) — OpenZeppelin Multicall
 const String chonMulticall = 'ac9650d8';
 
@@ -27,6 +30,12 @@ const String chonBalanceOf = '00fdd58e';
 
 /// gia(uint256)
 const String chonGia = '0bf25ad5';
+
+/// giaVatPham(uint256)
+const String chonGiaVatPham = '3c7e4dde';
+
+/// vatPham() → address
+const String chonHopDongVatPham = 'f23729fb';
 
 /// daDoi(bytes32)
 const String chonDaDoi = '8a53b475';
@@ -56,13 +65,13 @@ class PhieuVang {
   });
 
   factory PhieuVang.tuJson(Map<String, dynamic> j) => PhieuVang(
-        nguoiChoi: j['nguoiChoi'] as String,
-        man: BigInt.from(j['man'] as int),
-        ve: BigInt.from(j['ve'] as int),
-        soVang: BigInt.from(j['soVang'] as int),
-        maVan: j['maVan'] as String,
-        hanChot: BigInt.from(j['hanChot'] as int),
-      );
+    nguoiChoi: j['nguoiChoi'] as String,
+    man: BigInt.from(j['man'] as int),
+    ve: BigInt.from(j['ve'] as int),
+    soVang: BigInt.from(j['soVang'] as int),
+    maVan: j['maVan'] as String,
+    hanChot: BigInt.from(j['hanChot'] as int),
+  );
 }
 
 /// Vé vào màn đang mở của một ví (`ve(address)` trên hợp đồng). `so == 0`: không có vé.
@@ -151,9 +160,16 @@ String maHoaVaoMan(int man) => '0x$chonVaoMan${_tuInt(man)}';
 
 String maHoaMua(int nhanVat) => '0x$chonMua${_tuInt(nhanVat)}';
 
-String maHoaBalanceOf(String vi, int id) => '0x$chonBalanceOf${tuDiaChi(vi)}${_tuInt(id)}';
+String maHoaMuaVatPham(int vatPhamId, int soLuong) =>
+    '0x$chonMuaVatPham${_tuInt(vatPhamId)}${_tuInt(soLuong)}';
+
+String maHoaBalanceOf(String vi, int id) =>
+    '0x$chonBalanceOf${tuDiaChi(vi)}${_tuInt(id)}';
 
 String maHoaGia(int nhanVat) => '0x$chonGia${_tuInt(nhanVat)}';
+
+String maHoaGiaVatPham(int vatPhamId) =>
+    '0x$chonGiaVatPham${_tuInt(vatPhamId)}';
 
 String maHoaDaDoi(String maVan) => '0x$chonDaDoi${tuBytes32(maVan)}';
 
@@ -166,7 +182,9 @@ List<BigInt> docCacUint256(String ketQua, int soTu) {
   final h = boOx(ketQua);
   return [
     for (var i = 0; i < soTu; i++)
-      (i + 1) * 64 <= h.length ? BigInt.parse(h.substring(i * 64, (i + 1) * 64), radix: 16) : BigInt.zero,
+      (i + 1) * 64 <= h.length
+          ? BigInt.parse(h.substring(i * 64, (i + 1) * 64), radix: 16)
+          : BigInt.zero,
   ];
 }
 

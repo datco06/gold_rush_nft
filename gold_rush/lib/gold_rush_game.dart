@@ -255,6 +255,39 @@ class GoldRushGame extends FlameGame
     ...danhSachTrangBiMoi(),
   ]);
 
+  /// Đồng bộ vật phẩm vừa mua thành công vào Kho đồ trong phiên hiện tại.
+  /// Số dư on-chain/NFT vẫn là nguồn sự thật; notifier này chỉ cập nhật UI ngay.
+  void themVatPhamVaoKho(VatPhamHienThi vatPham, {int soLuong = 1}) {
+    if (soLuong < 1) return;
+    final ds = danhSachVatPham.value;
+    final index = ds.indexWhere((item) => item.id == vatPham.id);
+    if (index < 0) {
+      danhSachVatPham.value = [...ds, vatPham.voiSoLuong(soLuong)];
+      return;
+    }
+    final hienTai = ds[index];
+    final capNhat = hienTai.voiSoLuong(hienTai.soLuong + soLuong);
+    danhSachVatPham.value = [
+      for (var i = 0; i < ds.length; i++) i == index ? capNhat : ds[i],
+    ];
+  }
+
+  /// Đồng bộ số lượng NFT đã đọc trên chuỗi, không cộng lặp khi mở lại Store.
+  void dongBoSoLuongVatPham(VatPhamHienThi vatPham, int soLuong) {
+    if (soLuong < 1) return;
+    final ds = danhSachVatPham.value;
+    final index = ds.indexWhere((item) => item.id == vatPham.id);
+    if (index < 0) {
+      danhSachVatPham.value = [...ds, vatPham.voiSoLuong(soLuong)];
+      return;
+    }
+    if (ds[index].soLuong >= soLuong) return;
+    danhSachVatPham.value = [
+      for (var i = 0; i < ds.length; i++)
+        i == index ? ds[i].voiSoLuong(soLuong) : ds[i],
+    ];
+  }
+
   Future<void> trangBiVatPham(String itemId) async {
     final ds = danhSachVatPham.value;
     final idx = ds.indexWhere((vp) => vp.id == itemId);
@@ -719,12 +752,7 @@ class GoldRushGame extends FlameGame
         case 'khong_lo':
           _soQuaiBanDau++;
           _loaiQuaiGoc.add(d.ten);
-          _sinhQuai(
-            d.ten,
-            viTriNguoiChoi,
-            heSoTocDo,
-            viTri: d.viTri.clone(),
-          );
+          _sinhQuai(d.ten, viTriNguoiChoi, heSoTocDo, viTri: d.viTri.clone());
           break;
       }
     }
@@ -1192,8 +1220,12 @@ class GoldRushGame extends FlameGame
     final soVangCong = soVang != null
         ? (soVang + (kq.man.mienPhi ? BigInt.zero : BigInt.from(kq.man.coc)))
         : (kq.thang
-            ? BigInt.from(kq.xu + (kq.man.mienPhi ? 0 : (kq.man.coc + kq.man.thuong)))
-            : (kq.man.mienPhi && kq.xu > 0 ? BigInt.from(kq.xu) : BigInt.zero));
+              ? BigInt.from(
+                  kq.xu + (kq.man.mienPhi ? 0 : (kq.man.coc + kq.man.thuong)),
+                )
+              : (kq.man.mienPhi && kq.xu > 0
+                    ? BigInt.from(kq.xu)
+                    : BigInt.zero));
 
     if (pv != null && soVangCong > BigInt.zero) {
       await pv.congVang(soVangCong);

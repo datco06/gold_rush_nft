@@ -118,6 +118,34 @@ class VatPhamHienThi {
 
   bool get dangTrangBi => oDangTrangBi != null;
 
+  VatPhamHienThi voiSoLuong(int moi) {
+    if (moi < 1) throw ArgumentError('Số lượng vật phẩm phải lớn hơn 0.');
+    return VatPhamHienThi(
+      id: id,
+      ten: ten,
+      moTa: moTa,
+      loai: loai,
+      doHiem: doHiem,
+      nguon: nguon,
+      bieuTuong: bieuTuong,
+      danhMuc: danhMuc,
+      soLuong: moi,
+      duongDanAnh: duongDanAnh,
+      thuocTinh: thuocTinh,
+      satThuong: satThuong,
+      tamBan: tamBan,
+      hpCongThem: hpCongThem,
+      giamSatThuong: giamSatThuong,
+      tocDoCongThem: tocDoCongThem,
+      xuyenPha: xuyenPha,
+      oDangTrangBi: oDangTrangBi,
+      laDuLieuMau: laDuLieuMau,
+      chainId: chainId,
+      diaChiHopDong: diaChiHopDong,
+      tokenId: tokenId,
+    );
+  }
+
   DanhMucVatPham get danhMucHienThi {
     if (danhMuc != null) return danhMuc!;
 
