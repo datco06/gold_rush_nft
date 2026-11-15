@@ -1190,9 +1190,9 @@ class GoldRushGame extends FlameGame
     }
 
     final soVangCong = soVang != null
-        ? soVang
+        ? (soVang + (kq.man.mienPhi ? BigInt.zero : BigInt.from(kq.man.coc)))
         : (kq.thang
-            ? BigInt.from(kq.xu)
+            ? BigInt.from(kq.xu + (kq.man.mienPhi ? 0 : (kq.man.coc + kq.man.thuong)))
             : (kq.man.mienPhi && kq.xu > 0 ? BigInt.from(kq.xu) : BigInt.zero));
 
     if (pv != null && soVangCong > BigInt.zero) {
@@ -1200,9 +1200,16 @@ class GoldRushGame extends FlameGame
     }
 
     if (soVang != null) {
-      datTrangThai('Đã nhận +$soVang vàng vào ví.');
+      datTrangThai(
+        'Đã nhận +$soVang vàng vào ví'
+        '${kq.man.mienPhi ? '' : ' (+${kq.man.coc} cọc hoàn lại)'}.',
+      );
     } else if (soVangCong > BigInt.zero) {
-      datTrangThai('Đã cộng +$soVangCong vàng vào ví.');
+      datTrangThai(
+        kq.man.mienPhi
+            ? 'Đã cộng +$soVangCong vàng vào ví.'
+            : 'Đã nhận +$soVangCong vàng vào ví (+${kq.man.coc} cọc hoàn lại).',
+      );
     } else if (!daGui && coPhieu) {
       datTrangThai(
         'Không gửi được ván lên máy chủ '

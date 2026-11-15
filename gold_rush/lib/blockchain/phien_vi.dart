@@ -64,6 +64,16 @@ class PhienVi extends ChangeNotifier {
     await _luuVang();
   }
 
+  /// Trừ vàng trong ví (ví dụ khi đặt cọc vào màn), lưu lại và thông báo cập nhật TopBar.
+  Future<bool> truVang(BigInt soVangTru) async {
+    if (soVangTru <= BigInt.zero) return true;
+    if (vang < soVangTru) return false;
+    vang -= soVangTru;
+    notifyListeners();
+    await _luuVang();
+    return true;
+  }
+
   /// Chuỗi hiển thị số vàng có phân cách hàng nghìn.
   String get vangDinhDang {
     final s = vang.toString();
@@ -396,6 +406,21 @@ class PhienVi extends ChangeNotifier {
   /// đăng ký (máy chủ tính hạn nộp từ lúc nhận yêu cầu); null = chưa vào được.
   Future<({int ve, DateTime luc})?> chuanBiMan(ManChoi m, String maVan) =>
       _lam<({int ve, DateTime luc})>('Chuẩn bị màn ${m.ten}…', () async {
+        if (!daKetNoi) {
+          final coc = BigInt.from(m.coc);
+          if (vang < coc) {
+            throw const LoiVi('Chưa đủ vàng để đặt cọc.');
+          }
+          await truVang(coc);
+          final luc = DateTime.now();
+          final dc = diaChi;
+          if (dc != null) {
+            try {
+              await mayChu.batDauMan(maVan: maVan, vi: dc, man: m.id, ve: 0);
+            } catch (_) {}
+          }
+          return (ve: 0, luc: luc);
+        }
         await _taiLaiNoi();
         final dc = diaChi!;
         if (ve.dangMo && ve.man == m.id && !veDangMoDaCoPhieu) {

@@ -246,14 +246,9 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
                 'Màn có cọc cần cấu hình máy chủ và kết nối ví.',
                 style: chuPhu,
               )
-            else if (!pv.daKetNoi)
-              const Text(
-                'Ví được đồng bộ từ MetaMask sau khi đăng nhập.',
-                style: chuPhu,
-              )
             else
               Text(
-                'Vàng: ${pv.vang}'
+                'Vàng: ${pv.vangDinhDang}'
                 '${pv.phieuCho.isEmpty ? '' : '\nChờ nhận: ${pv.vangChoNhan} (tự gộp vào giao dịch)'}',
                 style: chuPhu,
               ),
@@ -316,12 +311,11 @@ class _TheMan extends StatelessWidget {
     } else {
       final duVang =
           p != null &&
-          p.daKetNoi &&
           (p.vang + p.vangChoNhan >= BigInt.from(man.coc) ||
               (p.ve.dangMo && p.ve.man == man.id));
 
       nut = FilledButton(
-        onPressed: (p == null || !p.daKetNoi || banKhoa || !duVang)
+        onPressed: (p == null || banKhoa || !duVang)
             ? null
             : () => _vaoManCoCoc(context, p),
         child: Text('Cọc ${man.coc}'),
@@ -332,8 +326,6 @@ class _TheMan extends StatelessWidget {
       } else if (p == null) {
         lyDoKhongVaoDuoc =
             'Cần cấu hình máy chủ và kết nối ví để vào màn có cọc.';
-      } else if (!p.daKetNoi) {
-        lyDoKhongVaoDuoc = 'Hãy kết nối MetaMask để vào màn có cọc.';
       } else if (!duVang) {
         lyDoKhongVaoDuoc = 'Chưa đủ vàng để đặt cọc ${man.coc} vàng.';
       }
@@ -497,11 +489,12 @@ class _TheMan extends StatelessWidget {
     if (kq == null) return;
 
     if (!await game.choiMan(man, maVan: maVan, ve: kq.ve, batDauThat: kq.luc)) {
+      if (!p.daKetNoi) {
+        await p.congVang(BigInt.from(man.coc));
+      }
       p.baoLoi(
         'Không mở được màn ${man.id}. '
-        'Vé số ${kq.ve} đã đăng ký với máy chủ nên cọc của vé '
-        'này không lấy lại được — báo giảng viên kèm '
-        'thông báo lỗi trong console.',
+        '${p.daKetNoi ? 'Vé số ${kq.ve} đã đăng ký với máy chủ nên cọc của vé này không lấy lại được — báo giảng viên kèm thông báo lỗi trong console.' : 'Đã hoàn lại ${man.coc} vàng cọc.'}',
       );
     }
   }
@@ -526,7 +519,7 @@ class _TheMan extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: Text('Vào màn ${man.id} · ${man.ten}?'),
         content: Text(
-          '${dungLai ? '• Dùng lại vé số ${p.ve.so} đã đặt cọc ${p.ve.coc} vàng — KHÔNG trừ thêm, không cần MetaMask.\n' : '• Trừ ngay ${man.coc} vàng tiền cọc (một giao dịch MetaMask).\n'}'
+          '${dungLai ? '• Dùng lại vé số ${p.ve.so} đã đặt cọc ${p.ve.coc} vàng — KHÔNG trừ thêm, không cần MetaMask.\n' : (p.daKetNoi ? '• Trừ ngay ${man.coc} vàng tiền cọc (một giao dịch MetaMask).\n' : '• Trừ ngay ${man.coc} vàng tiền cọc từ ví.\n')}'
           '${veCungManDaDung ? '• Vé số ${p.ve.so} của màn này đã dùng cho một ván không hoàn thành — cần vé mới.\n' : ''}'
           '• Nhặt đủ ${man.soXu} xu trong '
           '${dinhDangGiay(man.gioiHanGiay)}: nhận lại '

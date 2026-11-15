@@ -126,5 +126,98 @@ void main() {
       // Đảm bảo cờ bảo vệ đã được bật
       expect(game.daGuiVaXinPhieu, isTrue);
     });
+
+    test(
+        '4. Luồng đặt cọc trừ vàng khi vào màn có cọc và hoàn cọc + xu + thưởng khi thắng',
+        () async {
+      final game = GoldRushGame();
+      final pv = game.phienVi!;
+
+      // Cấp sẵn 50 vàng trong ví
+      await pv.congVang(BigInt.from(50));
+      expect(pv.vang, BigInt.from(50));
+
+      const man2 = ManChoi(
+        id: 2,
+        ten: 'Khu rừng cạm bẫy',
+        moTa: 'Cây cối thưa, ít quái',
+        tep: 'assets/tiles/map2.tmx',
+        gioiHanGiay: 100,
+        heSoKeDich: 1.0,
+        coc: 5,
+        thuong: 5,
+        soXu: 18,
+        sao: 1,
+      );
+
+      // Đặt cọc 5 vàng để chuẩn bị vào màn 2
+      final chuanBi = await pv.chuanBiMan(man2, 'van-coc-001');
+      expect(chuanBi, isNotNull);
+      // Vàng đã bị trừ 5 (còn 45)
+      expect(pv.vang, BigInt.from(45));
+
+      // Thắng màn 2: nhặt 18 xu -> hoàn cọc 5 + 18 xu + 5 thưởng = 28 vàng
+      const kqThang = KetQuaVan(
+        man: man2,
+        maVan: 'van-coc-001',
+        thang: true,
+        xu: 18,
+      );
+
+      await game.guiVaXinPhieuChoKiemThu(
+        nk: {'ma_van': 'van-coc-001', 'ket_qua': 'thang'},
+        maVan: 'van-coc-001',
+        kq: kqThang,
+        coPhieu: true,
+      );
+
+      // 45 + 28 = 73 vàng
+      expect(pv.vang, BigInt.from(73));
+    });
+
+    test(
+        '5. Thua màn có cọc: không hoàn lại tiền cọc đã trừ',
+        () async {
+      final game = GoldRushGame();
+      final pv = game.phienVi!;
+
+      await pv.congVang(BigInt.from(20));
+      expect(pv.vang, BigInt.from(20));
+
+      const man2 = ManChoi(
+        id: 2,
+        ten: 'Khu rừng cạm bẫy',
+        moTa: 'Cây cối thưa, ít quái',
+        tep: 'assets/tiles/map2.tmx',
+        gioiHanGiay: 100,
+        heSoKeDich: 1.0,
+        coc: 5,
+        thuong: 5,
+        soXu: 18,
+        sao: 1,
+      );
+
+      // Đặt cọc 5 vàng
+      await pv.chuanBiMan(man2, 'van-coc-002');
+      expect(pv.vang, BigInt.from(15));
+
+      // Thua ván
+      const kqThua = KetQuaVan(
+        man: man2,
+        maVan: 'van-coc-002',
+        thang: false,
+        xu: 5,
+      );
+
+      await game.guiVaXinPhieuChoKiemThu(
+        nk: {'ma_van': 'van-coc-002', 'ket_qua': 'thua'},
+        maVan: 'van-coc-002',
+        kq: kqThua,
+        coPhieu: false,
+      );
+
+      // Thua nên không được cộng thưởng / hoàn cọc -> giữ nguyên 15 vàng
+      expect(pv.vang, BigInt.from(15));
+    });
   });
 }
