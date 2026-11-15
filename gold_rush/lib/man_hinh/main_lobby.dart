@@ -1290,13 +1290,10 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (item?.duongDanAnh != null)
-                        Image.asset(
-                          item!.duongDanAnh!,
-                          width: 34,
-                          height: 34,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.none,
-                          errorBuilder: (_, _, _) => Icon(
+                        HinhTrangBiFrame(
+                          asset: item!.duongDanAnh!,
+                          kichThuoc: 34,
+                          fallback: Icon(
                             _itemIcon(item.bieuTuong),
                             color: _rarityColor(item.doHiem),
                             size: 28,

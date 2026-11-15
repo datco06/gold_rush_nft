@@ -1255,11 +1255,23 @@ class _EquipmentCardState extends State<_EquipmentCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                _iconForVatPham(item),
-                color: color,
-                size: widget.compact ? 26 : 32,
-              ),
+              if (item.duongDanAnh != null &&
+                  item.duongDanAnh!.trim().isNotEmpty)
+                HinhTrangBiFrame(
+                  asset: item.duongDanAnh!,
+                  kichThuoc: widget.compact ? 28 : 34,
+                  fallback: Icon(
+                    _iconForVatPham(item),
+                    color: color,
+                    size: widget.compact ? 26 : 32,
+                  ),
+                )
+              else
+                Icon(
+                  _iconForVatPham(item),
+                  color: color,
+                  size: widget.compact ? 26 : 32,
+                ),
               const SizedBox(height: 4),
               Text(
                 item.ten,

@@ -3,8 +3,61 @@ import 'package:flutter/material.dart';
 import 'danh_sach_nhan_vat.dart' show AnhNhanVat;
 import 'vat_pham_hien_thi.dart';
 
+/// Hiển thị một khung hình (frame 0) từ sprite sheet trang bị 4x4 (256x256),
+/// dùng cho các ô trang bị, danh sách và bảng hiển thị trang bị hiện tại.
+class HinhTrangBiFrame extends StatelessWidget {
+  final String asset;
+  final double kichThuoc;
+  final Widget? fallback;
+
+  const HinhTrangBiFrame({
+    super.key,
+    required this.asset,
+    required this.kichThuoc,
+    this.fallback,
+  });
+
+  static String chuanHoaAssetPath(String path) {
+    if (path.startsWith('assets/')) return path;
+    if (path.startsWith('images/')) return 'assets/$path';
+    return 'assets/images/trang_bi/$path';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final duongDan = chuanHoaAssetPath(asset);
+
+    return SizedBox.square(
+      dimension: kichThuoc,
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: kichThuoc * 4,
+          maxWidth: kichThuoc * 4,
+          minHeight: kichThuoc * 4,
+          maxHeight: kichThuoc * 4,
+          child: Image.asset(
+            duongDan,
+            width: kichThuoc * 4,
+            height: kichThuoc * 4,
+            fit: BoxFit.fill,
+            alignment: Alignment.topLeft,
+            filterQuality: FilterQuality.none,
+            errorBuilder: (_, _, _) =>
+                fallback ??
+                const Icon(
+                  Icons.broken_image_outlined,
+                  color: Color(0xFF8EA1B5),
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Hiển thị nhân vật kèm trực quan các trang bị đang mặc (vũ khí chính, vũ khí phụ, giáp)
-/// đồng bộ giữa Main Lobby, Hồ sơ nhân vật và Kho đồ.
+/// đồng bộ giữa Main Lobby, Hồ sơ nhân vật và Kho đồ theo đúng layout trong game.
 class NhanVatVoiTrangBi extends StatelessWidget {
   final String tepAnh;
   final double kichThuoc;
@@ -24,11 +77,55 @@ class NhanVatVoiTrangBi extends StatelessWidget {
     return null;
   }
 
+  Widget _lopSprite4x4({
+    required String duongDanAnh,
+    required double kichThuoc,
+    Offset offset16x16 = Offset.zero,
+  }) {
+    final uiDx = (offset16x16.dx / 16.0) * kichThuoc;
+    final uiDy = (offset16x16.dy / 16.0) * kichThuoc;
+
+    return Positioned(
+      left: uiDx,
+      top: uiDy,
+      width: kichThuoc,
+      height: kichThuoc,
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: kichThuoc * 4,
+          maxWidth: kichThuoc * 4,
+          minHeight: kichThuoc * 4,
+          maxHeight: kichThuoc * 4,
+          child: Image.asset(
+            HinhTrangBiFrame.chuanHoaAssetPath(duongDanAnh),
+            width: kichThuoc * 4,
+            height: kichThuoc * 4,
+            fit: BoxFit.fill,
+            alignment: Alignment.topLeft,
+            filterQuality: FilterQuality.none,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final vuKhiChinh = _timTrangBi(OTrangBi.vuKhiChinh);
     final vuKhiPhu = _timTrangBi(OTrangBi.vuKhiPhu);
     final giap = _timTrangBi(OTrangBi.giap);
+    final giay = _timTrangBi(OTrangBi.giay);
+
+    final vuKhi = vuKhiChinh ?? vuKhiPhu;
+
+    final coAnhVuKhi =
+        vuKhi?.duongDanAnh != null && vuKhi!.duongDanAnh!.trim().isNotEmpty;
+    final coAnhGiap =
+        giap?.duongDanAnh != null && giap!.duongDanAnh!.trim().isNotEmpty;
+    final coAnhGiay =
+        giay?.duongDanAnh != null && giay!.duongDanAnh!.trim().isNotEmpty;
 
     return SizedBox(
       width: kichThuoc,
@@ -37,14 +134,44 @@ class NhanVatVoiTrangBi extends StatelessWidget {
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
+          // 1. Sprite nhân vật gốc
           AnhNhanVat(tepAnh: tepAnh, kichThuoc: kichThuoc),
-          if (vuKhiChinh != null || vuKhiPhu != null || giap != null)
+
+          // 2. Giày (nếu có sprite sheet, offset (0, 2) như trong game)
+          if (coAnhGiay)
+            _lopSprite4x4(
+              duongDanAnh: giay.duongDanAnh!,
+              kichThuoc: kichThuoc,
+              offset16x16: const Offset(0, 2),
+            ),
+
+          // 3. Giáp (nếu có sprite sheet, offset (0, 0) như trong game)
+          if (coAnhGiap)
+            _lopSprite4x4(
+              duongDanAnh: giap.duongDanAnh!,
+              kichThuoc: kichThuoc,
+              offset16x16: const Offset(0, 0),
+            ),
+
+          // 4. Vũ khí chính/phụ (súng cầm ở đầu tay, cán gắn vào tay chĩa thẳng theo hướng mặt)
+          // Tọa độ lệch (5.0, 4.0) khớp hoàn toàn với TrangBiGeorge.viTriVuKhi(HuongDi.xuong) trong game.
+          if (coAnhVuKhi)
+            _lopSprite4x4(
+              duongDanAnh: vuKhi.duongDanAnh!,
+              kichThuoc: kichThuoc,
+              offset16x16: const Offset(5.0, 4.0),
+            ),
+
+          // 5. Fallback CustomPaint cho trang bị mô phỏng không có ảnh asset
+          if ((vuKhiChinh != null && !coAnhVuKhi) ||
+              (vuKhiPhu != null && !coAnhVuKhi) ||
+              (giap != null && !coAnhGiap))
             CustomPaint(
               size: Size.square(kichThuoc),
               painter: _TrangBiTrenNhanVatPainter(
-                vuKhiChinh: vuKhiChinh,
-                vuKhiPhu: vuKhiPhu,
-                giap: giap,
+                vuKhiChinh: coAnhVuKhi ? null : vuKhiChinh,
+                vuKhiPhu: coAnhVuKhi ? null : vuKhiPhu,
+                giap: coAnhGiap ? null : giap,
               ),
             ),
         ],

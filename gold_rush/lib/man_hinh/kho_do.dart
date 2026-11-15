@@ -322,6 +322,14 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
     return vp.laDuLieuMau ? '${vp.ten} · DEMO' : vp.ten;
   }
 
+  VatPhamHienThi? _trangBiTai(OTrangBi o) {
+    if (!_daTaiVatPham) return null;
+    final cacVatPham = widget.danhSachVatPham
+        .where((vp) => vp.oDangTrangBi == o)
+        .toList();
+    return cacVatPham.isNotEmpty ? cacVatPham.first : null;
+  }
+
   Widget _khungTrangBi() {
     return _KhungMuc(
       tieuDe: 'TRANG BỊ ĐANG DÙNG',
@@ -343,17 +351,20 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                 nhan: 'Vũ khí chính',
                 loai: _LoaiOTrangBi.kiem,
                 noiDung: _tenTrangBiTai(OTrangBi.vuKhiChinh),
+                duongDanAnh: _trangBiTai(OTrangBi.vuKhiChinh)?.duongDanAnh,
                 noiBat: true,
               ),
               _OTrangBi(
                 nhan: 'Vũ khí phụ',
                 loai: _LoaiOTrangBi.cung,
                 noiDung: _tenTrangBiTai(OTrangBi.vuKhiPhu),
+                duongDanAnh: _trangBiTai(OTrangBi.vuKhiPhu)?.duongDanAnh,
               ),
               _OTrangBi(
                 nhan: 'Giáp',
                 loai: _LoaiOTrangBi.giap,
                 noiDung: _tenTrangBiTai(OTrangBi.giap),
+                duongDanAnh: _trangBiTai(OTrangBi.giap)?.duongDanAnh,
               ),
             ],
           ),
@@ -1789,25 +1800,35 @@ class _OTrangBi extends StatelessWidget {
   final _LoaiOTrangBi loai;
   final String noiDung;
   final bool noiBat;
+  final String? duongDanAnh;
 
   const _OTrangBi({
     required this.nhan,
     required this.loai,
     required this.noiDung,
     this.noiBat = false,
+    this.duongDanAnh,
   });
 
   @override
   Widget build(BuildContext context) {
+    final coAnh = duongDanAnh != null && duongDanAnh!.trim().isNotEmpty;
+
     return SizedBox(
       width: 90,
       child: Column(
         children: [
           GameEquipmentSlot(
             selected: noiBat,
-            icon: ExcludeSemantics(
-              child: CustomPaint(painter: _HinhLoaiTrangBi(loai)),
-            ),
+            icon: coAnh
+                ? HinhTrangBiFrame(
+                    asset: duongDanAnh!,
+                    kichThuoc: 34,
+                    fallback: CustomPaint(painter: _HinhLoaiTrangBi(loai)),
+                  )
+                : ExcludeSemantics(
+                    child: CustomPaint(painter: _HinhLoaiTrangBi(loai)),
+                  ),
           ),
           const SizedBox(height: 7),
           Text(
