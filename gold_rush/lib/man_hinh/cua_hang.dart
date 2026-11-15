@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
 import '../components/ui/gold_rush_top_bar.dart';
@@ -277,7 +279,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: ChuGame(message),
         backgroundColor: const Color(0xFF142B38),
         behavior: SnackBarBehavior.floating,
       ),
@@ -333,7 +335,7 @@ class _StoreHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Align(
       alignment: Alignment.centerLeft,
-      child: Text(
+      child: ChuGame(
         'Cửa hàng',
         style: TextStyle(
           color: Color(0xFFEAF2F8),
@@ -419,7 +421,7 @@ class _SegmentButton extends StatelessWidget {
                     : const Color(0xFF9BB0C0),
               ),
               const SizedBox(width: 6),
-              Text(
+              ChuGame(
                 label,
                 style: TextStyle(
                   color: selected
@@ -496,7 +498,7 @@ class _FilterChip extends StatelessWidget {
                   : const Color(0x1AFFFFFF),
             ),
           ),
-          child: Text(
+          child: ChuGame(
             label,
             style: TextStyle(
               color: selected
@@ -570,7 +572,7 @@ class _StoreItemCard extends StatelessWidget {
                 children: [
                   _RarityTag(item.doHiem),
                   if (isDefault)
-                    const Text(
+                    const ChuGame(
                       'ĐANG DÙNG',
                       style: TextStyle(
                         color: Color(0xFF35D6A0),
@@ -595,7 +597,7 @@ class _StoreItemCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              ChuGame(
                 item.ten,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -606,7 +608,7 @@ class _StoreItemCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
+              ChuGame(
                 _shortStats(item),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -628,7 +630,7 @@ class _StoreItemCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Expanded(
-                    child: Text(
+                    child: ChuGame(
                       price == 0 ? 'Miễn phí' : '$price vàng',
                       style: const TextStyle(
                         color: Color(0xFFFFD67A),
@@ -661,7 +663,7 @@ class _BuyButton extends StatelessWidget {
     return FilledButton.icon(
       onPressed: onPressed,
       icon: const Icon(Icons.shopping_cart_outlined, size: 14),
-      label: const Text('Mua'),
+      label: const ChuGame('Mua'),
       style: FilledButton.styleFrom(
         backgroundColor: const Color(0xFFFFC84D),
         foregroundColor: const Color(0xFF12202A),
@@ -692,7 +694,7 @@ class _OwnedButton extends StatelessWidget {
         textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       ),
-      child: Text(label),
+      child: ChuGame(label),
     );
   }
 }
@@ -710,7 +712,7 @@ class _QuantityTag extends StatelessWidget {
         color: const Color(0x1435D6A0),
         borderRadius: BorderRadius.circular(5),
       ),
-      child: Text(
+      child: ChuGame(
         '×$quantity',
         style: const TextStyle(
           color: Color(0xFF35D6A0),
@@ -736,7 +738,7 @@ class _RarityTag extends StatelessWidget {
         color: color.withValues(alpha: .12),
         borderRadius: BorderRadius.circular(5),
       ),
-      child: Text(
+      child: ChuGame(
         tenDoHiem(rarity).toUpperCase(),
         style: TextStyle(
           color: color,
@@ -824,7 +826,7 @@ class _ItemDetail extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              const ChuGame(
                 'THÔNG TIN VẬT PHẨM',
                 style: TextStyle(
                   color: Color(0xFFF2B33D),
@@ -847,7 +849,7 @@ class _ItemDetail extends StatelessWidget {
             child: Center(child: _VatPhamImage(item, size: 118)),
           ),
           const SizedBox(height: 13),
-          Text(
+          ChuGame(
             item.ten,
             style: const TextStyle(
               color: Color(0xFFEAF2F8),
@@ -856,7 +858,7 @@ class _ItemDetail extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 5),
-          Text(
+          ChuGame(
             item.moTa,
             style: const TextStyle(
               color: Color(0xFF9BB0C0),
@@ -879,7 +881,7 @@ class _ItemDetail extends StatelessWidget {
                   ),
                   const SizedBox(width: 7),
                   Expanded(
-                    child: Text(
+                    child: ChuGame(
                       entry.key,
                       style: const TextStyle(
                         color: Color(0xFF9BB0C0),
@@ -887,7 +889,7 @@ class _ItemDetail extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text(
+                  ChuGame(
                     entry.value,
                     style: const TextStyle(
                       color: Color(0xFF35D6A0),
@@ -908,7 +910,7 @@ class _ItemDetail extends StatelessWidget {
               ),
               const SizedBox(width: 5),
               Expanded(
-                child: Text(
+                child: ChuGame(
                   price == 0 ? 'Miễn phí' : '$price vàng',
                   style: const TextStyle(
                     color: Color(0xFFFFD67A),
@@ -919,7 +921,7 @@ class _ItemDetail extends StatelessWidget {
               FilledButton.icon(
                 onPressed: price == 0 ? null : onBuy,
                 icon: const Icon(Icons.shopping_cart_outlined, size: 15),
-                label: const Text('Mua'),
+                label: const ChuGame('Mua'),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFFFC84D),
                   foregroundColor: const Color(0xFF12202A),
@@ -973,7 +975,7 @@ class _EmptyStore extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0x1AFFFFFF)),
       ),
-      child: const Text(
+      child: const ChuGame(
         'Chưa có vật phẩm trong danh mục này.',
         textAlign: TextAlign.center,
         style: TextStyle(color: Color(0xFF9BB0C0)),

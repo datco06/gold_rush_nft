@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 import 'package:gold_rush/main.dart';
+import 'package:gold_rush/components/ui/gold_rush_top_bar.dart';
 
 void main() {
   test('defaults to Vietnamese and restores only supported languages', () async {
@@ -51,6 +52,14 @@ void main() {
     expect(language.dich('Alice 0x123'), 'Alice 0x123');
   });
 
+  test('dynamic labels retain amounts and user text verbatim', () async {
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    await language.doi('en');
+    expect(language.dich('25 vàng'), '25 gold');
+    expect(language.dich('Ví: Alice \$5 {0}'), 'Wallet: Alice \$5 {0}');
+    expect(language.dich('CÀI ĐẶT'), 'SETTINGS');
+  });
+
   testWidgets('text reacts without remounting child state', (tester) async {
     final language = NgonNgu(doc: () async => null, ghi: (_) async {});
     var mounts = 0;
@@ -95,6 +104,25 @@ void main() {
     expect(find.byType(ManHinhGame), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     await NgonNgu.chung.doi('vi');
+  });
+
+  testWidgets('navigation uses translated labels and keeps player identity', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    await language.doi('en');
+    await tester.pumpWidget(PhamViNgonNgu(
+      ngonNgu: language,
+      child: const MaterialApp(home: Scaffold(body: GoldRushTopBar(
+        playerName: 'Alice', walletAddress: '0x1234',
+      ))),
+    ));
+    expect(find.text('Inventory'), findsOneWidget);
+    expect(find.text('Shop'), findsOneWidget);
+    expect(find.text('Alice'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
 

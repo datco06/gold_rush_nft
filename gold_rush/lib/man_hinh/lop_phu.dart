@@ -46,7 +46,7 @@ class _Khung extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
+                        ChuGame(
                           tieuDe,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
@@ -58,7 +58,7 @@ class _Khung extends StatelessWidget {
                         ),
                         if (phuDe != null) ...[
                           const SizedBox(height: 12),
-                          Text(
+                          ChuGame(
                             phuDe!,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
@@ -107,7 +107,7 @@ class _Nut extends StatelessWidget {
             ? FilledButton.icon(
                 onPressed: khiBam,
                 icon: Icon(bieuTuong),
-                label: Text(nhan),
+                label: ChuGame(nhan),
                 style: FilledButton.styleFrom(
                   backgroundColor: CauHinh.mauChinh,
                   foregroundColor: const Color(0xFF241A05),
@@ -120,7 +120,7 @@ class _Nut extends StatelessWidget {
             : OutlinedButton.icon(
                 onPressed: khiBam,
                 icon: Icon(bieuTuong),
-                label: Text(nhan),
+                label: ChuGame(nhan),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: CauHinh.mauChu,
                   side: const BorderSide(color: Color(0x66FFFFFF)),
@@ -174,11 +174,11 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
             setState(() => AmThanh.batNhac = v);
             AmThanh.datBatNhac(v);
           },
-          title: const Text(
+          title: const ChuGame(
             'Nhạc nền',
             style: TextStyle(color: CauHinh.mauChu),
           ),
-          subtitle: const Text(
+          subtitle: const ChuGame(
             'Bản nhạc lặp 8 giây, sinh bằng mã nguồn',
             style: TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
           ),
@@ -189,11 +189,11 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
           onChanged: (v) {
             setState(() => AmThanh.batHieuUng = v);
           },
-          title: const Text(
+          title: const ChuGame(
             'Hiệu ứng âm thanh',
             style: TextStyle(color: CauHinh.mauChu),
           ),
-          subtitle: const Text(
+          subtitle: const ChuGame(
             'Tiếng nhặt xu, bước chân, kẻ địch nổ',
             style: TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
           ),
@@ -206,11 +206,11 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
               : (v) {
                   setState(() => widget.game.doKho.batThichUng = v);
                 },
-          title: const Text(
+          title: const ChuGame(
             'Độ khó thích ứng (AI)',
             style: TextStyle(color: CauHinh.mauChu),
           ),
-          subtitle: Text(
+          subtitle: ChuGame(
             widget.game.doKho.moHinh == null
                 ? 'Chưa có mô hình trong assets/models/'
                 : 'Kẻ địch nhanh/chậm trong khoảng 80–115% '
@@ -385,7 +385,7 @@ class ManHinhKetThuc extends StatelessWidget {
         if (kq?.phieu != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
-            child: Text(
+            child: ChuGame(
               kq!.phieu!,
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -445,7 +445,7 @@ class ManHinhHuyHieu extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  const ChuGame(
                     '✧ CHÚC MỪNG! ✧',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -455,7 +455,7 @@ class ManHinhHuyHieu extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  const ChuGame(
                     'Bạn đã nhận được huy hiệu mới!',
                     style: TextStyle(color: Color(0xFFE7DCC8), fontSize: 22),
                   ),
@@ -479,7 +479,7 @@ class ManHinhHuyHieu extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  Text(
+                  ChuGame(
                     (badge['name'] as String).toUpperCase(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
@@ -489,7 +489,7 @@ class ManHinhHuyHieu extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  const ChuGame(
                     '✓ Đã ghi nhận huy hiệu SBT',
                     style: TextStyle(color: Color(0xFF9FE4C2), fontSize: 20),
                   ),
@@ -503,7 +503,7 @@ class ManHinhHuyHieu extends StatelessWidget {
                         backgroundColor: const Color(0xFFF0F0F0),
                         foregroundColor: Colors.black,
                       ),
-                      child: const Text(
+                      child: const ChuGame(
                         'ĐÓNG',
                         style: TextStyle(
                           fontSize: 22,
@@ -533,11 +533,11 @@ class _Dong extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        ChuGame(
           nhan,
           style: const TextStyle(color: Color(0xFFC9D2DB), fontSize: 14),
         ),
-        Text(
+        ChuGame(
           giaTri,
           style: const TextStyle(
             color: CauHinh.mauChu,

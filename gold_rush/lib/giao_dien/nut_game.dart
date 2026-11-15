@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import 'mau_game.dart';
 
 /// Nút dùng chung cho World Map và Kho đồ.
@@ -37,7 +39,7 @@ class NutGame extends StatelessWidget {
           ? FilledButton.icon(
               onPressed: thaoTac,
               icon: icon,
-              label: Text(nhan, textAlign: TextAlign.center),
+              label: ChuGame(nhan, textAlign: TextAlign.center),
               style: FilledButton.styleFrom(
                 backgroundColor: MauGame.chinh,
                 foregroundColor: MauGame.chuTrenVang,
@@ -54,7 +56,7 @@ class NutGame extends StatelessWidget {
           : OutlinedButton.icon(
               onPressed: thaoTac,
               icon: icon,
-              label: Text(nhan, textAlign: TextAlign.center),
+              label: ChuGame(nhan, textAlign: TextAlign.center),
               style: OutlinedButton.styleFrom(
                 foregroundColor: MauGame.chu,
                 side: const BorderSide(color: MauGame.vien),

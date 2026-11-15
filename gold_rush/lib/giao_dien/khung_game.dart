@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../components/ui/game_inventory_controls.dart';
 import 'mau_game.dart';
 
@@ -91,7 +93,7 @@ class KhungGame extends StatelessWidget {
                                           const SizedBox(width: 9),
                                         ],
                                         Flexible(
-                                          child: Text(
+                                          child: ChuGame(
                                             tieuDe,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -141,7 +143,7 @@ class KhungGame extends StatelessWidget {
                                 gon ? 12 : 20,
                                 gon ? 4 : 12,
                               ),
-                              child: Text(
+                              child: ChuGame(
                                 phuDe!,
                                 maxLines: gon ? 1 : 2,
                                 overflow: TextOverflow.ellipsis,

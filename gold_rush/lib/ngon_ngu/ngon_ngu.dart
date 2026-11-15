@@ -52,8 +52,33 @@ class NgonNgu extends ChangeNotifier {
 
   String dich(String source) {
     if (_ma == 'vi') return source;
-    return banDichAnh[source] ?? source;
+    final exact = banDichAnh[source];
+    if (exact != null) return exact;
+    for (final template in _mauDich) {
+      final match = template.pattern.firstMatch(source);
+      if (match == null) continue;
+      // Substitute in one pass: user-supplied braces/$ are never re-evaluated.
+      return template.english.replaceAllMapped(RegExp(r'\{(\d+)\}'), (m) {
+        return match.group(int.parse(m[1]!) + 1) ?? '';
+      });
+    }
+    return source;
   }
+}
+
+final _mauDich = banDichAnh.entries
+    .where((e) => e.key.contains(RegExp(r'\{\d+\}')))
+    .map((e) => _MauDich(e.key, e.value))
+    .toList();
+
+class _MauDich {
+  _MauDich(String source, this.english)
+    : pattern = RegExp(
+        '^${source.splitMapJoin(RegExp(r'\{\d+\}'), onMatch: (_) => '(.*?)', onNonMatch: RegExp.escape)}\u0024',
+        dotAll: true,
+      );
+  final RegExp pattern;
+  final String english;
 }
 
 class PhamViNgonNgu extends InheritedNotifier<NgonNgu> {

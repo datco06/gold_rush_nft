@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../blockchain/nhan_vat.dart';
 import '../ai/may_chu_nhan_vat.dart';
 import '../components/ui/gold_rush_top_bar.dart';
@@ -134,7 +136,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: LobbyColors.panel,
-          content: Text(
+          content: ChuGame(
             'Ô ${slot.label} chưa được hỗ trợ trong phiên bản hiện tại.',
             style: const TextStyle(color: LobbyColors.textPrimary),
           ),
@@ -293,7 +295,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                             onPressed: _onStartAdventure,
                                           ),
                                           const SizedBox(height: 8),
-                                          const Text(
+                                          const ChuGame(
                                             'Nhấn ENTER để bắt đầu ván mới',
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
@@ -600,7 +602,7 @@ class _GoldRushLogo extends StatelessWidget {
                   Color(0xFFD18210),
                 ],
               ).createShader(bounds),
-              child: Text(
+              child: ChuGame(
                 'GOLD RUSH',
                 style: TextStyle(
                   color: Colors.white,
@@ -615,7 +617,7 @@ class _GoldRushLogo extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 3),
-            Text(
+            ChuGame(
               'AI ADVENTURE & BLOCKCHAIN',
               style: TextStyle(
                 color: LobbyColors.textSecondary,
@@ -727,7 +729,7 @@ class _CharacterMiniProfileState extends State<CharacterMiniProfile> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  ChuGame(
                     widget.characterName,
                     style: TextStyle(
                       color: LobbyColors.textPrimary,
@@ -750,7 +752,7 @@ class _CharacterMiniProfileState extends State<CharacterMiniProfile> {
                         width: 0.9,
                       ),
                     ),
-                    child: Text(
+                    child: ChuGame(
                       'Lv.${widget.level}',
                       style: const TextStyle(
                         color: LobbyColors.highlightGold,
@@ -763,7 +765,7 @@ class _CharacterMiniProfileState extends State<CharacterMiniProfile> {
                 ],
               ),
               const SizedBox(height: 2),
-              Text(
+              ChuGame(
                 widget.playerTitle,
                 style: TextStyle(
                   color: LobbyColors.textSecondary,
@@ -839,7 +841,7 @@ class _GoldBalanceWidget extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          ChuGame(
             goldText,
             style: TextStyle(
               color: LobbyColors.textPrimary,
@@ -1160,7 +1162,7 @@ class _EquippedItemsPanel extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Flexible(
-                child: Text(
+                child: ChuGame(
                   'TRANG BỊ HIỆN TẠI',
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -1319,7 +1321,7 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
                       const SizedBox(height: 4),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
+                        child: ChuGame(
                           item?.ten ??
                               (supported ? widget.slot.label : 'Chưa hỗ trợ'),
                           maxLines: 1,
@@ -1357,7 +1359,7 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
                           width: 0.8,
                         ),
                       ),
-                      child: Text(
+                      child: ChuGame(
                         badgeValue,
                         style: const TextStyle(
                           color: LobbyColors.highlightGold,
@@ -1480,7 +1482,7 @@ class _StartAdventureButtonState extends State<_StartAdventureButton> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      ChuGame(
                         widget.loading ? 'ĐANG MỞ...' : 'BẮT ĐẦU',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1493,7 +1495,7 @@ class _StartAdventureButtonState extends State<_StartAdventureButton> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      ChuGame(
                         '« Phiêu Lưu Ngay »',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1591,7 +1593,7 @@ class _ChiTietTrangBiDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              ChuGame(
                 slotLabel.toUpperCase(),
                 style: const TextStyle(
                   color: LobbyColors.textSecondary,
@@ -1601,7 +1603,7 @@ class _ChiTietTrangBiDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
+              ChuGame(
                 item.ten,
                 style: const TextStyle(
                   color: LobbyColors.highlightGold,
@@ -1611,7 +1613,7 @@ class _ChiTietTrangBiDialog extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               if (item.moTa.isNotEmpty)
-                Text(
+                ChuGame(
                   item.moTa,
                   style: const TextStyle(
                     color: LobbyColors.textPrimary,
@@ -1627,14 +1629,14 @@ class _ChiTietTrangBiDialog extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        ChuGame(
                           e.key,
                           style: const TextStyle(
                             color: LobbyColors.textSecondary,
                             fontSize: 12.5,
                           ),
                         ),
-                        Text(
+                        ChuGame(
                           e.value,
                           style: const TextStyle(
                             color: LobbyColors.highlightGold,
@@ -1652,7 +1654,7 @@ class _ChiTietTrangBiDialog extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
+                    child: const ChuGame(
                       'Đóng',
                       style: TextStyle(color: LobbyColors.textSecondary),
                     ),
@@ -1661,7 +1663,7 @@ class _ChiTietTrangBiDialog extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: onOpenKhoDo,
                     icon: const Icon(Icons.backpack_outlined, size: 17),
-                    label: const Text('Mở Kho đồ'),
+                    label: const ChuGame('Mở Kho đồ'),
                     style: FilledButton.styleFrom(
                       backgroundColor: LobbyColors.primaryGold,
                       foregroundColor: const Color(0xFF231502),

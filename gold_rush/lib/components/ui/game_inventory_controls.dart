@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../ngon_ngu/ngon_ngu.dart';
+
 /// Ngôn ngữ thiết kế dùng chung cho các control trong Kho đồ.
 abstract final class GameInventoryStyle {
   static const gold = Color(0xFFE0A100);
@@ -141,7 +143,7 @@ class _GameTabButtonState extends State<GameTabButton> {
                         : GameInventoryStyle.textMuted,
                   ),
                   const SizedBox(width: 8),
-                  Text(
+                  ChuGame(
                     widget.label,
                     style: TextStyle(
                       color: selected
@@ -303,7 +305,7 @@ class _GameMenuButtonState<T> extends State<GameMenuButton<T>> {
                     : GameInventoryStyle.textMuted,
               ),
               const SizedBox(width: 7),
-              Text(
+              ChuGame(
                 widget.label,
                 style: TextStyle(
                   color: widget.active
@@ -386,7 +388,7 @@ class _GameToggleButtonState extends State<GameToggleButton> {
                     : GameInventoryStyle.textMuted,
               ),
               const SizedBox(width: 7),
-              Text(
+              ChuGame(
                 widget.label,
                 style: TextStyle(
                   color: widget.selected
@@ -476,7 +478,7 @@ class _GameSegmentButtonState extends State<GameSegmentButton> {
                       : GameInventoryStyle.textPrimary,
                 ),
                 const SizedBox(width: 7),
-                Text(
+                ChuGame(
                   widget.label,
                   style: TextStyle(
                     color: widget.selected

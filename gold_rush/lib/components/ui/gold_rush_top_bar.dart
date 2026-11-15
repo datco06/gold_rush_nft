@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../ngon_ngu/ngon_ngu.dart';
+
 /// Các mục điều hướng dùng chung trên TopBar Gold Rush.
 enum GoldRushTopBarItem { sanhCho, cuaHang, rungRuong, quaTang, khoDo, xuongAi }
 
@@ -214,7 +216,7 @@ class _GoldRushBrand extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        const Text(
+        const ChuGame(
           'GOLD RUSH',
           style: TextStyle(
             color: Color(0xFFEAF2F8),
@@ -322,7 +324,7 @@ class _NavItem extends StatelessWidget {
       child: TextButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 13),
-        label: Text(label),
+        label: ChuGame(label),
         style: TextButton.styleFrom(
           foregroundColor: active
               ? const Color(0xFFFFD67A)
@@ -409,7 +411,7 @@ class _GoldChip extends StatelessWidget {
           color: Color(0xFFF2B33D),
         ),
         const SizedBox(width: 6),
-        Text(
+        ChuGame(
           value,
           style: const TextStyle(
             color: Color(0xFFFFD67A),
@@ -463,16 +465,18 @@ class _PlayerChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              ChuGame(
                 name,
+                dichNoiDung: false,
                 style: const TextStyle(
                   color: Color(0xFFEAF2F8),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(
+              ChuGame(
                 address,
+                dichNoiDung: false,
                 style: const TextStyle(
                   color: Color(0xFF7D90A0),
                   fontSize: 8,

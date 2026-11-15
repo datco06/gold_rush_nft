@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
 
@@ -57,7 +59,7 @@ class ManHinhTrungTamQuaTang extends StatelessWidget {
                           constraints: const BoxConstraints(maxWidth: 720),
                           child: Column(
                             children: [
-                              const Text(
+                              const ChuGame(
                                 '✦ KHO BÁU DÀNH CHO BẠN ✦',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -68,7 +70,7 @@ class ManHinhTrungTamQuaTang extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              const Text(
+                              const ChuGame(
                                 'TRUNG TÂM\nQUÀ TẶNG',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -81,7 +83,7 @@ class ManHinhTrungTamQuaTang extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 18),
-                              const Text(
+                              const ChuGame(
                                 'Khám phá những mã quà đặc biệt\nvà nhận phần thưởng vào ví Gold Rush.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -101,7 +103,7 @@ class ManHinhTrungTamQuaTang extends StatelessWidget {
                                   icon: const Icon(
                                     Icons.qr_code_scanner_rounded,
                                   ),
-                                  label: const Text('MỞ CAMERA QUÉT QR'),
+                                  label: const ChuGame('MỞ CAMERA QUÉT QR'),
                                   style: FilledButton.styleFrom(
                                     disabledBackgroundColor: const Color(
                                       0xFFF2C76B,
@@ -122,7 +124,7 @@ class ManHinhTrungTamQuaTang extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              const Text(
+                              const ChuGame(
                                 '✧ Quét mã QR hợp lệ để nhận quà ✧',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -215,7 +217,7 @@ class _GiftShowcase extends StatelessWidget {
             const Positioned(
               top: 44,
               right: 84,
-              child: Text(
+              child: ChuGame(
                 '✦',
                 style: TextStyle(color: Color(0xFFFFDA8A), fontSize: 28),
               ),
@@ -223,7 +225,7 @@ class _GiftShowcase extends StatelessWidget {
             const Positioned(
               bottom: 50,
               left: 104,
-              child: Text(
+              child: ChuGame(
                 '✧',
                 style: TextStyle(color: Color(0xFFE6AE43), fontSize: 20),
               ),

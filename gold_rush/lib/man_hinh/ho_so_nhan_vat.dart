@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+import '../ngon_ngu/ngon_ngu.dart';
 import 'package:flutter/services.dart';
 
 import '../ai/may_chu_nhan_vat.dart';
@@ -434,7 +436,7 @@ class _ProfileHeader extends StatelessWidget {
                     level: capDo,
                   ),
                   const SizedBox(width: 16),
-                  Text(
+                  ChuGame(
                     goldText,
                     style: TextStyle(
                       color: ProfileColors.textPrimary,
@@ -480,7 +482,7 @@ class _ProfileHeader extends StatelessWidget {
                 size: compact ? 18 : 22,
               ),
               const SizedBox(width: 6),
-              Text(
+              ChuGame(
                 'HỒ SƠ',
                 style: TextStyle(
                   color: ProfileColors.goldHighlight,
@@ -706,7 +708,7 @@ class _SidebarButtonState extends State<_SidebarButton> {
               ),
               SizedBox(width: widget.compact ? 6 : 10),
               Expanded(
-                child: Text(
+                child: ChuGame(
                   widget.label,
                   style: TextStyle(
                     color: isActive
@@ -908,7 +910,7 @@ class _MiniSlot extends StatelessWidget {
                       size: compact ? 18 : 24,
                     ),
                     if (!compact)
-                      Text(
+                      ChuGame(
                         item!.thuocTinh.values.firstOrNull ?? '',
                         style: const TextStyle(
                           color: ProfileColors.goldHighlight,
@@ -1059,7 +1061,7 @@ class _TabCaNhan extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      ChuGame(
                         nhanVat.ten,
                         style: TextStyle(
                           color: ProfileColors.textPrimary,
@@ -1068,7 +1070,7 @@ class _TabCaNhan extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      ChuGame(
                         'Nhà Thám Hiểm Vàng',
                         style: TextStyle(
                           color: ProfileColors.goldHighlight,
@@ -1087,7 +1089,7 @@ class _TabCaNhan extends StatelessWidget {
                           ),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Text(
+                        child: ChuGame(
                           'Lv.$capDo',
                           style: TextStyle(
                             color: const Color(0xFF1A0A00),
@@ -1101,7 +1103,7 @@ class _TabCaNhan extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
+                            ChuGame(
                               'Ví: $walletShort',
                               style: TextStyle(
                                 color: ProfileColors.textSecondary,
@@ -1114,7 +1116,7 @@ class _TabCaNhan extends StatelessWidget {
                                 Clipboard.setData(ClipboardData(text: wallet!));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Đã sao chép địa chỉ ví'),
+                                    content: ChuGame('Đã sao chép địa chỉ ví'),
                                     duration: Duration(seconds: 1),
                                   ),
                                 );
@@ -1172,7 +1174,7 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Icon(icon, color: ProfileColors.gold, size: 18),
         const SizedBox(width: 8),
-        Text(
+        ChuGame(
           title,
           style: const TextStyle(
             color: ProfileColors.gold,
@@ -1278,7 +1280,7 @@ class _EquipmentCardState extends State<_EquipmentCard> {
                   size: widget.compact ? 26 : 32,
                 ),
               const SizedBox(height: 4),
-              Text(
+              ChuGame(
                 item.ten,
                 style: TextStyle(
                   color: ProfileColors.textPrimary,
@@ -1290,7 +1292,7 @@ class _EquipmentCardState extends State<_EquipmentCard> {
                 overflow: TextOverflow.ellipsis,
               ),
               if (item.oDangTrangBi != null)
-                Text(
+                ChuGame(
                   _slotLabel(item.oDangTrangBi!),
                   style: TextStyle(
                     color: color,
@@ -1342,7 +1344,7 @@ void _showItemDetail(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        ChuGame(
                           item.ten,
                           style: const TextStyle(
                             color: ProfileColors.textPrimary,
@@ -1350,7 +1352,7 @@ void _showItemDetail(
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        Text(
+                        ChuGame(
                           item.doHiem.name.toUpperCase(),
                           style: TextStyle(
                             color: _rarityColor(item.doHiem),
@@ -1365,7 +1367,7 @@ void _showItemDetail(
               ),
               if (item.moTa.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(
+                ChuGame(
                   item.moTa,
                   style: const TextStyle(
                     color: ProfileColors.textSecondary,
@@ -1381,14 +1383,14 @@ void _showItemDetail(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        ChuGame(
                           e.key,
                           style: const TextStyle(
                             color: ProfileColors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
-                        Text(
+                        ChuGame(
                           e.value,
                           style: const TextStyle(
                             color: ProfileColors.goldHighlight,
@@ -1402,7 +1404,7 @@ void _showItemDetail(
               ],
               if (item.oDangTrangBi != null) ...[
                 const SizedBox(height: 8),
-                Text(
+                ChuGame(
                   'Đang trang bị: ${_slotLabel(item.oDangTrangBi!)}',
                   style: const TextStyle(
                     color: ProfileColors.gold,
@@ -1420,7 +1422,7 @@ void _showItemDetail(
                     game.moKhoDo();
                   },
                   icon: const Icon(Icons.backpack_outlined, size: 16),
-                  label: const Text('Mở Kho đồ'),
+                  label: const ChuGame('Mở Kho đồ'),
                   style: FilledButton.styleFrom(
                     backgroundColor: ProfileColors.gold,
                     foregroundColor: const Color(0xFF1A0A00),
@@ -1503,7 +1505,7 @@ class _TabHuyHieu extends StatelessWidget {
             title: 'HUY HIỆU',
           ),
           const SizedBox(height: 6),
-          Text(
+          ChuGame(
             'Huy hiệu Thành tựu (SBT) — chưa kết nối API đồng bộ & chọn huy hiệu trưng bày',
             style: TextStyle(
               color: ProfileColors.textSecondary,
@@ -1588,7 +1590,7 @@ class _BadgeTile extends StatelessWidget {
                 size: compact ? 28 : 34,
               ),
             const SizedBox(height: 6),
-            Text(
+            ChuGame(
               badge.name,
               style: TextStyle(
                 color: isOwned
@@ -1602,7 +1604,7 @@ class _BadgeTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
-            Text(
+            ChuGame(
               isDisplayed
                   ? 'Đang trưng bày'
                   : (isOwned ? 'Đã mở khóa' : 'Chưa mở khóa'),
@@ -1665,7 +1667,7 @@ class _BadgeChip extends StatelessWidget {
                 size: compact ? 20 : 24,
               ),
             const SizedBox(height: 5),
-            Text(
+            ChuGame(
               badge.name,
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -1815,7 +1817,7 @@ class _WeaponTileState extends State<_WeaponTile> {
                 size: widget.compact ? 24 : 30,
               ),
               const SizedBox(height: 4),
-              Text(
+              ChuGame(
                 item.ten,
                 style: TextStyle(
                   color: ProfileColors.textPrimary,
@@ -1837,7 +1839,7 @@ class _WeaponTileState extends State<_WeaponTile> {
                     color: ProfileColors.gold.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
+                  child: ChuGame(
                     'Đang dùng',
                     style: TextStyle(
                       color: ProfileColors.gold,
@@ -1885,7 +1887,7 @@ class _WeaponDetail extends StatelessWidget {
               Icon(_iconForVatPham(item), color: color, size: 24),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: ChuGame(
                   item.ten,
                   style: TextStyle(
                     color: ProfileColors.textPrimary,
@@ -1894,7 +1896,7 @@ class _WeaponDetail extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
+              ChuGame(
                 item.doHiem.name.toUpperCase(),
                 style: TextStyle(
                   color: color,
@@ -1906,7 +1908,7 @@ class _WeaponDetail extends StatelessWidget {
           ),
           if (item.moTa.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(
+            ChuGame(
               item.moTa,
               style: const TextStyle(
                 color: ProfileColors.textSecondary,
@@ -1922,14 +1924,14 @@ class _WeaponDetail extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    ChuGame(
                       e.key,
                       style: const TextStyle(
                         color: ProfileColors.textSecondary,
                         fontSize: 11.5,
                       ),
                     ),
-                    Text(
+                    ChuGame(
                       e.value,
                       style: const TextStyle(
                         color: ProfileColors.goldHighlight,
@@ -1943,7 +1945,7 @@ class _WeaponDetail extends StatelessWidget {
           ],
           if (item.oDangTrangBi != null) ...[
             const SizedBox(height: 8),
-            Text(
+            ChuGame(
               'Đang trang bị: ${_slotLabel(item.oDangTrangBi!)}',
               style: const TextStyle(
                 color: ProfileColors.gold,
@@ -1959,7 +1961,7 @@ class _WeaponDetail extends StatelessWidget {
               if (item.oDangTrangBi != null)
                 TextButton(
                   onPressed: () => game.thaoVatPham(item.id),
-                  child: const Text(
+                  child: const ChuGame(
                     'Tháo trang bị',
                     style: TextStyle(color: ProfileColors.textSecondary),
                   ),
@@ -1967,7 +1969,7 @@ class _WeaponDetail extends StatelessWidget {
               if (item.oDangTrangBi == null)
                 TextButton(
                   onPressed: () => game.trangBiVatPham(item.id),
-                  child: const Text(
+                  child: const ChuGame(
                     'Trang bị',
                     style: TextStyle(color: ProfileColors.crystalBlue),
                   ),
@@ -1976,7 +1978,7 @@ class _WeaponDetail extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () => game.moKhoDo(),
                 icon: const Icon(Icons.backpack_outlined, size: 15),
-                label: const Text('Kho đồ'),
+                label: const ChuGame('Kho đồ'),
                 style: FilledButton.styleFrom(
                   backgroundColor: ProfileColors.gold,
                   foregroundColor: const Color(0xFF1A0A00),
@@ -2023,7 +2025,7 @@ class _TabNhanVat extends StatelessWidget {
         children: [
           const _SectionTitle(icon: Icons.groups_rounded, title: 'NHÂN VẬT'),
           const SizedBox(height: 6),
-          Text(
+          ChuGame(
             'Nhân vật chỉ thay đổi ngoại hình, không ảnh hưởng sức mạnh.',
             style: TextStyle(
               color: ProfileColors.textSecondary,
@@ -2069,7 +2071,7 @@ class _TabNhanVat extends StatelessWidget {
               } on ArgumentError {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Cấu hình API ảnh nhân vật không hợp lệ.'),
+                    content: ChuGame('Cấu hình API ảnh nhân vật không hợp lệ.'),
                   ),
                 );
               }
@@ -2150,7 +2152,7 @@ class _CharacterCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          ChuGame(
             nhanVat.ten,
             style: TextStyle(
               color: ProfileColors.textPrimary,
@@ -2167,7 +2169,7 @@ class _CharacterCard extends StatelessWidget {
                 color: ProfileColors.gold.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
+              child: const ChuGame(
                 'ĐANG DÙNG',
                 style: TextStyle(
                   color: ProfileColors.gold,
@@ -2228,7 +2230,7 @@ class _ActionLinkState extends State<_ActionLink> {
             children: [
               Icon(widget.icon, color: ProfileColors.crystalBlue, size: 18),
               const SizedBox(width: 8),
-              Text(
+              ChuGame(
                 widget.label,
                 style: TextStyle(
                   color: _hovered
@@ -2271,7 +2273,7 @@ class _EmptyState extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: ProfileColors.border),
       ),
-      child: Text(
+      child: ChuGame(
         message,
         style: const TextStyle(
           color: ProfileColors.textSecondary,

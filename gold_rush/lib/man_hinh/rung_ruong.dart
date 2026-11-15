@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../components/ui/gold_rush_top_bar.dart';
 import '../blockchain/may_chu_phieu.dart';
 import '../gold_rush_game.dart';
@@ -51,7 +53,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
       final loi = pv?.thongBao;
       if (loi != null && loi.isNotEmpty) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(loi)));
+            .showSnackBar(SnackBar(content: ChuGame(loi)));
       }
       return;
     }
@@ -92,7 +94,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              const ChuGame(
                 '✦ CHÚC MỪNG BẠN! ✦',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -125,7 +127,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                       ),
               ),
               const SizedBox(height: 18),
-              Text(
+              ChuGame(
                 kq.laVang ? 'PHẦN THƯỞNG VÀNG' : 'VẬT PHẨM HIẾM',
                 style: TextStyle(
                   color: Color(0xFFDDA9F3),
@@ -134,7 +136,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
+              ChuGame(
                 kq.laVang
                     ? 'Bạn nhận được ${kq.giaTri} vàng.'
                     : 'Bạn nhận được ${vatPham?.ten ?? 'vật phẩm'} ×${kq.soLuong}.',
@@ -154,7 +156,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
+                  child: const ChuGame(
                     'ĐÓNG',
                     style: TextStyle(fontWeight: FontWeight.w900),
                   ),
@@ -229,7 +231,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                       ),
                     ),
                   const SizedBox(height: 18),
-                  const Text(
+                  const ChuGame(
                     '✦ TREASURE UNLOCK ✦',
                     style: TextStyle(
                       color: Color(0xFFE6AE43),
@@ -239,7 +241,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
+                  const ChuGame(
                     'RƯƠNG MAY MẮN',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -250,7 +252,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  const ChuGame(
                     'Chạm vào nút để đánh thức kho báu',
                     style: TextStyle(color: Color(0xFFAFC0D1), fontSize: 16),
                   ),
@@ -321,7 +323,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                 size: 18,
               ),
               SizedBox(width: 9),
-              Text(
+              ChuGame(
                 '100 vàng',
                 style: TextStyle(
                   color: Color(0xFFFFD67A),
@@ -335,7 +337,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                 child: VerticalDivider(width: 1, color: Color(0x66F2B33D)),
               ),
               SizedBox(width: 10),
-              Text(
+              ChuGame(
                 'mỗi lượt mở',
                 style: TextStyle(color: Color(0xFFD9BC8C), fontSize: 12),
               ),
@@ -351,7 +353,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
             icon: Icon(
               _dangMo ? Icons.hourglass_top_rounded : Icons.auto_awesome,
             ),
-            label: Text(_dangMo ? 'ĐANG MỞ RƯƠNG…' : '✦ MỞ RƯƠNG ✦'),
+            label: ChuGame(_dangMo ? 'ĐANG MỞ RƯƠNG…' : '✦ MỞ RƯƠNG ✦'),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFF2B33D),
               foregroundColor: const Color(0xFF12202A),
@@ -518,7 +520,7 @@ class _RuongMinhHoa extends StatelessWidget {
           const Positioned(right: 72, bottom: 27, child: _ChanRuong()),
           Positioned(
             bottom: 0,
-            child: Text(
+            child: ChuGame(
               doMo > .6 ? '✦ RƯƠNG ĐÃ MỞ ✦' : '✦ RƯƠNG ĐÃ SẴN SÀNG ✦',
               style: const TextStyle(
                 color: Color(0xFFFFD477),
