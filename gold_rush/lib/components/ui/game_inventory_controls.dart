@@ -39,7 +39,7 @@ abstract final class GameInventoryStyle {
     ),
   ];
 
-  static InputDecoration searchDecoration({Widget? suffixIcon}) {
+  static InputDecoration searchDecoration({BuildContext? context, Widget? suffixIcon}) {
     OutlineInputBorder makeBorder(Color color, [double width = 1]) {
       return OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
@@ -48,7 +48,7 @@ abstract final class GameInventoryStyle {
     }
 
     return InputDecoration(
-      hintText: 'Tìm vật phẩm...',
+      hintText: (context == null ? NgonNgu.chung : PhamViNgonNgu.of(context)).dich('Tìm vật phẩm...'),
       hintStyle: const TextStyle(color: textMuted, fontSize: 14),
       prefixIcon: const Icon(Icons.search_rounded, color: textMuted, size: 20),
       suffixIcon: suffixIcon,
@@ -182,7 +182,7 @@ class _GameCloseButtonState extends State<GameCloseButton> {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Quay lại Menu',
+      message: PhamViNgonNgu.of(context).dich('Quay lại Menu'),
       child: Semantics(
         button: true,
         label: 'Quay lại Menu',

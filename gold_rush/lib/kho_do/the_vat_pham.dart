@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../giao_dien/mau_game.dart';
 import 'vat_pham_hien_thi.dart';
 
@@ -190,7 +192,7 @@ class _TheVatPhamState extends State<TheVatPham> {
                                   : _hinhVatPham(anh),
                             ),
                           ),
-                          Text(
+                          ChuGame(
                             vp.ten,
                             maxLines: 2,
                             textAlign: TextAlign.center,
@@ -204,7 +206,7 @@ class _TheVatPhamState extends State<TheVatPham> {
                           ),
                           if (vp.dangTrangBi) ...[
                             const SizedBox(height: 3),
-                            Text(
+                            ChuGame(
                               'Đang trang bị: $_tenOTrangBi',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -266,7 +268,7 @@ class _NhanThe extends StatelessWidget {
         borderRadius: BorderRadius.circular(5),
         border: Border.all(color: noiBat ? MauGame.chinh : MauGame.vien),
       ),
-      child: Text(
+      child: ChuGame(
         noiDung,
         style: TextStyle(
           color: noiBat ? MauGame.chinh : MauGame.chuPhu,

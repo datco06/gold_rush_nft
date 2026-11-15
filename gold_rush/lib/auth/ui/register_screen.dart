@@ -588,17 +588,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         ),
                                       ] else ...[
                                         _RegistrationNotice(
-                                          message: _expired
+                                          message: PhamViNgonNgu.of(context).dich(_expired
                                               ? 'Quyền tạo nhân vật đã hết hạn. Hãy quay lại để xác minh MetaMask.'
                                               : controller.isLoading
                                               ? 'Đang kiểm tra trạng thái xác thực. Vui lòng chờ.'
-                                              : 'Cần xác minh lại MetaMask trước khi tạo hồ sơ. Hãy quay lại màn hình chào mừng.',
+                                              : 'Cần xác minh lại MetaMask trước khi tạo hồ sơ. Hãy quay lại màn hình chào mừng.'),
                                         ),
                                       ],
                                       if (generalError != null) ...[
                                         const SizedBox(height: 16),
                                         _RegistrationNotice(
-                                          message: generalError,
+                                          message: PhamViNgonNgu.of(context).dich(generalError),
                                           isError: true,
                                         ),
                                       ],

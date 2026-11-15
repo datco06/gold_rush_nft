@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../ngon_ngu/ngon_ngu.dart';
+
 import '../../ai/may_chu_nhan_vat.dart';
 import '../../ai/nhan_vat_ai_models.dart';
 import '../../auth/auth_controller.dart';
@@ -173,7 +175,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
   @override
   Widget build(BuildContext context) {
     if (!_daDangNhap) {
-      return const Text(
+      return const ChuGame(
         'Đăng nhập ví MetaMask SIWE để xem nhân vật AI đã lưu.',
         style: TextStyle(color: Colors.white70, fontSize: 12),
       );
@@ -190,11 +192,11 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_loi!, style: const TextStyle(color: Colors.redAccent)),
+          ChuGame(_loi!, style: const TextStyle(color: Colors.redAccent)),
           TextButton.icon(
             onPressed: _tai,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Thử lại'),
+            label: const ChuGame('Thử lại'),
           ),
         ],
       );
@@ -203,7 +205,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          const ChuGame(
             'Bạn chưa tạo nhân vật AI nào. Hãy tạo nhân vật đầu tiên.',
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
@@ -214,12 +216,12 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
                 TextButton.icon(
                   onPressed: _moTaoNhanVat,
                   icon: const Icon(Icons.auto_awesome_rounded),
-                  label: const Text('Tạo nhân vật AI'),
+                  label: const ChuGame('Tạo nhân vật AI'),
                 ),
               TextButton.icon(
                 onPressed: _dangTai ? null : _tai,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Làm mới'),
+                label: const ChuGame('Làm mới'),
               ),
             ],
           ),
@@ -234,7 +236,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
           child: TextButton.icon(
             onPressed: _dangTai ? null : _tai,
             icon: const Icon(Icons.refresh_rounded, size: 17),
-            label: const Text('Làm mới'),
+            label: const ChuGame('Làm mới'),
           ),
         ),
         Wrap(
@@ -285,14 +287,14 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
             ),
           ),
           const SizedBox(height: 7),
-          Text(
+          ChuGame(
             nv.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
           ),
           const SizedBox(height: 3),
-          const Text(
+          const ChuGame(
             'Đã lưu · PNG tĩnh',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white54, fontSize: 9),
@@ -305,7 +307,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
               padding: const EdgeInsets.symmetric(horizontal: 6),
               minimumSize: const Size(0, 28),
             ),
-            child: const Text('Xem chi tiết', style: TextStyle(fontSize: 10)),
+            child: const ChuGame('Xem chi tiết', style: TextStyle(fontSize: 10)),
           ),
         ],
       ),
@@ -316,7 +318,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
       showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(nv.name),
+          title: ChuGame(nv.name, dichNoiDung: false),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -334,18 +336,18 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
                     ),
                   ),
                 const SizedBox(height: 12),
-                const Text('Trạng thái: Đã lưu trong Backend'),
-                const Text('Loại tài sản: Nhân vật AI, không phải NFT'),
-                const Text('Gameplay: Chưa có sprite sheet 4×4 để trang bị'),
-                Text('Mã: ${nv.idRutGon}'),
-                Text('Ngày tạo: ${nv.createdAt.toLocal()}'),
+                const ChuGame('Trạng thái: Đã lưu trong Backend'),
+                const ChuGame('Loại tài sản: Nhân vật AI, không phải NFT'),
+                const ChuGame('Gameplay: Chưa có sprite sheet 4×4 để trang bị'),
+                ChuGame('Mã: ${nv.idRutGon}'),
+                ChuGame('Ngày tạo: ${nv.createdAt.toLocal()}'),
               ],
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Đóng'),
+              child: const ChuGame('Đóng'),
             ),
           ],
         ),

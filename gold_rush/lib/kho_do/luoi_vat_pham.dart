@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../giao_dien/mau_game.dart';
 import 'the_vat_pham.dart';
 import 'vat_pham_hien_thi.dart';
@@ -21,7 +23,7 @@ class LuoiVatPham extends StatelessWidget {
     if (danhSach.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(20),
-        child: Text(
+        child: ChuGame(
           'Chưa có vật phẩm.',
           textAlign: TextAlign.center,
           style: TextStyle(color: MauGame.chuPhu),

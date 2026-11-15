@@ -509,7 +509,7 @@ class _IconButton extends StatelessWidget {
       onPressed: onTap,
       icon: Icon(icon, size: 16),
       color: const Color(0xFF9BB0C0),
-      tooltip: icon == Icons.close_rounded ? 'Đóng' : 'Cài đặt',
+      tooltip: PhamViNgonNgu.of(context).dich(icon == Icons.close_rounded ? 'Đóng' : 'Cài đặt'),
       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
       padding: EdgeInsets.zero,
       style: IconButton.styleFrom(

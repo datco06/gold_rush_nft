@@ -525,7 +525,7 @@ class _CloseButtonState extends State<_CloseButton> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Tooltip(
-        message: 'Đóng Hồ sơ',
+        message: PhamViNgonNgu.of(context).dich('Đóng Hồ sơ'),
         child: GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
@@ -886,7 +886,7 @@ class _MiniSlot extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = compact ? 44.0 : 56.0;
     return Tooltip(
-      message: item != null ? '$label: ${item!.ten}' : '$label (Trống)',
+      message: PhamViNgonNgu.of(context).dich(item != null ? '$label: ${item!.ten}' : '$label (Trống)'),
       child: Container(
         width: size,
         height: size,
@@ -1203,8 +1203,8 @@ class _EquippedItemsList extends StatelessWidget {
       builder: (context, items, _) {
         final equipped = items.where((v) => v.oDangTrangBi != null).toList();
         if (equipped.isEmpty) {
-          return const _EmptyState(
-            message: 'Chưa có trang bị nào được sử dụng.',
+          return  _EmptyState(
+            message: PhamViNgonNgu.of(context).dich('Chưa có trang bị nào được sử dụng.'),
           );
         }
         return Wrap(
@@ -1470,7 +1470,7 @@ class _DisplayedBadges extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayed = _getDisplayed();
     if (displayed.isEmpty) {
-      return const _EmptyState(message: 'Bạn chưa trưng bày huy hiệu nào.');
+      return  _EmptyState(message: PhamViNgonNgu.of(context).dich('Bạn chưa trưng bày huy hiệu nào.'));
     }
     return Wrap(
       spacing: 8,
@@ -1514,10 +1514,10 @@ class _TabHuyHieu extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (badges.isEmpty)
-            const _EmptyState(
+             _EmptyState(
               message:
-                  'Chưa có dữ liệu huy hiệu.\n'
-                  'Kết nối ví và hoàn thành thành tựu để nhận huy hiệu SBT.',
+                  PhamViNgonNgu.of(context).dich('Chưa có dữ liệu huy hiệu.\n'
+                  'Kết nối ví và hoàn thành thành tựu để nhận huy hiệu SBT.'),
             )
           else
             Wrap(
@@ -1724,7 +1724,7 @@ class _TabVuKhiState extends State<_TabVuKhi> {
               ),
               const SizedBox(height: 14),
               if (weapons.isEmpty)
-                const _EmptyState(message: 'Bạn chưa sở hữu vũ khí nào.')
+                 _EmptyState(message: PhamViNgonNgu.of(context).dich('Bạn chưa sở hữu vũ khí nào.'))
               else ...[
                 Wrap(
                   spacing: 8,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../blockchain/nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
 import '../giao_dien/mau_game.dart';
@@ -74,7 +76,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        const ChuGame(
           'Chọn ngoại hình nhân vật. '
           'Lựa chọn được áp dụng từ ván chơi tiếp theo.',
           style: TextStyle(color: MauGame.chuPhu, fontSize: 13, height: 1.5),
@@ -83,7 +85,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
         if (pv?.dangXuLy ?? false) ...[
           const LinearProgressIndicator(color: MauGame.chinh),
           const SizedBox(height: 10),
-          const Text(
+          const ChuGame(
             'Phiên ví đang xử lý. '
             'Vui lòng đợi trước khi chọn nhân vật.',
             style: TextStyle(color: MauGame.chuPhu, fontSize: 12),
@@ -117,7 +119,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
         ),
         if (_dangChon) ...[
           const SizedBox(height: 12),
-          const Text(
+          const ChuGame(
             'Đang xác nhận lựa chọn nhân vật…',
             style: TextStyle(color: MauGame.chuPhu, fontSize: 12),
           ),
@@ -126,7 +128,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
           const SizedBox(height: 12),
           Semantics(
             liveRegion: true,
-            child: Text(
+            child: ChuGame(
               _loi!,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.error,
@@ -138,14 +140,14 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
         ],
         if (widget.khiChonNhanVat == null) ...[
           const SizedBox(height: 12),
-          const Text(
+          const ChuGame(
             'Chưa kết nối thao tác chọn nhân vật.',
             style: TextStyle(color: MauGame.chuPhu, fontSize: 12),
           ),
         ],
         if ((pv?.thongBao ?? '').isNotEmpty) ...[
           const SizedBox(height: 12),
-          Text(
+          ChuGame(
             pv!.thongBao!,
             style: TextStyle(
               color: pv.thongBaoLaLoi
@@ -178,7 +180,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
         children: [
           Center(child: AnhNhanVat(tepAnh: nv.tepAnh, kichThuoc: 80)),
           const SizedBox(height: 14),
-          Text(
+          ChuGame(
             nv.ten,
             textAlign: TextAlign.center,
             style: const TextStyle(
@@ -188,7 +190,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          ChuGame(
             nv.moTa,
             textAlign: TextAlign.center,
             style: const TextStyle(
@@ -198,7 +200,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
             ),
           ),
           const SizedBox(height: 10),
-          Text(
+          ChuGame(
             nv.id == 0 ? 'Nhân vật mặc định' : 'Đã sở hữu theo phiên ví',
             textAlign: TextAlign.center,
             style: const TextStyle(color: MauGame.chuPhu, fontSize: 11),
@@ -215,7 +217,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
                 ),
                 SizedBox(width: 6),
                 Flexible(
-                  child: Text(
+                  child: ChuGame(
                     'Đang dùng',
                     style: TextStyle(
                       color: MauGame.chinh,
@@ -231,7 +233,7 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
                   ? null
                   : () => _chonNhanVat(nv),
               style: OutlinedButton.styleFrom(foregroundColor: MauGame.chinh),
-              child: const Text('Chọn nhân vật'),
+              child: const ChuGame('Chọn nhân vật'),
             ),
         ],
       ),
@@ -328,8 +330,8 @@ class AnhNhanVat extends StatelessWidget {
                 alignment: Alignment.topLeft,
                 child: SizedBox.square(
                   dimension: kichThuoc,
-                  child: const Tooltip(
-                    message: 'Không tải được ảnh nhân vật',
+                  child:  Tooltip(
+                    message: PhamViNgonNgu.of(context).dich('Không tải được ảnh nhân vật'),
                     child: Icon(
                       Icons.broken_image_outlined,
                       color: MauGame.chuPhu,

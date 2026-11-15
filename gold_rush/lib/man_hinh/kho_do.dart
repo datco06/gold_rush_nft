@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../ai/may_chu_nhan_vat.dart';
 import '../auth/auth_controller.dart';
 import '../blockchain/nhan_vat.dart';
@@ -258,7 +260,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
             if (_dangXuLyThaoTac)
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Text(
+                child: ChuGame(
                   'Đang xử lý. Vui lòng chờ trước khi đóng Kho đồ.',
                   style: TextStyle(color: MauGame.chuPhu, fontSize: 12),
                 ),
@@ -378,7 +380,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Đã làm mới Kho đồ theo Blockchain.'),
+                            content: ChuGame('Đã làm mới Kho đồ theo Blockchain.'),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
@@ -386,7 +388,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(e.thongBao),
+                            content: ChuGame(e.thongBao),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
@@ -400,7 +402,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.refresh_rounded, size: 17),
-              label: Text(
+              label: ChuGame(
                 _dangLamMoiKhoDo ? 'Đang làm mới…' : 'LÀM MỚI KHO ĐỒ',
               ),
             ),
@@ -457,7 +459,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
             children: [
               Icon(Icons.receipt_long_outlined, color: MauGame.chinh, size: 20),
               SizedBox(width: 8),
-              Text(
+              ChuGame(
                 'CHI TIẾT VẬT PHẨM',
                 style: TextStyle(
                   color: MauGame.chinh,
@@ -542,7 +544,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
     final vp = _vatPhamDangChon;
 
     if (vp == null) {
-      return const Text(
+      return const ChuGame(
         'Chọn một vật phẩm trong danh sách để xem thông tin.',
         style: TextStyle(color: MauGame.chuPhu, fontSize: 13, height: 1.5),
       );
@@ -595,7 +597,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    ChuGame(
                       vp.ten,
                       style: const TextStyle(
                         color: MauGame.chu,
@@ -604,7 +606,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                       ),
                     ),
                     const SizedBox(height: 5),
-                    Text(
+                    ChuGame(
                       tenDoHiem(vp.doHiem),
                       style: TextStyle(
                         color: mau,
@@ -620,13 +622,13 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                 OutlinedButton.icon(
                   onPressed: () => _moDialogHoanDoi(vp),
                   icon: const Icon(Icons.swap_horiz_rounded, size: 17),
-                  label: const Text('Hoán đổi'),
+                  label: const ChuGame('Hoán đổi'),
                 ),
             ],
           ),
           const SizedBox(height: 8),
           if (vp.laDuLieuMau) ...[
-            const Text(
+            const ChuGame(
               'DEMO — dữ liệu minh họa',
               style: TextStyle(
                 color: MauGame.chinh,
@@ -646,7 +648,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
           _DongChiTiet(nhan: 'Trang bị', giaTri: _tenOTrangBi(vp.oDangTrangBi)),
           if (vp.moTa.trim().isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(
+            ChuGame(
               vp.moTa,
               style: const TextStyle(
                 color: MauGame.chuPhu,
@@ -656,7 +658,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
             ),
           ],
           const SizedBox(height: 14),
-          const Text(
+          const ChuGame(
             'THUỘC TÍNH',
             style: TextStyle(
               color: MauGame.chinh,
@@ -666,7 +668,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
           ),
           const SizedBox(height: 6),
           if (vp.thuocTinh.isEmpty)
-            const Text(
+            const ChuGame(
               'Chưa có thông tin thuộc tính.',
               style: TextStyle(color: MauGame.chuPhu, fontSize: 13),
             )
@@ -717,7 +719,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      const ChuGame(
                         'XÁC NHẬN THÔNG TIN',
                         style: TextStyle(
                           color: MauGame.chinh,
@@ -738,7 +740,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                       _DongChiTiet(nhan: 'Số lượng', giaTri: '$soLuong NFT'),
                       if (loiChuyen != null) ...[
                         const SizedBox(height: 10),
-                        Text(
+                        ChuGame(
                           loiChuyen!,
                           style: const TextStyle(
                             color: Color(0xFFFF8A80),
@@ -754,7 +756,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                               onPressed: () => capNhat(() {
                                 dangXacNhan = false;
                               }),
-                              child: const Text('Quay lại'),
+                              child: const ChuGame('Quay lại'),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -792,7 +794,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                                           contextManHinh,
                                         )?.showSnackBar(
                                           SnackBar(
-                                            content: Text(
+                                            content: ChuGame(
                                               'Đã chuyển ${vp.ten} ×$soLuong NFT thành công.',
                                             ),
                                             backgroundColor: const Color(
@@ -823,7 +825,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                                       ),
                                     )
                                   : const Icon(Icons.swap_horiz_rounded),
-                              label: Text(
+                              label: ChuGame(
                                 dangXuLy ? 'Đang chuyển…' : 'Xác nhận chuyển',
                               ),
                             ),
@@ -848,10 +850,10 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                       TextField(
                         controller: controllerViNhan,
                         style: const TextStyle(color: MauGame.chu),
-                        decoration: const InputDecoration(
-                          hintText: '0x...',
+                        decoration:  InputDecoration(
+                          hintText: PhamViNgonNgu.of(context).dich('0x...'),
                           helperText:
-                              'Nhập địa chỉ ví Ethereum 0x... của người nhận.',
+                              PhamViNgonNgu.of(context).dich('Nhập địa chỉ ví Ethereum 0x... của người nhận.'),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -875,7 +877,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                                   : null,
                               icon: const Icon(Icons.remove_rounded),
                             ),
-                            Text(
+                            ChuGame(
                               '$soLuong',
                               style: const TextStyle(
                                 color: MauGame.chu,
@@ -893,7 +895,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Text(
+                      ChuGame(
                         'Sở hữu: ${vp.soLuong} NFT · Tối đa chuyển: $soLuongToiDa',
                         style: const TextStyle(
                           color: MauGame.chuPhu,
@@ -911,7 +913,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                         onPressed: () => capNhat(() {
                           dangXacNhan = true;
                         }),
-                        child: const Text('Tiếp tục'),
+                        child: const ChuGame('Tiếp tục'),
                       ),
                     ],
                   );
@@ -932,7 +934,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                       Row(
                         children: [
                           const Expanded(
-                            child: Text(
+                            child: ChuGame(
                               '✦ CHUYỂN NFT',
                               style: TextStyle(
                                 color: Color(0xFFFFD77A),
@@ -961,14 +963,14 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
+                            ChuGame(
                               '● HARDHAT LOCAL',
                               style: TextStyle(
                                 color: Color(0xFFBFE0E9),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            Text(
+                            ChuGame(
                               'Chain ID: 31337',
                               style: TextStyle(
                                 color: Color(0xFFE7F2F5),
@@ -1015,7 +1017,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
+                                    ChuGame(
                                       'VẬT PHẨM NFT · ERC-1155',
                                       style: TextStyle(
                                         color: mau,
@@ -1025,7 +1027,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                                       ),
                                     ),
                                     const SizedBox(height: 5),
-                                    Text(
+                                    ChuGame(
                                       vp.ten,
                                       style: const TextStyle(
                                         color: MauGame.chu,
@@ -1034,7 +1036,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
+                                    ChuGame(
                                       'Token ID: ${tokenId ?? vp.tokenId ?? vp.id} · Đang sở hữu ×${vp.soLuong}',
                                       style: const TextStyle(
                                         color: MauGame.chuPhu,
@@ -1096,7 +1098,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                       ? Icons.remove_circle_outline_rounded
                       : Icons.add_circle_outline_rounded,
                 ),
-          label: Text(
+          label: ChuGame(
             _dangXuLyThaoTac
                 ? 'Đang xử lý…'
                 : vp.dangTrangBi
@@ -1125,7 +1127,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
           const SizedBox(height: 10),
           Semantics(
             liveRegion: true,
-            child: Text(
+            child: ChuGame(
               _loiThaoTac!,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.error,
@@ -1139,7 +1141,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
           const SizedBox(height: 10),
           Semantics(
             liveRegion: true,
-            child: Text(
+            child: ChuGame(
               _thongBaoThaoTac!,
               style: const TextStyle(
                 color: MauGame.chuPhu,
@@ -1237,7 +1239,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
             danhSachVatPham: widget.danhSachVatPham,
           ),
           const SizedBox(height: 18),
-          Text(
+          ChuGame(
             nv?.ten ??
                 (daTai
                     ? 'Chưa xác nhận được nhân vật đang dùng'
@@ -1250,7 +1252,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          ChuGame(
             nv?.moTa ??
                 'Lựa chọn được đọc từ hệ thống. '
                     'Nhân vật cửa hàng cần được phiên ví '
@@ -1316,7 +1318,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                     ),
                     SizedBox(width: 10),
                     Expanded(
-                      child: Text(
+                      child: ChuGame(
                         'NHÂN VẬT AI',
                         style: TextStyle(
                           color: MauGame.chinh,
@@ -1327,12 +1329,12 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                   ],
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                const ChuGame(
                   'Khu vực dành cho nhân vật do AI tạo.',
                   style: TextStyle(color: MauGame.chu, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                const ChuGame(
                   'Danh sách được tải từ Backend theo phiên SIWE hiện tại. '
                   'Nhân vật AI không tự động được coi là NFT.',
                   style: TextStyle(
@@ -1490,7 +1492,7 @@ class _DanhMucBenTrai extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(6, 3, 6, 8),
-            child: Text(
+            child: ChuGame(
               'DANH MỤC',
               style: TextStyle(
                 color: MauGame.chinh,
@@ -1563,7 +1565,7 @@ class _MucBenTrai extends StatelessWidget {
                 ),
                 const SizedBox(width: 7),
                 Expanded(
-                  child: Text(
+                  child: ChuGame(
                     nhan,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1583,7 +1585,7 @@ class _MucBenTrai extends StatelessWidget {
                     color: const Color(0xFF0B1626),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text('$soLuong', style: const TextStyle(fontSize: 9)),
+                  child: ChuGame('$soLuong', style: const TextStyle(fontSize: 9)),
                 ),
               ],
             ),
@@ -1619,7 +1621,7 @@ class _TrangTrongDanhMuc extends StatelessWidget {
             size: 38,
           ),
           const SizedBox(height: 10),
-          Text(
+          ChuGame(
             coTimKiem
                 ? 'Không tìm thấy vật phẩm phù hợp'
                 : 'Không có vật phẩm trong danh mục này',
@@ -1645,7 +1647,7 @@ class _DongTieuDeDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
+      child: ChuGame(
         nhan,
         style: const TextStyle(
           color: Color(0xFFFFD77A),
@@ -1683,14 +1685,14 @@ class _DongThongTinDialog extends StatelessWidget {
           Icon(icon, color: MauGame.chuPhu, size: 19),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: ChuGame(
               noiDung,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: MauGame.chuPhu, fontSize: 13),
             ),
           ),
           const SizedBox(width: 8),
-          Text(
+          ChuGame(
             nhanPhu,
             style: const TextStyle(
               color: Color(0xFF65D9A4),
@@ -1714,7 +1716,7 @@ class _DongChiTiet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text(
+      child: ChuGame(
         '$nhan: $giaTri',
         style: const TextStyle(
           color: MauGame.chuPhu,
@@ -1999,7 +2001,7 @@ class _KhungMuc extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
+                    child: ChuGame(
                       tieuDe,
                       style: const TextStyle(
                         color: Color(0xFFFFD76A),
@@ -2119,7 +2121,7 @@ class _XemTruocNhanVat extends StatelessWidget {
                 color: MauGame.nen.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(
+              child: ChuGame(
                 nv == null
                     ? 'CHƯA CÓ DỮ LIỆU NHÂN VẬT HỢP LỆ'
                     : '${nv.ten} · ĐANG DÙNG',
@@ -2176,7 +2178,7 @@ class _OTrangBi extends StatelessWidget {
                   ),
           ),
           const SizedBox(height: 7),
-          Text(
+          ChuGame(
             nhan,
             textAlign: TextAlign.center,
             style: const TextStyle(
@@ -2186,7 +2188,7 @@ class _OTrangBi extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          Text(
+          ChuGame(
             noiDung,
             textAlign: TextAlign.center,
             style: const TextStyle(
@@ -2214,7 +2216,7 @@ class _GhiChu extends StatelessWidget {
         const Icon(Icons.info_outline_rounded, color: MauGame.chuPhu, size: 16),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
+          child: ChuGame(
             noiDung,
             style: const TextStyle(
               color: MauGame.chuPhu,
@@ -2273,7 +2275,7 @@ class _TrangThaiDuLieu extends StatelessWidget {
               size: 32,
             ),
           const SizedBox(height: 12),
-          Text(
+          ChuGame(
             dangTai
                 ? 'Đang tải dữ liệu…'
                 : coLoi
@@ -2288,7 +2290,7 @@ class _TrangThaiDuLieu extends StatelessWidget {
           ),
           if (!dangTai && !coLoi) ...[
             const SizedBox(height: 8),
-            Text(
+            ChuGame(
               moTaTrong,
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -2303,7 +2305,7 @@ class _TrangThaiDuLieu extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: khiThuLai,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Thử lại'),
+              label: const ChuGame('Thử lại'),
               style: OutlinedButton.styleFrom(foregroundColor: MauGame.chinh),
             ),
           ],

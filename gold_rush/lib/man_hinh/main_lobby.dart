@@ -530,7 +530,7 @@ class _LobbyHeader extends StatelessWidget {
             ),
             SizedBox(width: compact ? 8 : 10),
             _HeaderIconButton(
-              tooltip: 'Cửa hàng nhân vật',
+              tooltip: PhamViNgonNgu.of(context).dich('Cửa hàng nhân vật'),
               size: compact ? 40 : 46,
               borderColor: LobbyColors.panelBorder,
               icon: Icons.storefront_rounded,
@@ -539,7 +539,7 @@ class _LobbyHeader extends StatelessWidget {
             ),
             SizedBox(width: compact ? 8 : 10),
             _HeaderIconButton(
-              tooltip: 'Cài đặt & Đăng xuất',
+              tooltip: PhamViNgonNgu.of(context).dich('Cài đặt & Đăng xuất'),
               size: compact ? 40 : 46,
               borderColor: const Color(0xFF7992B1),
               icon: Icons.settings_rounded,
@@ -873,7 +873,7 @@ class _GoldBalanceWidget extends StatelessWidget {
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: Tooltip(
-                message: 'Mở Cửa hàng',
+                message: PhamViNgonNgu.of(context).dich('Mở Cửa hàng'),
                 child: GestureDetector(
                   onTap: onAddTap,
                   child: Container(
@@ -1262,11 +1262,11 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Tooltip(
-        message: item != null
+        message: PhamViNgonNgu.of(context).dich(item != null
             ? '${widget.slot.label}: ${item.ten}'
             : (supported
                   ? '${widget.slot.label} (Trống — bấm để mở Kho đồ)'
-                  : '${widget.slot.label} (Chưa hỗ trợ)'),
+                  : '${widget.slot.label} (Chưa hỗ trợ)')),
         child: GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
