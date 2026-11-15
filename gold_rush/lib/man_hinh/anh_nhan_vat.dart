@@ -61,6 +61,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
   bool _dangKetNoiAuth = false;
   bool _dangDangKyOnchain = false;
   int _phienTai = 0;
+  Timer? _boDemTaoAnh;
 
   // Trạng thái phiên SIWE & CSRF
   NguoiDungAuth? _nguoiDung;
@@ -243,6 +244,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
   @override
   void dispose() {
+    _boDemTaoAnh?.cancel();
     _tienTrinh?.removeListener(_khiTienTrinhDoi);
     if (_tienTrinhOwned) {
       _tienTrinh?.dispose();
@@ -475,6 +477,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       _ketQua = null;
       _nhanVatVuaLuu = null;
     });
+    _batDauBoDemTaoAnh(phien);
     try {
       final kq = await api
           .tao(moTa: moTa, maYeuCau: ma)
@@ -482,18 +485,28 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       if (!mounted || phien != _phienTai) return;
       if (kq.loi != null) {
         setState(() {
-          _dangTai = false;
-          _dangTao = false;
           _ketQua = kq;
         });
         return;
       }
-      _anh = kq.anh!;
-      await _taiVaHienThi(api, _anh!, phien);
+      final anh = kq.anh;
+      if (anh == null) {
+        setState(() {
+          _ketQua = const KetQuaAnhNhanVat.thatBai(
+            LoiAnhNhanVat.phanHoiKhongHopLe,
+          );
+        });
+        return;
+      }
+      _anh = anh;
+      await _taiVaHienThi(api, anh, phien);
     } on TimeoutException {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
-    } on Exception {
+    } catch (_) {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.ketNoi);
+    } finally {
+      // Luôn mở khóa nút tạo khi model/API trả lỗi bất ngờ hoặc payload sai.
+      _ketThucLoading(phien);
     }
   }
 
@@ -505,6 +518,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       _dangTai = true;
       _ketQua = null;
     });
+    _batDauBoDemTaoAnh(phien);
     await _taiVaHienThi(widget.mayChu, anh, phien);
   }
 
@@ -532,17 +546,41 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       }
     } on TimeoutException {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
-    } on Exception {
+    } catch (_) {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.ketNoi);
+    } finally {
+      _ketThucLoading(phien);
     }
+  }
+
+  void _ketThucLoading(int phien) {
+    if (!mounted || phien != _phienTai || (!_dangTai && !_dangTao)) return;
+    _boDemTaoAnh?.cancel();
+    _boDemTaoAnh = null;
+    setState(() {
+      _dangTai = false;
+      _dangTao = false;
+    });
   }
 
   void _ketThucVoiLoi(int phien, LoiAnhNhanVat loi) {
     if (!mounted || phien != _phienTai) return;
+    _boDemTaoAnh?.cancel();
+    _boDemTaoAnh = null;
     setState(() {
       _dangTai = false;
       _dangTao = false;
       _ketQua = KetQuaAnhNhanVat.thatBai(loi);
+    });
+  }
+
+  void _batDauBoDemTaoAnh(int phien) {
+    _boDemTaoAnh?.cancel();
+    // API tạo ảnh tối đa 45 giây, tải/giải mã preview tối đa 10 giây.
+    // Watchdog này là lớp bảo vệ cuối cùng cho Flutter Web khi stream bị treo.
+    _boDemTaoAnh = Timer(const Duration(seconds: 60), () {
+      if (!mounted || phien != _phienTai || !_dangTai) return;
+      _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
     });
   }
 

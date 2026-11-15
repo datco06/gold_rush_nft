@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../blockchain/may_chu_phieu.dart';
+import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../components/qr_scanner.dart';
 import '../gold_rush_game.dart';
+import '../kho_do/nhan_vat_voi_trang_bi.dart';
 
 class ManHinhTrungTamQuaTang extends StatefulWidget {
   final GoldRushGame game;
@@ -20,6 +22,38 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
   String? _thongBao;
 
   GoldRushGame get game => widget.game;
+
+  Widget _thanhTren(PhienVi? pv) {
+    Widget taoThanhTren() => GoldRushTopBar(
+      activeItem: GoldRushTopBarItem.quaTang,
+      gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
+      playerName: game.auth?.user?.username ?? 'datco6',
+      onSanhCho: game.veMenu,
+      onCuaHang: () {
+        game.dongQuaTang();
+        game.moCuaHang();
+      },
+      onRungRuong: () {
+        game.dongQuaTang();
+        game.moRungRuong();
+      },
+      onQuaTang: null,
+      onKhoDo: () {
+        game.dongQuaTang();
+        game.moKhoDo();
+      },
+      onXuongAi: null,
+      onSettings: game.moCaiDat,
+      onClose: game.veMenu,
+      showClose: false,
+    );
+
+    if (pv == null) return taoThanhTren();
+    return ListenableBuilder(
+      listenable: pv,
+      builder: (context, _) => taoThanhTren(),
+    );
+  }
 
   Future<void> _moQuetMaQr() async {
     final ma = await moQuetMaQr(context);
@@ -57,7 +91,13 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
       setState(() => _thongBao = null);
       await _hienPopupPhanThuong(confirmed);
     } on LoiVi catch (e) {
-      if (mounted) setState(() => _thongBao = e.thongBao);
+      if (mounted) {
+        setState(
+          () => _thongBao = e.ma == 409
+              ? 'Mã quà tặng đã được sử dụng hoặc đạt giới hạn nhận.'
+              : e.thongBao,
+        );
+      }
     } catch (e) {
       if (mounted) setState(() => _thongBao = 'Không thể nhận quà: $e');
     } finally {
@@ -68,52 +108,125 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
   Future<void> _hienPopupPhanThuong(KetQuaDoiQuaTang result) async {
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('✦ CHÚC MỪNG! ✦'),
-        content: result.laVang
-            ? Text(
-                '🪙 +${result.amount} VÀNG',
-                style: const TextStyle(
+      barrierDismissible: false,
+      barrierColor: const Color(0xCC050A13),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 520),
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF263B55), Color(0xFF101D2D)],
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE4B653), width: 2),
+            boxShadow: const [
+              BoxShadow(color: Color(0x88000000), blurRadius: 30),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '✦ CHÚC MỪNG BẠN! ✦',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFFFFD780),
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
                 ),
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (result.imageUrl.isNotEmpty)
-                    Image.asset(
-                      result.imageUrl,
-                      height: 110,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.card_giftcard, size: 72),
-                    )
-                  else
-                    const Icon(Icons.card_giftcard, size: 72),
-                  const SizedBox(height: 12),
-                  Text(
-                    result.name,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: 190,
+                height: 190,
+                decoration: BoxDecoration(
+                  gradient: const RadialGradient(
+                    colors: [Color(0xFF5C507A), Color(0xFF1D2B43)],
                   ),
-                  if (result.rarity.isNotEmpty) Text(result.rarity),
-                  Text('Số lượng ×${result.amount}'),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: const Color(0xFFFFD780), width: 2),
+                ),
+                child: result.laVang
+                    ? const Icon(
+                        Icons.monetization_on_rounded,
+                        size: 92,
+                        color: Color(0xFFFFD780),
+                      )
+                    : result.imageUrl.isNotEmpty
+                    ? HinhTrangBiFrame(asset: result.imageUrl, kichThuoc: 128)
+                    : const Icon(
+                        Icons.card_giftcard_rounded,
+                        size: 92,
+                        color: Color(0xFFFFD780),
+                      ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                result.laVang ? 'PHẦN THƯỞNG VÀNG' : 'VẬT PHẨM HIẾM',
+                style: const TextStyle(
+                  color: Color(0xFFDDA9F3),
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                result.laVang
+                    ? 'Bạn nhận được ${result.amount} vàng.'
+                    : 'Bạn nhận được ${result.name} ×${result.amount}.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFFB9C7D5), fontSize: 15),
+              ),
+              if (!result.laVang && result.rarity.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  result.rarity,
+                  style: const TextStyle(color: Color(0xFFB9C7D5)),
+                ),
+              ],
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  if (!result.laVang)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          game.dongQuaTang();
+                          game.moKhoDo();
+                        },
+                        child: const Text('XEM KHO ĐỒ'),
+                      ),
+                    ),
+                  if (!result.laVang) const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFE8B64F),
+                        foregroundColor: const Color(0xFF211A10),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'ĐÓNG',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-        actions: [
-          if (!result.laVang)
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                game.dongQuaTang();
-                game.moKhoDo();
-              },
-              child: const Text('XEM KHO ĐỒ'),
-            ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('ĐÓNG'),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -132,31 +245,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
               child: Column(
                 children: [
-                  GoldRushTopBar(
-                    activeItem: GoldRushTopBarItem.quaTang,
-                    gold: pv == null
-                        ? '0'
-                        : (pv.dangXuLy ? '...' : pv.vangDinhDang),
-                    playerName: game.auth?.user?.username ?? 'datco6',
-                    onSanhCho: game.dongQuaTang,
-                    onCuaHang: () {
-                      game.dongQuaTang();
-                      game.moCuaHang();
-                    },
-                    onRungRuong: () {
-                      game.dongQuaTang();
-                      game.moRungRuong();
-                    },
-                    onQuaTang: null,
-                    onKhoDo: () {
-                      game.dongQuaTang();
-                      game.moKhoDo();
-                    },
-                    onXuongAi: null,
-                    onSettings: game.moCaiDat,
-                    onClose: game.dongQuaTang,
-                    showClose: false,
-                  ),
+                  _thanhTren(pv),
                   const SizedBox(height: 26),
                   Expanded(
                     child: SingleChildScrollView(

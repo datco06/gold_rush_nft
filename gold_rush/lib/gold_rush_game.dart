@@ -1643,7 +1643,9 @@ class GoldRushGame extends FlameGame
     // Đợi hết lượt xử lý pointer/layout hiện tại rồi mới đổi overlay, tránh
     // assertion của Flutter khi vừa xóa overlay cũ vừa thêm overlay mới.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final menuDangMo = overlays.isActive(LopPhu.menu);
       _anTatCaLopPhu();
+      if (menuDangMo) overlays.add(LopPhu.menu);
       if (!overlays.isActive(LopPhu.rungRuong)) {
         overlays.add(LopPhu.rungRuong);
       }
@@ -1673,9 +1675,8 @@ class GoldRushGame extends FlameGame
 
   /// Kho đồ chỉ mở từ Menu, không mở giữa ván.
   void moKhoDo() {
-    if (trangThai != TrangThaiChoi.tamDung || !overlays.isActive(LopPhu.menu)) {
-      return;
-    }
+    if (trangThai != TrangThaiChoi.tamDung) return;
+    if (!overlays.isActive(LopPhu.menu)) overlays.add(LopPhu.menu);
 
     overlays.add(LopPhu.khoDo);
   }

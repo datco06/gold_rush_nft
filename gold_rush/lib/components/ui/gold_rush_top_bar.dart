@@ -371,7 +371,13 @@ class _StatusArea extends StatelessWidget {
       _GoldChip(value: gold),
       _PlayerChip(name: playerName, address: walletAddress, onTap: onPlayerTap),
       _IconButton(icon: Icons.settings_outlined, onTap: onSettings),
-      if (showClose) _IconButton(icon: Icons.close_rounded, onTap: onClose),
+      Visibility(
+        visible: showClose,
+        maintainSize: true,
+        maintainAnimation: true,
+        maintainState: true,
+        child: _IconButton(icon: Icons.close_rounded, onTap: onClose),
+      ),
     ];
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -380,8 +386,13 @@ class _StatusArea extends StatelessWidget {
               _GoldChip(value: gold),
               const SizedBox(width: 6),
               _IconButton(icon: Icons.settings_outlined, onTap: onSettings),
-              if (showClose)
-                _IconButton(icon: Icons.close_rounded, onTap: onClose),
+              Visibility(
+                visible: showClose,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: _IconButton(icon: Icons.close_rounded, onTap: onClose),
+              ),
             ]
           : controls,
     );

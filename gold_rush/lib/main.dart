@@ -27,6 +27,22 @@ import 'man_hinh/trung_tam_qua_tang.dart';
 import 'man_hinh/lop_phu.dart';
 import 'components/ui/gold_rush_top_bar.dart';
 
+class _LopPhuFadeIn extends StatelessWidget {
+  const _LopPhuFadeIn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    duration: const Duration(milliseconds: 180),
+    curve: Curves.easeOutCubic,
+    tween: Tween(begin: 0, end: 1),
+    builder: (context, opacity, child) =>
+        Opacity(opacity: opacity, child: child),
+    child: child,
+  );
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -166,14 +182,18 @@ class _ManHinhGameState extends State<ManHinhGame> {
           focusNode: _gameFocusNode,
           autofocus: true,
           overlayBuilderMap: {
-            LopPhu.menu: (_, game) => ManHinhMenu(game: game),
+            LopPhu.menu: (_, game) =>
+                _LopPhuFadeIn(child: ManHinhMenu(game: game)),
             LopPhu.caiDat: (_, game) => ManHinhCaiDat(game: game),
             LopPhu.tamDung: (_, game) => ManHinhTamDung(game: game),
             LopPhu.ketThuc: (_, game) => ManHinhKetThuc(game: game),
             LopPhu.huyHieu: (_, game) => ManHinhHuyHieu(game: game),
-            LopPhu.cuaHang: (_, game) => ManHinhCuaHang(game: game),
-            LopPhu.rungRuong: (_, game) => ManHinhRungRuong(game: game),
-            LopPhu.quaTang: (_, game) => ManHinhTrungTamQuaTang(game: game),
+            LopPhu.cuaHang: (_, game) =>
+                _LopPhuFadeIn(child: ManHinhCuaHang(game: game)),
+            LopPhu.rungRuong: (_, game) =>
+                _LopPhuFadeIn(child: ManHinhRungRuong(game: game)),
+            LopPhu.quaTang: (_, game) =>
+                _LopPhuFadeIn(child: ManHinhTrungTamQuaTang(game: game)),
             LopPhu.chonMan: (_, game) => ListenableBuilder(
               listenable: game.tienTrinhWorldMap,
               builder: (context, _) => ManHinhChonMan(
@@ -182,7 +202,8 @@ class _ManHinhGameState extends State<ManHinhGame> {
                 loiLuuTienTrinh: game.tienTrinhWorldMap.loi,
               ),
             ),
-            LopPhu.khoDo: (_, game) => _KhoDoTrongGame(game: game),
+            LopPhu.khoDo: (_, game) =>
+                _LopPhuFadeIn(child: _KhoDoTrongGame(game: game)),
             LopPhu.nutBan: (_, game) => NutBan(game: game),
           },
           loadingBuilder: (_) => const ColoredBox(
@@ -284,11 +305,11 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
     final pv = game.phienVi;
 
     return ManHinhKhoDo(
-      khiDong: game.dongKhoDo,
+      khiDong: game.veMenu,
       thanhTren: GoldRushTopBar(
         activeItem: GoldRushTopBarItem.khoDo,
         gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
-        onSanhCho: game.dongKhoDo,
+        onSanhCho: game.veMenu,
         onCuaHang: () {
           game.dongKhoDo();
           game.moCuaHang();
@@ -306,7 +327,7 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
           game.dongKhoDo();
           unawaited(_moXuongAi());
         },
-        onClose: game.dongKhoDo,
+        onClose: game.veMenu,
       ),
       trangThaiTrangBi: TrangThaiKhoDo.daTai,
       danhSachVatPham: game.danhSachVatPham.value,

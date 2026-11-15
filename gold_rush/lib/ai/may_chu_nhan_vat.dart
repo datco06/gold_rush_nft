@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 import 'anh_nhan_vat.dart';
@@ -219,8 +220,17 @@ class MayChuNhanVat {
           'image/png') {
         throw const FormatException('Phản hồi ảnh cần image/png');
       }
-      final png = kq.bytes!;
+      // BrowserClient trả về view bất biến của buffer stream. Một số bản
+      // Flutter Web không giải mã ổn định view này qua Image.memory; copy về
+      // Uint8List thông thường trước khi đưa cho codec/UI.
+      final png = Uint8List.fromList(kq.bytes!);
       _kiemTraHeader(png, anh);
+      // Flutter Web có thể bị kẹt ở instantiateImageCodec với một số PNG
+      // RGBA sinh từ provider. Image.memory sẽ tự giải mã cùng PNG này;
+      // giữ bước kiểm tra codec cho native để không đổi hành vi nền tảng khác.
+      if (kIsWeb) {
+        return KetQuaAnhNhanVat._(anh: anh, png: png, maHttp: kq.maHttp);
+      }
       final codec = await ui
           .instantiateImageCodec(png)
           .timeout(const Duration(seconds: 5));
@@ -264,7 +274,7 @@ class MayChuNhanVat {
           'image/png') {
         throw const FormatException('Phản hồi ảnh cần image/png');
       }
-      final png = kq.bytes!;
+      final png = Uint8List.fromList(kq.bytes!);
       _kiemTraPng128(png);
       final codec = await ui
           .instantiateImageCodec(png)

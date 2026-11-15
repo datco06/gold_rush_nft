@@ -26,21 +26,21 @@ class PhienVi extends ChangeNotifier {
     unawaited(napVangDaLuu());
   }
 
-  static const String _khoaVangChung = 'gold_rush_vang';
-
   String get _khoaVang => diaChi != null && diaChi!.isNotEmpty
       ? 'gold_rush_vang_${diaChi!.toLowerCase()}'
-      : _khoaVangChung;
+      : 'gold_rush_vang';
 
   /// Nạp số vàng đã lưu từ bộ nhớ máy.
   Future<void> napVangDaLuu() async {
     try {
-      final s =
-          await SharedPreferencesAsync().getString(_khoaVang) ??
-          await SharedPreferencesAsync().getString(_khoaVangChung);
+      // Chốt key trước khi await: lần nạp cache chung lúc khởi động không
+      // được phép ghi đè cache của ví sau khi địa chỉ đã được xác định.
+      final khoa = _khoaVang;
+      final s = await SharedPreferencesAsync().getString(khoa);
+      if (khoa != _khoaVang) return;
       if (s != null) {
         final v = BigInt.tryParse(s);
-        if (v != null && v > vang) {
+        if (v != null && v != vang) {
           vang = v;
           notifyListeners();
         }
@@ -53,7 +53,6 @@ class PhienVi extends ChangeNotifier {
     try {
       final s = vang.toString();
       await SharedPreferencesAsync().setString(_khoaVang, s);
-      await SharedPreferencesAsync().setString(_khoaVangChung, s);
     } catch (_) {}
   }
 

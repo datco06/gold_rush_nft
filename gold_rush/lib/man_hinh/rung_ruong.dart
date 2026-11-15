@@ -7,6 +7,7 @@ import '../components/ui/gold_rush_top_bar.dart';
 import '../blockchain/may_chu_phieu.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_trang_bi.dart';
+import '../kho_do/nhan_vat_voi_trang_bi.dart';
 
 /// Giao diện mở rương may mắn. Phần thưởng thật sẽ nối ở bước nghiệp vụ sau.
 class ManHinhRungRuong extends StatefulWidget {
@@ -113,15 +114,21 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(color: const Color(0xFFFFD780), width: 2),
                 ),
-                child: vatPham?.duongDanAnh == null
+                child: kq.laVang
+                    ? const Icon(
+                        Icons.monetization_on_rounded,
+                        size: 92,
+                        color: Color(0xFFFFD780),
+                      )
+                    : vatPham?.duongDanAnh == null
                     ? const Icon(
                         Icons.card_giftcard_rounded,
                         size: 92,
                         color: Color(0xFFFFD780),
                       )
-                    : Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Image.asset(vatPham!.duongDanAnh!),
+                    : HinhTrangBiFrame(
+                        asset: vatPham!.duongDanAnh!,
+                        kichThuoc: 128,
                       ),
               ),
               const SizedBox(height: 18),
@@ -186,7 +193,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                       activeItem: GoldRushTopBarItem.rungRuong,
                       gold: '0',
                       playerName: _game.auth?.user?.username ?? 'datco6',
-                      onSanhCho: _game.dongRungRuong,
+                      onSanhCho: _game.veMenu,
                       onCuaHang: () {
                         _game.dongRungRuong();
                         _game.moCuaHang();
@@ -198,7 +205,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                       },
                       onXuongAi: null,
                       onSettings: _game.moCaiDat,
-                      onClose: _game.dongRungRuong,
+                      onClose: _game.veMenu,
                       showClose: false,
                     )
                   else
@@ -208,7 +215,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                         activeItem: GoldRushTopBarItem.rungRuong,
                         gold: pv.dangXuLy ? '...' : pv.vangDinhDang,
                         playerName: _game.auth?.user?.username ?? 'datco6',
-                        onSanhCho: _game.dongRungRuong,
+                        onSanhCho: _game.veMenu,
                         onCuaHang: () {
                           _game.dongRungRuong();
                           _game.moCuaHang();
@@ -224,7 +231,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                         },
                         onXuongAi: null,
                         onSettings: _game.moCaiDat,
-                        onClose: _game.dongRungRuong,
+                        onClose: _game.veMenu,
                         showClose: false,
                       ),
                     ),

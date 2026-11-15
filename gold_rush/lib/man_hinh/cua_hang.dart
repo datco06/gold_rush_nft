@@ -80,7 +80,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                                 ? '0'
                                 : (pv.dangXuLy ? '...' : pv.vangDinhDang),
                             playerName: _game.auth?.user?.username ?? 'datco6',
-                            onSanhCho: _game.dongCuaHang,
+                            onSanhCho: _game.veMenu,
                             onCuaHang: null,
                             onRungRuong: () {
                               _game.dongCuaHang();
@@ -97,7 +97,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                             onXuongAi: null,
                             onPlayerTap: null,
                             onSettings: _game.moCaiDat,
-                            onClose: _game.dongCuaHang,
+                            onClose: _game.veMenu,
                           ),
                           const SizedBox(height: 12),
                           const _StoreHeading(),
