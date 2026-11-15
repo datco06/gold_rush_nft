@@ -23,6 +23,8 @@ import 'blockchain/may_chu_phieu.dart';
 import 'blockchain/nhan_vat.dart';
 import 'blockchain/phien_vi.dart';
 import 'blockchain/vi.dart';
+import 'blockchain/vat_pham/nft_model.dart';
+import 'blockchain/vat_pham/nft_service.dart';
 import 'cau_hinh.dart';
 import 'components/ban_do.dart';
 import 'components/boss.dart';
@@ -215,6 +217,211 @@ class GoldRushGame extends FlameGame
     ];
   }
 
+  int? tokenIdVatPham(String itemId) {
+    final index = danhSachTrangBiCuaHang().indexWhere(
+      (item) => item.id == itemId,
+    );
+    return index < 0 ? null : index + 1;
+  }
+
+  VatPhamNFT _metadataNFT(
+    VatPhamHienThi vatPham,
+    int tokenId,
+    String hopDong,
+    int chainId,
+  ) => VatPhamNFT(
+    tokenId: BigInt.from(tokenId),
+    name: vatPham.ten,
+    description: vatPham.moTa,
+    category: vatPham.loai == LoaiVatPham.vuKhi
+        ? LoaiVatPhamNFT.vuKhi
+        : LoaiVatPhamNFT.giap,
+    imageUrl: vatPham.duongDanAnh,
+    contractAddress: hopDong,
+    chainId: chainId,
+  );
+
+  VatPhamHienThi _danhDauNFT(
+    VatPhamHienThi vatPham,
+    int tokenId,
+    String hopDong,
+    int chainId,
+    int soLuong,
+  ) => VatPhamHienThi(
+    id: vatPham.id,
+    ten: vatPham.ten,
+    moTa: vatPham.moTa,
+    loai: vatPham.loai,
+    doHiem: vatPham.doHiem,
+    nguon: NguonVatPham.nft,
+    bieuTuong: vatPham.bieuTuong,
+    danhMuc: vatPham.danhMuc,
+    soLuong: soLuong,
+    duongDanAnh: vatPham.duongDanAnh,
+    thuocTinh: vatPham.thuocTinh,
+    satThuong: vatPham.satThuong,
+    tamBan: vatPham.tamBan,
+    hpCongThem: vatPham.hpCongThem,
+    giamSatThuong: vatPham.giamSatThuong,
+    tocDoCongThem: vatPham.tocDoCongThem,
+    xuyenPha: vatPham.xuyenPha,
+    oDangTrangBi: vatPham.oDangTrangBi,
+    chainId: chainId,
+    diaChiHopDong: hopDong,
+    tokenId: '$tokenId',
+  );
+
+  Future<void> dongBoNFTKhoDo() async {
+    final pv = phienVi;
+    final cauHinh = pv?.cauHinh;
+    final hopDong = cauHinh?.hopDongVatPham;
+    if (pv == null ||
+        !pv.daKetNoi ||
+        cauHinh == null ||
+        hopDong == null ||
+        hopDong.isEmpty) {
+      return;
+    }
+
+    final catalog = danhSachTrangBiCuaHang();
+    final dichVu = DichVuNFT(
+      phienVi: pv,
+      cauHinh: CauHinhNFT(chainId: cauHinh.chainId, hopDong: hopDong),
+    );
+    try {
+      final metadata = [
+        for (var i = 0; i < catalog.length; i++)
+          _metadataNFT(catalog[i], i + 1, hopDong, cauHinh.chainId),
+      ];
+      final nftDaDoc = await dichVu.taiDanhSach(metadata);
+      var danhSachMoi = List<VatPhamHienThi>.of(danhSachVatPham.value);
+      var coThayDoi = false;
+
+      for (var i = 0; i < catalog.length; i++) {
+        final item = catalog[i];
+        final soLuong = nftDaDoc[i].balance?.toInt() ?? 0;
+        final index = danhSachMoi.indexWhere((owned) => owned.id == item.id);
+        if (soLuong <= 0) {
+          if (index >= 0 && danhSachMoi[index].nguon == NguonVatPham.nft) {
+            danhSachMoi.removeAt(index);
+            coThayDoi = true;
+          }
+          continue;
+        }
+
+        final nftItem = _danhDauNFT(
+          index >= 0 ? danhSachMoi[index] : item,
+          i + 1,
+          hopDong,
+          cauHinh.chainId,
+          soLuong,
+        );
+        if (index < 0) {
+          danhSachMoi.add(nftItem);
+          coThayDoi = true;
+        } else if (danhSachMoi[index].soLuong != soLuong ||
+            danhSachMoi[index].nguon != NguonVatPham.nft) {
+          danhSachMoi[index] = nftItem;
+          coThayDoi = true;
+        }
+      }
+
+      try {
+        await pv.mayChu.dongBoKhoNFT(
+          vatPham: [
+            for (var i = 0; i < catalog.length; i++)
+              {
+                'item_id': catalog[i].id,
+                'item_type': switch (catalog[i].loai) {
+                  LoaiVatPham.vuKhi => 'weapon',
+                  LoaiVatPham.giap => 'armor',
+                  LoaiVatPham.giay => 'shoes',
+                  LoaiVatPham.vatPham => 'item',
+                },
+                'token_id': i + 1,
+                'metadata': {
+                  'name': catalog[i].ten,
+                  'description': catalog[i].moTa,
+                  'image_url': catalog[i].duongDanAnh,
+                },
+              },
+          ],
+        );
+      } on LoiVi {
+        // Blockchain vẫn là nguồn hiển thị chính; Backend sẽ thử lại ở lượt sau.
+      }
+
+      if (coThayDoi) {
+        danhSachVatPham.value = danhSachMoi;
+        _apDungTrangBiChoGeorge();
+        await _luuTrangBi();
+      }
+    } finally {
+      dichVu.dispose();
+    }
+  }
+
+  Future<void> chuyenVatPhamNFT(
+    VatPhamHienThi vatPham,
+    String nguoiNhan,
+    int soLuong,
+  ) async {
+    final pv = phienVi;
+    final cauHinh = pv?.cauHinh;
+    final hopDong = cauHinh?.hopDongVatPham;
+    final tokenId = tokenIdVatPham(vatPham.id);
+    if (pv == null || cauHinh == null || hopDong == null || hopDong.isEmpty) {
+      throw const LoiVi('Chưa cấu hình hợp đồng NFT vật phẩm.');
+    }
+    if (tokenId == null) {
+      throw const LoiVi('Không xác định được tokenId của vật phẩm.');
+    }
+
+    final dichVu = DichVuNFT(
+      phienVi: pv,
+      cauHinh: CauHinhNFT(chainId: cauHinh.chainId, hopDong: hopDong),
+    );
+    try {
+      final metadata = _metadataNFT(vatPham, tokenId, hopDong, cauHinh.chainId);
+      final ketQua = await dichVu.chuyenVatPham(
+        tokenId: BigInt.from(tokenId),
+        nguoiNhan: nguoiNhan,
+        amount: BigInt.from(soLuong),
+        metadata: metadata,
+      );
+      await capNhatSauKhiChuyenNFT(vatPham.id, ketQua.vatPham.balance);
+      await dongBoNFTKhoDo();
+    } finally {
+      dichVu.dispose();
+    }
+  }
+
+  Future<void> capNhatSauKhiChuyenNFT(
+    String itemId,
+    BigInt? soLuongConLai,
+  ) async {
+    final ds = danhSachVatPham.value;
+    final index = ds.indexWhere((item) => item.id == itemId);
+    if (index < 0) return;
+
+    final hienTai = ds[index];
+    final conLai = soLuongConLai?.toInt() ?? 0;
+    if (conLai <= 0) {
+      danhSachVatPham.value = [
+        for (var i = 0; i < ds.length; i++)
+          if (i != index) ds[i],
+      ];
+      _apDungTrangBiChoGeorge();
+      await _luuTrangBi();
+      return;
+    }
+
+    danhSachVatPham.value = [
+      for (var i = 0; i < ds.length; i++)
+        i == index ? hienTai.voiSoLuong(conLai) : ds[i],
+    ];
+  }
+
   Future<void> trangBiVatPham(String itemId) async {
     final ds = danhSachVatPham.value;
     final idx = ds.indexWhere((vp) => vp.id == itemId);
@@ -395,8 +602,15 @@ class GoldRushGame extends FlameGame
     await _napMoHinhDoKho();
     unawaited(napHuyHieu());
     if (auth?.canEnterGame == true && auth?.walletAddress != null) {
-      phienVi?.diaChi ??= auth!.walletAddress!;
-      unawaited(phienVi?.ketNoiDaXacThuc(auth!.walletAddress!));
+      final pv = phienVi;
+      pv?.diaChi ??= auth!.walletAddress!;
+      if (pv != null) {
+        unawaited(
+          pv.ketNoiDaXacThuc(auth!.walletAddress!).then((daKetNoi) async {
+            if (daKetNoi) await dongBoNFTKhoDo();
+          }),
+        );
+      }
     }
 
     theGioi.khiChamVaoBanDo = (viTri) {

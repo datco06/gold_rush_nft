@@ -234,8 +234,35 @@ class _KhoDoTrongGame extends StatefulWidget {
 }
 
 class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
+  String? _diaChiDaDongBo;
+  bool _dangDongBoNFT = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _dongBoNFTNeuCan();
+  }
+
+  void _dongBoNFTNeuCan() {
+    final pv = widget.game.phienVi;
+    final diaChi = pv?.diaChi?.toLowerCase();
+    if (diaChi == null || pv?.cauHinh?.hopDongVatPham == null) {
+      if (diaChi == null) _diaChiDaDongBo = null;
+      return;
+    }
+    if (_dangDongBoNFT || _diaChiDaDongBo == diaChi) return;
+    _diaChiDaDongBo = diaChi;
+    _dangDongBoNFT = true;
+    unawaited(
+      widget.game.dongBoNFTKhoDo().whenComplete(() {
+        _dangDongBoNFT = false;
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    _dongBoNFTNeuCan();
     final game = widget.game;
     final pv = game.phienVi;
     final listenable = pv == null
@@ -273,6 +300,11 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       danhSachVatPham: game.danhSachVatPham.value,
       khiTrangBi: game.trangBiVatPham,
       khiThao: game.thaoVatPham,
+      khiHoanDoiNFT: (vatPham, nguoiNhan, soLuong) async {
+        await game.chuyenVatPhamNFT(vatPham, nguoiNhan, soLuong);
+      },
+      layTokenIdNFT: game.tokenIdVatPham,
+      khiLamMoiKhoDo: game.dongBoNFTKhoDo,
       trangThaiNhanVat: TrangThaiKhoDo.daTai,
       phienVi: game.phienVi,
       authController: game.auth,

@@ -7,6 +7,7 @@ import '../ai/may_chu_nhan_vat.dart';
 import '../auth/auth_controller.dart';
 import '../blockchain/nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
+import '../blockchain/vi.dart';
 import '../components/ai/nhan_vat_ai_gallery.dart';
 import '../components/ui/game_inventory_controls.dart';
 import '../components/ui/gold_rush_top_bar.dart';
@@ -31,6 +32,14 @@ class ManHinhKhoDo extends StatefulWidget {
 
   final Future<void> Function(String itemId)? khiTrangBi;
   final Future<void> Function(String itemId)? khiThao;
+  final Future<void> Function(
+    VatPhamHienThi vatPham,
+    String nguoiNhan,
+    int soLuong,
+  )?
+  khiHoanDoiNFT;
+  final int? Function(String itemId)? layTokenIdNFT;
+  final Future<void> Function()? khiLamMoiKhoDo;
 
   /// Dùng phiên ví có sẵn của game, không tạo phiên ví mới.
   final PhienVi? phienVi;
@@ -61,6 +70,9 @@ class ManHinhKhoDo extends StatefulWidget {
     this.danhSachVatPham = const [],
     this.khiTrangBi,
     this.khiThao,
+    this.khiHoanDoiNFT,
+    this.layTokenIdNFT,
+    this.khiLamMoiKhoDo,
     this.phienVi,
     this.tepNhanVatDangDung,
     this.khiChonNhanVat,
@@ -85,6 +97,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
   String? _idVatPhamDangChon;
   DanhMucVatPham? _danhMucDangChon;
   bool _dangXuLyThaoTac = false;
+  bool _dangLamMoiKhoDo = false;
   String? _loiThaoTac;
   String? _thongBaoThaoTac;
 
@@ -353,6 +366,45 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _thanhDanhMuc(),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: _dangLamMoiKhoDo || widget.khiLamMoiKhoDo == null
+                  ? null
+                  : () async {
+                      setState(() => _dangLamMoiKhoDo = true);
+                      try {
+                        await widget.khiLamMoiKhoDo!();
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã làm mới Kho đồ theo Blockchain.'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } on LoiVi catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(e.thongBao),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } finally {
+                        if (mounted) setState(() => _dangLamMoiKhoDo = false);
+                      }
+                    },
+              icon: _dangLamMoiKhoDo
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh_rounded, size: 17),
+              label: Text(
+                _dangLamMoiKhoDo ? 'Đang làm mới…' : 'LÀM MỚI KHO ĐỒ',
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           if (coDuLieuMau) ...[
             const _GhiChu(
@@ -564,11 +616,12 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                 ),
               ),
               const SizedBox(width: 10),
-              OutlinedButton.icon(
-                onPressed: () => _moDialogHoanDoi(vp),
-                icon: const Icon(Icons.swap_horiz_rounded, size: 17),
-                label: const Text('Hoán đổi'),
-              ),
+              if (vp.nguon == NguonVatPham.nft)
+                OutlinedButton.icon(
+                  onPressed: () => _moDialogHoanDoi(vp),
+                  icon: const Icon(Icons.swap_horiz_rounded, size: 17),
+                  label: const Text('Hoán đổi'),
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -640,12 +693,16 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
   }
 
   Future<void> _moDialogHoanDoi(VatPhamHienThi vp) async {
+    final contextManHinh = context;
+    final tokenId = widget.layTokenIdNFT?.call(vp.id);
     final diaChiViGui =
         widget.phienVi?.diaChi ??
         widget.authController?.walletAddress ??
         'Chưa kết nối MetaMask';
     final controllerViNhan = TextEditingController();
     var dangXacNhan = false;
+    var dangXuLy = false;
+    String? loiChuyen;
     var soLuong = 1;
     final soLuongToiDa = vp.soLuong < 1 ? 1 : vp.soLuong;
 
@@ -679,6 +736,16 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                             : controllerViNhan.text.trim(),
                       ),
                       _DongChiTiet(nhan: 'Số lượng', giaTri: '$soLuong NFT'),
+                      if (loiChuyen != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          loiChuyen!,
+                          style: const TextStyle(
+                            color: Color(0xFFFF8A80),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 18),
                       Row(
                         children: [
@@ -693,9 +760,72 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                           const SizedBox(width: 10),
                           Expanded(
                             child: FilledButton.icon(
-                              onPressed: null,
-                              icon: const Icon(Icons.swap_horiz_rounded),
-                              label: const Text('Xác nhận chuyển'),
+                              onPressed: dangXuLy
+                                  ? null
+                                  : () async {
+                                      final to = controllerViNhan.text.trim();
+                                      if (!RegExp(r'^0x[0-9a-fA-F]{40}$')
+                                              .hasMatch(to) ||
+                                          RegExp(r'^0x0{40}$').hasMatch(to)) {
+                                        capNhat(() {
+                                          loiChuyen = 'Địa chỉ ví người nhận không hợp lệ.';
+                                        });
+                                        return;
+                                      }
+                                      final khiHoanDoi = widget.khiHoanDoiNFT;
+                                      if (khiHoanDoi == null) {
+                                        capNhat(() {
+                                          loiChuyen =
+                                              'Chưa kết nối xử lý chuyển NFT.';
+                                        });
+                                        return;
+                                      }
+                                      capNhat(() {
+                                        dangXuLy = true;
+                                        loiChuyen = null;
+                                      });
+                                      try {
+                                        await khiHoanDoi(vp, to, soLuong);
+                                        if (!context.mounted) return;
+                                        Navigator.of(context).pop();
+                                        ScaffoldMessenger.maybeOf(
+                                          contextManHinh,
+                                        )?.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Đã chuyển ${vp.ten} ×$soLuong NFT thành công.',
+                                            ),
+                                            backgroundColor: const Color(
+                                              0xFF142B38,
+                                            ),
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      } on LoiVi catch (e) {
+                                        if (!context.mounted) return;
+                                        capNhat(() {
+                                          dangXuLy = false;
+                                          loiChuyen = e.thongBao;
+                                        });
+                                      } catch (e) {
+                                        if (!context.mounted) return;
+                                        capNhat(() {
+                                          dangXuLy = false;
+                                          loiChuyen = 'Chuyển NFT thất bại: $e';
+                                        });
+                                      }
+                                    },
+                              icon: dangXuLy
+                                  ? const SizedBox.square(
+                                      dimension: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.swap_horiz_rounded),
+                              label: Text(
+                                dangXuLy ? 'Đang chuyển…' : 'Xác nhận chuyển',
+                              ),
                             ),
                           ),
                         ],
@@ -905,7 +1035,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Token ID: ${vp.tokenId ?? vp.id} · Đang sở hữu ×${vp.soLuong}',
+                                      'Token ID: ${tokenId ?? vp.tokenId ?? vp.id} · Đang sở hữu ×${vp.soLuong}',
                                       style: const TextStyle(
                                         color: MauGame.chuPhu,
                                         fontSize: 12,

@@ -164,6 +164,11 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                   danhSachVatPham: items,
                   khiTrangBi: g.trangBiVatPham,
                   khiThao: g.thaoVatPham,
+                  khiHoanDoiNFT: (vatPham, nguoiNhan, soLuong) async {
+                    await g.chuyenVatPhamNFT(vatPham, nguoiNhan, soLuong);
+                  },
+                  layTokenIdNFT: g.tokenIdVatPham,
+                  khiLamMoiKhoDo: g.dongBoNFTKhoDo,
                   trangThaiNhanVat: TrangThaiKhoDo.daTai,
                   phienVi: g.phienVi,
                   authController: g.auth,

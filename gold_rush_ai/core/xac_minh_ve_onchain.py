@@ -35,6 +35,7 @@ log = logging.getLogger("core.xac_minh_ve_onchain")
 
 # Function selector của `ve(address)` trong CuaHangGoldRush: keccak256(b"ve(address)")[:4]
 SELECTOR_VE_ADDRESS = "0xe5c297ba"
+SELECTOR_ERC1155_BALANCE_OF = "0x00fdd58e"
 DIA_CHI_REGEX = re.compile(r"^0x[0-9a-fA-F]{40}$")
 
 
@@ -174,6 +175,29 @@ class XacMinhVeOnchain:
             raise LoiKetNoiRPC(f"Lỗi giải mã số liệu từ eth_call: {e}")
 
         return {"man": man, "so": so, "coc": coc}
+
+    def lay_balance_erc1155(self, vi: str, token_id: int) -> int:
+        """Đọc balanceOf(address,uint256) trên hợp đồng đã cấu hình."""
+        self._kiem_tra_cau_hinh()
+        if not DIA_CHI_REGEX.fullmatch(vi):
+            raise LoiCauHinhVe(f"Địa chỉ ví không hợp lệ: {vi}")
+        if not isinstance(token_id, int) or token_id <= 0:
+            raise LoiCauHinhVe(f"token_id không hợp lệ: {token_id}")
+        calldata = (
+            SELECTOR_ERC1155_BALANCE_OF
+            + vi.removeprefix("0x").rjust(64, "0")
+            + format(token_id, "064x")
+        )
+        raw_result = self._gui_yeu_cau_rpc(
+            "eth_call",
+            [{"to": self.contract_address.lower(), "data": calldata}, "latest"],
+        )
+        if not isinstance(raw_result, str) or not raw_result.startswith("0x") or len(raw_result) < 66:
+            raise LoiKetNoiRPC("balanceOf trả về dữ liệu không hợp lệ.")
+        try:
+            return int(raw_result[2:66], 16)
+        except ValueError:
+            raise LoiKetNoiRPC("Không giải mã được balanceOf từ RPC.") from None
 
     def xac_minh_ve_hop_le_de_vao_man(self, vi: str, man_yeu_cau: int, so_ve_yeu_cau: int) -> dict[str, int]:
         """Xác minh toàn diện trạng thái vé cọc on-chain trước khi cho phép bắt đầu màn có cọc.

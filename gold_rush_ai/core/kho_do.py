@@ -146,3 +146,50 @@ def so_huu_vat_pham(conn: sqlite3.Connection, player_id: str, item_id: str) -> b
         (player_id, item_id),
     )
     return cur.fetchone() is not None
+
+
+def dong_bo_vat_pham_nft(
+    conn: sqlite3.Connection,
+    player_id: str,
+    hop_dong: str,
+    chain_id: int,
+    vat_pham: list[dict[str, Any]],
+) -> None:
+    """Cập nhật các dòng NFT theo số dư đã đọc trực tiếp từ Blockchain.
+
+    Dòng game thường không bị xoá khi NFT balance bằng 0; chỉ dòng đã đánh dấu
+    đúng hợp đồng NFT mới bị loại khỏi kho. Điều này giữ nguyên vật phẩm Gameplay.
+    """
+    cur = conn.cursor()
+    for item in vat_pham:
+        item_id = str(item["item_id"])
+        token_id = int(item["token_id"])
+        quantity = int(item["quantity"])
+        metadata = dict(item.get("metadata") or {})
+        metadata.update({"nft": True, "token_id": token_id, "contract_address": hop_dong, "chain_id": chain_id})
+        cur.execute(
+            "SELECT id, quantity, item_type, metadata FROM inventory WHERE player_id = ? AND item_id = ?",
+            (player_id, item_id),
+        )
+        row = cur.fetchone()
+        if quantity <= 0:
+            if row is not None:
+                try:
+                    old_meta = json.loads(row["metadata"] or "{}")
+                except (ValueError, TypeError):
+                    old_meta = {}
+                if old_meta.get("nft") is True and str(old_meta.get("contract_address", "")).lower() == hop_dong.lower():
+                    cur.execute("DELETE FROM inventory WHERE id = ?", (row["id"],))
+            continue
+        item_type = str(item["item_type"])
+        if row is None:
+            cur.execute(
+                """INSERT INTO inventory (player_id, item_id, item_type, quantity, metadata, acquired_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (player_id, item_id, item_type, quantity, json.dumps(metadata, ensure_ascii=False), bay_gio_iso()),
+            )
+        else:
+            cur.execute(
+                "UPDATE inventory SET item_type = ?, quantity = ?, metadata = ? WHERE id = ?",
+                (item_type, quantity, json.dumps(metadata, ensure_ascii=False), row["id"]),
+            )

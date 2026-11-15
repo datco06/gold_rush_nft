@@ -55,6 +55,21 @@ class MayChuPhieu {
     );
   }
 
+  /// Đồng bộ bản ghi kho đồ NFT theo số dư on-chain mà máy chủ tự xác minh.
+  /// Payload chỉ mang metadata hiển thị; số lượng không được tin từ client.
+  Future<void> dongBoKhoNFT({
+    required List<Map<String, dynamic>> vatPham,
+  }) async {
+    await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/inventory/sync-nft'),
+        headers: _headers(),
+        body: jsonEncode({'vat_pham': vatPham}),
+      ),
+      khi409: 'Không thể đồng bộ quyền sở hữu NFT lúc này.',
+    );
+  }
+
   /// Đăng ký bắt đầu màn có cọc NGAY TRƯỚC khi chơi. Mỗi vé chỉ đăng ký được MỘT lần (409 nếu đã dùng).
   Future<void> batDauMan({
     required String maVan,
