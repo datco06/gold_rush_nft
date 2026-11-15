@@ -45,7 +45,9 @@ Future<void> main() async {
 }
 
 class UngDungGoldRush extends StatefulWidget {
-  const UngDungGoldRush({super.key});
+  const UngDungGoldRush({super.key, this.ngonNgu});
+
+  final NgonNgu? ngonNgu;
 
   @override
   State<UngDungGoldRush> createState() => _UngDungGoldRushState();
@@ -54,11 +56,13 @@ class UngDungGoldRush extends StatefulWidget {
 class _UngDungGoldRushState extends State<UngDungGoldRush> {
   late final platform.MetamaskSiweWeb _wallet;
   late final AuthController _auth;
+  late final NgonNgu _ngonNgu;
 
   @override
   void initState() {
     super.initState();
-    unawaited(NgonNgu.chung.nap());
+    _ngonNgu = widget.ngonNgu ?? NgonNgu.chung;
+    unawaited(_ngonNgu.nap());
     _wallet = platform.MetamaskSiweWeb();
     _auth = AuthController.web(
       wallet: _wallet,
@@ -81,7 +85,7 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
   @override
   Widget build(BuildContext context) {
     return PhamViNgonNgu(
-      ngonNgu: NgonNgu.chung,
+      ngonNgu: _ngonNgu,
       child: MaterialApp(
         title: 'Gold Rush',
         debugShowCheckedModeBanner: false,

@@ -4,9 +4,58 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 import 'package:gold_rush/main.dart';
+import 'package:gold_rush/gold_rush_game.dart';
+import 'package:gold_rush/man_hinh/lop_phu.dart';
 import 'package:gold_rush/components/ui/gold_rush_top_bar.dart';
 
 void main() {
+  testWidgets('settings switches immediately without replacing the game', (
+    tester,
+  ) async {
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    final game = GoldRushGame();
+    await tester.pumpWidget(
+      PhamViNgonNgu(
+        ngonNgu: language,
+        child: MaterialApp(home: ManHinhCaiDat(game: game)),
+      ),
+    );
+    expect(find.text('CÀI ĐẶT'), findsOneWidget);
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+    expect(find.text('SETTINGS'), findsOneWidget);
+    expect(find.text('Background music'), findsOneWidget);
+    expect(
+      tester.widget<ManHinhCaiDat>(find.byType(ManHinhCaiDat)).game,
+      same(game),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('welcome fits small and desktop viewports in both languages', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    await tester.pumpWidget(UngDungGoldRush(ngonNgu: language));
+    for (final size in [
+      const Size(390, 844),
+      const Size(844, 390),
+      const Size(1280, 720),
+    ]) {
+      tester.view.physicalSize = size;
+      for (final code in ['vi', 'en']) {
+        await language.doi(code);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.takeException(), isNull, reason: '$size / $code');
+        expect(find.text('English'), findsOneWidget);
+      }
+    }
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   test(
     'defaults to Vietnamese and restores only supported languages',
     () async {
@@ -83,7 +132,10 @@ void main() {
     expect(language.dich('Người chơi: Vàng'), 'Player: Vàng');
     expect(language.dich('Thưởng • 20 vàng'), 'Reward • 20 gold');
     expect(language.dich('LÀNG KHỞI ĐẦU'), 'STARTING VILLAGE');
-    expect(language.dich('Bạn nhận được Súng Lục Mặc Định ×2.'), 'You received Default Pistol ×2.');
+    expect(
+      language.dich('Bạn nhận được Súng Lục Mặc Định ×2.'),
+      'You received Default Pistol ×2.',
+    );
     expect(
       language.dich('Màn luyện tập · Làng khởi đầu'),
       'Practice stage · Starting Village',
@@ -163,15 +215,14 @@ void main() {
   testWidgets('welcome switches language without entering gameplay', (
     tester,
   ) async {
-    await NgonNgu.chung.doi('vi');
-    await tester.pumpWidget(const UngDungGoldRush());
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    await tester.pumpWidget(UngDungGoldRush(ngonNgu: language));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('English'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('WELCOME,\nADVENTURER!'), findsOneWidget);
     expect(find.byType(ManHinhGame), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
-    await NgonNgu.chung.doi('vi');
   });
 
   testWidgets('navigation uses translated labels and keeps player identity', (
