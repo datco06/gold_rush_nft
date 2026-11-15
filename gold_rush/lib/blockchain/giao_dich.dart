@@ -38,6 +38,7 @@ class BoGiaoDich {
   final Future<void> Function(Duration) _ngu;
 
   bool _dangGui = false;
+  String? maGiaoDichCuoi;
 
   BoGiaoDich({
     required this.vi,
@@ -108,6 +109,7 @@ class BoGiaoDich {
           loai: LoaiLoiVi.dangCho);
     }
     _dangGui = true;
+    maGiaoDichCuoi = null;
     void bao(String s) => baoTienDo?.call(s);
     try {
       bao('Kiểm tra ví, mạng và hợp đồng…');
@@ -135,6 +137,7 @@ class BoGiaoDich {
 
       bao('Mở ${vi.ten}: xem phí rồi bấm Xác nhận — $moTa');
       final ma = await vi.guiGiaoDich(tu: tu, toi: hopDong, duLieu: duLieu, gas: gas);
+      maGiaoDichCuoi = ma;
       bao('Đã gửi ${rutGon(ma)} — chờ vào khối…');
       return await _choXacNhan(ma, tu, duLieu, daXong);
     } finally {

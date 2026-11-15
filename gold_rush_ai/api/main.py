@@ -71,6 +71,7 @@ from core.xac_minh_ve_onchain import (
 from api.ban_do_moi import router as ban_do_router
 from api.kho_do import router as kho_do_router
 from api.nhiem_vu import router as nhiem_vu_router
+from api.qua_tang import router as qua_tang_router
 from api.tien_trinh import router as tien_trinh_router
 from api.thanh_tuu import router as thanh_tuu_router
 
@@ -331,6 +332,7 @@ app.include_router(tien_trinh_router)
 app.include_router(thanh_tuu_router)
 app.include_router(kho_do_router)
 app.include_router(nhiem_vu_router)
+app.include_router(qua_tang_router)
 app.include_router(ban_do_router)
 
 # Đăng ký các router AI

@@ -31,6 +31,7 @@ SO_PHIEU = Path(os.environ.get("SO_PHIEU", DATA_DIR / "phieu" / "da_cap.jsonl"))
 SO_VE = Path(os.environ.get("SO_VE", DATA_DIR / "phieu" / "ve_da_bat_dau.jsonl"))
 MAN_CHOI = Path(os.environ.get("MAN_CHOI", BAN_DO_DIR / "man_choi.json"))   # dùng chung với app + Ignition
 CSDL_PATH = Path(os.environ.get("CSDL_PATH", DATA_DIR / "gold_rush.db"))
+QUA_TANG_CODES_JSON = Path(os.environ.get("QUA_TANG_CODES_JSON", DATA_DIR / "qua_tang" / "codes.json"))
 
 # Lưu trữ nhân vật AI bền vững (tách biệt khỏi preview cache có TTL)
 AI_CHARACTER_DB = Path(os.environ.get("AI_CHARACTER_DB", DATA_DIR / "nhan_vat" / "characters.sqlite3"))

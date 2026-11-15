@@ -38,6 +38,60 @@ class KetQuaMoRuong {
   bool get laVang => loai == 'vang';
 }
 
+class PhieuVatPhamQuaTang {
+  final String player;
+  final int tokenId;
+  final int amount;
+  final String nonce;
+  final int deadline;
+  final String signature;
+  final int chainId;
+  final String contractAddress;
+
+  const PhieuVatPhamQuaTang({
+    required this.player,
+    required this.tokenId,
+    required this.amount,
+    required this.nonce,
+    required this.deadline,
+    required this.signature,
+    required this.chainId,
+    required this.contractAddress,
+  });
+}
+
+class KetQuaDoiQuaTang {
+  final String claimId;
+  final String rewardType;
+  final int tokenId;
+  final int amount;
+  final String name;
+  final String imageUrl;
+  final String rarity;
+  final String status;
+  final List<PhieuCho> vouchers;
+  final PhieuVatPhamQuaTang? voucher;
+  final String? transactionHash;
+  final int? goldBalance;
+
+  const KetQuaDoiQuaTang({
+    required this.claimId,
+    required this.rewardType,
+    required this.tokenId,
+    required this.amount,
+    required this.name,
+    required this.imageUrl,
+    required this.rarity,
+    required this.status,
+    this.vouchers = const [],
+    this.voucher,
+    this.transactionHash,
+    this.goldBalance,
+  });
+
+  bool get laVang => rewardType == 'gold';
+}
+
 /// Gọi máy chủ trọng tài `gold_rush_ai`: cấu hình, bắt đầu màn có cọc, xin phiếu, phiếu chờ nhận.
 ///
 /// Địa chỉ máy chủ dùng chung `--dart-define=GOLD_RUSH_API` với phần gửi nhật ký.
@@ -68,6 +122,80 @@ class MayChuPhieu {
       hopDong: j['hop_dong'] as String,
       hopDongVatPham: j['hop_dong_vat_pham'] as String?,
       trongTai: j['trong_tai'] as String,
+    );
+  }
+
+  Future<KetQuaDoiQuaTang> doiMaQuaTang(String ma) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/qua-tang/claim'),
+        headers: _headers(),
+        body: jsonEncode({'ma': ma}),
+      ),
+      khi409: 'Mã quà tặng đã được dùng hoặc đạt giới hạn.',
+    );
+    return _doc(() => _quaTangTu(j));
+  }
+
+  Future<KetQuaDoiQuaTang> xacNhanQuaTang({
+    required String claimId,
+    required String transactionHash,
+  }) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/qua-tang/confirm'),
+        headers: _headers(),
+        body: jsonEncode({
+          'claim_id': claimId,
+          'transaction_hash': transactionHash,
+        }),
+      ),
+      khi409: 'Lượt cấp thưởng này đã kết thúc.',
+    );
+    return _doc(() => _quaTangTu(j));
+  }
+
+  Future<KetQuaDoiQuaTang> trangThaiQuaTang(String claimId) async {
+    final j = await _json(
+      () => _client.get(Uri.parse('$mayChu/api/qua-tang/status/$claimId')),
+    );
+    return _doc(() => _quaTangTu(j));
+  }
+
+  KetQuaDoiQuaTang _quaTangTu(Map<String, dynamic> j) {
+    int so(Object? value) => value is int ? value : int.parse('$value');
+    final danhSach = <PhieuCho>[];
+    for (final raw in (j['vouchers'] as List<dynamic>? ?? const [])) {
+      final p = raw as Map<String, dynamic>;
+      final phieu = p['phieu'] as Map<String, dynamic>;
+      danhSach.add(_phieuTu(p, phieu['maVan'] as String));
+    }
+    final rawVoucher = j['voucher'] as Map<String, dynamic>?;
+    final cauHinh = rawVoucher == null
+        ? null
+        : PhieuVatPhamQuaTang(
+            player: rawVoucher['player'] as String,
+            tokenId: so(rawVoucher['tokenId']),
+            amount: so(rawVoucher['amount']),
+            nonce: rawVoucher['nonce'] as String,
+            deadline: so(rawVoucher['deadline']),
+            signature: j['signature'] as String,
+            chainId: so(j['chainId']),
+            contractAddress: j['contractAddress'] as String,
+          );
+    return KetQuaDoiQuaTang(
+      claimId: j['claimId'] as String,
+      rewardType: j['rewardType'] as String,
+      tokenId: so(j['tokenId']),
+      amount: so(j['amount']),
+      name: j['name'] as String,
+      imageUrl: (j['imageUrl'] as String?) ?? '',
+      rarity: (j['rarity'] as String?) ?? '',
+      status: j['status'] as String,
+      vouchers: danhSach,
+      voucher: cauHinh,
+      transactionHash: j['transactionHash'] as String?,
+      goldBalance: j['goldBalance'] == null ? null : so(j['goldBalance']),
     );
   }
 
@@ -200,6 +328,7 @@ class MayChuPhieu {
       return _doc(() => jsonDecode(than) as Map<String, dynamic>);
     final chiTiet = switch (r.statusCode) {
       404 => 'Máy chủ chưa có nhật ký ván này — chơi xong một ván khi đã cấu hình máy chủ.',
+      410 => 'Mã quà tặng đã hết hạn.',
       409 => khi409,
       422 => 'Máy chủ không công nhận ván này: ${lyDoTu(than)}',
       429 => 'Ví đã nhận đủ vàng hôm nay.',

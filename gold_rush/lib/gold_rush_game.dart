@@ -20,6 +20,7 @@ import 'ai/tim_duong.dart';
 import 'am_thanh/am_thanh.dart';
 import 'auth/auth_controller.dart';
 import 'blockchain/may_chu_phieu.dart';
+import 'blockchain/cua_hang.dart';
 import 'blockchain/nhan_vat.dart';
 import 'blockchain/phien_vi.dart';
 import 'blockchain/vi.dart';
@@ -393,6 +394,72 @@ class GoldRushGame extends FlameGame
       );
       await capNhatSauKhiChuyenNFT(vatPham.id, ketQua.vatPham.balance);
       await dongBoNFTKhoDo();
+    } finally {
+      dichVu.dispose();
+    }
+  }
+
+  /// Nộp các phiếu vàng quà tặng do Backend ký trong một giao dịch hiện có.
+  Future<String> nhanQuaTangVang(List<PhieuCho> vouchers) async {
+    final pv = phienVi;
+    if (pv == null || !pv.daKetNoi || vouchers.isEmpty) {
+      throw const LoiVi('Chưa kết nối ví hoặc voucher vàng không hợp lệ.');
+    }
+    await pv.lamMoi();
+    await pv.cuaHang!.thucHien(diaChi: pv.diaChi!, phieu: vouchers);
+    final hash = pv.cuaHang!.bo.maGiaoDichCuoi;
+    await pv.lamMoi();
+    if (hash == null || hash.isEmpty) {
+      throw const LoiVi('Không lấy được mã giao dịch nhận vàng.');
+    }
+    return hash;
+  }
+
+  /// Claim NFT quà tặng bằng cơ chế claimItem hiện có của VatPhamGoldRush.
+  Future<String> nhanQuaTangNFT(PhieuVatPhamQuaTang voucher) async {
+    final pv = phienVi;
+    final cauHinh = pv?.cauHinh;
+    final hopDong = cauHinh?.hopDongVatPham;
+    final tokenId = voucher.tokenId;
+    final catalog = danhSachTrangBiCuaHang();
+    if (pv == null ||
+        !pv.daKetNoi ||
+        cauHinh == null ||
+        hopDong == null ||
+        hopDong.isEmpty) {
+      throw const LoiVi('Chưa cấu hình hợp đồng NFT vật phẩm.');
+    }
+    if (voucher.chainId != cauHinh.chainId ||
+        voucher.contractAddress.toLowerCase() != hopDong.toLowerCase() ||
+        tokenId < 1 ||
+        tokenId > catalog.length) {
+      throw const LoiVi('Voucher NFT không thuộc mạng hoặc danh mục hiện tại.');
+    }
+    final item = catalog[tokenId - 1];
+    final dichVu = DichVuNFT(
+      phienVi: pv,
+      cauHinh: CauHinhNFT(chainId: cauHinh.chainId, hopDong: hopDong),
+    );
+    try {
+      final ketQua = await dichVu.nhanVatPham(
+        _metadataNFT(item, tokenId, hopDong, cauHinh.chainId),
+        phieu: PhieuVatPhamDaKy(
+          phieu: PhieuVatPham(
+            player: voucher.player,
+            tokenId: BigInt.from(tokenId),
+            amount: BigInt.from(voucher.amount),
+            nonce: voucher.nonce,
+            deadline: BigInt.from(voucher.deadline),
+          ),
+          chuKy: voucher.signature,
+          cauHinh: CauHinhNFT(
+            chainId: voucher.chainId,
+            hopDong: voucher.contractAddress,
+          ),
+        ),
+      );
+      await dongBoNFTKhoDo();
+      return ketQua.transactionHash;
     } finally {
       dichVu.dispose();
     }

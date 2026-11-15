@@ -103,11 +103,47 @@ CREATE TABLE IF NOT EXISTS achievement_progress (
     FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS gift_codes (
+    code_hash TEXT PRIMARY KEY,
+    reward_type TEXT NOT NULL,
+    token_id INTEGER NOT NULL DEFAULT 0,
+    amount INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    image_url TEXT NOT NULL DEFAULT '',
+    rarity TEXT NOT NULL DEFAULT '',
+    expires_at REAL,
+    max_uses INTEGER NOT NULL DEFAULT 1,
+    used_count INTEGER NOT NULL DEFAULT 0,
+    per_wallet_limit INTEGER NOT NULL DEFAULT 1,
+    active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS gift_claims (
+    claim_id TEXT PRIMARY KEY,
+    code_hash TEXT NOT NULL,
+    wallet_address TEXT NOT NULL,
+    reward_type TEXT NOT NULL,
+    token_id INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    image_url TEXT NOT NULL DEFAULT '',
+    rarity TEXT NOT NULL DEFAULT '',
+    balance_before TEXT NOT NULL DEFAULT '0',
+    status TEXT NOT NULL,
+    transaction_hash TEXT,
+    error_message TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(code_hash, wallet_address, status)
+);
+
 CREATE INDEX IF NOT EXISTS idx_inventory_player ON inventory(player_id);
 CREATE INDEX IF NOT EXISTS idx_quests_player_status ON quests(player_id, status);
 CREATE INDEX IF NOT EXISTS idx_match_player ON match_results(player_id);
 CREATE INDEX IF NOT EXISTS idx_stage_rewards_player ON stage_rewards(player_id);
 CREATE INDEX IF NOT EXISTS idx_achievement_progress_player ON achievement_progress(player_id);
+CREATE INDEX IF NOT EXISTS idx_gift_claims_code_wallet ON gift_claims(code_hash, wallet_address);
+CREATE INDEX IF NOT EXISTS idx_gift_claims_status ON gift_claims(status);
 """
 
 

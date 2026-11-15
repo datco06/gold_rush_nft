@@ -1,18 +1,126 @@
 import 'package:flutter/material.dart';
 
+import '../blockchain/may_chu_phieu.dart';
+import '../blockchain/vi.dart';
 import '../components/ui/gold_rush_top_bar.dart';
+import '../components/qr_scanner.dart';
 import '../gold_rush_game.dart';
 
-/// Giao diện trung tâm quà tặng. Nút quét QR hiện chỉ là phần trình bày;
-/// luồng camera và nhận quà sẽ được nối ở bước sau.
-class ManHinhTrungTamQuaTang extends StatelessWidget {
+class ManHinhTrungTamQuaTang extends StatefulWidget {
   final GoldRushGame game;
 
   const ManHinhTrungTamQuaTang({super.key, required this.game});
 
   @override
-  Widget build(BuildContext context) {
+  State<ManHinhTrungTamQuaTang> createState() => _ManHinhTrungTamQuaTangState();
+}
+
+class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
+  bool _dangXuLy = false;
+  String? _thongBao;
+
+  GoldRushGame get game => widget.game;
+
+  Future<void> _moQuetMaQr() async {
+    final ma = await moQuetMaQr(context);
+    if (!mounted || ma == null || ma.isEmpty || _dangXuLy) return;
+    await _doiMa(ma);
+  }
+
+  Future<void> _doiMa(String ma) async {
     final pv = game.phienVi;
+    if (pv == null || !pv.daKetNoi) {
+      setState(() => _thongBao = 'Cần kết nối MetaMask trước khi nhận quà.');
+      return;
+    }
+    setState(() {
+      _dangXuLy = true;
+      _thongBao = 'ĐANG KIỂM TRA MÃ QUÀ…';
+    });
+    try {
+      final claim = await pv.mayChu.doiMaQuaTang(ma);
+      if (!mounted) return;
+      if (claim.status == 'confirmed') {
+        setState(() => _thongBao = null);
+        await _hienPopupPhanThuong(claim);
+        return;
+      }
+      setState(() => _thongBao = 'ĐANG CẤP THƯỞNG…');
+      final hash = claim.laVang
+          ? await game.nhanQuaTangVang(claim.vouchers)
+          : await game.nhanQuaTangNFT(claim.voucher!);
+      final confirmed = await pv.mayChu.xacNhanQuaTang(
+        claimId: claim.claimId,
+        transactionHash: hash,
+      );
+      if (!mounted) return;
+      setState(() => _thongBao = null);
+      await _hienPopupPhanThuong(confirmed);
+    } on LoiVi catch (e) {
+      if (mounted) setState(() => _thongBao = e.thongBao);
+    } catch (e) {
+      if (mounted) setState(() => _thongBao = 'Không thể nhận quà: $e');
+    } finally {
+      if (mounted) setState(() => _dangXuLy = false);
+    }
+  }
+
+  Future<void> _hienPopupPhanThuong(KetQuaDoiQuaTang result) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('✦ CHÚC MỪNG! ✦'),
+        content: result.laVang
+            ? Text(
+                '🪙 +${result.amount} VÀNG',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (result.imageUrl.isNotEmpty)
+                    Image.asset(
+                      result.imageUrl,
+                      height: 110,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.card_giftcard, size: 72),
+                    )
+                  else
+                    const Icon(Icons.card_giftcard, size: 72),
+                  const SizedBox(height: 12),
+                  Text(
+                    result.name,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  if (result.rarity.isNotEmpty) Text(result.rarity),
+                  Text('Số lượng ×${result.amount}'),
+                ],
+              ),
+        actions: [
+          if (!result.laVang)
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                game.dongQuaTang();
+                game.moKhoDo();
+              },
+              child: const Text('XEM KHO ĐỒ'),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('ĐÓNG'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pv = widget.game.phienVi;
     return Material(
       color: const Color(0xFF081421),
       child: SafeArea(
@@ -97,18 +205,14 @@ class ManHinhTrungTamQuaTang extends StatelessWidget {
                                 width: double.infinity,
                                 height: 62,
                                 child: FilledButton.icon(
-                                  onPressed: null,
+                                  onPressed: _dangXuLy ? null : _moQuetMaQr,
                                   icon: const Icon(
                                     Icons.qr_code_scanner_rounded,
                                   ),
                                   label: const Text('MỞ CAMERA QUÉT QR'),
                                   style: FilledButton.styleFrom(
-                                    disabledBackgroundColor: const Color(
-                                      0xFFF2C76B,
-                                    ),
-                                    disabledForegroundColor: const Color(
-                                      0xFF382719,
-                                    ),
+                                    backgroundColor: const Color(0xFFF2C76B),
+                                    foregroundColor: const Color(0xFF382719),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
@@ -130,6 +234,19 @@ class ManHinhTrungTamQuaTang extends StatelessWidget {
                                   fontSize: 15,
                                 ),
                               ),
+                              if (_thongBao != null) ...[
+                                const SizedBox(height: 12),
+                                Text(
+                                  _thongBao!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: _thongBao!.startsWith('ĐANG')
+                                        ? const Color(0xFFFFD889)
+                                        : const Color(0xFFFFB4A8),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 18),
                             ],
                           ),
