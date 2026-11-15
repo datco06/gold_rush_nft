@@ -234,8 +234,18 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
 
   Future<void> _muaVatPham(VatPhamHienThi item) async {
     final pv = _phienVi;
-    if (pv == null || !pv.daKetNoi) {
+    if (pv == null) {
       _baoMua('Cần kết nối MetaMask để mua vật phẩm.');
+      return;
+    }
+    if (!pv.daKetNoi) {
+      final diaChi = _game.auth?.walletAddress;
+      if (diaChi != null && diaChi.isNotEmpty) {
+        await pv.ketNoiDaXacThuc(diaChi);
+      }
+    }
+    if (!pv.daKetNoi) {
+      _baoMua(pv.thongBao ?? 'Cần kết nối MetaMask để mua vật phẩm.');
       return;
     }
 
@@ -930,28 +940,7 @@ class _ItemDetail extends StatelessWidget {
 
 int _priceForItem(VatPhamHienThi item) {
   if (item.doHiem == DoHiemVatPham.hiem) return 100000;
-
-  const prices = <String, int>{
-    'sung_cap_1': 0,
-    'sung_cap_2': 50,
-    'sung_cap_3': 120,
-    'sung_manh_1': 260,
-    'sung_manh_2': 480,
-    'sung_manh_3': 420,
-  };
-  if (prices.containsKey(item.id)) return prices[item.id]!;
-  switch (item.doHiem) {
-    case DoHiemVatPham.thuong:
-      return 80;
-    case DoHiemVatPham.khongPhoBien:
-      return 220;
-    case DoHiemVatPham.hiem:
-      return 560;
-    case DoHiemVatPham.suThi:
-      return 900;
-    case DoHiemVatPham.huyenThoai:
-      return 1400;
-  }
+  return 1;
 }
 
 String _shortStats(VatPhamHienThi item) {

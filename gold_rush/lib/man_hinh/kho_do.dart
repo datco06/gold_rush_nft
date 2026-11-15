@@ -20,8 +20,6 @@ import '../kho_do/vat_pham_hien_thi.dart';
 
 enum TrangThaiKhoDo { dangTai, trong, loi, daTai }
 
-enum _SapXepKho { doHiem, ten, loai, soLuong }
-
 /// Kho đồ nhận dữ liệu và hành động từ bên ngoài.
 ///
 /// Không tự sửa trang bị, nhân vật đang dùng hoặc quyền sở hữu.
@@ -83,13 +81,9 @@ class ManHinhKhoDo extends StatefulWidget {
 
 class _ManHinhKhoDoState extends State<ManHinhKhoDo>
     with SingleTickerProviderStateMixin {
-  final TextEditingController _timKiem = TextEditingController();
   late final AnimationController _hieuUngNen;
   String? _idVatPhamDangChon;
   DanhMucVatPham? _danhMucDangChon;
-  DoHiemVatPham? _doHiemDangLoc;
-  _SapXepKho _sapXep = _SapXepKho.doHiem;
-  bool _chiDangTrangBi = false;
   bool _dangXuLyThaoTac = false;
   String? _loiThaoTac;
   String? _thongBaoThaoTac;
@@ -112,49 +106,17 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
   List<VatPhamHienThi> get _danhSachDaLoc {
     if (!_daTaiVatPham) return const [];
 
-    final tuKhoa = _boDau(_timKiem.text.trim().toLowerCase());
     final ketQua = widget.danhSachVatPham.where((vp) {
       final dungDanhMuc =
           _danhMucDangChon == null || vp.danhMucHienThi == _danhMucDangChon;
-      final dungDoHiem = _doHiemDangLoc == null || vp.doHiem == _doHiemDangLoc;
-      final dungTrangBi = !_chiDangTrangBi || vp.dangTrangBi;
-      final dungTuKhoa =
-          tuKhoa.isEmpty ||
-          _boDau(vp.ten.toLowerCase()).contains(tuKhoa) ||
-          _boDau(vp.moTa.toLowerCase()).contains(tuKhoa);
-      return dungDanhMuc && dungDoHiem && dungTrangBi && dungTuKhoa;
+      return dungDanhMuc;
     }).toList();
 
     ketQua.sort((a, b) {
-      switch (_sapXep) {
-        case _SapXepKho.doHiem:
-          final theoDoHiem = b.doHiem.index.compareTo(a.doHiem.index);
-          return theoDoHiem != 0 ? theoDoHiem : a.ten.compareTo(b.ten);
-        case _SapXepKho.ten:
-          return a.ten.toLowerCase().compareTo(b.ten.toLowerCase());
-        case _SapXepKho.loai:
-          final theoLoai = a.danhMucHienThi.index.compareTo(
-            b.danhMucHienThi.index,
-          );
-          return theoLoai != 0 ? theoLoai : a.ten.compareTo(b.ten);
-        case _SapXepKho.soLuong:
-          final theoSoLuong = b.soLuong.compareTo(a.soLuong);
-          return theoSoLuong != 0 ? theoSoLuong : a.ten.compareTo(b.ten);
-      }
+      final theoDoHiem = b.doHiem.index.compareTo(a.doHiem.index);
+      return theoDoHiem != 0 ? theoDoHiem : a.ten.compareTo(b.ten);
     });
 
-    return ketQua;
-  }
-
-  static String _boDau(String value) {
-    const coDau =
-        'àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ';
-    const khongDau =
-        'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd';
-    var ketQua = value;
-    for (var i = 0; i < coDau.length; i++) {
-      ketQua = ketQua.replaceAll(coDau[i], khongDau[i]);
-    }
     return ketQua;
   }
 
@@ -208,7 +170,6 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
 
   @override
   void dispose() {
-    _timKiem.dispose();
     _hieuUngNen.dispose();
     super.dispose();
   }
@@ -355,10 +316,10 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                 noiBat: true,
               ),
               _OTrangBi(
-                nhan: 'Vũ khí phụ',
-                loai: _LoaiOTrangBi.cung,
-                noiDung: _tenTrangBiTai(OTrangBi.vuKhiPhu),
-                duongDanAnh: _trangBiTai(OTrangBi.vuKhiPhu)?.duongDanAnh,
+                nhan: 'Giày',
+                loai: _LoaiOTrangBi.giay,
+                noiDung: _tenTrangBiTai(OTrangBi.giay),
+                duongDanAnh: _trangBiTai(OTrangBi.giay)?.duongDanAnh,
               ),
               _OTrangBi(
                 nhan: 'Giáp',
@@ -391,8 +352,6 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _thanhCongCu(),
-          const SizedBox(height: 10),
           _thanhDanhMuc(),
           const SizedBox(height: 12),
           if (coDuLieuMau) ...[
@@ -470,91 +429,6 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
     );
   }
 
-  Widget _thanhCongCu() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final timKiem = TextField(
-          controller: _timKiem,
-          onChanged: (_) => setState(() {}),
-          style: const TextStyle(
-            color: GameInventoryStyle.textPrimary,
-            fontSize: 15,
-          ),
-          decoration: GameInventoryStyle.searchDecoration(
-            suffixIcon: _timKiem.text.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: 'Xóa tìm kiếm',
-                    onPressed: () {
-                      _timKiem.clear();
-                      setState(() {});
-                    },
-                    color: GameInventoryStyle.textMuted,
-                    icon: const Icon(Icons.close_rounded, size: 19),
-                  ),
-          ),
-        );
-
-        final boLoc = Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _NutBoLoc<DoHiemVatPham>(
-              nhan: _doHiemDangLoc == null
-                  ? 'Độ hiếm'
-                  : tenDoHiem(_doHiemDangLoc!),
-              bieuTuong: Icons.tune_rounded,
-              dangBat: _doHiemDangLoc != null,
-              menu: [
-                const PopupMenuItem(value: null, child: Text('Mọi độ hiếm')),
-                for (final doHiem in DoHiemVatPham.values)
-                  PopupMenuItem(value: doHiem, child: Text(tenDoHiem(doHiem))),
-              ],
-              khiChon: (giaTri) => setState(() => _doHiemDangLoc = giaTri),
-            ),
-            _NutBoLoc<_SapXepKho>(
-              nhan: _tenSapXep(_sapXep),
-              bieuTuong: Icons.sort_rounded,
-              menu: const [
-                PopupMenuItem(value: _SapXepKho.doHiem, child: Text('Độ hiếm')),
-                PopupMenuItem(value: _SapXepKho.ten, child: Text('Tên')),
-                PopupMenuItem(value: _SapXepKho.loai, child: Text('Loại')),
-                PopupMenuItem(
-                  value: _SapXepKho.soLuong,
-                  child: Text('Số lượng'),
-                ),
-              ],
-              khiChon: (giaTri) {
-                if (giaTri != null) setState(() => _sapXep = giaTri);
-              },
-            ),
-            GameToggleButton(
-              label: 'Đang trang bị',
-              icon: Icons.check_circle_outline_rounded,
-              selected: _chiDangTrangBi,
-              onChanged: (value) => setState(() => _chiDangTrangBi = value),
-            ),
-          ],
-        );
-
-        if (constraints.maxWidth < 650) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [timKiem, const SizedBox(height: 10), boLoc],
-          );
-        }
-
-        return Row(
-          children: [
-            Expanded(child: timKiem),
-            const SizedBox(width: 10),
-            Flexible(child: boLoc),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _thanhDanhMuc() {
     return Wrap(
       spacing: 10,
@@ -566,7 +440,11 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
           dangChon: _danhMucDangChon == null,
           khiBam: () => _chonDanhMuc(null),
         ),
-        for (final danhMuc in DanhMucVatPham.values)
+        for (final danhMuc in const [
+          DanhMucVatPham.vuKhi,
+          DanhMucVatPham.giap,
+          DanhMucVatPham.giay,
+        ])
           _TabDanhMuc(
             nhan: _tenDanhMuc(danhMuc),
             bieuTuong: _iconDanhMuc(danhMuc),
@@ -579,12 +457,7 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
 
   Widget _noiDungLuoi(List<VatPhamHienThi> danhSach) {
     if (danhSach.isEmpty) {
-      return _TrangTrongDanhMuc(
-        coTimKiem:
-            _timKiem.text.trim().isNotEmpty ||
-            _doHiemDangLoc != null ||
-            _chiDangTrangBi,
-      );
+      return const _TrangTrongDanhMuc(coTimKiem: false);
     }
 
     return LuoiVatPham(
@@ -611,19 +484,6 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
         _idVatPhamDangChon = null;
       }
     });
-  }
-
-  String _tenSapXep(_SapXepKho sapXep) {
-    switch (sapXep) {
-      case _SapXepKho.doHiem:
-        return 'Độ hiếm';
-      case _SapXepKho.ten:
-        return 'Tên';
-      case _SapXepKho.loai:
-        return 'Loại';
-      case _SapXepKho.soLuong:
-        return 'Số lượng';
-    }
   }
 
   Widget _chiTietVatPham() {
@@ -662,11 +522,21 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: mau.withValues(alpha: 0.5)),
                 ),
-                child: Icon(
-                  _iconDanhMuc(vp.danhMucHienThi),
-                  color: mau,
-                  size: 36,
-                ),
+                child: vp.duongDanAnh != null && vp.duongDanAnh!.isNotEmpty
+                    ? HinhTrangBiFrame(
+                        asset: vp.duongDanAnh!,
+                        kichThuoc: 48,
+                        fallback: Icon(
+                          _iconDanhMuc(vp.danhMucHienThi),
+                          color: mau,
+                          size: 36,
+                        ),
+                      )
+                    : Icon(
+                        _iconDanhMuc(vp.danhMucHienThi),
+                        color: mau,
+                        size: 36,
+                      ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -692,6 +562,12 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                onPressed: () => _moDialogHoanDoi(vp),
+                icon: const Icon(Icons.swap_horiz_rounded, size: 17),
+                label: const Text('Hoán đổi'),
               ),
             ],
           ),
@@ -761,6 +637,300 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
         ],
       ),
     );
+  }
+
+  Future<void> _moDialogHoanDoi(VatPhamHienThi vp) async {
+    final diaChiViGui =
+        widget.phienVi?.diaChi ??
+        widget.authController?.walletAddress ??
+        'Chưa kết nối MetaMask';
+    final controllerViNhan = TextEditingController();
+    var dangXacNhan = false;
+    var soLuong = 1;
+    final soLuongToiDa = vp.soLuong < 1 ? 1 : vp.soLuong;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, capNhat) {
+            final mau = mauDoHiem(vp.doHiem);
+            final anh = vp.duongDanAnh;
+            final noiDung = dangXacNhan
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'XÁC NHẬN THÔNG TIN',
+                        style: TextStyle(
+                          color: MauGame.chinh,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _DongChiTiet(nhan: 'Vật phẩm', giaTri: vp.ten),
+                      _DongChiTiet(nhan: 'Từ', giaTri: diaChiViGui),
+                      _DongChiTiet(
+                        nhan: 'Đến',
+                        giaTri: controllerViNhan.text.trim().isEmpty
+                            ? 'Chưa nhập địa chỉ'
+                            : controllerViNhan.text.trim(),
+                      ),
+                      _DongChiTiet(nhan: 'Số lượng', giaTri: '$soLuong NFT'),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => capNhat(() {
+                                dangXacNhan = false;
+                              }),
+                              child: const Text('Quay lại'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: null,
+                              icon: const Icon(Icons.swap_horiz_rounded),
+                              label: const Text('Xác nhận chuyển'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _DongTieuDeDialog(nhan: 'FROM · VÍ NGƯỜI GỬI'),
+                      _DongThongTinDialog(
+                        icon: Icons.account_balance_wallet_outlined,
+                        noiDung: diaChiViGui,
+                        nhanPhu: 'CỦA BẠN',
+                      ),
+                      const SizedBox(height: 14),
+                      const _DongTieuDeDialog(
+                        nhan: 'TO · ĐỊA CHỈ VÍ NGƯỜI NHẬN',
+                      ),
+                      TextField(
+                        controller: controllerViNhan,
+                        style: const TextStyle(color: MauGame.chu),
+                        decoration: const InputDecoration(
+                          hintText: '0x...',
+                          helperText:
+                              'Nhập địa chỉ ví Ethereum 0x... của người nhận.',
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      const _DongTieuDeDialog(nhan: 'SỐ LƯỢNG NFT MUỐN CHUYỂN'),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10263A),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF46627A)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              onPressed: soLuong > 1
+                                  ? () => capNhat(() => soLuong--)
+                                  : null,
+                              icon: const Icon(Icons.remove_rounded),
+                            ),
+                            Text(
+                              '$soLuong',
+                              style: const TextStyle(
+                                color: MauGame.chu,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: soLuong < soLuongToiDa
+                                  ? () => capNhat(() => soLuong++)
+                                  : null,
+                              icon: const Icon(Icons.add_rounded),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Sở hữu: ${vp.soLuong} NFT · Tối đa chuyển: $soLuongToiDa',
+                        style: const TextStyle(
+                          color: MauGame.chuPhu,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      const _GhiChu(
+                        noiDung:
+                            'Phí giao dịch: Hardhat ETH thử nghiệm. '
+                            'Phí gas thực tế sẽ được ví hiển thị khi gửi giao dịch.',
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton(
+                        onPressed: () => capNhat(() {
+                          dangXacNhan = true;
+                        }),
+                        child: const Text('Tiếp tục'),
+                      ),
+                    ],
+                  );
+
+            return Dialog(
+              backgroundColor: const Color(0xFF162E45),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: const BorderSide(color: MauGame.chinh, width: 2),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 620),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              '✦ CHUYỂN NFT',
+                              style: TextStyle(
+                                color: Color(0xFFFFD77A),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                      const Divider(color: Color(0x55728AA5)),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF164B5A),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '● HARDHAT LOCAL',
+                              style: TextStyle(
+                                color: Color(0xFFBFE0E9),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              'Chain ID: 31337',
+                              style: TextStyle(
+                                color: Color(0xFFE7F2F5),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!dangXacNhan) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1B3047),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: mau.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 64,
+                                height: 64,
+                                child: anh == null || anh.isEmpty
+                                    ? Icon(
+                                        _iconDanhMuc(vp.danhMucHienThi),
+                                        color: mau,
+                                        size: 34,
+                                      )
+                                    : HinhTrangBiFrame(
+                                        asset: anh,
+                                        kichThuoc: 52,
+                                        fallback: Icon(
+                                          _iconDanhMuc(vp.danhMucHienThi),
+                                          color: mau,
+                                          size: 34,
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'VẬT PHẨM NFT · ERC-1155',
+                                      style: TextStyle(
+                                        color: mau,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      vp.ten,
+                                      style: const TextStyle(
+                                        color: MauGame.chu,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Token ID: ${vp.tokenId ?? vp.id} · Đang sở hữu ×${vp.soLuong}',
+                                      style: const TextStyle(
+                                        color: MauGame.chuPhu,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      noiDung,
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    controllerViNhan.dispose();
   }
 
   Widget _hanhDongVatPham(VatPhamHienThi vp) {
@@ -1137,33 +1307,6 @@ IconData _iconDanhMuc(DanhMucVatPham danhMuc) {
   }
 }
 
-class _NutBoLoc<T> extends StatelessWidget {
-  final String nhan;
-  final IconData bieuTuong;
-  final bool dangBat;
-  final List<PopupMenuEntry<T?>> menu;
-  final ValueChanged<T?> khiChon;
-
-  const _NutBoLoc({
-    required this.nhan,
-    required this.bieuTuong,
-    required this.menu,
-    required this.khiChon,
-    this.dangBat = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GameMenuButton<T>(
-      label: nhan,
-      icon: bieuTuong,
-      active: dangBat,
-      items: menu,
-      onSelected: khiChon,
-    );
-  }
-}
-
 class _TabDanhMuc extends StatelessWidget {
   final String nhan;
   final IconData bieuTuong;
@@ -1234,7 +1377,11 @@ class _DanhMucBenTrai extends StatelessWidget {
             dangChon: dangChon == null,
             khiBam: () => khiChon(null),
           ),
-          for (final danhMuc in DanhMucVatPham.values)
+          for (final danhMuc in const [
+            DanhMucVatPham.vuKhi,
+            DanhMucVatPham.giap,
+            DanhMucVatPham.giay,
+          ])
             _MucBenTrai(
               nhan: _tenDanhMuc(danhMuc),
               soLuong: _dem(danhMuc),
@@ -1351,6 +1498,74 @@ class _TrangTrongDanhMuc extends StatelessWidget {
               color: MauGame.chu,
               fontSize: 13,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DongTieuDeDialog extends StatelessWidget {
+  final String nhan;
+
+  const _DongTieuDeDialog({required this.nhan});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        nhan,
+        style: const TextStyle(
+          color: Color(0xFFFFD77A),
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _DongThongTinDialog extends StatelessWidget {
+  final IconData icon;
+  final String noiDung;
+  final String nhanPhu;
+
+  const _DongThongTinDialog({
+    required this.icon,
+    required this.noiDung,
+    required this.nhanPhu,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+      decoration: BoxDecoration(
+        color: const Color(0xFF10263A),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF46627A)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: MauGame.chuPhu, size: 19),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              noiDung,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: MauGame.chuPhu, fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            nhanPhu,
+            style: const TextStyle(
+              color: Color(0xFF65D9A4),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -1793,7 +2008,7 @@ class _XemTruocNhanVat extends StatelessWidget {
   }
 }
 
-enum _LoaiOTrangBi { kiem, cung, giap }
+enum _LoaiOTrangBi { kiem, cung, giap, giay }
 
 class _OTrangBi extends StatelessWidget {
   final String nhan;
@@ -2039,6 +2254,12 @@ class _HinhLoaiTrangBi extends CustomPainter {
 
         canvas.drawPath(giap, thep);
         canvas.drawRect(const Rect.fromLTWH(14, 10, 4, 16), vang);
+        break;
+
+      case _LoaiOTrangBi.giay:
+        canvas.drawRect(const Rect.fromLTWH(10, 5, 8, 18), thep);
+        canvas.drawRect(const Rect.fromLTWH(15, 20, 11, 5), thep);
+        canvas.drawRect(const Rect.fromLTWH(9, 24, 18, 4), vang);
         break;
     }
 

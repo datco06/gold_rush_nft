@@ -430,6 +430,12 @@ class PhienVi extends ChangeNotifier {
       baoTienDo: _bao,
     );
     await _taiLaiNoi();
+    final vangThuc = await cuaHang!.soVang(diaChi!);
+    if (vangThuc != vang) {
+      vang = vangThuc;
+      await _luuVang();
+      notifyListeners();
+    }
   }, xong: 'Đã mua $ten ×$soLuong.');
 
   /// Chuẩn bị một màn có cọc: có vé dùng được thì dùng lại, không thì (nhận phiếu chờ +) mua vé
