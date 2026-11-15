@@ -1,0 +1,85 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
+
+void main() {
+  test('defaults to Vietnamese and restores only supported languages', () async {
+    final language = NgonNgu(doc: () async => 'fr', ghi: (_) async {});
+    expect(language.ma, 'vi');
+    await language.nap();
+    expect(language.ma, 'vi');
+    final english = NgonNgu(doc: () async => 'en', ghi: (_) async {});
+    await english.nap();
+    expect(english.ma, 'en');
+  });
+
+  test('switches immediately and serializes preference writes', () async {
+    final saved = <String>[];
+    final language = NgonNgu(
+      doc: () async => null,
+      ghi: (code) async {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        saved.add(code);
+      },
+    );
+    final first = language.doi('en');
+    expect(language.ma, 'en');
+    final second = language.doi('vi');
+    await Future.wait([first, second]);
+    expect(saved, ['en', 'vi']);
+    expect(language.ma, 'vi');
+  });
+
+  test('storage failures and unsupported codes do not break the app', () async {
+    final language = NgonNgu(
+      doc: () async => throw StateError('read'),
+      ghi: (_) async => throw StateError('write'),
+    );
+    await language.nap();
+    expect(await language.doi('fr'), isFalse);
+    expect(language.ma, 'vi');
+    expect(await language.doi('en'), isFalse);
+    expect(language.ma, 'en');
+  });
+
+  test('translates known labels but preserves unknown content', () {
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    expect(language.dich('Kho đồ'), 'Kho đồ');
+    language.doi('en');
+    expect(language.dich('Kho đồ'), 'Inventory');
+    expect(language.dich('Alice 0x123'), 'Alice 0x123');
+  });
+
+  testWidgets('text reacts without remounting child state', (tester) async {
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    var mounts = 0;
+    await tester.pumpWidget(PhamViNgonNgu(
+      ngonNgu: language,
+      child: MaterialApp(home: _Probe(onMount: () => mounts++)),
+    ));
+    expect(find.text('Kho đồ'), findsOneWidget);
+    await language.doi('en');
+    await tester.pump();
+    expect(find.text('Inventory'), findsOneWidget);
+    expect(mounts, 1);
+    expect(tester.takeException(), isNull);
+  });
+}
+
+class _Probe extends StatefulWidget {
+  const _Probe({required this.onMount});
+  final VoidCallback onMount;
+  @override
+  State<_Probe> createState() => _ProbeState();
+}
+
+class _ProbeState extends State<_Probe> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onMount();
+  }
+
+  @override
+  Widget build(BuildContext context) => const ChuGame('Kho đồ');
+}
