@@ -16,7 +16,7 @@ class GoldRushTopBar extends StatelessWidget {
     this.onCuaHang,
     this.onKhoDo,
     this.onXuongAi,
-    this.gold = '12.480',
+    this.gold = '0',
     this.playerName = 'datco6',
     this.walletAddress = '0x7597…311F',
     this.onPlayerTap,
@@ -346,6 +346,8 @@ class _StatusArea extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: compact
           ? [
+              _GoldChip(value: gold),
+              const SizedBox(width: 6),
               _IconButton(icon: Icons.settings_outlined, onTap: onSettings),
               if (showClose)
                 _IconButton(icon: Icons.close_rounded, onTap: onClose),

@@ -250,11 +250,13 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
 
   Widget _noiDung() {
     final game = widget.game;
+    final pv = game.phienVi;
 
     return ManHinhKhoDo(
       khiDong: game.dongKhoDo,
       thanhTren: GoldRushTopBar(
         activeItem: GoldRushTopBarItem.khoDo,
+        gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
         onSanhCho: game.dongKhoDo,
         onCuaHang: () {
           game.dongKhoDo();

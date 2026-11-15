@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../man_choi.dart';
 import 'abi.dart';
@@ -21,7 +22,60 @@ class PhienVi extends ChangeNotifier {
   final Vi vi;
   final MayChuPhieu mayChu;
 
-  PhienVi({required this.vi, required this.mayChu});
+  PhienVi({required this.vi, required this.mayChu}) {
+    unawaited(napVangDaLuu());
+  }
+
+  static const String _khoaVangChung = 'gold_rush_vang';
+
+  String get _khoaVang => diaChi != null && diaChi!.isNotEmpty
+      ? 'gold_rush_vang_${diaChi!.toLowerCase()}'
+      : _khoaVangChung;
+
+  /// Nạp số vàng đã lưu từ bộ nhớ máy.
+  Future<void> napVangDaLuu() async {
+    try {
+      final s = await SharedPreferencesAsync().getString(_khoaVang) ??
+          await SharedPreferencesAsync().getString(_khoaVangChung);
+      if (s != null) {
+        final v = BigInt.tryParse(s);
+        if (v != null && v > vang) {
+          vang = v;
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Lưu số vàng hiện tại vào bộ nhớ máy.
+  Future<void> _luuVang() async {
+    try {
+      final s = vang.toString();
+      await SharedPreferencesAsync().setString(_khoaVang, s);
+      await SharedPreferencesAsync().setString(_khoaVangChung, s);
+    } catch (_) {}
+  }
+
+  /// Cộng vàng vào ví sau trận đấu, lưu lại và cập nhật toàn bộ giao diện (TopBar).
+  Future<void> congVang(BigInt soVangMoi) async {
+    if (soVangMoi <= BigInt.zero) return;
+    vang += soVangMoi;
+    notifyListeners();
+    await _luuVang();
+  }
+
+  /// Chuỗi hiển thị số vàng có phân cách hàng nghìn.
+  String get vangDinhDang {
+    final s = vang.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) {
+        buf.write('.');
+      }
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
 
   CauHinhChuoi? cauHinh;
   String? diaChi;
@@ -127,6 +181,7 @@ class PhienVi extends ChangeNotifier {
     await bo.kiemHopDong();
     cauHinh = ch;
     diaChi = dc;
+    await napVangDaLuu();
     cuaHang = CuaHangChuoi(vi: vi, hopDong: ch.hopDong, bo: bo);
     if (_daDong) return;
     _ngheVi ??= vi.suKien.listen(_khiViDoi);
@@ -151,6 +206,7 @@ class PhienVi extends ChangeNotifier {
         await bo.kiemHopDong();
         cauHinh = ch;
         diaChi = ds.first;
+        await napVangDaLuu();
         cuaHang = CuaHangChuoi(vi: vi, hopDong: ch.hopDong, bo: bo);
         _ngheVi ??= vi.suKien.listen(_khiViDoi);
         await _taiLaiNoi();
@@ -248,7 +304,11 @@ class PhienVi extends ChangeNotifier {
     final dc = diaChi!;
     await ch.bo.damBaoMang(); // đọc sai mạng thì mọi con số đều về 0 — xin chuyển mạng trước
     await _xinCacPhieuCon(dc);
-    vang = await ch.soVang(dc);
+    final vangOnChain = await ch.soVang(dc);
+    if (vangOnChain > vang) {
+      vang = vangOnChain;
+      await _luuVang();
+    }
     ve = await ch.veCua(dc);
     for (final nv in bangNhanVat) {
       gia[nv.id] = await ch.gia(nv.id);
@@ -345,8 +405,9 @@ class PhienVi extends ChangeNotifier {
             await mayChu.batDauMan(maVan: maVan, vi: dc, man: m.id, ve: ve.so);
             return (ve: ve.so, luc: luc);
           } on LoiVi catch (e) {
-            if (e.ma != 409)
+            if (e.ma != 409) {
               rethrow; // 409: vé đã dùng cho một ván → mua vé mới
+            }
           }
         }
         await cuaHang!.thucHien(
@@ -357,8 +418,8 @@ class PhienVi extends ChangeNotifier {
         );
         await _taiLaiNoi();
         if (!(ve.dangMo && ve.man == m.id)) {
-          throw LoiVi(
-            'Chưa thấy vé màn ${m.id} trên chuỗi — bấm "Làm mới" rồi thử lại.',
+          throw const LoiVi(
+            'Chưa thấy vé màn trên chuỗi — bấm "Làm mới" rồi thử lại.',
           );
         }
         _bao('Đăng ký bắt đầu với máy chủ…');

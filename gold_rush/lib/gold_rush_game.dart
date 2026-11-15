@@ -377,15 +377,13 @@ class GoldRushGame extends FlameGame
   }
 
   /// Phiên ví dùng chung, không tạo riêng cho từng màn hình.
-  late final PhienVi? phienVi = GuiNhatKy.daCauHinh
-      ? PhienVi(
-          vi: _vi ?? taoViMacDinh(),
-          mayChu: MayChuPhieu(
-            mayChu: GuiNhatKy.mayChu,
-            layCsrfToken: () => auth?.csrfToken,
-          ),
-        )
-      : null;
+  late final PhienVi? phienVi = PhienVi(
+    vi: _vi ?? taoViMacDinh(),
+    mayChu: MayChuPhieu(
+      mayChu: GuiNhatKy.mayChu,
+      layCsrfToken: () => auth?.csrfToken,
+    ),
+  );
 
   final ValueNotifier<KetQuaVan?> ketQuaVan = ValueNotifier(null);
 
@@ -404,6 +402,7 @@ class GoldRushGame extends FlameGame
   Boss? _boss;
 
   TrangThaiChoi trangThai = TrangThaiChoi.tamDung;
+  bool _daGuiVaXinPhieu = false;
 
   int tongSoXu = 0;
   int soXuDaNhat = 0;
@@ -423,6 +422,7 @@ class GoldRushGame extends FlameGame
     await taiNguyen.nap();
     await AmThanh.napTruoc();
     await _napTrangBiDaLuu();
+    unawaited(phienVi?.napVangDaLuu());
 
     await _napDanhSachMan();
     await tienTrinhWorldMap.nap(danhSachMan);
@@ -435,6 +435,7 @@ class GoldRushGame extends FlameGame
     await _napMoHinhDoKho();
     unawaited(napHuyHieu());
     if (auth?.canEnterGame == true && auth?.walletAddress != null) {
+      phienVi?.diaChi ??= auth!.walletAddress!;
       unawaited(phienVi?.ketNoiDaXacThuc(auth!.walletAddress!));
     }
 
@@ -534,6 +535,20 @@ class GoldRushGame extends FlameGame
         : [1, 2, 3, 4, 5, 6];
     // ignore: invalid_use_of_visible_for_testing_member
     tienTrinhWorldMap.khoiTaoChoKiemThu(ids);
+  }
+
+  @visibleForTesting
+  bool get daGuiVaXinPhieu => _daGuiVaXinPhieu;
+
+  @visibleForTesting
+  Future<void> guiVaXinPhieuChoKiemThu({
+    required Map<String, Object> nk,
+    required String maVan,
+    required KetQuaVan kq,
+    required bool coPhieu,
+  }) async {
+    _daGuiVaXinPhieu = true;
+    await _guiVaXinPhieu(nk, maVan, kq, coPhieu);
   }
 
   Future<void> _napDanhSachMan() async {
@@ -1110,14 +1125,17 @@ class GoldRushGame extends FlameGame
     );
     final coPhieu =
         !man.chiChoiLocal && (man.mienPhi ? nhatKy.soXu > 0 : thang);
-    if (coPhieu && phienVi != null) {
+    if (coPhieu) {
       kq = kq.voiPhieu('Đang gửi ván lên máy chủ trọng tài…');
     }
     ketQuaVan.value = kq;
 
-    if (man.chiChoiLocal || !GuiNhatKy.daCauHinh) return;
-
-    unawaited(_guiVaXinPhieu(nk, maVan, kq, coPhieu));
+    if (thang || coPhieu) {
+      if (!_daGuiVaXinPhieu) {
+        _daGuiVaXinPhieu = true;
+        unawaited(_guiVaXinPhieu(nk, maVan, kq, coPhieu));
+      }
+    }
   }
 
   Future<void> _guiVaXinPhieu(
@@ -1126,8 +1144,8 @@ class GoldRushGame extends FlameGame
     KetQuaVan kq,
     bool coPhieu,
   ) async {
-    final daGui = await GuiNhatKy.gui(nk);
     final pv = phienVi;
+    final daGui = GuiNhatKy.daCauHinh ? await GuiNhatKy.gui(nk) : false;
 
     if (daGui && kq.thang && auth != null && maVan.isNotEmpty) {
       final mayChuHuyHieu = MayChuHuyHieu();
@@ -1151,50 +1169,54 @@ class GoldRushGame extends FlameGame
       }
     }
 
-    if (!coPhieu || pv == null) return;
-
     void datTrangThai(String p) {
       if (!identical(ketQuaVan.value, kq)) return;
       kq = kq.voiPhieu(p);
       ketQuaVan.value = kq;
     }
 
-    if (!daGui) {
+    BigInt? soVang;
+    if (pv != null && coPhieu && daGui) {
+      if (!pv.daKetNoi) {
+        if (auth?.canEnterGame == true && auth?.walletAddress != null) {
+          await pv.ketNoiDaXacThuc(auth!.walletAddress!);
+        }
+      }
+      if (pv.daKetNoi) {
+        soVang = await pv.xinPhieuChoVan(maVan);
+      } else {
+        await pv.xinPhieuChoVan(maVan);
+      }
+    }
+
+    final soVangCong = soVang != null
+        ? soVang
+        : (kq.thang
+            ? BigInt.from(kq.xu)
+            : (kq.man.mienPhi && kq.xu > 0 ? BigInt.from(kq.xu) : BigInt.zero));
+
+    if (pv != null && soVangCong > BigInt.zero) {
+      await pv.congVang(soVangCong);
+    }
+
+    if (soVang != null) {
+      datTrangThai('Đã nhận +$soVang vàng vào ví.');
+    } else if (soVangCong > BigInt.zero) {
+      datTrangThai('Đã cộng +$soVangCong vàng vào ví.');
+    } else if (!daGui && coPhieu) {
       datTrangThai(
         'Không gửi được ván lên máy chủ '
         '— ván này không đổi được thành vàng.',
       );
-      return;
-    }
-
-    if (!pv.daKetNoi) {
-      if (auth?.canEnterGame == true) {
-        if (auth?.walletAddress != null) {
-          await pv.ketNoiDaXacThuc(auth!.walletAddress!);
-        }
-      }
-    }
-    if (!pv.daKetNoi) {
-      await pv.xinPhieuChoVan(maVan); // ghi nhớ, xin khi kết nối ví
+    } else if (pv != null && !pv.daKetNoi && coPhieu) {
       datTrangThai(
         'Kết nối MetaMask (Cửa hàng) '
         'để nhận vàng của ván này.',
       );
-      return;
     }
 
-    final soVang = await pv.xinPhieuChoVan(maVan);
-    datTrangThai(
-      soVang == null
-          ? 'Máy chủ không cấp phiếu: ${pv.thongBao ?? ''}'
-          : 'Đã có phiếu +$soVang vàng'
-                '${kq.man.mienPhi ? '' : ' (+${kq.man.coc} cọc hoàn lại)'} '
-                '— nhận ở Cửa hàng hoặc tự gộp vào '
-                'giao dịch vào màn tiếp theo.',
-    );
-
     // Ghi nhận tiến trình khi thắng màn:
-    if (soVang != null && kq.thang && kq.man.id >= 1 && kq.man.id <= 6) {
+    if (kq.thang && kq.man.id >= 1 && kq.man.id <= 6) {
       unawaited(
         tienTrinh
             .xacNhanHoanThanhMan(
@@ -1307,6 +1329,7 @@ class GoldRushGame extends FlameGame
     }
 
     ketQuaVan.value = null;
+    _daGuiVaXinPhieu = false;
 
     _dungVan(maVan: maVan);
     _vanDangDienRa = true;
