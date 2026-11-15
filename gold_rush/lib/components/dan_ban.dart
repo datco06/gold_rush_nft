@@ -41,13 +41,18 @@ class DanBan extends PositionComponent with CollisionCallbacks {
     this.khiHaMucTieu,
     this.tuKeDich = false,
     this.gayDameNguoiChoi,
+    Set<CoTheBiDanh>? mucTieuDaTrung,
   }) : huong = huong.normalized(),
        super(
          position: viTri,
          size: Vector2.all(4),
          anchor: Anchor.center,
          priority: 3,
-       );
+       ) {
+    if (mucTieuDaTrung != null) {
+      _mucTieuDaTrung.addAll(mucTieuDaTrung);
+    }
+  }
 
   @override
   Future<void> onLoad() async {
@@ -61,7 +66,15 @@ class DanBan extends PositionComponent with CollisionCallbacks {
     final buoc = huong * tocDo * dt;
     position.add(buoc);
     _daBay += buoc.length;
-    if (_daBay >= tamBay || !banDo.diDuoc(position, Vector2.all(2))) _huy();
+    if (_daBay >= tamBay) {
+      _huy();
+      return;
+    }
+
+    final muiDan = position + huong * 1.0;
+    if (banDo.luoi.biChanTaiDiem(muiDan.x, muiDan.y)) {
+      _huy();
+    }
   }
 
   @override

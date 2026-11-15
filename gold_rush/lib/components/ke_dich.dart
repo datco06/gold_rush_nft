@@ -452,7 +452,7 @@ class KeDich extends NhanVat implements CoTheBiDanh {
   }
 
   // ------------------------------------------------------------------
-  /// Kẻ địch lao trúng George thì tự nổ và biến mất. Trả về true nếu nổ lần đầu.
+  /// Kẻ địch nổ và biến mất khi bị hạ gục (hết máu). Trả về true nếu nổ lần đầu.
   bool noTung() {
     if (_daNo) return false;
     _daNo = true;

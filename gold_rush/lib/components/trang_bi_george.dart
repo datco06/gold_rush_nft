@@ -31,7 +31,33 @@ class TrangBiGeorge extends Component {
   TrangBiGeorge({this.vuKhi, this.giap, this.giay})
       : _lopGiay = _taoLop(giay, priority: -2, offset: const Offset(0, 2)),
         _lopGiap = _taoLop(giap, priority: -1, offset: const Offset(0, 0)),
-        _lopVuKhi = _taoLop(vuKhi, priority: 1, offset: const Offset(1.5, 0));
+        _lopVuKhi = _taoLop(vuKhi, priority: 1, offset: viTriVuKhi(HuongDi.xuong));
+
+  /// Vị trí lệch của vũ khí theo từng hướng để cán súng gắn vào tay George
+  /// và nòng súng chỉa thẳng theo hướng mặt mà không che mặt nhân vật.
+  static Offset viTriVuKhi(HuongDi huong) {
+    switch (huong) {
+      case HuongDi.xuong:
+        return const Offset(5.0, 4.0);
+      case HuongDi.trai:
+        return const Offset(-6.0, 1.0);
+      case HuongDi.phai:
+        return const Offset(6.0, 1.0);
+      case HuongDi.len:
+        return const Offset(5.0, -1.0);
+    }
+  }
+
+  void _capNhatViTriVuKhi(HuongDi huong) {
+    final offset = viTriVuKhi(huong);
+    _lopVuKhi.position = Vector2(
+      CauHinh.kichThuocO / 2 + offset.dx,
+      CauHinh.kichThuocO / 2 + offset.dy,
+    );
+  }
+
+  /// Toạ độ tương đối hiện tại của lớp vũ khí (hỗ trợ kiểm thử).
+  Vector2 get viTriLopVuKhi => _lopVuKhi.position;
 
   @override
   Future<void> onLoad() async {
@@ -77,6 +103,7 @@ class TrangBiGeorge extends Component {
     _capNhatHuongLop(_lopVuKhi, huong);
     _capNhatHuongLop(_lopGiap, huong);
     _capNhatHuongLop(_lopGiay, huong);
+    _capNhatViTriVuKhi(huong);
   }
 
   void _capNhatTrangBiLop(
@@ -103,6 +130,7 @@ class TrangBiGeorge extends Component {
     if (!identical(vuKhi, _chuaTruyen)) {
       this.vuKhi = vuKhi;
       _capNhatTrangBiLop(_lopVuKhi, vuKhi);
+      _capNhatViTriVuKhi(_huong);
     }
     if (!identical(giap, _chuaTruyen)) {
       this.giap = giap;

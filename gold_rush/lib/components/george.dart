@@ -279,14 +279,26 @@ class George extends NhanVat with KeyboardHandler {
 
     // Tấn công tầm xa
     if (vk.tamXa) {
+      final mucTieuGan = _timMucTieuApSat(huong);
+      if (mucTieuGan != null) {
+        if (mucTieuGan.nhanSatThuong(sat)) {
+          _khiHaMucTieu(mucTieuGan);
+        }
+        if (!_xuyenPha) {
+          return true;
+        }
+      }
+
       parent?.add(
         DanBan(
           banDo: banDo,
-          viTri: position + huong * 8,
+          viTri: _viTriDauDan(huong),
           huong: huong,
           satThuong: sat,
           tamBay: vk.tamDanh,
+          xuyenPha: _xuyenPha,
           khiHaMucTieu: _khiHaMucTieu,
+          mucTieuDaTrung: mucTieuGan != null ? {mucTieuGan} : null,
         ),
       );
 
@@ -325,22 +337,81 @@ class George extends NhanVat with KeyboardHandler {
 
     final huong = huongNhin;
     _lopTrangBi?.phatBan();
+
+    final sat =
+        (_satThuongBan > 0 ? _satThuongBan : CauHinh.satThuongGoc) +
+        capDo.thuongSatThuong;
+
+    final mucTieuGan = _timMucTieuApSat(huong);
+    if (mucTieuGan != null) {
+      if (mucTieuGan.nhanSatThuong(sat)) {
+        _khiHaMucTieu(mucTieuGan);
+      }
+      if (!_xuyenPha) {
+        return true;
+      }
+    }
+
     cha.add(
       DanBan(
         banDo: banDo,
-        viTri: position + huong * 8,
+        viTri: _viTriDauDan(huong),
         huong: huong,
-        satThuong:
-            (_satThuongBan > 0 ? _satThuongBan : CauHinh.satThuongGoc) +
-            capDo.thuongSatThuong,
+        satThuong: sat,
         tamBay: _tamBan > 0
             ? _tamBan * CauHinh.kichThuocO
             : CauHinh.kichThuocO * 4,
         xuyenPha: _xuyenPha,
         khiHaMucTieu: _khiHaMucTieu,
+        mucTieuDaTrung: mucTieuGan != null ? {mucTieuGan} : null,
       ),
     );
     return true;
+  }
+
+  /// Tính vị trí đầu đạn bắn ra, giữ đạn trên cao độ vũ khí (y + 2) và không bị cấn vào mép khi đứng sát 4 cạnh.
+  Vector2 _viTriDauDan(Vector2 huong) {
+    final goc = Vector2(position.x, position.y + 2);
+    var viTri = goc + huong * 6;
+
+    if (banDo.luoi.biChanTaiDiem(viTri.x, viTri.y) &&
+        !banDo.luoi.biChanTaiDiem(goc.x, goc.y)) {
+      viTri = goc + huong * 2;
+    }
+    return viTri;
+  }
+
+  /// Tìm mục tiêu (quái hoặc Boss) đang áp sát phía trước và thẳng hàng với mặt nhìn của George.
+  CoTheBiDanh? _timMucTieuApSat(Vector2 huong) {
+    final cha = parent;
+    if (cha == null) return null;
+
+    final danhSach = cha.children.whereType<CoTheBiDanh>().toList();
+    CoTheBiDanh? mucTieuGanNhat;
+    double khoangCachNhoNhat = double.infinity;
+
+    for (final m in danhSach) {
+      if (m is KeDich && m.isDead) continue;
+      if (m is Boss && m.daChet) continue;
+
+      final delta = m.viTriDanh - position;
+      final dDoc = delta.dot(huong);
+      final dNgang = (delta - huong * dDoc).length;
+
+      // Áp sát (dọc từ -4 đến 1.5 ô = 24px) và thẳng hàng với mặt nhìn:
+      final oPhiaTruoc = dDoc >= -4 && dDoc <= CauHinh.kichThuocO * 1.5;
+      final thangHang = dDoc >= 0
+          ? (dNgang <= 10 && (dDoc >= 4 || dDoc >= dNgang))
+          : (dNgang <= 6);
+
+      if (oPhiaTruoc && thangHang) {
+        if (dDoc < khoangCachNhoNhat) {
+          khoangCachNhoNhat = dDoc;
+          mucTieuGanNhat = m;
+        }
+      }
+    }
+    return mucTieuGanNhat;
   }
 
   // --------------------------------------------------
@@ -540,20 +611,23 @@ class George extends NhanVat with KeyboardHandler {
     }
 
     if (other is KeDich) {
-      if (dangBatTu) return;
-      if (other.noTung()) {
+      if (!dangBatTu && !other.isDead) {
         nhanSatThuong(other.satThuongCham);
       }
+      return;
     }
   }
 
-  /// Boss chạm vào George: gây sát thương mỗi khi hết thời gian bất tử.
+  /// Boss hoặc quái chạm vào George: gây sát thương mỗi khi hết thời gian bất tử.
   /// Dùng onCollision (gọi mỗi khung hình khi đang chạm), không phải onCollisionStart.
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
     if (other is Boss && !other.daChet) {
       nhanSatThuong(CauHinh.satThuongBossCham);
+    }
+    if (other is KeDich && !other.isDead) {
+      nhanSatThuong(other.satThuongCham);
     }
   }
 

@@ -153,7 +153,9 @@ class GoldRushGame extends FlameGame
 
   final List<Component> _thanhPhanVan = [];
   final Map<String, BanDo> _boNhoBanDo = {};
-  final List<String> _hangDoiQuai = [];
+  int _soQuaiBanDau = 0;
+  final List<String> _loaiQuaiGoc = [];
+  int _chiSoQuaiTaiSinh = 0;
   final Random _ngauNhienSinhQuai = Random();
   double _demSinhQuai = 0;
   bool _congTraiTren = true;
@@ -631,9 +633,11 @@ class GoldRushGame extends FlameGame
       }
     }
     _boss = null;
-    _hangDoiQuai.clear();
     _demSinhQuai = 0;
     _congTraiTren = true;
+    _soQuaiBanDau = 0;
+    _loaiQuaiGoc.clear();
+    _chiSoQuaiTaiSinh = 0;
     _soQuaiBoSung = 0;
     _soQuaiThuongBoSung = 0;
     _soQuaiKhongLo = 0;
@@ -698,12 +702,17 @@ class GoldRushGame extends FlameGame
         case 'thuong':
         case 'giap':
         case 'khong_lo':
-          _hangDoiQuai.add(d.ten);
+          _soQuaiBanDau++;
+          _loaiQuaiGoc.add(d.ten);
+          _sinhQuai(
+            d.ten,
+            viTriNguoiChoi,
+            heSoTocDo,
+            viTri: d.viTri.clone(),
+          );
           break;
       }
     }
-
-    _khoiDongSinhQuai(viTriNguoiChoi, heSoTocDo);
 
     // Boss xuất hiện khi bật `coBoss` (mặc định theo --dart-define=GOLD_RUSH_BOSS=true),
     // nên sáu màn gốc không thay đổi. Chưa có điểm 'boss' trong .tmx thì
@@ -749,11 +758,7 @@ class GoldRushGame extends FlameGame
       : (manHienTai.id <= 7 ? 2 : (manHienTai.id <= 15 ? 3 : 4));
 
   int get _soQuaiDangSong =>
-      theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length +
-      (_bossConSong ? 1 : 0);
-
-  int get _gioiHanQuaiSong =>
-      _giaiDoanSinhQuai == 1 ? 5 : (_giaiDoanSinhQuai == 4 ? 10 : 8);
+      theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length;
 
   double get _chuKySinhQuai =>
       _giaiDoanSinhQuai == 1 ? 30 : (_giaiDoanSinhQuai == 4 ? 18 : 20);
@@ -789,18 +794,6 @@ class GoldRushGame extends FlameGame
     _ => 0,
   };
 
-  void _khoiDongSinhQuai(
-    Vector2 Function() viTriNguoiChoi,
-    double Function() heSoTocDo,
-  ) {
-    final soBanDau = _giaiDoanSinhQuai == 1
-        ? 3
-        : (_giaiDoanSinhQuai == 4 ? 5 : 4);
-    for (var i = 0; i < soBanDau && _hangDoiQuai.isNotEmpty; i++) {
-      _sinhQuai(_hangDoiQuai.removeAt(0), viTriNguoiChoi, heSoTocDo);
-    }
-  }
-
   void _capNhatSinhQuai(
     double dt,
     Vector2 Function() viTriNguoiChoi,
@@ -810,11 +803,12 @@ class GoldRushGame extends FlameGame
     if (_demSinhQuai < _chuKySinhQuai) return;
     _demSinhQuai = 0;
 
-    if (_soQuaiDangSong >= _gioiHanQuaiSong) return;
-
-    // Quái gốc luôn được sinh đủ trước khi thêm quái bổ sung.
-    if (_hangDoiQuai.isNotEmpty) {
-      _sinhQuai(_hangDoiQuai.removeAt(0), viTriNguoiChoi, heSoTocDo);
+    // Nếu số quái sống hiện tại < số quái ban đầu, sinh bù theo thời gian cố định.
+    // Nếu đã đủ (>= _soQuaiBanDau) thì không sinh quái gốc nữa.
+    if (_soQuaiDangSong < _soQuaiBanDau && _loaiQuaiGoc.isNotEmpty) {
+      final loai = _loaiQuaiGoc[_chiSoQuaiTaiSinh % _loaiQuaiGoc.length];
+      _chiSoQuaiTaiSinh++;
+      _sinhQuai(loai, viTriNguoiChoi, heSoTocDo);
       return;
     }
 
@@ -917,15 +911,16 @@ class GoldRushGame extends FlameGame
   void _sinhQuai(
     String loai,
     Vector2 Function() viTriNguoiChoi,
-    double Function() heSoTocDo,
-  ) {
-    final viTri = _viTriCongSinh();
+    double Function() heSoTocDo, {
+    Vector2? viTri,
+  }) {
+    final viTriSinh = viTri ?? _viTriCongSinh();
     final tim = timDuong;
     final component = switch (loai) {
       'skeleton' => KeDich.skeleton(
         banDo: banDo,
         hoatAnh: taiNguyen.skeleton,
-        viTri: viTri,
+        viTri: viTriSinh,
         viTriNguoiChoi: viTriNguoiChoi,
         timDuong: tim,
         heSoTocDo: heSoTocDo,
@@ -933,7 +928,7 @@ class GoldRushGame extends FlameGame
       'thuong' => KeDich.thuong(
         banDo: banDo,
         hoatAnh: taiNguyen.quaiThuong,
-        viTri: viTri,
+        viTri: viTriSinh,
         viTriNguoiChoi: viTriNguoiChoi,
         timDuong: tim,
         heSoTocDo: heSoTocDo,
@@ -941,7 +936,7 @@ class GoldRushGame extends FlameGame
       'giap' => KeDich.giap(
         banDo: banDo,
         hoatAnh: taiNguyen.quaiGiap,
-        viTri: viTri,
+        viTri: viTriSinh,
         viTriNguoiChoi: viTriNguoiChoi,
         timDuong: tim,
         heSoTocDo: heSoTocDo,
@@ -949,7 +944,7 @@ class GoldRushGame extends FlameGame
       'khong_lo' => KeDich.khongLo(
         banDo: banDo,
         hoatAnh: taiNguyen.quaiKhongLo,
-        viTri: viTri,
+        viTri: viTriSinh,
         viTriNguoiChoi: viTriNguoiChoi,
         timDuong: tim,
         heSoTocDo: heSoTocDo,
@@ -957,7 +952,7 @@ class GoldRushGame extends FlameGame
       _ => KeDich.zombie(
         banDo: banDo,
         hoatAnh: taiNguyen.zombie,
-        viTri: viTri,
+        viTri: viTriSinh,
         viTriNguoiChoi: viTriNguoiChoi,
         timDuong: tim,
         heSoTocDo: heSoTocDo,
@@ -992,7 +987,7 @@ class GoldRushGame extends FlameGame
   /// Thắng khi đủ xu VÀ không còn Boss. Không có Boss thì y hệt luồng cũ.
   void _kiemTraThang() {
     if (trangThai != TrangThaiChoi.dangChoi) return;
-    final daSinhDuQuai = _hangDoiQuai.isEmpty && _soQuaiGiap >= _soGiapBatBuoc;
+    final daSinhDuQuai = _soQuaiGiap >= _soGiapBatBuoc;
     if (tongSoXu > 0 &&
         soXuDaNhat >= tongSoXu &&
         !_bossConSong &&
