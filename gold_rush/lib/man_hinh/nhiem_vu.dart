@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../ai/may_chu_nhiem_vu.dart';
 import '../ai/nhiem_vu.dart';
 import '../cau_hinh.dart';
@@ -61,7 +63,7 @@ class _ManHinhNhiemVuState extends State<ManHinhNhiemVu> {
     final kq = _ketQua;
     final nv = kq?.nhiemVu;
     return Scaffold(
-      appBar: AppBar(title: Text('Nhiệm vụ màn ${widget.manChoi}')),
+      appBar: AppBar(title: ChuGame('Nhiệm vụ màn ${widget.manChoi}')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -74,16 +76,16 @@ class _ManHinhNhiemVuState extends State<ManHinhNhiemVu> {
                 if (_dangTai) ...[
                   const LinearProgressIndicator(),
                   const SizedBox(height: 16),
-                  const Text('Đang tạo nhiệm vụ…', textAlign: TextAlign.center),
+                  const ChuGame('Đang tạo nhiệm vụ…', textAlign: TextAlign.center),
                 ],
                 if (!_dangTai && kq == null)
-                  const Text(
+                  const ChuGame(
                     'Tạo một đề xuất nhiệm vụ phù hợp với màn chơi.',
                     textAlign: TextAlign.center,
                   ),
                 if (nv != null) _theNhiemVu(nv),
                 if (kq?.loi != null)
-                  Text(
+                  ChuGame(
                     _thongBaoLoi(kq!),
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -95,13 +97,13 @@ class _ManHinhNhiemVuState extends State<ManHinhNhiemVu> {
                   FilledButton.icon(
                     onPressed: () => _tai(thuLai: true),
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Thử lại'),
+                    label: const ChuGame('Thử lại'),
                   )
                 else
                   FilledButton.icon(
                     onPressed: _dangTai ? null : () => _tai(),
                     icon: const Icon(Icons.auto_awesome),
-                    label: Text(
+                    label: ChuGame(
                       _dangTai
                           ? 'Đang tải…'
                           : kq == null
@@ -139,15 +141,16 @@ class _ManHinhNhiemVuState extends State<ManHinhNhiemVu> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            ChuGame(
               nv.nguonNguCanh == 'demo'
                   ? 'Ngữ cảnh demo'
                   : 'Ngữ cảnh đã xác minh',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Text(
+            ChuGame(
               nv.tieuDe,
+              dichNoiDung: false,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -155,16 +158,16 @@ class _ManHinhNhiemVuState extends State<ManHinhNhiemVu> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(nv.moTa),
+            ChuGame(nv.moTa, dichNoiDung: false),
             const Divider(height: 28),
-            Text(mucTieu),
+            ChuGame(mucTieu),
             if (nv.gioiHanGiay != null)
-              Text('Thời hạn • ${nv.gioiHanGiay} giây'),
-            Text('Độ khó • $doKho'),
-            Text('Thưởng • ${nv.vangThuong} vàng'),
-            Text('Nguồn sinh • $nguon'),
+              ChuGame('Thời hạn • ${nv.gioiHanGiay} giây'),
+            ChuGame('Độ khó • $doKho'),
+            ChuGame('Thưởng • ${nv.vangThuong} vàng'),
+            ChuGame('Nguồn sinh • $nguon'),
             const SizedBox(height: 8),
-            const Text('Trạng thái • Được đề xuất'),
+            const ChuGame('Trạng thái • Được đề xuất'),
           ],
         ),
       ),

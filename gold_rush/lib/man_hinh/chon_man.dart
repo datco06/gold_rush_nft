@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../blockchain/phien_vi.dart';
 import '../giao_dien/mau_game.dart';
 import '../gold_rush_game.dart';
@@ -79,7 +81,7 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: IconButton(
-                    tooltip: 'Quay lại Menu',
+                    tooltip: PhamViNgonNgu.of(context).dich('Quay lại Menu'),
                     onPressed: game.dongChonMan,
                     color: const Color(0xFFD3C5A4),
                     iconSize: 20,
@@ -102,7 +104,7 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16),
-          child: Text(
+          child: ChuGame(
             'Chưa có dữ liệu màn chơi. '
             'Hãy quay lại Menu và thử lại.',
             textAlign: TextAlign.center,
@@ -196,7 +198,7 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
             Row(
               children: [
                 const Expanded(
-                  child: Text(
+                  child: ChuGame(
                     'ĐỊA ĐIỂM ĐANG CHỌN',
                     style: TextStyle(
                       color: Color(0xFFAFA980),
@@ -207,7 +209,7 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Đóng thông tin màn',
+                  tooltip: PhamViNgonNgu.of(context).dich('Đóng thông tin màn'),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => setState(() => _idManDangChon = null),
                   color: const Color(0xFFD3C5A4),
@@ -219,42 +221,42 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
             _TheMan(game: game, man: man, pv: pv, duocVaoMan: duocVaoMan),
             const SizedBox(height: 12),
             if (trangThai != null)
-              Text('Trạng thái: ${_nhanTrangThai(trangThai)}', style: chuPhu)
+              ChuGame('Trạng thái: ${_nhanTrangThai(trangThai)}', style: chuPhu)
             else
-              const Text(
+              const ChuGame(
                 'Tiến trình mở khóa chưa được kết nối. '
                 'Hiện giữ quyền chọn màn như phiên bản gốc.',
                 style: chuPhu,
               ),
             if (tienTrinh != null) ...[
               const SizedBox(height: 8),
-              const Text(
+              const ChuGame(
                 'Thắng để mở màn kế tiếp. Tiến trình được lưu trên máy.',
                 style: chuPhu,
               ),
             ],
             if (widget.loiLuuTienTrinh != null) ...[
               const SizedBox(height: 8),
-              Text(
+              ChuGame(
                 widget.loiLuuTienTrinh!,
                 style: chuPhu.copyWith(color: const Color(0xFFF2C77C)),
               ),
             ],
             const SizedBox(height: 10),
             if (pv == null)
-              const Text(
+              const ChuGame(
                 'Màn có cọc cần cấu hình máy chủ và kết nối ví.',
                 style: chuPhu,
               )
             else
-              Text(
+              ChuGame(
                 'Vàng: ${pv.vangDinhDang}'
                 '${pv.phieuCho.isEmpty ? '' : '\nChờ nhận: ${pv.vangChoNhan} (tự gộp vào giao dịch)'}',
                 style: chuPhu,
               ),
             if (pv != null && (pv.thongBao ?? '').isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text(
+              ChuGame(
                 pv.thongBao!,
                 style: TextStyle(
                   fontSize: 12,
@@ -295,14 +297,14 @@ class _TheMan extends StatelessWidget {
     final banKhoa = (p?.dangXuLy ?? false) || (p?.dangHoi ?? false);
 
     if (!duocVaoMan) {
-      nut = const FilledButton(onPressed: null, child: Text('Màn chưa mở'));
+      nut = const FilledButton(onPressed: null, child: ChuGame('Màn chưa mở'));
       lyDoKhongVaoDuoc =
           'Hoàn thành màn trước để mở khóa màn này. '
           'Tiến trình được lưu trên máy.';
     } else if (man.mienPhi) {
       nut = FilledButton(
         onPressed: banKhoa ? null : () => _choiLuyenTap(p),
-        child: const Text('Chơi'),
+        child: const ChuGame('Chơi'),
       );
 
       if (banKhoa) {
@@ -318,7 +320,7 @@ class _TheMan extends StatelessWidget {
         onPressed: (p == null || banKhoa || !duVang)
             ? null
             : () => _vaoManCoCoc(context, p),
-        child: Text('Cọc ${man.coc}'),
+        child: ChuGame('Cọc ${man.coc}'),
       );
 
       if (banKhoa) {
@@ -336,7 +338,7 @@ class _TheMan extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
+        ChuGame(
           'MÀN ${man.id.toString().padLeft(2, '0')} · ${vung.ten.toUpperCase()}',
           style: const TextStyle(
             color: Color(0xFFC7A76A),
@@ -345,7 +347,7 @@ class _TheMan extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Text(
+        ChuGame(
           man.ten,
           style: const TextStyle(
             color: Color(0xFFF1E4C4),
@@ -355,7 +357,7 @@ class _TheMan extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Text(
+        ChuGame(
           man.chiChoiLocal
               ? 'Màn phiêu lưu local · ${vung.diaDanh}'
               : man.mienPhi
@@ -367,7 +369,7 @@ class _TheMan extends StatelessWidget {
         Semantics(
           label: 'Độ khó ${man.sao} trên 5',
           child: ExcludeSemantics(
-            child: Text(
+            child: ChuGame(
               '${'★' * man.sao}${'☆' * (5 - man.sao)}',
               style: const TextStyle(
                 color: Color(0xFFD1B777),
@@ -408,7 +410,7 @@ class _TheMan extends StatelessWidget {
         nut,
         if (lyDoKhongVaoDuoc != null) ...[
           const SizedBox(height: 8),
-          Text(
+          ChuGame(
             lyDoKhongVaoDuoc,
             style: const TextStyle(
               color: Color(0xFFCCB891),
@@ -418,7 +420,7 @@ class _TheMan extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 14),
-        Text(
+        ChuGame(
           man.moTa,
           style: const TextStyle(
             color: Color(0xFFD0CFB3),
@@ -428,7 +430,7 @@ class _TheMan extends StatelessWidget {
         ),
         if (!man.mienPhi) ...[
           const SizedBox(height: 10),
-          Text(
+          ChuGame(
             'Hoàn thành hợp lệ: ${man.nhanVeKhiHoanThanh} vàng '
             '= ${man.coc} hoàn cọc + ${man.soXu} xu + ${man.thuong} thưởng. '
             'Chết, hết giờ hoặc bỏ ván sẽ mất cọc.',
@@ -517,8 +519,8 @@ class _TheMan extends StatelessWidget {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Vào màn ${man.id} · ${man.ten}?'),
-        content: Text(
+        title: ChuGame('Vào màn ${man.id} · ${man.ten}?'),
+        content: ChuGame(
           '${dungLai ? '• Dùng lại vé số ${p.ve.so} đã đặt cọc ${p.ve.coc} vàng — KHÔNG trừ thêm, không cần MetaMask.\n' : (p.daKetNoi ? '• Trừ ngay ${man.coc} vàng tiền cọc (một giao dịch MetaMask).\n' : '• Trừ ngay ${man.coc} vàng tiền cọc từ ví.\n')}'
           '${veCungManDaDung ? '• Vé số ${p.ve.so} của màn này đã dùng cho một ván không hoàn thành — cần vé mới.\n' : ''}'
           '• Nhặt đủ ${man.soXu} xu trong '
@@ -536,11 +538,11 @@ class _TheMan extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Thôi'),
+            child: const ChuGame('Thôi'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(dungLai ? 'Vào màn' : 'Đặt cọc ${man.coc}'),
+            child: ChuGame(dungLai ? 'Vào màn' : 'Đặt cọc ${man.coc}'),
           ),
         ],
       ),
@@ -570,14 +572,14 @@ class _DongThongSoMan extends StatelessWidget {
           Icon(bieuTuong, size: 18, color: MauGame.chinh),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: ChuGame(
               nhan,
               style: const TextStyle(color: MauGame.chuPhu, fontSize: 12),
             ),
           ),
           const SizedBox(width: 8),
           Flexible(
-            child: Text(
+            child: ChuGame(
               giaTri,
               textAlign: TextAlign.right,
               style: const TextStyle(

@@ -127,7 +127,7 @@ class KhungGame extends StatelessWidget {
                                     GameCloseButton(onTap: khiDong),
                                   if (!coNenTrangTri)
                                     IconButton(
-                                      tooltip: 'Quay lại Menu',
+                                      tooltip: PhamViNgonNgu.of(context).dich('Quay lại Menu'),
                                       onPressed: khiDong,
                                       color: MauGame.chu,
                                       icon: const Icon(Icons.close_rounded),

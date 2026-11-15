@@ -293,8 +293,8 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
             retainWhileChecking: widget.retainGameDuringSessionCheck,
           ),
           if (!_allowed)
-            const _GateWaiting(
-              message: 'ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...',
+             _GateWaiting(
+              message: PhamViNgonNgu.of(context).dich('ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...'),
               detail: 'Hành trình đang tạm dừng để đối chiếu phiên và ví.',
             ),
         ],
@@ -302,7 +302,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     }
     if (_restoreFailed) {
       return _GateWaiting(
-        message: 'CHƯA THỂ KIỂM TRA HỒ SƠ',
+        message: PhamViNgonNgu.of(context).dich('CHƯA THỂ KIỂM TRA HỒ SƠ'),
         detail: 'Hành trình đang khóa. Hãy kiểm tra kết nối và thử lại.',
         onRetry: () => unawaited(_restore(controller, _lifecycle)),
       );
@@ -310,14 +310,14 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     if (_restoreInProgress ||
         controller.status == AuthStatus.initial ||
         controller.status == AuthStatus.checkingSession) {
-      return const _GateWaiting(
-        message: 'ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...',
+      return  _GateWaiting(
+        message: PhamViNgonNgu.of(context).dich('ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...'),
         detail: 'Đang đối chiếu phiên đăng nhập và ví MetaMask.',
       );
     }
     if (controller.status == AuthStatus.loggingOut) {
-      return const _GateWaiting(
-        message: 'ĐANG ĐĂNG XUẤT...',
+      return  _GateWaiting(
+        message: PhamViNgonNgu.of(context).dich('ĐANG ĐĂNG XUẤT...'),
         detail: 'Hành trình đã khóa. Đang chờ máy chủ xác nhận.',
       );
     }

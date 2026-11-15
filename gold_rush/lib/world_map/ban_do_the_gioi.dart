@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../giao_dien/mau_game.dart';
 import '../man_choi.dart';
 import 'canh_quan_world_map.dart';
@@ -456,7 +458,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
                                 onPressed: () => setState(() {
                                   _taiAnh = TaiNguyenWorldMap.nap();
                                 }),
-                                child: const Text(
+                                child: const ChuGame(
                                   'Chưa nạp được ảnh bản đồ. Bấm để thử lại.',
                                   style: TextStyle(color: Colors.white),
                                 ),
@@ -477,7 +479,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
   }
 
   Widget _thongBao(String noiDung) => Center(
-    child: Text(noiDung, style: const TextStyle(color: MauGame.chu)),
+    child: ChuGame(noiDung, style: const TextStyle(color: MauGame.chu)),
   );
 
   Widget _nhanKhuVuc(String ten) => DecoratedBox(
@@ -488,7 +490,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
     ),
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      child: Text(
+      child: ChuGame(
         'GOLD RUSH · ${ten.toUpperCase()}',
         style: const TextStyle(
           color: Color(0xFFE7D9B2),
@@ -510,7 +512,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Định vị George',
+          tooltip: PhamViNgonNgu.of(context).dich('Định vị George'),
           onPressed: tapTrungVaoGeorge,
           visualDensity: VisualDensity.compact,
           iconSize: 17,
@@ -518,7 +520,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
           icon: const Icon(Icons.my_location),
         ),
         IconButton(
-          tooltip: 'Thu nhỏ',
+          tooltip: PhamViNgonNgu.of(context).dich('Thu nhỏ'),
           onPressed: () => _zoom(1 / 1.25),
           visualDensity: VisualDensity.compact,
           iconSize: 17,
@@ -526,7 +528,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
           icon: const Icon(Icons.remove),
         ),
         IconButton(
-          tooltip: 'Phóng to',
+          tooltip: PhamViNgonNgu.of(context).dich('Phóng to'),
           onPressed: () => _zoom(1.25),
           visualDensity: VisualDensity.compact,
           iconSize: 17,
@@ -534,7 +536,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
           icon: const Icon(Icons.add),
         ),
         IconButton(
-          tooltip: 'Toàn bản đồ',
+          tooltip: PhamViNgonNgu.of(context).dich('Toàn bản đồ'),
           onPressed: _xemToanBanDo,
           visualDensity: VisualDensity.compact,
           iconSize: 17,

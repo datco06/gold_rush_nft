@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../ai/de_xuat_do_kho.dart';
 import '../ai/may_chu_de_xuat_do_kho.dart';
 import '../cau_hinh.dart';
@@ -62,7 +64,7 @@ class _ManHinhDeXuatDoKhoState extends State<ManHinhDeXuatDoKho> {
       nhanNut = 'Cập nhật đề xuất';
     }
     return Scaffold(
-      appBar: AppBar(title: Text('Đề xuất độ khó màn ${widget.manChoi}')),
+      appBar: AppBar(title: ChuGame('Đề xuất độ khó màn ${widget.manChoi}')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -79,13 +81,13 @@ class _ManHinhDeXuatDoKhoState extends State<ManHinhDeXuatDoKho> {
                   const SizedBox(height: 20),
                 ],
                 if (!_dangTai && kq == null)
-                  const Text(
+                  const ChuGame(
                     'Xem gợi ý độ khó dựa trên lịch sử chơi.',
                     textAlign: TextAlign.center,
                   ),
                 if (deXuat != null) _theDeXuat(deXuat),
                 if (kq?.loi != null)
-                  Text(
+                  ChuGame(
                     _thongBaoLoi(kq!),
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -96,7 +98,7 @@ class _ManHinhDeXuatDoKhoState extends State<ManHinhDeXuatDoKho> {
                 FilledButton.icon(
                   onPressed: _dangTai ? null : _tai,
                   icon: const Icon(Icons.insights),
-                  label: Text(nhanNut),
+                  label: ChuGame(nhanNut),
                 ),
               ],
             ),
@@ -123,14 +125,14 @@ class _ManHinhDeXuatDoKhoState extends State<ManHinhDeXuatDoKho> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            ChuGame(
               deXuat.nguonNguCanh == 'demo'
                   ? 'Dữ liệu demo'
                   : 'Lịch sử đã xác minh',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Text(
+            ChuGame(
               'Độ khó đề xuất • $tenMuc',
               style: const TextStyle(
                 fontSize: 24,
@@ -139,14 +141,14 @@ class _ManHinhDeXuatDoKhoState extends State<ManHinhDeXuatDoKho> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(deXuat.lyDo),
+            ChuGame(deXuat.lyDo, dichNoiDung: false),
             const Divider(height: 28),
-            Text('Điểm hiệu suất • $diemHienThi'),
-            Text(
+            ChuGame('Điểm hiệu suất • $diemHienThi'),
+            ChuGame(
               'Hệ số tốc độ đề xuất • ×${deXuat.heSoTocDo.toStringAsFixed(2)}',
             ),
-            Text('Ván được đánh giá • ${deXuat.soVan}'),
-            Text('Nguồn đề xuất • $nguon'),
+            ChuGame('Ván được đánh giá • ${deXuat.soVan}'),
+            ChuGame('Nguồn đề xuất • $nguon'),
           ],
         ),
       ),

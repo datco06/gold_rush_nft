@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
 import '../giao_dien/mau_game.dart';
 import '../man_choi.dart';
 
@@ -62,7 +64,7 @@ class _NutManChoiState extends State<NutManChoi> {
         selected: widget.dangChon,
         label: 'Màn ${widget.man.id}, ${widget.man.ten}, $_trangThai',
         child: Tooltip(
-          message: '${widget.man.ten} · $_trangThai',
+          message: PhamViNgonNgu.of(context).dich('${widget.man.ten} · $_trangThai'),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => widget.khiChon(widget.man),
@@ -152,7 +154,7 @@ class _NutManChoiState extends State<NutManChoi> {
                         width: active ? 1.5 : 1.0,
                       ),
                     ),
-                    child: Text(
+                    child: ChuGame(
                       widget.man.ten,
                       textAlign: TextAlign.center,
                       maxLines: 1,
@@ -165,7 +167,7 @@ class _NutManChoiState extends State<NutManChoi> {
                     ),
                   ),
                 if (!widget.gon)
-                  Text(
+                  ChuGame(
                     _trangThai,
                     style: const TextStyle(
                       color: MauGame.chu,

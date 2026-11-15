@@ -59,7 +59,8 @@ class NgonNgu extends ChangeNotifier {
       if (match == null) continue;
       // Substitute in one pass: user-supplied braces/$ are never re-evaluated.
       return template.english.replaceAllMapped(RegExp(r'\{(\d+)\}'), (m) {
-        return match.group(int.parse(m[1]!) + 1) ?? '';
+        final value = match.group(int.parse(m[1]!) + 1) ?? '';
+        return template.translateValues ? (banDichAnh[value] ?? value) : value;
       });
     }
     return source;
@@ -73,13 +74,26 @@ final _mauDich = banDichAnh.entries
 
 class _MauDich {
   _MauDich(String source, this.english)
-    : pattern = RegExp(
+    : translateValues = _nhanCoThamSo.contains(source),
+      pattern = RegExp(
         '^${source.splitMapJoin(RegExp(r'\{\d+\}'), onMatch: (_) => '(.*?)', onNonMatch: RegExp.escape)}\u0024',
         dotAll: true,
       );
   final RegExp pattern;
   final String english;
+  final bool translateValues;
 }
+
+// Only controlled enum/catalog labels are translated inside interpolations.
+// Player names, wallet addresses, transaction hashes and AI prose stay verbatim.
+const _nhanCoThamSo = {
+  'Độ khó • {0}', 'Độ khó đề xuất • {0}', 'Nguồn sinh • {0}',
+  'Nguồn đề xuất • {0}', 'Điểm hiệu suất • {0}', 'Trạng thái: {0}',
+  'Đang trang bị: {0}', '{0} (Trống)', '{0} (Chưa hỗ trợ)',
+  '{0} (Trống — bấm để mở Kho đồ)', 'MÀN {0} · {1}',
+  'Màn phiêu lưu local · {0}', 'Màn luyện tập · {0}',
+  'Màn có đặt cọc · {0}', 'Bạn nhận được {0} ×{1}.',
+};
 
 class PhamViNgonNgu extends InheritedNotifier<NgonNgu> {
   const PhamViNgonNgu({

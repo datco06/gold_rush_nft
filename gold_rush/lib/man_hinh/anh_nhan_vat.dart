@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+
+import '../ngon_ngu/ngon_ngu.dart';
 import 'package:flutter/services.dart';
 
 import '../ai/anh_nhan_vat.dart';
@@ -259,7 +261,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg),
+        content: ChuGame(msg),
         backgroundColor: loi ? Colors.red.shade900 : CauHinh.mauChinh,
         duration: const Duration(seconds: 4),
       ),
@@ -680,7 +682,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     Clipboard.setData(ClipboardData(text: fullHash));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Đã sao chép SHA-256 Character Hash vào bộ nhớ tạm!'),
+        content: ChuGame('Đã sao chép SHA-256 Character Hash vào bộ nhớ tạm!'),
         duration: Duration(seconds: 2),
       ),
     );
@@ -729,7 +731,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      const ChuGame(
                         'XƯỞNG AI',
                         style: TextStyle(
                           color: Color(0xFFB68CFF),
@@ -739,7 +741,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      const ChuGame(
                         'Tạo nhân vật',
                         style: TextStyle(
                           color: Color(0xFFEAF2F8),
@@ -766,7 +768,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text(
+                            const ChuGame(
                               'Mô tả nhân vật bạn muốn xem, như một thợ mỏ đội mũ vàng.',
                             ),
                             const SizedBox(height: 16),
@@ -776,9 +778,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                               minLines: 3,
                               maxLines: 5,
                               keyboardType: TextInputType.multiline,
-                              decoration: const InputDecoration(
-                                labelText: 'Mô tả nhân vật',
-                                helperText: 'Tối đa 500 ký tự.',
+                              decoration:  InputDecoration(
+                                labelText: PhamViNgonNgu.of(context).dich('Mô tả nhân vật'),
+                                helperText: PhamViNgonNgu.of(context).dich('Tối đa 500 ký tự.'),
                                 border: OutlineInputBorder(),
                               ),
                               validator: (value) {
@@ -795,9 +797,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                             ),
                             const SizedBox(height: 20),
                             if (_dangTai) ...[
-                              LinearProgressIndicator(semanticsLabel: nhanCho),
+                              LinearProgressIndicator(semanticsLabel: PhamViNgonNgu.of(context).dich(nhanCho)),
                               const SizedBox(height: 12),
-                              Text(nhanCho, textAlign: TextAlign.center),
+                              ChuGame(nhanCho, textAlign: TextAlign.center),
                               const SizedBox(height: 16),
                             ],
                             if (png != null && anh != null) ...[
@@ -806,7 +808,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
                                     children: [
-                                      Text(
+                                      ChuGame(
                                         anh.nguonSinh == 'demo'
                                             ? 'Ảnh mẫu demo'
                                             : 'Ảnh từ mô hình AI',
@@ -814,13 +816,13 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      Text(
+                                      ChuGame(
                                         anh.nguonNguCanh == 'demo'
                                             ? 'Phiên demo'
                                             : 'Phiên đã xác minh',
                                       ),
                                       if (anh.nguonSinh == 'demo')
-                                        const Text(
+                                        const ChuGame(
                                           'Ảnh mẫu được chọn theo mô tả.',
                                         ),
                                       const SizedBox(height: 12),
@@ -838,7 +840,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                                 'Ảnh xem trước nhân vật',
                                             errorBuilder: (_, _, _) =>
                                                 const Center(
-                                                  child: Text(
+                                                  child: ChuGame(
                                                     'Chưa hiển thị được ảnh.',
                                                   ),
                                                 ),
@@ -846,7 +848,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-                                      const Text('Ảnh tĩnh để xem trước.'),
+                                      const ChuGame('Ảnh tĩnh để xem trước.'),
                                     ],
                                   ),
                                 ),
@@ -857,7 +859,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                               const SizedBox(height: 16),
                             ],
                             if (kq?.loi != null) ...[
-                              Text(
+                              ChuGame(
                                 _thongBaoLoi(kq!, daTao: anh != null),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -872,7 +874,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                     ? () => _tao(thuLai: true)
                                     : _taiLai,
                                 icon: const Icon(Icons.refresh),
-                                label: Text(
+                                label: ChuGame(
                                   anh == null ? 'Thử lại' : 'Tải lại ảnh',
                                 ),
                               ),
@@ -891,7 +893,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                     ? Icons.lock
                                     : Icons.auto_awesome,
                               ),
-                              label: Text(
+                              label: ChuGame(
                                 _dangTai
                                     ? 'Đang xử lý…'
                                     : (_tienTrinh != null &&
@@ -957,7 +959,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
+                      ChuGame(
                         'Ví: ${user.viRutGon}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
@@ -966,7 +968,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         ),
                       ),
                       if (user.username.isNotEmpty)
-                        Text(
+                        ChuGame(
                           'Người chơi: ${user.username}',
                           style: const TextStyle(
                             fontSize: 11,
@@ -984,7 +986,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                   size: 16,
                   color: Colors.redAccent,
                 ),
-                label: const Text(
+                label: const ChuGame(
                   'Đăng xuất',
                   style: TextStyle(color: Colors.redAccent, fontSize: 12),
                 ),
@@ -1009,7 +1011,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            const Text(
+            const ChuGame(
               'MetaMask SIWE',
               style: TextStyle(
                 fontSize: 12,
@@ -1030,7 +1032,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                       height: 14,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
+                  : const ChuGame(
                       'ĐĂNG NHẬP SIWE',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -1074,7 +1076,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: ChuGame(
                     'TIẾN TRÌNH: $tongXong/6 MÀN HOÀN THÀNH',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -1086,14 +1088,14 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Tải lại tiến trình',
+                  tooltip: PhamViNgonNgu.of(context).dich('Tải lại tiến trình'),
                   icon: const Icon(Icons.refresh, size: 18),
                   onPressed: tt.dangTai ? null : () => tt.taiTienTrinh(),
                 ),
               ],
             ),
             const SizedBox(height: 6),
-            Text(
+            ChuGame(
               daMoKhoa
                   ? 'Chúc mừng! Bạn đã hoàn thành 6 màn chơi và mở khóa tính năng tạo nhân vật AI.'
                   : 'Cần hoàn thành đủ 6 màn chơi (hiện tại: $tongXong/6) để mở khóa tạo nhân vật AI.',
@@ -1129,7 +1131,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         color: done ? Colors.greenAccent : Colors.white38,
                       ),
                       const SizedBox(width: 4),
-                      Text(
+                      ChuGame(
                         'Màn $stageId',
                         style: TextStyle(
                           fontSize: 11,
@@ -1150,7 +1152,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
             ],
             if (tt.thongBaoLoi != null) ...[
               const SizedBox(height: 8),
-              Text(
+              ChuGame(
                 'Lỗi đồng bộ: ${tt.thongBaoLoi}',
                 style: const TextStyle(fontSize: 11, color: Colors.redAccent),
               ),
@@ -1177,7 +1179,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 color: Colors.black26,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
+              child: const ChuGame(
                 'LƯU Ý: Ảnh preview 128×128 pixel-art là ảnh tĩnh minh hoạ, CHƯA PHẢI sprite sheet điều khiển được trong game Flame.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -1199,7 +1201,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    ChuGame(
                       'Đã lưu: ${daLuu.name}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
@@ -1207,7 +1209,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    ChuGame(
                       'ID: ${daLuu.characterId}',
                       style: const TextStyle(
                         fontSize: 12,
@@ -1216,7 +1218,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     ),
                     Row(
                       children: [
-                        Text(
+                        ChuGame(
                           'Hash: ${daLuu.hashRutGon}',
                           style: const TextStyle(
                             fontSize: 12,
@@ -1226,7 +1228,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.copy, size: 14),
-                          tooltip: 'Sao chép SHA-256',
+                          tooltip: PhamViNgonNgu.of(context).dich('Sao chép SHA-256'),
                           onPressed: () => _saoChepHash(daLuu.characterHash),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -1234,7 +1236,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    const ChuGame(
                       'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. '
                       'Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet '
                       '4×4 để điều khiển trong gameplay.',
@@ -1246,7 +1248,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                           ? () => Navigator.of(context).pop(true)
                           : null,
                       icon: const Icon(Icons.inventory_2_outlined),
-                      label: const Text('VỀ KHO ĐỒ XEM NHÂN VẬT'),
+                      label: const ChuGame('VỀ KHO ĐỒ XEM NHÂN VẬT'),
                     ),
                   ],
                 ),
@@ -1260,9 +1262,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     TextField(
                       controller: _tenNhanVat,
                       enabled: !_dangLuu,
-                      decoration: const InputDecoration(
-                        labelText: 'Tên nhân vật',
-                        helperText: 'Tối đa 32 ký tự để lưu vào CSDL Backend.',
+                      decoration:  InputDecoration(
+                        labelText: PhamViNgonNgu.of(context).dich('Tên nhân vật'),
+                        helperText: PhamViNgonNgu.of(context).dich('Tối đa 32 ký tự để lưu vào CSDL Backend.'),
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
@@ -1286,7 +1288,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                               ),
                             )
                           : const Icon(Icons.save),
-                      label: Text(
+                      label: ChuGame(
                         _nguoiDung == null
                             ? 'CẦN ĐĂNG NHẬP ĐỂ LƯU'
                             : (_dangLuu
@@ -1318,7 +1320,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
               spacing: 8,
               runSpacing: 4,
               children: [
-                Text(
+                ChuGame(
                   'NHÂN VẬT (${_danhSachNhanVat.length})',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
@@ -1335,7 +1337,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                   TextButton.icon(
                     onPressed: _taiDanhSachNhanVat,
                     icon: const Icon(Icons.refresh, size: 14),
-                    label: const Text(
+                    label: const ChuGame(
                       'Làm mới',
                       style: TextStyle(fontSize: 12),
                     ),
@@ -1346,7 +1348,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
             if (_nguoiDung == null)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
+                child: ChuGame(
                   'Đăng nhập ví MetaMask SIWE để xem danh sách nhân vật đã lưu.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 13),
@@ -1355,7 +1357,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
             else if (_danhSachNhanVat.isEmpty && !_dangTaiDanhSach)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
+                child: ChuGame(
                   'Bạn chưa lưu nhân vật AI nào. Hãy tạo ảnh và bấm "LƯU NHÂN VẬT"!',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 13),
@@ -1419,7 +1421,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(
+                      child: ChuGame(
                         nv.name,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
@@ -1431,7 +1433,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
+                ChuGame(
                   'ID: ${nv.characterId}',
                   style: const TextStyle(
                     fontSize: 11,
@@ -1441,7 +1443,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 ),
                 Row(
                   children: [
-                    Text(
+                    ChuGame(
                       'Hash: ${nv.hashRutGon}',
                       style: const TextStyle(
                         fontSize: 11,
@@ -1451,7 +1453,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.copy, size: 13),
-                      tooltip: 'Sao chép SHA-256',
+                      tooltip: PhamViNgonNgu.of(context).dich('Sao chép SHA-256'),
                       onPressed: () => _saoChepHash(nv.characterHash),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -1459,7 +1461,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                   ],
                 ),
                 if (nv.transactionHash != null)
-                  Text(
+                  ChuGame(
                     'Tx: ${nv.transactionHash!.substring(0, 10)}…',
                     style: const TextStyle(
                       fontSize: 11,
@@ -1476,7 +1478,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                           ? null
                           : () => _dangKyOnchain(nv),
                       icon: const Icon(Icons.app_registration, size: 14),
-                      label: Text(
+                      label: ChuGame(
                         nv.dangChoXacNhan
                             ? 'Kiểm tra lại trạng thái'
                             : 'Đăng ký On-Chain (EIP-712)',
@@ -1516,7 +1518,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(
+        ChuGame(
           st.nhan,
           style: TextStyle(
             fontSize: 11,
