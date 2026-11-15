@@ -25,10 +25,14 @@ class George extends NhanVat with KeyboardHandler {
 
   /// Gọi khi nhân vật chết.
   final void Function() khiChet;
-  final Map<HuongDi, SpriteAnimation> trangBiVuKhi;
-  final Map<HuongDi, SpriteAnimation> trangBiGiap;
-  final Map<HuongDi, SpriteAnimation> trangBiGiay;
-  late final TrangBiGeorge _lopTrangBi;
+  Map<HuongDi, SpriteAnimation> trangBiVuKhi;
+  Map<HuongDi, SpriteAnimation> trangBiGiap;
+  Map<HuongDi, SpriteAnimation> trangBiGiay;
+  // George có thể nhận update ngay khi component vừa được gắn vào cây Flame,
+  // trước khi onLoad() hoàn tất. Vì vậy lớp trang bị phải là tuỳ chọn trong
+  // giai đoạn khởi tạo; movement/animation không được làm hỏng game chỉ vì
+  // lớp vẽ phụ chưa sẵn sàng.
+  TrangBiGeorge? _lopTrangBi;
 
   int diem = 0;
   int mau = CauHinh.mauToiDa;
@@ -110,33 +114,39 @@ class George extends NhanVat with KeyboardHandler {
     Map<HuongDi, SpriteAnimation>? giap,
     Map<HuongDi, SpriteAnimation>? giay,
   }) {
-    if (isMounted) {
-      _lopTrangBi.capNhatTrangBi(vuKhi: vuKhi, giap: giap, giay: giay);
-    }
+    if (vuKhi != null) trangBiVuKhi = vuKhi;
+    if (giap != null) trangBiGiap = giap;
+    if (giay != null) trangBiGiay = giay;
+    _lopTrangBi?.capNhatTrangBi(
+      vuKhi: vuKhi ?? trangBiVuKhi,
+      giap: giap ?? trangBiGiap,
+      giay: giay ?? trangBiGiay,
+    );
   }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     add(hopVaCham());
-    _lopTrangBi = TrangBiGeorge(
+    final lopTrangBi = TrangBiGeorge(
       vuKhi: trangBiVuKhi.isEmpty ? null : trangBiVuKhi,
       giap: trangBiGiap.isEmpty ? null : trangBiGiap,
       giay: trangBiGiay.isEmpty ? null : trangBiGiay,
     );
-    add(_lopTrangBi);
+    _lopTrangBi = lopTrangBi;
+    add(lopTrangBi);
   }
 
   @override
   void capNhatHuong(Vector2 huong) {
     super.capNhatHuong(huong);
-    _lopTrangBi.capNhatHuong(current ?? HuongDi.xuong);
+    _lopTrangBi?.capNhatHuong(current ?? HuongDi.xuong);
   }
 
   @override
   void datDangDi(bool dangDi) {
     super.datDangDi(dangDi);
-    _lopTrangBi.datDangDi(dangDi);
+    _lopTrangBi?.datDangDi(dangDi);
   }
 
   // --------------------------------------------------
@@ -314,7 +324,7 @@ class George extends NhanVat with KeyboardHandler {
     if (cha == null) return false;
 
     final huong = huongNhin;
-    _lopTrangBi.phatBan();
+    _lopTrangBi?.phatBan();
     cha.add(
       DanBan(
         banDo: banDo,
