@@ -16,6 +16,7 @@ import 'auth/ui/auth_gate.dart';
 import 'blockchain/nhan_vat.dart';
 import 'blockchain/vi.dart';
 import 'cau_hinh.dart';
+import 'ngon_ngu/ngon_ngu.dart';
 import 'gold_rush_game.dart';
 import 'dieu_khien/nut_ban.dart';
 import 'man_hinh/chon_man.dart';
@@ -57,6 +58,7 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
   @override
   void initState() {
     super.initState();
+    unawaited(NgonNgu.chung.nap());
     _wallet = platform.MetamaskSiweWeb();
     _auth = AuthController.web(
       wallet: _wallet,
@@ -78,7 +80,9 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return PhamViNgonNgu(
+      ngonNgu: NgonNgu.chung,
+      child: MaterialApp(
       title: 'Gold Rush',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -94,6 +98,7 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
         controller: _auth,
         retainGameDuringSessionCheck: true,
         authenticatedBuilder: (_) => ManHinhGame(auth: _auth, wallet: _wallet),
+      ),
       ),
     );
   }

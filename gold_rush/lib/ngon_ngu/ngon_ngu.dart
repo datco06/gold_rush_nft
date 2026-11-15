@@ -68,6 +68,24 @@ class PhamViNgonNgu extends InheritedNotifier<NgonNgu> {
       ?.notifier ?? NgonNgu.chung;
 }
 
+class ChonNgonNgu extends StatelessWidget {
+  const ChonNgonNgu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final language = PhamViNgonNgu.of(context);
+    return SegmentedButton<String>(
+      segments: const [
+        ButtonSegment(value: 'vi', label: Text('Tiếng Việt')),
+        ButtonSegment(value: 'en', label: Text('English')),
+      ],
+      selected: {language.ma},
+      onSelectionChanged: (values) => unawaited(language.doi(values.single)),
+      showSelectedIcon: false,
+    );
+  }
+}
+
 /// Same Text styling and const call sites; only presentation depends on language.
 class ChuGame extends StatelessWidget {
   const ChuGame(this.data, {

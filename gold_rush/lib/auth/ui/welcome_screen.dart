@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../cau_hinh.dart';
+import '../../ngon_ngu/ngon_ngu.dart';
 import '../auth_controller.dart';
 
 /// A parent can return its navigation Future to keep repeated taps disabled.
@@ -248,6 +249,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              const Align(
+                                alignment: Alignment.centerRight,
+                                child: ChonNgonNgu(),
+                              ),
+                              const SizedBox(height: 12),
                               _GameTitle(narrow: narrow),
                               const SizedBox(height: 26),
                               ListenableBuilder(
@@ -287,7 +293,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       fit: StackFit.expand,
       children: [
         const Positioned(left: 40, top: 28, child: _BrandBar()),
-        const Positioned(right: 42, top: 28, child: _NetworkBar()),
+        const Positioned(
+          right: 42, top: 28,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            ChonNgonNgu(), SizedBox(width: 12), _NetworkBar(),
+          ]),
+        ),
         Positioned(
           left: 88,
           top: math.max(150, constraints.maxHeight * .25),

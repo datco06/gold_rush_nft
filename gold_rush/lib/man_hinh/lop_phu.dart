@@ -6,6 +6,7 @@ import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../man_choi.dart';
+import '../ngon_ngu/ngon_ngu.dart';
 import 'main_lobby.dart';
 
 /// Khung dùng chung cho Menu, Cài đặt, Tạm dừng và Kết thúc.
@@ -165,6 +166,8 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
     return _Khung(
       tieuDe: 'CÀI ĐẶT',
       noiDung: [
+        const ChonNgonNgu(),
+        const SizedBox(height: 12),
         SwitchListTile(
           value: AmThanh.batNhac,
           onChanged: (v) {

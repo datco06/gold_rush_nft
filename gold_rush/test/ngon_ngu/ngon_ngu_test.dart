@@ -64,6 +64,25 @@ void main() {
     expect(mounts, 1);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('selector switches both ways and persists the choice', (tester) async {
+    final saved = <String>[];
+    final language = NgonNgu(doc: () async => null, ghi: (v) async => saved.add(v));
+    await tester.pumpWidget(PhamViNgonNgu(
+      ngonNgu: language,
+      child: const MaterialApp(home: Scaffold(body: Column(children: [
+        ChonNgonNgu(), ChuGame('Kho đồ'),
+      ]))),
+    ));
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+    expect(find.text('Inventory'), findsOneWidget);
+    expect(saved.last, 'en');
+    await tester.tap(find.text('Tiếng Việt'));
+    await tester.pumpAndSettle();
+    expect(find.text('Kho đồ'), findsOneWidget);
+    expect(saved.last, 'vi');
+  });
 }
 
 class _Probe extends StatefulWidget {
