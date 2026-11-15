@@ -16,6 +16,8 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../ngon_ngu/ngon_ngu.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../auth_controller.dart';
@@ -470,7 +472,7 @@ class _GateWaiting extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text(
+                              const ChuGame(
                                 'GOLD RUSH',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -492,7 +494,7 @@ class _GateWaiting extends StatelessWidget {
                               const SizedBox(height: 18),
                               Semantics(
                                 liveRegion: true,
-                                child: Text(
+                                child: ChuGame(
                                   message,
                                   key: const ValueKey('auth-gate-status'),
                                   textAlign: TextAlign.center,
@@ -505,7 +507,7 @@ class _GateWaiting extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Text(
+                              ChuGame(
                                 detail,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
@@ -519,7 +521,7 @@ class _GateWaiting extends StatelessWidget {
                                 OutlinedButton.icon(
                                   onPressed: onRetry,
                                   icon: const Icon(Icons.refresh_rounded),
-                                  label: const Text('THỬ LẠI'),
+                                  label: const ChuGame('THỬ LẠI'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: gold,
                                     minimumSize: const Size.fromHeight(48),
@@ -527,7 +529,7 @@ class _GateWaiting extends StatelessWidget {
                                   ),
                                 )
                               else if (reduced)
-                                const Text(
+                                const ChuGame(
                                   'Vui lòng chờ…',
                                   style: TextStyle(color: gold, fontSize: 12),
                                 )

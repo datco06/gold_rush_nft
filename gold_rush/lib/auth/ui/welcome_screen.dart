@@ -261,7 +261,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 builder: (context, _) => _panel(narrow),
                               ),
                               const SizedBox(height: 22),
-                              const Text(
+                              const ChuGame(
                                 'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -345,7 +345,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         const Positioned(
           left: 88,
           bottom: 28,
-          child: Text(
+          child: ChuGame(
             'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN\n'
             'v1.3.0 · Gold Rush · Hành trình số',
             style: TextStyle(
@@ -391,7 +391,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             children: [
               const _AdventurerCrest(),
               const SizedBox(height: 18),
-              Text(
+              ChuGame(
                 'CHÀO MỪNG\nNHÀ THÁM HIỂM!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -403,7 +403,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 ),
               ),
               const SizedBox(height: 14),
-              const Text(
+              const ChuGame(
                 'Khám phá thế giới Gold Rush, thu thập kho báu '
                 'và bắt đầu hành trình của bạn.',
                 textAlign: TextAlign.center,
@@ -414,7 +414,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
+              const ChuGame(
                 'Đăng nhập an toàn bằng ví MetaMask để lưu tài khoản phiêu lưu.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -441,7 +441,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       size: 20,
                     ),
                     const SizedBox(height: 7),
-                    Text(
+                    ChuGame(
                       _statusMessage(controller),
                       key: const ValueKey('welcome-auth-status'),
                       textAlign: TextAlign.center,
@@ -456,7 +456,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ),
                     if (controller.walletAddress case final String address) ...[
                       const SizedBox(height: 7),
-                      Text(
+                      ChuGame(
                         _shortWallet(address),
                         style: const TextStyle(
                           color: _Palette.muted,
@@ -479,7 +479,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       color: const Color(0x663F1919),
                       border: Border.all(color: const Color(0xFFBB7963)),
                     ),
-                    child: Text(
+                    child: ChuGame(
                       error,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -583,7 +583,7 @@ class _GameTitle extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      const Text(
+      const ChuGame(
         'LỜI MỜI TỪ VÙNG ĐẤT VÀNG',
         textAlign: TextAlign.left,
         style: const TextStyle(
@@ -600,7 +600,7 @@ class _GameTitle extends StatelessWidget {
         excludeSemantics: true,
         child: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(
+          child: ChuGame(
             'GOLD RUSH',
             style: TextStyle(
               fontSize: narrow ? 55 : 76,
@@ -618,7 +618,7 @@ class _GameTitle extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 7),
-      Text(
+      ChuGame(
         'AI ADVENTURE & BLOCKCHAIN',
         textAlign: align,
         style: TextStyle(
@@ -644,7 +644,7 @@ class _HeroCopy extends StatelessWidget {
       const SizedBox(height: 24),
       const SizedBox(
         width: 470,
-        child: Text(
+        child: ChuGame(
           'Một thế giới mỏ vàng pixel, nơi mỗi chuyến đào là một ván chơi '
           'và mỗi nhân vật là một câu chuyện do AI vẽ nên.',
           style: TextStyle(
@@ -705,7 +705,7 @@ class _Feature extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 7),
-        Text(
+        ChuGame(
           title,
           style: const TextStyle(
             color: _Palette.parchment,
@@ -714,7 +714,7 @@ class _Feature extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 3),
-        Text(
+        ChuGame(
           desc,
           style: const TextStyle(
             color: _Palette.mist,
@@ -749,7 +749,7 @@ class _BrandBar extends StatelessWidget {
         ),
       ),
       const SizedBox(width: 10),
-      const Text(
+      const ChuGame(
         'GOLD RUSH',
         style: TextStyle(
           color: _Palette.parchment,
@@ -781,7 +781,7 @@ class _NetworkBar extends StatelessWidget {
           children: [
             Icon(Icons.circle, size: 5, color: Color(0xFF3FD9A4)),
             SizedBox(width: 6),
-            Text(
+            ChuGame(
               'TESTNET · SIWE',
               style: TextStyle(
                 color: Color(0xFF9BB0C0),
@@ -980,7 +980,7 @@ class _QuestButton extends StatelessWidget {
           Icon(busy ? Icons.hourglass_top_rounded : icon, size: 22),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
+          child: ChuGame(
             label,
             textAlign: TextAlign.center,
             style: const TextStyle(
@@ -1004,7 +1004,7 @@ class _SecurityNote extends StatelessWidget {
     children: [
       Icon(Icons.shield_outlined, color: _Palette.muted, size: 17),
       SizedBox(height: 7),
-      Text(
+      ChuGame(
         'Ký thông điệp miễn phí – không mất phí gas.\n'
         'Không yêu cầu mật khẩu hoặc khóa bí mật.',
         textAlign: TextAlign.center,

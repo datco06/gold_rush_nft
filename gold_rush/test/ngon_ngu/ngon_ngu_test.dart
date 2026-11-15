@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
+import 'package:gold_rush/main.dart';
 
 void main() {
   test('defaults to Vietnamese and restores only supported languages', () async {
@@ -83,6 +84,18 @@ void main() {
     expect(find.text('Kho đồ'), findsOneWidget);
     expect(saved.last, 'vi');
   });
+
+  testWidgets('welcome switches language without entering gameplay', (tester) async {
+    await NgonNgu.chung.doi('vi');
+    await tester.pumpWidget(const UngDungGoldRush());
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('English'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('WELCOME,\nADVENTURER!'), findsOneWidget);
+    expect(find.byType(ManHinhGame), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await NgonNgu.chung.doi('vi');
+  });
 }
 
 class _Probe extends StatefulWidget {
@@ -102,3 +115,4 @@ class _ProbeState extends State<_Probe> {
   @override
   Widget build(BuildContext context) => const ChuGame('Kho đồ');
 }
+

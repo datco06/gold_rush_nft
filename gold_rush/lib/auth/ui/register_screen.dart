@@ -8,6 +8,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../ngon_ngu/ngon_ngu.dart';
+
 import '../../cau_hinh.dart';
 import '../auth_controller.dart';
 import 'welcome_screen.dart' show WelcomeCallback;
@@ -352,7 +354,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text(
+                              const ChuGame(
                                 'GOLD RUSH',
                                 style: TextStyle(
                                   color: _RegisterColors.gold,
@@ -368,7 +370,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              const Text(
+                              const ChuGame(
                                 'MỘT CÁI TÊN · MỘT HÀNH TRÌNH',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -393,7 +395,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       const SizedBox(height: 18),
                                       Semantics(
                                         header: true,
-                                        child: Text(
+                                        child: ChuGame(
                                           success
                                               ? 'HỒ SƠ ĐÃ ĐƯỢC TẠO!'
                                               : valid
@@ -412,7 +414,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       ),
                                       const SizedBox(height: 12),
                                       if (showForm) ...[
-                                        const Text(
+                                        const ChuGame(
                                           'Ví MetaMask của bạn đã được xác minh!',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
@@ -422,7 +424,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 7),
-                                        const Text(
+                                        const ChuGame(
                                           'Hãy chọn tên nhân vật để bắt đầu hành trình săn vàng.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
@@ -458,8 +460,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           ),
                                           cursorColor: _RegisterColors.gold,
                                           decoration: InputDecoration(
-                                            labelText: 'TÊN NHÀ THÁM HIỂM',
-                                            hintText: 'Nhập tên nhà thám hiểm',
+                                            labelText: PhamViNgonNgu.of(context).dich('TÊN NHÀ THÁM HIỂM'),
+                                            hintText: PhamViNgonNgu.of(context).dich('Nhập tên nhà thám hiểm'),
                                             floatingLabelBehavior:
                                                 FloatingLabelBehavior.always,
                                             labelStyle: const TextStyle(
@@ -520,7 +522,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                     width: 2,
                                                   ),
                                                 ),
-                                            errorText: fieldError,
+                                            errorText: fieldError == null ? null : PhamViNgonNgu.of(context).dich(fieldError),
                                             errorMaxLines: 4,
                                             errorStyle: const TextStyle(
                                               color: Color(0xFFFFC9B8),
@@ -530,7 +532,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 8),
-                                        Text(
+                                        ChuGame(
                                           _composing
                                               ? 'Đang ghép dấu tiếng Việt…'
                                               : '3–20 ký tự sau chuẩn hóa; máy chủ xác nhận.',
@@ -545,7 +547,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 10),
-                                        const Text(
+                                        const ChuGame(
                                           '3–20 ký tự; dùng chữ có dấu, chữ số, khoảng trắng, _ hoặc -. '
                                           'Tên được chuẩn hóa khi tạo hồ sơ; máy chủ kiểm tra tên trùng.',
                                           style: TextStyle(
@@ -559,7 +561,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           address: controller.walletAddress!,
                                         ),
                                       ] else if (valid) ...[
-                                        Text(
+                                        ChuGame(
                                           controller.user!.username,
                                           textAlign: TextAlign.center,
                                           style: const TextStyle(
@@ -570,7 +572,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 12),
-                                        const Text(
+                                        const ChuGame(
                                           'Hồ sơ đã được máy chủ xác nhận. Hành trình săn vàng đang chờ bạn.',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
@@ -635,7 +637,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         const SizedBox(height: 12),
                                         Semantics(
                                           liveRegion: true,
-                                          child: const Text(
+                                          child: const ChuGame(
                                             'Đang tạo hồ sơ nhà thám hiểm...',
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
@@ -659,7 +661,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             Icons.arrow_back_rounded,
                                             size: 18,
                                           ),
-                                          label: Text(
+                                          label: ChuGame(
                                             showForm || valid
                                                 ? 'QUAY LẠI'
                                                 : 'QUAY LẠI XÁC MINH',
@@ -682,7 +684,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         ),
                                       ],
                                       const SizedBox(height: 19),
-                                      const Text(
+                                      const ChuGame(
                                         'Chỉ chọn tên nhân vật. Không cần mật khẩu hoặc khóa bí mật.',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
@@ -871,7 +873,7 @@ class _VerifiedWallet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              const ChuGame(
                 'VÍ ĐÃ XÁC MINH',
                 style: TextStyle(
                   color: _RegisterColors.muted,
@@ -881,7 +883,7 @@ class _VerifiedWallet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              Text(
+              ChuGame(
                 address.length > 14
                     ? '${address.substring(0, 6)}…${address.substring(address.length - 4)}'
                     : address,
@@ -923,7 +925,7 @@ class _RegistrationNotice extends StatelessWidget {
             size: 20,
           ),
           const SizedBox(height: 8),
-          Text(
+          ChuGame(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -998,7 +1000,7 @@ class _RegisterButton extends StatelessWidget {
           ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
+          child: ChuGame(
             label,
             textAlign: TextAlign.center,
             style: const TextStyle(
