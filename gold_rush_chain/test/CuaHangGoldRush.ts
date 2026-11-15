@@ -22,6 +22,17 @@ const KIEU = {
   ],
 } as const;
 
+const KIEU_RUONG = {
+  PhieuMoRuong: [
+    { name: "nguoiChoi", type: "address" },
+    { name: "loai", type: "uint256" },
+    { name: "giaTri", type: "uint256" },
+    { name: "soLuong", type: "uint256" },
+    { name: "maRuong", type: "bytes32" },
+    { name: "hanChot", type: "uint256" },
+  ],
+} as const;
+
 /** Lỗi có tên `ten` (custom error) — viem đưa tên lỗi vào thông điệp. */
 const loi = (ten: string) => (e: unknown) => String(e).includes(ten);
 
@@ -247,6 +258,52 @@ describe("Không chuyển nhượng", () => {
     );
     // setApprovalForAll là `pure` trong ABI → viem xếp nó vào `read`.
     await assert.rejects(so.read.setApprovalForAll([keGian.account.address, true], nc), loi("KhongChuyenNhuong"));
+  });
+});
+
+describe("Mở rương — burn 100 vàng và nhận thưởng atomically", () => {
+  async function voucher(ctx: Awaited<ReturnType<typeof dung>>, loai: bigint, giaTri: bigint) {
+    const { pc, trongTai, nguoiChoi, so } = ctx;
+    const bayGio = (await pc.getBlock()).timestamp;
+    const p = {
+      nguoiChoi: nguoiChoi.account.address,
+      loai,
+      giaTri,
+      soLuong: loai === 0n ? 0n : 1n,
+      maRuong: keccak256(toHex(`ruong-${Date.now()}-${Math.random()}`)),
+      hanChot: bayGio + 900n,
+    };
+    const chuKy = await trongTai.signTypedData({
+      account: trongTai.account,
+      domain: { name: "GoldRush", version: "2", chainId: await pc.getChainId(), verifyingContract: so.address },
+      types: KIEU_RUONG,
+      primaryType: "PhieuMoRuong",
+      message: p,
+    });
+    return { p, chuKy };
+  }
+
+  it("trừ đúng 100 vàng và mint vàng thưởng, chống replay", async () => {
+    const so = await dung();
+    await so.choVang(100n);
+    const phieu = await voucher(so, 0n, 150n);
+    await so.so.write.moRuong([phieu.p, phieu.chuKy], so.nc);
+    assert.equal(await so.vang(), 150n);
+    assert.equal(await so.so.read.ruongDaMo([phieu.p.maRuong]), true);
+    await assert.rejects(so.so.write.moRuong([phieu.p, phieu.chuKy], so.nc), loi("RuongDaMo"));
+  });
+
+  it("mint NFT vật phẩm hiếm sau khi burn, không thu thêm tiền", async () => {
+    const so = await dung();
+    const nft = await so.viem.deployContract("VatPhamGoldRush", [so.chu.account.address, so.trongTai.account.address]);
+    await nft.write.registerItem([7n, "uri://item-7", 100n], { account: so.chu.account });
+    await so.so.write.datHopDongVatPham([nft.address], { account: so.chu.account });
+    await nft.write.setStore([so.so.address], { account: so.chu.account });
+    await so.choVang(100n);
+    const phieu = await voucher(so, 1n, 7n);
+    await so.so.write.moRuong([phieu.p, phieu.chuKy], so.nc);
+    assert.equal(await so.vang(), 0n);
+    assert.equal(await nft.read.balanceOf([so.nguoiChoi.account.address, 7n]), 1n);
   });
 });
 

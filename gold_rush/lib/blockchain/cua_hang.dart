@@ -245,4 +245,67 @@ class CuaHangChuoi {
       baoTienDo: baoTienDo,
     );
   }
+
+  /// Burn 100 vàng và mint phần thưởng rương trong cùng một giao dịch.
+  Future<KetQuaGui> moRuong({
+    required String diaChi,
+    required PhieuMoRuong phieu,
+    BaoTienDo? baoTienDo,
+  }) async {
+    if (phieu.nguoiChoi.toLowerCase() != diaChi.toLowerCase()) {
+      throw const LoiVi('Phiếu mở rương không dành cho ví hiện tại.');
+    }
+    if (phieu.loai == 0 && (phieu.giaTri <= 0 || phieu.soLuong != 0)) {
+      throw const LoiVi('Phiếu phần thưởng vàng không hợp lệ.');
+    }
+    if (phieu.loai == 1 && (phieu.giaTri <= 0 || phieu.soLuong <= 0)) {
+      throw const LoiVi('Phiếu vật phẩm rương không hợp lệ.');
+    }
+
+    await bo.damBaoMang();
+    await bo.kiemHopDong();
+    if (phieu.loai == 1) {
+      final nft = hopDongVatPham;
+      if (nft == null || nft.isEmpty) {
+        throw const LoiVi('Chưa cấu hình hợp đồng NFT vật phẩm.');
+      }
+      final code = await vi.maHopDong(nft);
+      if (code == '0x' || code.isEmpty || RegExp(r'^0x0*$').hasMatch(code)) {
+        throw const LoiVi(
+          'Không thấy hợp đồng NFT vật phẩm trên mạng hiện tại.',
+        );
+      }
+    }
+
+    final vangTruoc = await soVang(diaChi);
+    if (vangTruoc < BigInt.from(100)) {
+      throw LoiVi('Chưa đủ vàng để mở rương: cần 100, có $vangTruoc.');
+    }
+    final nftTruoc = phieu.loai == 1
+        ? await soLuongVatPham(diaChi, phieu.giaTri)
+        : BigInt.zero;
+    final duLieu = maHoaMoRuong(phieu);
+
+    Future<bool> daXong() async {
+      final vangSau = await soVang(diaChi);
+      if (phieu.laVang &&
+          vangSau < vangTruoc - BigInt.from(100) + BigInt.from(phieu.giaTri)) {
+        return false;
+      }
+      if (!phieu.laVang && vangSau < vangTruoc - BigInt.from(100)) return false;
+      if (phieu.loai == 1) {
+        return await soLuongVatPham(diaChi, phieu.giaTri) >=
+            nftTruoc + BigInt.from(phieu.soLuong);
+      }
+      return true;
+    }
+
+    return bo.gui(
+      tu: diaChi,
+      duLieu: duLieu,
+      moTa: 'mở rương — trừ 100 vàng',
+      daXong: daXong,
+      baoTienDo: baoTienDo,
+    );
+  }
 }

@@ -55,6 +55,7 @@ class LopPhu {
   static const cuaHang = 'cuaHang';
   static const chonMan = 'chonMan';
   static const khoDo = 'khoDo';
+  static const rungRuong = 'rungRuong';
   static const nutBan = 'nutBan';
 }
 
@@ -690,6 +691,7 @@ class GoldRushGame extends FlameGame
       LopPhu.huyHieu,
       LopPhu.cuaHang,
       LopPhu.chonMan,
+      LopPhu.rungRuong,
       LopPhu.nutBan,
     ]) {
       overlays.addEntry(ten, (_, _) => const SizedBox.shrink());
@@ -1468,6 +1470,7 @@ class GoldRushGame extends FlameGame
     overlays.remove(LopPhu.cuaHang);
     overlays.remove(LopPhu.chonMan);
     overlays.remove(LopPhu.khoDo);
+    overlays.remove(LopPhu.rungRuong);
     overlays.remove(LopPhu.nutBan);
   }
 
@@ -1566,12 +1569,25 @@ class GoldRushGame extends FlameGame
 
   void moCuaHang() => overlays.add(LopPhu.cuaHang);
 
+  void moRungRuong() {
+    // Đợi hết lượt xử lý pointer/layout hiện tại rồi mới đổi overlay, tránh
+    // assertion của Flutter khi vừa xóa overlay cũ vừa thêm overlay mới.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _anTatCaLopPhu();
+      if (!overlays.isActive(LopPhu.rungRuong)) {
+        overlays.add(LopPhu.rungRuong);
+      }
+    });
+  }
+
   void dongHuyHieu() {
     overlays.remove(LopPhu.huyHieu);
     overlays.add(LopPhu.ketThuc);
   }
 
   void dongCuaHang() => overlays.remove(LopPhu.cuaHang);
+
+  void dongRungRuong() => overlays.remove(LopPhu.rungRuong);
 
   void moChonMan() => overlays.add(LopPhu.chonMan);
 

@@ -326,9 +326,12 @@ class PhienVi extends ChangeNotifier {
     await ch.bo.damBaoMang(); // đọc sai mạng thì mọi con số đều về 0 — xin chuyển mạng trước
     await _xinCacPhieuCon(dc);
     final vangOnChain = await ch.soVang(dc);
-    if (vangOnChain > vang) {
+    // Số dư ERC-1155 trên hợp đồng là nguồn sự thật; không giữ lại số cache
+    // cũ khi ví đã bị trừ vàng hoặc vừa chuyển sang hợp đồng mới.
+    if (vangOnChain != vang) {
       vang = vangOnChain;
       await _luuVang();
+      notifyListeners();
     }
     ve = await ch.veCua(dc);
     for (final nv in bangNhanVat) {
@@ -437,6 +440,31 @@ class PhienVi extends ChangeNotifier {
       notifyListeners();
     }
   }, xong: 'Đã mua $ten ×$soLuong.');
+
+  Future<KetQuaMoRuong?> moRuong() => _lam<KetQuaMoRuong>(
+    'Đang chuẩn bị mở rương…',
+    () async {
+      if (!daKetNoi) {
+        throw const LoiVi('Cần kết nối MetaMask để mở rương.');
+      }
+      await _taiLaiNoi();
+      final vangThuc = await cuaHang!.soVang(diaChi!);
+      if (vangThuc < BigInt.from(100)) {
+        throw LoiVi('Số dư không đủ: cần 100 vàng, có $vangThuc.');
+      }
+      final kq = await mayChu.moRuong(vi: diaChi!);
+      await cuaHang!.moRuong(diaChi: diaChi!, phieu: kq.phieu, baoTienDo: _bao);
+      await _taiLaiNoi();
+      final vangSau = await cuaHang!.soVang(diaChi!);
+      if (vangSau != vang) {
+        vang = vangSau;
+        await _luuVang();
+        notifyListeners();
+      }
+      return kq;
+    },
+    xong: 'Mở rương thành công.',
+  );
 
   /// Chuẩn bị một màn có cọc: có vé dùng được thì dùng lại, không thì (nhận phiếu chờ +) mua vé
   /// trong MỘT giao dịch, rồi đăng ký bắt đầu với máy chủ. Trả về số vé và giờ THẬT ngay trước khi

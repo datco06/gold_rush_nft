@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Các mục điều hướng dùng chung trên TopBar Gold Rush.
-enum GoldRushTopBarItem { sanhCho, cuaHang, khoDo, xuongAi }
+enum GoldRushTopBarItem { sanhCho, cuaHang, rungRuong, khoDo, xuongAi }
 
 /// TopBar dùng chung cho các màn hình ngoài gameplay.
 ///
@@ -14,6 +14,7 @@ class GoldRushTopBar extends StatelessWidget {
     this.activeItem,
     this.onSanhCho,
     this.onCuaHang,
+    this.onRungRuong,
     this.onKhoDo,
     this.onXuongAi,
     this.gold = '0',
@@ -28,6 +29,7 @@ class GoldRushTopBar extends StatelessWidget {
   final GoldRushTopBarItem? activeItem;
   final VoidCallback? onSanhCho;
   final VoidCallback? onCuaHang;
+  final VoidCallback? onRungRuong;
   final VoidCallback? onKhoDo;
   final VoidCallback? onXuongAi;
   final String gold;
@@ -87,6 +89,7 @@ class GoldRushTopBar extends StatelessWidget {
               activeItem: activeItem,
               onSanhCho: onSanhCho,
               onCuaHang: onCuaHang,
+              onRungRuong: onRungRuong,
               onKhoDo: onKhoDo,
               onXuongAi: onXuongAi,
             ),
@@ -132,6 +135,7 @@ class GoldRushTopBar extends StatelessWidget {
             activeItem: activeItem,
             onSanhCho: onSanhCho,
             onCuaHang: onCuaHang,
+              onRungRuong: onRungRuong,
             onKhoDo: onKhoDo,
             onXuongAi: onXuongAi,
           ),
@@ -159,6 +163,7 @@ class GoldRushTopBar extends StatelessWidget {
             activeItem: activeItem,
             onSanhCho: onSanhCho,
             onCuaHang: onCuaHang,
+            onRungRuong: onRungRuong,
             onKhoDo: onKhoDo,
             onXuongAi: onXuongAi,
           ),
@@ -220,6 +225,7 @@ class _NavItems extends StatelessWidget {
     required this.activeItem,
     required this.onSanhCho,
     required this.onCuaHang,
+    required this.onRungRuong,
     required this.onKhoDo,
     required this.onXuongAi,
   });
@@ -227,6 +233,7 @@ class _NavItems extends StatelessWidget {
   final GoldRushTopBarItem? activeItem;
   final VoidCallback? onSanhCho;
   final VoidCallback? onCuaHang;
+  final VoidCallback? onRungRuong;
   final VoidCallback? onKhoDo;
   final VoidCallback? onXuongAi;
 
@@ -248,6 +255,13 @@ class _NavItems extends StatelessWidget {
           icon: Icons.storefront_outlined,
           activeItem: activeItem,
           onTap: onCuaHang,
+        ),
+        _NavItem(
+          item: GoldRushTopBarItem.rungRuong,
+          label: 'Rung rương',
+          icon: Icons.card_giftcard_outlined,
+          activeItem: activeItem,
+          onTap: onRungRuong,
         ),
         _NavItem(
           item: GoldRushTopBarItem.khoDo,

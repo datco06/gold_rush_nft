@@ -22,6 +22,22 @@ class CauHinhChuoi {
   });
 }
 
+class KetQuaMoRuong {
+  final PhieuMoRuong phieu;
+  final String loai;
+  final int giaTri;
+  final int soLuong;
+
+  const KetQuaMoRuong({
+    required this.phieu,
+    required this.loai,
+    required this.giaTri,
+    required this.soLuong,
+  });
+
+  bool get laVang => loai == 'vang';
+}
+
 /// Gọi máy chủ trọng tài `gold_rush_ai`: cấu hình, bắt đầu màn có cọc, xin phiếu, phiếu chờ nhận.
 ///
 /// Địa chỉ máy chủ dùng chung `--dart-define=GOLD_RUSH_API` với phần gửi nhật ký.
@@ -67,6 +83,33 @@ class MayChuPhieu {
         body: jsonEncode({'vat_pham': vatPham}),
       ),
       khi409: 'Không thể đồng bộ quyền sở hữu NFT lúc này.',
+    );
+  }
+
+  Future<KetQuaMoRuong> moRuong({required String vi}) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/rung-ruong/ket-qua'),
+        headers: _headers(),
+        body: jsonEncode({'vi': vi}),
+      ),
+      khi409: 'Rương này đã được xử lý.',
+    );
+    final p = j['phieu'] as Map<String, dynamic>;
+    final thuong = j['phan_thuong'] as Map<String, dynamic>;
+    return KetQuaMoRuong(
+      phieu: PhieuMoRuong(
+        nguoiChoi: p['nguoiChoi'] as String,
+        loai: p['loai'] as int,
+        giaTri: p['giaTri'] as int,
+        soLuong: p['soLuong'] as int,
+        maRuong: p['maRuong'] as String,
+        hanChot: p['hanChot'] as int,
+        chuKy: j['chu_ky'] as String,
+      ),
+      loai: thuong['loai'] as String,
+      giaTri: thuong['gia_tri'] as int,
+      soLuong: thuong['so_luong'] as int,
     );
   }
 

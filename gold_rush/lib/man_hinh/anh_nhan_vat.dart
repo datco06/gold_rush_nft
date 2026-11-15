@@ -22,6 +22,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
   final AuthController? authController;
   final TienTrinhController? tienTrinhController;
   final MayChuTienTrinh? mayChuTienTrinh;
+  final VoidCallback? onRungRuong;
   final bool tuDongLuuSauKhiTao;
 
   const ManHinhAnhNhanVat({
@@ -32,6 +33,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
     this.authController,
     this.tienTrinhController,
     this.mayChuTienTrinh,
+    this.onRungRuong,
     this.tuDongLuuSauKhiTao = false,
   });
 
@@ -709,6 +711,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     activeItem: GoldRushTopBarItem.xuongAi,
                     onSanhCho: () => Navigator.of(context).maybePop(),
                     onCuaHang: () => Navigator.of(context).maybePop(),
+                    onRungRuong: widget.onRungRuong,
                     onKhoDo: () => Navigator.of(context).maybePop(),
                     onClose: () => Navigator.of(context).maybePop(),
                     showClose: true,

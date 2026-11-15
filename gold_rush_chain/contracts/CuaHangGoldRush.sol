@@ -44,9 +44,26 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
         uint256 hanChot; // giây Unix; quá hạn thì phiếu vô hiệu
     }
 
+    /// Phiếu kết quả mở rương do Backend ký. `loai = 0` là vàng, `loai = 1` là vật phẩm.
+    /// Với vàng, `giaTri` là số vàng thưởng và `soLuong` phải bằng 0; với vật phẩm,
+    /// `giaTri` là tokenId và `soLuong` là số NFT được mint.
+    struct PhieuMoRuong {
+        address nguoiChoi;
+        uint256 loai;
+        uint256 giaTri;
+        uint256 soLuong;
+        bytes32 maRuong;
+        uint256 hanChot;
+    }
+
     bytes32 public constant PHIEU_TYPEHASH = keccak256(
         "PhieuVang(address nguoiChoi,uint256 man,uint256 ve,uint256 soVang,bytes32 maVan,uint256 hanChot)"
     );
+    bytes32 public constant PHIEU_MO_RUONG_TYPEHASH = keccak256(
+        "PhieuMoRuong(address nguoiChoi,uint256 loai,uint256 giaTri,uint256 soLuong,bytes32 maRuong,uint256 hanChot)"
+    );
+
+    uint256 public constant GIA_MO_RUONG = 100;
 
     struct ManChoi {
         uint256 coc; // vàng đốt khi vào màn; 0 = luyện tập
@@ -61,6 +78,7 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
 
     address public trongTai;
     mapping(bytes32 => bool) public daDoi;
+    mapping(bytes32 => bool) public ruongDaMo;
     mapping(uint256 => uint256) public gia;
     mapping(uint256 => uint256) public giaVatPham;
     mapping(uint256 => ManChoi) public manChoi;
@@ -82,6 +100,7 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
     event DoiHopDongVatPham(address indexed hopDong);
     event DoiMan(uint256 indexed man, uint256 coc, uint256 thuongToiDa);
     event DoiTrongTai(address trongTaiMoi);
+    event DaMoRuong(address indexed nguoiChoi, bytes32 indexed maRuong, uint256 loai, uint256 giaTri, uint256 soLuong);
 
     error KhongChuyenNhuong();
     error SaiNguoiNhan();
@@ -98,6 +117,8 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
     error VatPhamChuaCauHinh();
     error VatPhamKhongBan(uint256 vatPham);
     error SoLuongVatPhamKhongHopLe();
+    error PhieuRuongKhongHopLe();
+    error RuongDaMo();
 
     constructor(address trongTai_, string memory uri_)
         ERC1155(uri_)
@@ -166,6 +187,46 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
         if (hoanCoc != 0) delete ve[msg.sender];
         _mint(msg.sender, VANG, p.soVang + hoanCoc, "");
         emit DaNhanVang(msg.sender, p.maVan, p.man, p.soVang, hoanCoc);
+    }
+
+    /// @notice Đốt đúng 100 vàng và nhận kết quả rương do Backend ký trong cùng giao dịch.
+    /// @dev Flutter chỉ gửi phiếu; không tự chọn phần thưởng. Chữ ký gắn với ví, chain và hợp đồng.
+    function bamPhieuMoRuong(PhieuMoRuong calldata p) public view returns (bytes32) {
+        return _hashTypedDataV4(
+            keccak256(abi.encode(
+                    PHIEU_MO_RUONG_TYPEHASH,
+                    p.nguoiChoi,
+                    p.loai,
+                    p.giaTri,
+                    p.soLuong,
+                    p.maRuong,
+                    p.hanChot
+                ))
+        );
+    }
+
+    function moRuong(PhieuMoRuong calldata p, bytes calldata chuKy) external {
+        if (p.nguoiChoi != msg.sender) revert SaiNguoiNhan();
+        if (block.timestamp > p.hanChot) revert PhieuHetHan();
+        if (ruongDaMo[p.maRuong]) revert RuongDaMo();
+        if (ECDSA.recoverCalldata(bamPhieuMoRuong(p), chuKy) != trongTai) revert ChuKySai();
+
+        if (p.loai == 0) {
+            if (p.giaTri == 0 || p.soLuong != 0) revert PhieuRuongKhongHopLe();
+        } else if (p.loai == 1) {
+            if (vatPham == address(0) || p.giaTri == 0 || p.soLuong == 0) revert PhieuRuongKhongHopLe();
+        } else {
+            revert PhieuRuongKhongHopLe();
+        }
+
+        ruongDaMo[p.maRuong] = true;
+        _burn(msg.sender, VANG, GIA_MO_RUONG);
+        if (p.loai == 0) {
+            _mint(msg.sender, VANG, p.giaTri, "");
+        } else {
+            IVatPhamGoldRushStore(vatPham).mintFromStore(msg.sender, p.giaTri, p.soLuong);
+        }
+        emit DaMoRuong(msg.sender, p.maRuong, p.loai, p.giaTri, p.soLuong);
     }
 
     // ------------------------------------------------------------------

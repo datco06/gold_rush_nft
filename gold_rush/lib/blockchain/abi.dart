@@ -10,6 +10,29 @@
 /// ↔ viem (`gold_rush_chain/test`, cùng tệp mẫu `abi_mau.json`).
 library;
 
+/// Phiếu kết quả mở rương do Backend ký; Flutter chỉ hiển thị, không tự quay thưởng.
+class PhieuMoRuong {
+  final String nguoiChoi;
+  final int loai; // 0 = vàng, 1 = vật phẩm
+  final int giaTri; // vàng thưởng hoặc tokenId vật phẩm
+  final int soLuong;
+  final String maRuong;
+  final int hanChot;
+  final String chuKy;
+
+  const PhieuMoRuong({
+    required this.nguoiChoi,
+    required this.loai,
+    required this.giaTri,
+    required this.soLuong,
+    required this.maRuong,
+    required this.hanChot,
+    required this.chuKy,
+  });
+
+  bool get laVang => loai == 0;
+}
+
 /// nhanVang((address,uint256,uint256,uint256,bytes32,uint256),bytes)
 const String chonNhanVang = 'bde86a9e';
 
@@ -21,6 +44,9 @@ const String chonMua = '27654f7a';
 
 /// muaVatPham(uint256,uint256)
 const String chonMuaVatPham = '10a169cc';
+
+/// moRuong((address,uint256,uint256,uint256,bytes32,uint256),bytes)
+const String chonMoRuong = 'e2e6c04e';
 
 /// multicall(bytes[]) — OpenZeppelin Multicall
 const String chonMulticall = 'ac9650d8';
@@ -162,6 +188,12 @@ String maHoaMua(int nhanVat) => '0x$chonMua${_tuInt(nhanVat)}';
 
 String maHoaMuaVatPham(int vatPhamId, int soLuong) =>
     '0x$chonMuaVatPham${_tuInt(vatPhamId)}${_tuInt(soLuong)}';
+
+String maHoaMoRuong(PhieuMoRuong p) =>
+    '0x$chonMoRuong'
+    '${tuDiaChi(p.nguoiChoi)}${tu(BigInt.from(p.loai))}${tu(BigInt.from(p.giaTri))}${tu(BigInt.from(p.soLuong))}'
+    '${tuBytes32(p.maRuong)}${tu(BigInt.from(p.hanChot))}'
+    '${_tuInt(7 * 32)}${_duoiBytes(p.chuKy)}';
 
 String maHoaBalanceOf(String vi, int id) =>
     '0x$chonBalanceOf${tuDiaChi(vi)}${_tuInt(id)}';

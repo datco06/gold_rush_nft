@@ -54,7 +54,7 @@ from api.auth_adapter import tich_hop_auth_vao_app
 from config import (BAN_DO_DIR, CHAIN_ID, CORS_ORIGINS, ENABLED, HOP_DONG_CUA_HANG, HOP_DONG_VAT_PHAM, KB_DIR, MAN_CHOI,
                     MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU, SO_VE, TRONG_TAI_KHOA)
 from api.auth_guard import kiem_tra_csrf_va_origin, lay_nguoi_choi_hien_tai, NguoiChoiXacThuc
-from core import do_kho, man_choi, nhat_ky, sinh_ban_do, trong_tai
+from core import do_kho, man_choi, nhat_ky, rung_ruong, sinh_ban_do, trong_tai
 from core.csdl import khoi_tao_csdl, lay_csdl
 from core.eth_ky import dia_chi_tu_khoa
 from core.luoi import doc_tmx
@@ -520,6 +520,28 @@ def cau_hinh_vang():
 MA_VAN = r"^[A-Za-z0-9-]+$"
 DIA_CHI = r"^0x[0-9a-fA-F]{40}$"
 
+
+class YeuCauMoRuong(BaseModel):
+    vi: str | None = Field(default=None, min_length=42, max_length=42, pattern=DIA_CHI)
+
+
+@app.post("/api/rung-ruong/ket-qua")
+async def ket_qua_rung_ruong(
+    yc: YeuCauMoRuong,
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """Backend quay một lần và ký kết quả; giao dịch burn/mint do hợp đồng thực hiện."""
+    kiem_tra_csrf_va_origin(request, player)
+    vi_xac_thuc = player.wallet_address
+    if yc.vi and yc.vi.lower() != vi_xac_thuc.lower():
+        raise HTTPException(403, "Địa chỉ ví yêu cầu không khớp với phiên đăng nhập SIWE")
+    khoa = _khoa_trong_tai()
+    phan_thuong = rung_ruong.quay_phan_thuong()
+    phieu = rung_ruong.ky_phieu_mo_ruong(
+        vi_xac_thuc, phan_thuong, khoa, CHAIN_ID, HOP_DONG_CUA_HANG
+    )
+    return {"phan_thuong": phan_thuong, **phieu}
 
 class YeuCauBatDau(BaseModel):
     ma_van: str | None = Field(default=None, min_length=8, max_length=64, pattern=MA_VAN)

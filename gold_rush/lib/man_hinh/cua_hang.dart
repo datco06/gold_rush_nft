@@ -82,6 +82,10 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                             playerName: _game.auth?.user?.username ?? 'datco6',
                             onSanhCho: _game.dongCuaHang,
                             onCuaHang: null,
+                            onRungRuong: () {
+                              _game.dongCuaHang();
+                              _game.moRungRuong();
+                            },
                             onKhoDo: () {
                               _game.dongCuaHang();
                               _game.moKhoDo();

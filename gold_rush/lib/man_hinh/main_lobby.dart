@@ -174,6 +174,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
             authController: widget.game.auth,
             vi: widget.game.phienVi?.vi,
             tienTrinhController: widget.game.tienTrinh,
+            onRungRuong: widget.game.moRungRuong,
           ),
         ),
       );
@@ -245,6 +246,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                               playerName: g.auth?.user?.username ?? 'datco6',
                               onSanhCho: null,
                               onCuaHang: g.moCuaHang,
+                              onRungRuong: g.moRungRuong,
                               onKhoDo: g.moKhoDo,
                               onXuongAi: _openAiWorkshop,
                               onPlayerTap: _openProfileDialog,
