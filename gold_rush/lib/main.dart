@@ -23,6 +23,7 @@ import 'man_hinh/anh_nhan_vat.dart';
 import 'man_hinh/cua_hang.dart';
 import 'man_hinh/kho_do.dart';
 import 'man_hinh/rung_ruong.dart';
+import 'man_hinh/trung_tam_qua_tang.dart';
 import 'man_hinh/lop_phu.dart';
 import 'components/ui/gold_rush_top_bar.dart';
 
@@ -172,6 +173,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
             LopPhu.huyHieu: (_, game) => ManHinhHuyHieu(game: game),
             LopPhu.cuaHang: (_, game) => ManHinhCuaHang(game: game),
             LopPhu.rungRuong: (_, game) => ManHinhRungRuong(game: game),
+            LopPhu.quaTang: (_, game) => ManHinhTrungTamQuaTang(game: game),
             LopPhu.chonMan: (_, game) => ListenableBuilder(
               listenable: game.tienTrinhWorldMap,
               builder: (context, _) => ManHinhChonMan(
@@ -294,6 +296,10 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
         onRungRuong: () {
           game.dongKhoDo();
           game.moRungRuong();
+        },
+        onQuaTang: () {
+          game.dongKhoDo();
+          game.moQuaTang();
         },
         onKhoDo: game.moKhoDo,
         onXuongAi: () {

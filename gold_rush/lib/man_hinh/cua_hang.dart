@@ -86,6 +86,10 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                               _game.dongCuaHang();
                               _game.moRungRuong();
                             },
+                            onQuaTang: () {
+                              _game.dongCuaHang();
+                              _game.moQuaTang();
+                            },
                             onKhoDo: () {
                               _game.dongCuaHang();
                               _game.moKhoDo();

@@ -56,6 +56,7 @@ class LopPhu {
   static const chonMan = 'chonMan';
   static const khoDo = 'khoDo';
   static const rungRuong = 'rungRuong';
+  static const quaTang = 'quaTang';
   static const nutBan = 'nutBan';
 }
 
@@ -692,6 +693,7 @@ class GoldRushGame extends FlameGame
       LopPhu.cuaHang,
       LopPhu.chonMan,
       LopPhu.rungRuong,
+      LopPhu.quaTang,
       LopPhu.nutBan,
     ]) {
       overlays.addEntry(ten, (_, _) => const SizedBox.shrink());
@@ -1471,6 +1473,7 @@ class GoldRushGame extends FlameGame
     overlays.remove(LopPhu.chonMan);
     overlays.remove(LopPhu.khoDo);
     overlays.remove(LopPhu.rungRuong);
+    overlays.remove(LopPhu.quaTang);
     overlays.remove(LopPhu.nutBan);
   }
 
@@ -1580,6 +1583,8 @@ class GoldRushGame extends FlameGame
     });
   }
 
+  void moQuaTang() => overlays.add(LopPhu.quaTang);
+
   void dongHuyHieu() {
     overlays.remove(LopPhu.huyHieu);
     overlays.add(LopPhu.ketThuc);
@@ -1588,6 +1593,8 @@ class GoldRushGame extends FlameGame
   void dongCuaHang() => overlays.remove(LopPhu.cuaHang);
 
   void dongRungRuong() => overlays.remove(LopPhu.rungRuong);
+
+  void dongQuaTang() => overlays.remove(LopPhu.quaTang);
 
   void moChonMan() => overlays.add(LopPhu.chonMan);
 

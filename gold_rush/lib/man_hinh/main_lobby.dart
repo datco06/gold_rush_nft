@@ -247,6 +247,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                               onSanhCho: null,
                               onCuaHang: g.moCuaHang,
                               onRungRuong: g.moRungRuong,
+                              onQuaTang: g.moQuaTang,
                               onKhoDo: g.moKhoDo,
                               onXuongAi: _openAiWorkshop,
                               onPlayerTap: _openProfileDialog,

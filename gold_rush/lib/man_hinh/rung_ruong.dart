@@ -214,6 +214,10 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                           _game.moCuaHang();
                         },
                         onRungRuong: null,
+                        onQuaTang: () {
+                          _game.dongRungRuong();
+                          _game.moQuaTang();
+                        },
                         onKhoDo: () {
                           _game.dongRungRuong();
                           _game.moKhoDo();
