@@ -1,6 +1,22 @@
 /// UI text only. Protocol fields and signed messages are never translated.
 const banDichAnh = <String, String>{
   'Ngôn ngữ': 'Language',
+  'Hướng dẫn tân thủ': 'Beginner guide',
+  'Xem lại hướng dẫn': 'View tutorial again',
+  'Bước {0}/5': 'Step {0}/5',
+  'Bỏ qua': 'Skip',
+  'Tiếp theo': 'Next',
+  'Hoàn tất': 'Finish',
+  'Làm quen với sảnh': 'Explore the lobby',
+  'Từ sảnh, bấm BẮT ĐẦU để mở bản đồ. Hồ sơ hiển thị nhân vật; Kho đồ chứa vật phẩm; Cài đặt cho phép đổi ngôn ngữ và xem lại hướng dẫn.': 'From the lobby, select START to open the map. Profile shows your character; Inventory holds your items; Settings lets you change language and view this guide again.',
+  'Chọn màn chơi đầu tiên': 'Choose your first stage',
+  'Chọn màn 1 — Đồng cỏ để luyện tập miễn phí, không giới hạn thời gian. Bấm vào địa điểm trên bản đồ để xem mục tiêu và điều kiện vào màn. Hoàn thành màn để mở địa điểm kế tiếp.': 'Choose stage 1 — Meadow for free practice with no time limit. Select a location on the map to see its objectives and entry requirements. Complete stages to unlock the next location.',
+  'Điều khiển nhân vật': 'Control your character',
+  'Máy tính: WASD hoặc phím mũi tên để di chuyển; Space/J để tấn công; Shift/K để lướt; Q để đổi vũ khí. Trên màn hình cảm ứng, dùng cần điều khiển và các nút kỹ năng.': 'On a computer: use WASD or arrow keys to move, Space/J to attack, Shift/K to dash, and Q to switch weapons. On a touchscreen, use the joystick and skill buttons.',
+  'Mục tiêu ván chơi': 'Your objective',
+  'Thu thập đủ xu, sống sót và hạ Boss nếu màn có Boss. Theo dõi thanh máu, số xu còn lại và đồng hồ. Với màn có cọc, chết, hết giờ hoặc bỏ ván sẽ mất cọc; thời hạn máy chủ vẫn chạy khi tạm dừng.': 'Collect all required coins, survive, and defeat the Boss if the stage has one. Watch your health, remaining coins, and timer. In deposit stages, death, timeout, or leaving forfeits your deposit; the server deadline continues while paused.',
+  'Chuẩn bị cho hành trình': 'Prepare for your adventure',
+  'Mở Kho đồ để xem vật phẩm và chọn trang bị đang có. Đọc kỹ số vàng cọc và điều kiện thưởng trước khi xác nhận vào màn. Bạn có thể xem lại hướng dẫn trong Cài đặt bất cứ lúc nào.': 'Open Inventory to view items and equip what you own. Read the gold deposit and reward conditions before confirming entry to a stage. You can view this guide again in Settings at any time.',
   'ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...': 'CHECKING ADVENTURER PROFILE...',
   'Hành trình đang tạm dừng để đối chiếu phiên và ví.':
       'Your adventure is paused while we check your session and wallet.',

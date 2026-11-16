@@ -1,5 +1,21 @@
 /// Spanish UI text only. Protocol fields and signed messages are never translated.
 const banDichTayBanNha = <String, String>{
+  'Hướng dẫn tân thủ': 'Guía para principiantes',
+  'Xem lại hướng dẫn': 'Volver a ver la guía',
+  'Bước {0}/5': 'Paso {0}/5',
+  'Bỏ qua': 'Omitir',
+  'Tiếp theo': 'Siguiente',
+  'Hoàn tất': 'Finalizar',
+  'Làm quen với sảnh': 'Conoce la sala',
+  'Từ sảnh, bấm BẮT ĐẦU để mở bản đồ. Hồ sơ hiển thị nhân vật; Kho đồ chứa vật phẩm; Cài đặt cho phép đổi ngôn ngữ và xem lại hướng dẫn.': 'Desde la sala, selecciona COMENZAR para abrir el mapa. El Perfil muestra tu personaje; el Inventario contiene tus objetos; la Configuración permite cambiar de idioma y volver a ver esta guía.',
+  'Chọn màn chơi đầu tiên': 'Elige tu primer nivel',
+  'Chọn màn 1 — Đồng cỏ để luyện tập miễn phí, không giới hạn thời gian. Bấm vào địa điểm trên bản đồ để xem mục tiêu và điều kiện vào màn. Hoàn thành màn để mở địa điểm kế tiếp.': 'Elige el nivel 1 — Pradera para practicar gratis y sin límite de tiempo. Selecciona un lugar en el mapa para ver sus objetivos y requisitos de entrada. Completa los niveles para desbloquear el siguiente lugar.',
+  'Điều khiển nhân vật': 'Controla tu personaje',
+  'Máy tính: WASD hoặc phím mũi tên để di chuyển; Space/J để tấn công; Shift/K để lướt; Q để đổi vũ khí. Trên màn hình cảm ứng, dùng cần điều khiển và các nút kỹ năng.': 'En ordenador: usa WASD o las flechas para moverte, Espacio/J para atacar, Mayús/K para impulsarte y Q para cambiar de arma. En pantalla táctil, utiliza el joystick y los botones de habilidades.',
+  'Mục tiêu ván chơi': 'Tu objetivo',
+  'Thu thập đủ xu, sống sót và hạ Boss nếu màn có Boss. Theo dõi thanh máu, số xu còn lại và đồng hồ. Với màn có cọc, chết, hết giờ hoặc bỏ ván sẽ mất cọc; thời hạn máy chủ vẫn chạy khi tạm dừng.': 'Recoge todas las monedas necesarias, sobrevive y derrota al jefe si el nivel tiene uno. Vigila la salud, las monedas restantes y el tiempo. En los niveles con depósito, morir, agotar el tiempo o abandonar supone perder el depósito; el plazo del servidor sigue corriendo durante las pausas.',
+  'Chuẩn bị cho hành trình': 'Prepara tu aventura',
+  'Mở Kho đồ để xem vật phẩm và chọn trang bị đang có. Đọc kỹ số vàng cọc và điều kiện thưởng trước khi xác nhận vào màn. Bạn có thể xem lại hướng dẫn trong Cài đặt bất cứ lúc nào.': 'Abre el Inventario para ver tus objetos y equiparte. Lee la cantidad de oro del depósito y las condiciones de recompensa antes de confirmar la entrada a un nivel. Puedes volver a ver esta guía en Configuración en cualquier momento.',
   'ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...':
       'COMPROBANDO EL PERFIL DEL AVENTURERO...',
   'Hành trình đang tạm dừng để đối chiếu phiên và ví.':

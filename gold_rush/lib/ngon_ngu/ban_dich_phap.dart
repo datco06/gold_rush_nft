@@ -1,5 +1,21 @@
 /// UI text only. Protocol fields and signed messages are never translated.
 const banDichPhap = <String, String>{
+  'Hướng dẫn tân thủ': 'Guide du débutant',
+  'Xem lại hướng dẫn': 'Revoir le guide',
+  'Bước {0}/5': 'Étape {0}/5',
+  'Bỏ qua': 'Passer',
+  'Tiếp theo': 'Suivant',
+  'Hoàn tất': 'Terminer',
+  'Làm quen với sảnh': 'Découvrir le salon',
+  'Từ sảnh, bấm BẮT ĐẦU để mở bản đồ. Hồ sơ hiển thị nhân vật; Kho đồ chứa vật phẩm; Cài đặt cho phép đổi ngôn ngữ và xem lại hướng dẫn.': 'Depuis le salon, sélectionnez COMMENCER pour ouvrir la carte. Le Profil présente votre personnage ; l’Inventaire contient vos objets ; les Paramètres permettent de changer de langue et de revoir ce guide.',
+  'Chọn màn chơi đầu tiên': 'Choisir votre premier niveau',
+  'Chọn màn 1 — Đồng cỏ để luyện tập miễn phí, không giới hạn thời gian. Bấm vào địa điểm trên bản đồ để xem mục tiêu và điều kiện vào màn. Hoàn thành màn để mở địa điểm kế tiếp.': 'Choisissez le niveau 1 — Prairie pour vous entraîner gratuitement, sans limite de temps. Sélectionnez un lieu sur la carte pour consulter ses objectifs et ses conditions d’accès. Terminez les niveaux pour débloquer le lieu suivant.',
+  'Điều khiển nhân vật': 'Contrôler votre personnage',
+  'Máy tính: WASD hoặc phím mũi tên để di chuyển; Space/J để tấn công; Shift/K để lướt; Q để đổi vũ khí. Trên màn hình cảm ứng, dùng cần điều khiển và các nút kỹ năng.': 'Sur ordinateur : WASD ou les flèches pour se déplacer, Espace/J pour attaquer, Maj/K pour sprinter et Q pour changer d’arme. Sur écran tactile, utilisez le joystick et les boutons de compétences.',
+  'Mục tiêu ván chơi': 'Votre objectif',
+  'Thu thập đủ xu, sống sót và hạ Boss nếu màn có Boss. Theo dõi thanh máu, số xu còn lại và đồng hồ. Với màn có cọc, chết, hết giờ hoặc bỏ ván sẽ mất cọc; thời hạn máy chủ vẫn chạy khi tạm dừng.': 'Ramassez toutes les pièces requises, survivez et battez le Boss si le niveau en comporte un. Surveillez votre vie, les pièces restantes et le chronomètre. Dans les niveaux avec mise, mourir, dépasser le temps ou quitter fait perdre la mise ; le délai du serveur continue pendant les pauses.',
+  'Chuẩn bị cho hành trình': 'Préparer votre aventure',
+  'Mở Kho đồ để xem vật phẩm và chọn trang bị đang có. Đọc kỹ số vàng cọc và điều kiện thưởng trước khi xác nhận vào màn. Bạn có thể xem lại hướng dẫn trong Cài đặt bất cứ lúc nào.': 'Ouvrez l’Inventaire pour consulter vos objets et vous équiper. Lisez le montant de la mise en or et les conditions de récompense avant de confirmer l’entrée dans un niveau. Ce guide reste accessible à tout moment dans les Paramètres.',
   'ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...':
       'VÉRIFICATION DU PROFIL D’AVENTURIER...',
   'Hành trình đang tạm dừng để đối chiếu phiên và ví.': 'Votre aventure est en pause pendant la vérification de votre session et de votre portefeuille.',
