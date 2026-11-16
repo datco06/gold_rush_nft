@@ -11,6 +11,7 @@ import '../ai/nhan_vat_ai_models.dart';
 import '../ai/tien_trinh_controller.dart';
 import '../auth/auth_controller.dart';
 import '../blockchain/abi_dang_ky_nhan_vat.dart';
+import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
 import '../cau_hinh.dart';
 import '../components/ui/gold_rush_top_bar.dart';
@@ -18,6 +19,7 @@ import '../components/ui/gold_rush_top_bar.dart';
 class ManHinhAnhNhanVat extends StatefulWidget {
   final MayChuNhanVat mayChu;
   final Vi? vi;
+  final PhienVi? phienVi;
   final bool kiemTraPhienTuDong;
   final AuthController? authController;
   final TienTrinhController? tienTrinhController;
@@ -35,6 +37,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
     super.key,
     required this.mayChu,
     this.vi,
+    this.phienVi,
     this.kiemTraPhienTuDong = false,
     this.authController,
     this.tienTrinhController,
@@ -792,28 +795,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     mobile ? 8 : 14,
                     mobile ? 4 : 6,
                   ),
-                  child: GoldRushTopBar(
-                    activeItem: GoldRushTopBarItem.xuongAi,
-                    onSanhCho:
-                        widget.onSanhCho ??
-                        () => Navigator.of(context).maybePop(),
-                    onCuaHang:
-                        widget.onCuaHang ??
-                        () => Navigator.of(context).maybePop(),
-                    onRungRuong:
-                        widget.onRungRuong ??
-                        () => Navigator.of(context).maybePop(),
-                    onQuaTang:
-                        widget.onQuaTang ??
-                        () => Navigator.of(context).maybePop(),
-                    onKhoDo:
-                        widget.onKhoDo ??
-                        () => Navigator.of(context).maybePop(),
-                    onClose: () => Navigator.of(context).maybePop(),
-                    onPlayerTap: widget.onPlayerTap,
-                    showClose: false,
-                    onSettings: widget.onSettings,
-                  ),
+                  child: _thanhTrenXuongAi(context),
                 );
               },
             ),
@@ -1012,6 +994,27 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
         ),
       ),
     );
+  }
+
+  Widget _thanhTrenXuongAi(BuildContext context) {
+    final pv = widget.phienVi;
+
+    Widget taoTopBar() => GoldRushTopBar(
+      activeItem: GoldRushTopBarItem.xuongAi,
+      gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
+      onSanhCho: widget.onSanhCho ?? () => Navigator.of(context).maybePop(),
+      onCuaHang: widget.onCuaHang ?? () => Navigator.of(context).maybePop(),
+      onRungRuong: widget.onRungRuong ?? () => Navigator.of(context).maybePop(),
+      onQuaTang: widget.onQuaTang ?? () => Navigator.of(context).maybePop(),
+      onKhoDo: widget.onKhoDo ?? () => Navigator.of(context).maybePop(),
+      onClose: () => Navigator.of(context).maybePop(),
+      onPlayerTap: widget.onPlayerTap,
+      showClose: false,
+      onSettings: widget.onSettings,
+    );
+
+    if (pv == null) return taoTopBar();
+    return ListenableBuilder(listenable: pv, builder: (_, _) => taoTopBar());
   }
 
   // Giữ helper xác thực để tương thích các luồng cũ; thanh TopBar hiện thay

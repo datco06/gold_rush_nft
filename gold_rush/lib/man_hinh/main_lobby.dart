@@ -174,6 +174,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
             mayChu: api,
             authController: widget.game.auth,
             vi: widget.game.phienVi?.vi,
+            phienVi: widget.game.phienVi,
             tienTrinhController: widget.game.tienTrinh,
             onPlayerTap: () {
               Navigator.of(aiContext).push(

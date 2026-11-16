@@ -46,6 +46,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
             mayChu: api,
             authController: game.auth,
             vi: game.phienVi?.vi,
+            phienVi: game.phienVi,
             tienTrinhController: game.tienTrinh,
             onPlayerTap: () {
               Navigator.of(aiContext).push(

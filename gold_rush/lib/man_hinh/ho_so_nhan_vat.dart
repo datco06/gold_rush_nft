@@ -192,6 +192,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                             mayChu: api,
                             authController: g.auth,
                             vi: g.phienVi?.vi,
+                            phienVi: g.phienVi,
                             tienTrinhController: g.tienTrinh,
                             onPlayerTap: () {
                               Navigator.of(context).push(
@@ -2106,6 +2107,7 @@ class _TabNhanVat extends StatelessWidget {
                       mayChu: api,
                       authController: game.auth,
                       vi: game.phienVi?.vi,
+                      phienVi: game.phienVi,
                       tienTrinhController: game.tienTrinh,
                       onPlayerTap: () {
                         Navigator.of(context).push(
@@ -2147,6 +2149,7 @@ class _TabNhanVat extends StatelessWidget {
                       mayChu: api,
                       authController: game.auth,
                       vi: game.phienVi?.vi,
+                      phienVi: game.phienVi,
                       tienTrinhController: game.tienTrinh,
                       onPlayerTap: () {
                         Navigator.of(context).push(

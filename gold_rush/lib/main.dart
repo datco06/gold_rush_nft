@@ -436,6 +436,7 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
             mayChu: api,
             authController: game.auth,
             vi: game.phienVi?.vi,
+            phienVi: game.phienVi,
             tienTrinhController: game.tienTrinh,
             onPlayerTap: () {
               Navigator.of(aiContext).push(

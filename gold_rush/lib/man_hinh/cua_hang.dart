@@ -48,6 +48,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
             mayChu: api,
             authController: _game.auth,
             vi: _game.phienVi?.vi,
+            phienVi: _game.phienVi,
             tienTrinhController: _game.tienTrinh,
             onPlayerTap: () {
               Navigator.of(aiContext).push(
