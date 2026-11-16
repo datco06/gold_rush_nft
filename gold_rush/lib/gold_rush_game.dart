@@ -180,6 +180,12 @@ class GoldRushGame extends FlameGame
   final DieuChinhDoKho doKho = DieuChinhDoKho();
   final NhatKyChoi nhatKy = NhatKyChoi();
 
+  /// AI thích ứng chỉ áp dụng cho màn luyện tập đầu tiên.
+  bool get _aiDoKhoDuocPhep => manHienTai.id == 1;
+
+  double _heSoTocDoKeDich() =>
+      (_aiDoKhoDuocPhep ? doKho.heSoTocDo : 1.0) * manHienTai.heSoKeDich;
+
   bool _vanDangDienRa = false;
 
   /// Ngoại hình dùng khi dựng ván tiếp theo.
@@ -964,8 +970,6 @@ class GoldRushGame extends FlameGame
 
     Vector2 viTriNguoiChoi() => george?.position ?? Vector2.zero();
 
-    double heSoTocDo() => doKho.heSoTocDo * manHienTai.heSoKeDich;
-
     for (final d in banDo.diemXuatHien) {
       switch (d.ten) {
         case 'coin':
@@ -980,7 +984,12 @@ class GoldRushGame extends FlameGame
         case 'khong_lo':
           _soQuaiBanDau++;
           _loaiQuaiGoc.add(d.ten);
-          _sinhQuai(d.ten, viTriNguoiChoi, heSoTocDo, viTri: d.viTri.clone());
+          _sinhQuai(
+            d.ten,
+            viTriNguoiChoi,
+            _heSoTocDoKeDich,
+            viTri: d.viTri.clone(),
+          );
           break;
       }
     }
@@ -1330,13 +1339,13 @@ class GoldRushGame extends FlameGame
 
     if (g != null) {
       Vector2 viTriNguoiChoi() => g.position;
-      double heSoTocDo() => doKho.heSoTocDo * manHienTai.heSoKeDich;
-      _capNhatSinhQuai(dt, viTriNguoiChoi, heSoTocDo);
+      _capNhatSinhQuai(dt, viTriNguoiChoi, _heSoTocDoKeDich);
       _kiemTraThang();
     }
 
     if (g != null && nhatKy.troiThoiGian(dt)) {
-      doKho.capNhat(nhatKy.chup(g.mau, CauHinh.mauToiDa));
+      final dacTrung = nhatKy.chup(g.mau, CauHinh.mauToiDa);
+      if (_aiDoKhoDuocPhep) doKho.capNhat(dacTrung);
     }
   }
 
@@ -1361,7 +1370,8 @@ class GoldRushGame extends FlameGame
       ketQua: ketQua,
       diem: g?.diem ?? 0,
       phienBanApp: phienBanApp,
-      doKhoThichUng: doKho.batThichUng && doKho.moHinh != null,
+      doKhoThichUng:
+          _aiDoKhoDuocPhep && doKho.batThichUng && doKho.moHinh != null,
       banDo: banDo.tep,
       man: manHienTai.id,
     );
