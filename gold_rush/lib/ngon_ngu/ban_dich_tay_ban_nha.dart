@@ -1,0 +1,977 @@
+/// Spanish UI text only. Protocol fields and signed messages are never translated.
+const banDichTayBanNha = <String, String>{
+  'ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...':
+      'COMPROBANDO EL PERFIL DEL AVENTURERO...',
+  'Hành trình đang tạm dừng để đối chiếu phiên và ví.':
+      'Tu aventura está en pausa mientras comprobamos tu sesión y tu cartera.',
+  'CHƯA THỂ KIỂM TRA HỒ SƠ': 'NO SE PUEDE COMPROBAR EL PERFIL',
+  'Hành trình đang khóa. Hãy kiểm tra kết nối và thử lại.':
+      'Tu aventura está bloqueada. Comprueba tu conexión e inténtalo de nuevo.',
+  'Đang đối chiếu phiên đăng nhập và ví MetaMask.':
+      'Comprobando tu sesión y tu cartera MetaMask.',
+  'ĐANG ĐĂNG XUẤT...': 'CERRANDO SESIÓN...',
+  'Hành trình đã khóa. Đang chờ máy chủ xác nhận.':
+      'Tu aventura está bloqueada. Esperando la confirmación del servidor.',
+  'THỬ LẠI': 'REINTENTAR',
+  'Vui lòng chờ…': 'Espera, por favor…',
+  'Hãy hoàn tất dấu tiếng Việt trước khi gửi tên.':
+      'Termina de escribir tu nombre antes de enviarlo.',
+  'Chưa thể hoàn tất thao tác. Hãy kiểm tra trạng thái phiên trước khi thử lại.': 'No se ha podido completar la operación. Comprueba tu sesión antes de reintentarlo.',
+  'Hồ sơ đã sẵn sàng nhưng chưa thể mở hành trình. Hãy thử tiếp tục lại.':
+      'Tu perfil está listo. Intenta continuar tu aventura de nuevo.',
+  'Chưa thể quay lại. Hãy thử lại.':
+      'No se puede volver atrás. Inténtalo de nuevo.',
+  'MỘT CÁI TÊN · MỘT HÀNH TRÌNH': 'UN NOMBRE · UNA AVENTURA',
+  'HỒ SƠ ĐÃ ĐƯỢC TẠO!': '¡PERFIL CREADO!',
+  'BẠN ĐÃ ĐĂNG NHẬP': 'HAS INICIADO SESIÓN',
+  'TẠO HỒ SƠ NHÀ THÁM HIỂM': 'CREAR PERFIL DE AVENTURERO',
+  'Ví MetaMask của bạn đã được xác minh!':
+      '¡Tu cartera MetaMask se ha verificado!',
+  'Hãy chọn tên nhân vật để bắt đầu hành trình săn vàng.':
+      'Elige un nombre de personaje para comenzar tu aventura en busca de oro.',
+  'TÊN NHÀ THÁM HIỂM': 'NOMBRE DEL AVENTURERO',
+  'Nhập tên nhà thám hiểm': 'Introduce tu nombre de aventurero',
+  'Đang ghép dấu tiếng Việt…': 'Componiendo texto…',
+  '3–20 ký tự sau chuẩn hóa; máy chủ xác nhận.':
+      '3–20 caracteres tras la normalización; el servidor lo valida.',
+  '3–20 ký tự; dùng chữ có dấu, chữ số, khoảng trắng, _ hoặc -. Tên được chuẩn hóa khi tạo hồ sơ; máy chủ kiểm tra tên trùng.': '3–20 caracteres: letras, números, espacios, _ o -. El servidor normaliza los nombres y comprueba que no estén repetidos.',
+  'Hồ sơ đã được máy chủ xác nhận. Hành trình săn vàng đang chờ bạn.':
+      'Tu perfil está confirmado. Tu aventura en busca de oro te espera.',
+  'Quyền tạo nhân vật đã hết hạn. Hãy quay lại để xác minh MetaMask.':
+      'El registro ha caducado. Vuelve para verificar MetaMask de nuevo.',
+  'Đang kiểm tra trạng thái xác thực. Vui lòng chờ.':
+      'Comprobando la autenticación. Espera, por favor.',
+  'Cần xác minh lại MetaMask trước khi tạo hồ sơ. Hãy quay lại màn hình chào mừng.': 'Verifica MetaMask de nuevo antes de crear tu perfil. Vuelve a la pantalla de bienvenida.',
+  'BẮT ĐẦU HÀNH TRÌNH': 'COMENZAR AVENTURA',
+  'TIẾP TỤC HÀNH TRÌNH': 'CONTINUAR AVENTURA',
+  'Đang tạo hồ sơ nhà thám hiểm...': 'Creando el perfil del aventurero...',
+  'QUAY LẠI': 'VOLVER',
+  'QUAY LẠI XÁC MINH': 'VOLVER A LA VERIFICACIÓN',
+  'Chỉ chọn tên nhân vật. Không cần mật khẩu hoặc khóa bí mật.': 'Elige un nombre de personaje. No se necesita contraseña ni clave secreta.',
+  'Tên nhập vào quá dài. Hãy dùng tối đa 256 ký tự trước chuẩn hóa.': 'El nombre es demasiado largo. Usa como máximo 256 caracteres antes de la normalización.',
+  'Tên không được chứa emoji, ký tự ẩn hoặc ký tự đặc biệt ngoài _ và -.': 'Los nombres no pueden contener emojis, caracteres ocultos ni símbolos distintos de _ y -.',
+  'Tên cần có ít nhất một chữ cái hoặc chữ số.':
+      'Los nombres deben contener al menos una letra o un número.',
+  'VÍ ĐÃ XÁC MINH': 'CARTERA VERIFICADA',
+  'Chưa thể hoàn tất thao tác. Hãy thử lại.':
+      'No se ha podido completar la operación. Inténtalo de nuevo.',
+  'THỬ ĐĂNG XUẤT LẠI': 'REINTENTAR EL CIERRE DE SESIÓN',
+  'TẠO NHÂN VẬT': 'CREAR PERSONAJE',
+  'BẮT ĐẦU PHIÊU LƯU': 'COMENZAR AVENTURA',
+  'KIỂM TRA LẠI PHIÊN': 'COMPROBAR LA SESIÓN DE NUEVO',
+  'THỬ KẾT NỐI LẠI': 'REINTENTAR CONEXIÓN',
+  'KẾT NỐI METAMASK': 'CONECTAR METAMASK',
+  'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN':
+      'TODA AVENTURA COMIENZA CON UN SOLO PASO',
+  'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN\nv1.3.0 · Gold Rush · Hành trình số': 'TODA AVENTURA COMIENZA CON UN SOLO PASO\nv1.3.0 · Gold Rush · Aventura digital',
+  'CHÀO MỪNG\nNHÀ THÁM HIỂM!': '¡BIENVENIDO,\nAVENTURERO!',
+  'Khám phá thế giới Gold Rush, thu thập kho báu và bắt đầu hành trình của bạn.':
+      'Explora Gold Rush, reúne tesoros y comienza tu aventura.',
+  'Đăng nhập an toàn bằng ví MetaMask để lưu tài khoản phiêu lưu.': 'Inicia sesión de forma segura con MetaMask para guardar tu cuenta de aventurero.',
+  'ĐANG KIỂM TRA PHIÊN': 'COMPROBANDO SESIÓN',
+  'ĐANG KẾT NỐI VÍ': 'CONECTANDO CARTERA',
+  'ĐANG CHUẨN BỊ XÁC THỰC': 'PREPARANDO EL INICIO DE SESIÓN',
+  'ĐANG CHỜ CHỮ KÝ': 'ESPERANDO FIRMA',
+  'ĐANG XÁC MINH': 'VERIFICANDO',
+  'ĐANG TẠO NHÂN VẬT': 'CREANDO PERSONAJE',
+  'ĐANG ĐĂNG XUẤT': 'CERRANDO SESIÓN',
+  'ĐANG XỬ LÝ': 'PROCESANDO',
+  'Chào mừng quay trở lại Gold Rush!':
+      '¡Te damos la bienvenida de nuevo a Gold Rush!',
+  'Kết nối MetaMask để bắt đầu.': 'Conecta MetaMask para comenzar.',
+  'Đang kiểm tra phiên đăng nhập...': 'Comprobando tu sesión...',
+  'Đang kết nối ví MetaMask...': 'Conectando con MetaMask...',
+  'Đang chuẩn bị xác thực...': 'Preparando el inicio de sesión...',
+  'Vui lòng xác nhận chữ ký trong MetaMask.': 'Confirma la firma en MetaMask.',
+  'Đang xác minh chữ ký...': 'Verificando la firma...',
+  'Ví của bạn đã được xác minh. Hãy tạo tên nhân vật.':
+      'Tu cartera está verificada. Elige un nombre de personaje.',
+  'Đang tạo nhân vật của bạn...': 'Creando tu personaje...',
+  'Phiên cần được kiểm tra lại trước khi bắt đầu.':
+      'Hay que comprobar tu sesión antes de comenzar.',
+  'Đang đăng xuất...': 'Cerrando sesión...',
+  'Hành trình đang khóa cho đến khi đối chiếu lại phiên.':
+      'Tu aventura está bloqueada hasta que se compruebe tu sesión.',
+  'Chưa thể kết nối hành trình. Bạn có thể thử lại.':
+      'No se puede conectar. Puedes intentarlo de nuevo.',
+  'LỜI MỜI TỪ VÙNG ĐẤT VÀNG': 'UNA LLAMADA DESDE LA TIERRA DEL ORO',
+  'Một thế giới mỏ vàng pixel, nơi mỗi chuyến đào là một ván chơi và mỗi nhân vật là một câu chuyện do AI vẽ nên.': 'Un mundo minero de píxeles donde cada excavación es una aventura y cada personaje cuenta una historia ilustrada por IA.',
+  '6 màn phiêu lưu': '6 niveles de aventura',
+  'Đào sâu qua từng tầng hang': 'Explora cada nivel de las cavernas',
+  'Nhân vật AI': 'Personajes de IA',
+  'Tạo và lưu nhân vật độc bản': 'Crea y guarda personajes únicos',
+  'Kho báu on-chain': 'Tesoros en la cadena de bloques',
+  'Tài sản gắn với ví của bạn': 'Activos vinculados a tu cartera',
+  'Ký thông điệp miễn phí – không mất phí gas.\nKhông yêu cầu mật khẩu hoặc khóa bí mật.': 'Firma un mensaje gratis, sin comisiones de gas.\nNo se necesita contraseña ni clave secreta.',
+  'CÀI ĐẶT': 'CONFIGURACIÓN',
+  'Nhạc nền': 'Música de fondo',
+  'Bản nhạc lặp 8 giây, sinh bằng mã nguồn':
+      'Un bucle de música generada de 8 segundos',
+  'Hiệu ứng âm thanh': 'Efectos de sonido',
+  'Tiếng nhặt xu, bước chân, kẻ địch nổ':
+      'Recogida de monedas, pasos y efectos de los enemigos',
+  'Độ khó thích ứng (AI)': 'Dificultad adaptativa (IA)',
+  'Chưa có mô hình trong assets/models/':
+      'No se ha encontrado ningún modelo en assets/models/',
+  'Kẻ địch nhanh/chậm trong khoảng 80–115% theo phong độ của bạn': 'La velocidad de los enemigos se adapta entre el 80–115% según tu rendimiento',
+  'Đăng xuất & Ngắt kết nối ví': 'Cerrar sesión y desconectar cartera',
+  'Quay lại': 'Volver',
+  '\nĐồng hồ trong game đã dừng, nhưng máy chủ tính giờ thật: {0}\nVề menu bây giờ là bỏ ván — MẤT {1} vàng cọc.': '\nEl reloj del juego está en pausa, pero el servidor usa el tiempo real: {0}\nVolver al menú abandona esta partida: PIERDES el depósito de {1} de oro.',
+  'ĐÃ QUÁ hạn nộp — ván này sẽ không được trả vàng.':
+      'El plazo de envío ha vencido: esta partida no otorgará oro.',
+  'còn {0} để chơi xong.': 'Quedan {0} para terminar.',
+  'TẠM DỪNG': 'EN PAUSA',
+  'Màn {0} · {1} · Điểm hiện tại: {2} · Xu hiện tại: {3} / {4}{5}':
+      'Nivel {0} · {1} · Puntuación: {2} · Monedas: {3} / {4}{5}',
+  'Chơi tiếp': 'Continuar',
+  'Cài đặt': 'Configuración',
+  'Về menu': 'Menú principal',
+  'Bỏ ván (mất cọc)': 'Abandonar partida (perder depósito)',
+  'George đã gom hết vàng và thoát ra an toàn.':
+      'George ha recogido todo el oro y ha escapado a salvo.',
+  'HOÀN THÀNH màn {0}! Nhận lại {1} cọc + {2} xu + {3} thưởng.': '¡NIVEL {0} COMPLETADO! Recibes {1} de depósito + {2} monedas + {3} de bonificación.',
+  'Hết giờ!': '¡Se acabó el tiempo!',
+  'George đã gục ngã giữa đường tìm vàng.':
+      'George ha caído durante su búsqueda de oro.',
+  '{0} Không hoàn thành màn {1} — mất {2} vàng cọc.': '{0} No has completado el nivel {1}: has perdido el depósito de {2} de oro.',
+  'THẮNG RỒI!': '¡VICTORIA!',
+  'HẾT GIỜ': 'TIEMPO AGOTADO',
+  'KẾT THÚC': 'FIN DE LA PARTIDA',
+  'Màn': 'Nivel',
+  'Điểm ván này': 'Puntuación de la partida',
+  'Xu đã nhặt': 'Monedas recogidas',
+  'Vàng': 'Oro',
+  '−{0} (cọc)': '−{0} (depósito)',
+  'Điểm cao nhất': 'Récord de puntuación',
+  'Tiến trình AI': 'Progreso de IA',
+  '{0}/6 màn{1}': '{0}/6 niveles{1}',
+  ' (Mở khóa AI)': ' (IA desbloqueada)',
+  'Chơi lại': 'Jugar de nuevo',
+  'Chọn màn': 'Elegir nivel',
+  'Nhận vàng · Cửa hàng': 'Reclamar oro · Tienda',
+  '✧ CHÚC MỪNG! ✧': '✧ ¡ENHORABUENA! ✧',
+  'Bạn đã nhận được huy hiệu mới!': '¡Has conseguido una nueva insignia!',
+  '✓ Đã ghi nhận huy hiệu SBT': '✓ Insignia SBT registrada',
+  'ĐÓNG': 'CERRAR',
+  'Ô {0} chưa được hỗ trợ trong phiên bản hiện tại.':
+      'La ranura {0} no está disponible en esta versión.',
+  'Nhấn ENTER để bắt đầu ván mới':
+      'Pulsa ENTER para comenzar una nueva partida',
+  'Cửa hàng nhân vật': 'Tienda de personajes',
+  'Cài đặt & Đăng xuất': 'Configuración y cierre de sesión',
+  'Mở Hồ sơ nhân vật': 'Abrir perfil del personaje',
+  'Mở Cửa hàng': 'Abrir tienda',
+  'Vũ khí chính': 'Arma principal',
+  'Giáp': 'Armadura',
+  'Vũ khí phụ': 'Arma secundaria',
+  'Phụ kiện 1': 'Accesorio 1',
+  'Phụ kiện 2': 'Accesorio 2',
+  'Đồng hành': 'Compañero',
+  'TRANG BỊ HIỆN TẠI': 'EQUIPAMIENTO ACTUAL',
+  '{0} (Trống — bấm để mở Kho đồ)':
+      '{0} (Vacío: haz clic para abrir el inventario)',
+  '{0} (Chưa hỗ trợ)': '{0} (No disponible)',
+  'Chưa hỗ trợ': 'No disponible',
+  'ĐANG MỞ...': 'ABRIENDO...',
+  'BẮT ĐẦU': 'COMENZAR',
+  '« Phiêu Lưu Ngay »': '« Comienza tu aventura »',
+  'Đóng': 'Cerrar',
+  'Mở Kho đồ': 'Abrir inventario',
+  'Sảnh chờ': 'Sala de espera',
+  'Cửa hàng': 'Tienda',
+  'Rung rương': 'Cofre del tesoro',
+  'Quà tặng': 'Regalos',
+  'KHO ĐỒ': 'INVENTARIO',
+  'Xưởng AI': 'Taller de IA',
+  'XƯỞNG AI': 'TALLER DE IA',
+  'Ví: {0}': 'Cartera: {0}',
+  '{0} vàng': '{0} oro',
+  'Không thể chọn nhân vật lúc này.':
+      'No se puede seleccionar un personaje en este momento.',
+  'Phiên ví đang xử lý thao tác khác.':
+      'La cartera está procesando otra operación.',
+  'Nhân vật không thuộc danh mục hiện tại.':
+      'Este personaje no está en el catálogo actual.',
+  'Chưa xác nhận quyền sở hữu nhân vật.':
+      'No se ha verificado la propiedad del personaje.',
+  'Nhà Thám Hiểm Vàng': 'Aventurero del oro',
+  'HỒ SƠ': 'PERFIL',
+  'Đóng Hồ sơ': 'Cerrar perfil',
+  'CÁ NHÂN': 'PERSONAL',
+  'HUY HIỆU': 'INSIGNIAS',
+  'VŨ KHÍ': 'ARMAS',
+  'NHÂN VẬT': 'PERSONAJES',
+  '{0} (Trống)': '{0} (Vacío)',
+  'THÔNG TIN NHÂN VẬT': 'DETALLES DEL PERSONAJE',
+  'Đã sao chép địa chỉ ví': 'Dirección de la cartera copiada',
+  'HUY HIỆU TRƯNG BÀY': 'INSIGNIAS EXHIBIDAS',
+  'Chưa có trang bị nào được sử dụng.': 'No hay ningún equipamiento en uso.',
+  'Đang trang bị: {0}': 'Equipado: {0}',
+  'Giày': 'Botas',
+  'Bạn chưa trưng bày huy hiệu nào.': 'Aún no has exhibido ninguna insignia.',
+  'Huy hiệu Thành tựu (SBT) — chưa kết nối API đồng bộ & chọn huy hiệu trưng bày': 'Insignias de logros (SBT): la API de sincronización y selección para exhibición aún no está conectada',
+  'Chưa có dữ liệu huy hiệu.\nKết nối ví và hoàn thành thành tựu để nhận huy hiệu SBT.': 'Aún no hay datos de insignias.\nConecta tu cartera y completa logros para conseguir insignias SBT.',
+  'Đang trưng bày': 'En exhibición',
+  'Đã mở khóa': 'Desbloqueado',
+  'Chưa mở khóa': 'Bloqueado',
+  'VŨ KHÍ & GIÁP': 'ARMAS Y ARMADURAS',
+  'Bạn chưa sở hữu vũ khí nào.': 'Aún no tienes armas.',
+  'Đang dùng': 'En uso',
+  'Tháo trang bị': 'Desequipar',
+  'Trang bị': 'Equipar',
+  'Nhân vật chỉ thay đổi ngoại hình, không ảnh hưởng sức mạnh.':
+      'Los personajes solo cambian la apariencia, no la potencia de combate.',
+  'Tạo ảnh nhân vật AI': 'Crear imagen de personaje con IA',
+  'Cấu hình API ảnh nhân vật không hợp lệ.':
+      'La configuración de la API de imágenes de personajes no es válida.',
+  'ĐANG DÙNG': 'EN USO',
+  'Chưa có dữ liệu': 'Aún no hay datos',
+  'Chưa trang bị': 'Sin equipar',
+  'THÔNG TIN VẬT PHẨM': 'DETALLES DEL OBJETO',
+  'Tất cả': 'Todos',
+  'Súng': 'Armas de fuego',
+  'Thường': 'Común',
+  'Mạnh': 'Potente',
+  'Hiếm': 'Raro',
+  'Sử thi': 'Épico',
+  'Huyền thoại': 'Legendario',
+  'Không phổ biến': 'Poco común',
+  'Miễn phí': 'Gratis',
+  'Đã mặc': 'Equipado',
+  'Cần kết nối MetaMask để mua vật phẩm.':
+      'Conecta MetaMask para comprar objetos.',
+  'Đã mua {0}; NFT đã được thêm vào Kho đồ.':
+      'Has comprado {0}; el NFT se ha añadido al inventario.',
+  '{0} HP  ·  {1} ô  ·  cơ bản': '{0} HP  ·  {1} casillas  ·  básico',
+  '+{0} HP  ·  giảm {1}%': '+{0} HP  ·  reducción del {1}%',
+  '+{0}% tốc độ chạy': '+{0}% de velocidad de movimiento',
+  'Chưa có vật phẩm trong danh mục này.':
+      'Aún no hay objetos en esta categoría.',
+  '✦ CHÚC MỪNG BẠN! ✦': '✦ ¡ENHORABUENA! ✦',
+  'PHẦN THƯỞNG VÀNG': 'RECOMPENSA DE ORO',
+  'VẬT PHẨM HIẾM': 'OBJETO RARO',
+  'Bạn nhận được {0} vàng.': 'Has recibido {0} de oro.',
+  'Bạn nhận được {0}.': 'Has recibido {0}.',
+  'Vật phẩm #{0}': 'Objeto #{0}',
+  'RƯƠNG MAY MẮN': 'COFRE DE LA SUERTE',
+  'Chạm vào nút để đánh thức kho báu': 'Toca el botón para despertar el tesoro',
+  '100 vàng': '100 de oro',
+  'mỗi lượt mở': 'por apertura',
+  'ĐANG MỞ RƯƠNG…': 'ABRIENDO COFRE…',
+  '✦ MỞ RƯƠNG ✦': '✦ ABRIR COFRE ✦',
+  '✦ RƯƠNG ĐÃ MỞ ✦': '✦ COFRE ABIERTO ✦',
+  '✦ RƯƠNG ĐÃ SẴN SÀNG ✦': '✦ COFRE LISTO ✦',
+  '✦ KHO BÁU DÀNH CHO BẠN ✦': '✦ UN TESORO PARA TI ✦',
+  'TRUNG TÂM\nQUÀ TẶNG': 'CENTRO DE\nREGALOS',
+  'Khám phá những mã quà đặc biệt\nvà nhận phần thưởng vào ví Gold Rush.': 'Descubre códigos de regalo especiales\ny recibe recompensas en tu cartera Gold Rush.',
+  'MỞ CAMERA QUÉT QR': 'ABRIR ESCÁNER QR',
+  '✧ Quét mã QR hợp lệ để nhận quà ✧':
+      '✧ Escanea un código QR válido para reclamar un regalo ✧',
+  'Tìm vật phẩm...': 'Buscar objetos...',
+  'Quay lại Menu': 'Volver al menú',
+  'Đang xử lý. Vui lòng chờ trước khi đóng Kho đồ.':
+      'Procesando. Espera antes de cerrar el inventario.',
+  'Dữ liệu trang bị chưa nhất quán':
+      'Los datos de equipamiento son incoherentes',
+  'TRANG BỊ ĐANG DÙNG': 'OBJETOS EQUIPADOS',
+  'Trang bị đang dùng được hiển thị theo dữ liệu hệ thống cung cấp.': 'Los objetos equipados se muestran según los datos proporcionados por el sistema.',
+  'TÚI VẬT PHẨM': 'BOLSA DE OBJETOS',
+  'Đã làm mới Kho đồ theo Blockchain.':
+      'Inventario actualizado desde la cadena de bloques.',
+  'Đang làm mới…': 'Actualizando…',
+  'LÀM MỚI KHO ĐỒ': 'ACTUALIZAR INVENTARIO',
+  'Có dữ liệu DEMO trong danh sách. Đây không phải bằng chứng sở hữu vật phẩm của người chơi.': 'Esta lista contiene datos DEMO. No demuestra la propiedad de los objetos.',
+  'Túi vật phẩm đang trống': 'Tu bolsa de objetos está vacía',
+  'Vật phẩm sẽ xuất hiện tại đây khi hệ thống cung cấp dữ liệu kho đồ.': 'Los objetos aparecerán aquí cuando haya datos del inventario disponibles.',
+  'Không tải được kho đồ.': 'No se puede cargar el inventario.',
+  'CHI TIẾT VẬT PHẨM': 'DETALLES DEL OBJETO',
+  'Chọn một vật phẩm trong danh sách để xem thông tin.':
+      'Selecciona un objeto para ver sus detalles.',
+  'Hoán đổi': 'Transferir',
+  'DEMO — dữ liệu minh họa': 'DEMO: datos de ejemplo',
+  'Loại': 'Tipo',
+  'Số lượng': 'Cantidad',
+  'Nguồn': 'Origen',
+  'THUỘC TÍNH': 'ATRIBUTOS',
+  'Chưa có thông tin thuộc tính.':
+      'Aún no hay información sobre los atributos.',
+  'Hợp đồng': 'Contrato',
+  'Thông tin NFT chỉ để hiển thị. Quyền sở hữu phải được module Blockchain xác nhận.': 'Los detalles del NFT son solo informativos. El módulo de cadena de bloques debe verificar la propiedad.',
+  'Chưa kết nối MetaMask': 'MetaMask no está conectado',
+  'XÁC NHẬN THÔNG TIN': 'CONFIRMAR DATOS',
+  'Vật phẩm': 'Objeto',
+  'vật phẩm': 'objeto',
+  'Từ': 'Desde',
+  'Đến': 'Hasta',
+  'Chưa nhập địa chỉ': 'No se ha introducido ninguna dirección',
+  'Địa chỉ ví người nhận không hợp lệ.':
+      'La dirección de la cartera del destinatario no es válida.',
+  'Chưa kết nối xử lý chuyển NFT.':
+      'La transferencia de NFT aún no está conectada.',
+  'Đã chuyển {0} ×{1} NFT thành công.':
+      'Se han transferido {0} ×{1} NFT correctamente.',
+  'Chuyển NFT thất bại: {0}': 'Error al transferir el NFT: {0}',
+  'Đang chuyển…': 'Transfiriendo…',
+  'Xác nhận chuyển': 'Confirmar transferencia',
+  'FROM · VÍ NGƯỜI GỬI': 'DESDE · CARTERA DEL REMITENTE',
+  'CỦA BẠN': 'TUYA',
+  'TO · ĐỊA CHỈ VÍ NGƯỜI NHẬN':
+      'HASTA · DIRECCIÓN DE LA CARTERA DEL DESTINATARIO',
+  'Nhập địa chỉ ví Ethereum 0x... của người nhận.':
+      'Introduce la dirección de la cartera Ethereum del destinatario (0x...).',
+  'SỐ LƯỢNG NFT MUỐN CHUYỂN': 'CANTIDAD DE NFT QUE TRANSFERIR',
+  'Sở hữu: {0} NFT · Tối đa chuyển: {1}':
+      'En propiedad: {0} NFT · Límite de transferencia: {1}',
+  'Phí giao dịch: Hardhat ETH thử nghiệm. Phí gas thực tế sẽ được ví hiển thị khi gửi giao dịch.': 'Las comisiones usan ETH de prueba de Hardhat. Tu cartera mostrará la comisión de gas real al enviar la transacción.',
+  'Tiếp tục': 'Continuar',
+  '✦ CHUYỂN NFT': '✦ TRANSFERIR NFT',
+  'VẬT PHẨM NFT · ERC-1155': 'OBJETO NFT · ERC-1155',
+  'Token ID: {0} · Đang sở hữu ×{1}': 'ID del token: {0} · En propiedad ×{1}',
+  'Vật phẩm này không thuộc nhóm vũ khí, giáp hoặc giày. Chưa tích hợp thao tác sử dụng vật phẩm.': 'Este objeto no es un arma, una armadura ni unas botas. El uso de objetos aún no está integrado.',
+  'Đang xử lý…': 'Procesando…',
+  'Chưa kết nối xử lý trang bị. Nút sẽ hoạt động khi module nghiệp vụ cung cấp callback.': 'Las acciones de equipamiento aún no están conectadas. Este botón requiere una función de respuesta del juego.',
+  'Yêu cầu đã được xác nhận. Trạng thái hiển thị theo dữ liệu cập nhật từ hệ thống.': 'Solicitud confirmada. La pantalla refleja los datos actualizados del sistema.',
+  'Thao tác không thành công. Giao diện không tự thay đổi trang bị; bạn có thể thử lại.': 'La operación ha fallado. El equipamiento no ha cambiado; puedes reintentarlo.',
+  'NHÂN VẬT ĐANG DÙNG': 'PERSONAJE ACTIVO',
+  'Chưa xác nhận được nhân vật đang dùng':
+      'El personaje activo no está verificado',
+  'Chưa có dữ liệu nhân vật': 'Aún no hay datos de personajes',
+  'Lựa chọn được đọc từ hệ thống. Nhân vật cửa hàng cần được phiên ví xác nhận quyền sở hữu.': 'El sistema proporciona la selección. Los personajes de la tienda requieren verificar la propiedad mediante la cartera.',
+  'BỘ SƯU TẬP NHÂN VẬT': 'COLECCIÓN DE PERSONAJES',
+  'Chưa có danh sách nhân vật': 'Aún no hay una lista de personajes',
+  'George và nhân vật cửa hàng sẽ hiển thị khi nguồn dữ liệu sẵn sàng.': 'George y los personajes de la tienda aparecerán cuando haya datos disponibles.',
+  'Không tải được danh sách nhân vật.':
+      'No se puede cargar la lista de personajes.',
+  'NHÂN VẬT AI': 'PERSONAJES DE IA',
+  'Khu vực dành cho nhân vật do AI tạo.': 'Tus personajes generados por IA.',
+  'Danh sách được tải từ Backend theo phiên SIWE hiện tại. Nhân vật AI không tự động được coi là NFT.': 'Esta lista se carga con tu sesión SIWE actual. Los personajes de IA no son NFT automáticamente.',
+  'Chưa thể chọn nhân vật lúc này.':
+      'No se puede seleccionar un personaje en este momento.',
+  'Vũ khí': 'Armas',
+  'Phụ kiện': 'Accesorios',
+  'Tiêu hao': 'Consumibles',
+  'Nguyên liệu': 'Materiales',
+  'Nhiệm vụ': 'Misiones',
+  'DANH MỤC': 'CATEGORÍAS',
+  'Không tìm thấy vật phẩm phù hợp':
+      'No se han encontrado objetos coincidentes',
+  'Không có vật phẩm trong danh mục này': 'No hay objetos en esta categoría',
+  'CHƯA CÓ DỮ LIỆU NHÂN VẬT HỢP LỆ': 'AÚN NO HAY DATOS VÁLIDOS DE PERSONAJES',
+  '{0} · ĐANG DÙNG': '{0} · EN USO',
+  'Đang tải dữ liệu…': 'Cargando datos…',
+  'Thử lại': 'Reintentar',
+  'Chọn ngoại hình nhân vật. Lựa chọn được áp dụng từ ván chơi tiếp theo.': 'Elige la apariencia de tu personaje. Los cambios se aplicarán a partir de la próxima partida.',
+  'Phiên ví đang xử lý. Vui lòng đợi trước khi chọn nhân vật.':
+      'La cartera está ocupada. Espera antes de seleccionar un personaje.',
+  'Đang xác nhận lựa chọn nhân vật…': 'Confirmando la selección del personaje…',
+  'Chưa kết nối thao tác chọn nhân vật.':
+      'La selección de personajes aún no está conectada.',
+  'Nhân vật mặc định': 'Personaje predeterminado',
+  'Đã sở hữu theo phiên ví': 'En propiedad según tu sesión de cartera',
+  'Chọn nhân vật': 'Seleccionar personaje',
+  'Chưa xác nhận được quyền sở hữu nhân vật.':
+      'No se ha verificado la propiedad del personaje.',
+  'Tài khoản ví đã thay đổi. Vui lòng kiểm tra lại danh sách nhân vật.': 'La cuenta de tu cartera ha cambiado. Comprueba la lista de personajes de nuevo.',
+  'Không chọn được nhân vật. Vui lòng kiểm tra dữ liệu và thử lại.': 'No se puede seleccionar el personaje. Comprueba los datos e inténtalo de nuevo.',
+  'Không tải được ảnh nhân vật': 'No se puede cargar la imagen del personaje',
+  'Chưa có vật phẩm.': 'Aún no hay objetos.',
+  'Máy chủ phản hồi quá lâu. Hãy thử làm mới.':
+      'El servidor ha tardado demasiado. Intenta actualizar.',
+  'Không tải được danh sách nhân vật AI.':
+      'No se pueden cargar los personajes de IA.',
+  'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.':
+      'Tu sesión ha caducado. Inicia sesión de nuevo.',
+  'Phiên hiện tại không có quyền xem danh sách này.':
+      'Tu sesión actual no permite ver esta lista.',
+  'Đăng nhập ví MetaMask SIWE để xem nhân vật AI đã lưu.': 'Inicia sesión con MetaMask SIWE para ver los personajes de IA guardados.',
+  'Bạn chưa tạo nhân vật AI nào. Hãy tạo nhân vật đầu tiên.':
+      'Aún no tienes personajes de IA. Crea el primero.',
+  'Tạo nhân vật AI': 'Crear personaje con IA',
+  'Làm mới': 'Actualizar',
+  'Ảnh nhân vật AI {0}': 'Imagen del personaje de IA: {0}',
+  'Đã lưu · PNG tĩnh': 'Guardado · PNG estático',
+  'Xem chi tiết': 'Ver detalles',
+  'Ảnh chi tiết nhân vật AI {0}': 'Imagen de detalle del personaje de IA: {0}',
+  'Trạng thái: Đã lưu trong Backend': 'Estado: guardado en el servidor',
+  'Loại tài sản: Nhân vật AI, không phải NFT':
+      'Tipo de activo: personaje de IA, no es un NFT',
+  'Gameplay: Chưa có sprite sheet 4×4 để trang bị': 'Jugabilidad: aún no tiene una hoja de sprites de 4×4 que se pueda equipar',
+  'Mã: {0}': 'ID: {0}',
+  'Ngày tạo: {0}': 'Creado: {0}',
+  'Súng Lục Mặc Định': 'Pistola predeterminada',
+  'Súng Ổ Xoay Thép': 'Revólver de acero',
+  'Súng Trường Thợ Mỏ': 'Rifle del minero',
+  'Súng Nòng Đôi Thép': 'Escopeta de dos cañones de acero',
+  'Súng Tinh Thể Xanh': 'Arma de cristal azul',
+  'Súng Phá Giáp Đỏ': 'Arma roja perforadora de armaduras',
+  'Súng Xuyên Phá Hoàng Kim': 'Arma perforante dorada',
+  'Súng Bão Tinh Thể': 'Arma de tormenta de cristal',
+  'Súng Hắc Long': 'Arma del dragón negro',
+  'Giáp Da Tập Sự': 'Armadura de cuero de aprendiz',
+  'Giáp Đồng Gia Cố': 'Armadura de bronce reforzada',
+  'Giáp Thép Nhẹ': 'Armadura de acero ligera',
+  'Giáp Vệ Binh Thép': 'Armadura del guardián de acero',
+  'Giáp Tinh Thể Lam': 'Armadura de cristal azul',
+  'Giáp Chiến Tướng': 'Armadura del señor de la guerra',
+  'Giáp Hắc Long': 'Armadura del dragón negro',
+  'Giáp Tinh Thể Huyền Bí': 'Armadura de cristal místico',
+  'Giáp Hoàng Kim Cổ Đại': 'Armadura dorada ancestral',
+  'Giày Da Thợ Mỏ': 'Botas de cuero del minero',
+  'Giày Đồng Gia Cố': 'Botas de bronce reforzadas',
+  'Giày Thép Nhẹ': 'Botas de acero ligeras',
+  'Giày Thép Gia Cố': 'Botas de acero reforzadas',
+  'Giày Tinh Thể Lam': 'Botas de cristal azul',
+  'Giày Chiến Tướng Đỏ': 'Botas rojas del señor de la guerra',
+  'Giày Hắc Long': 'Botas del dragón negro',
+  'Giày Tinh Thể Huyền Bí': 'Botas de cristal místico',
+  'Giày Phượng Hoàng Hoàng Kim': 'Botas del fénix dorado',
+  'Đạn xuyên tối đa 2 quái trên cùng đường bắn.':
+      'Las balas atraviesan hasta 2 enemigos en línea recta.',
+  'Súng dùng để bắn quái theo hướng nhìn.':
+      'Dispara a los enemigos en la dirección hacia la que miras.',
+  'Sát thương': 'Daño',
+  '{0} HP/viên': '{0} HP/disparo',
+  'Tầm bắn': 'Alcance',
+  '{0} ô': '{0} casillas',
+  'Xuyên mục tiêu': 'Perforación',
+  'Tối đa 2 quái': 'Hasta 2 enemigos',
+  'Tăng HP tối đa và giảm sát thương khi quái va chạm.':
+      'Aumenta los HP máximos y reduce el daño por colisión con enemigos.',
+  'HP cộng thêm': 'HP adicionales',
+  'Giảm sát thương': 'Reducción de daño',
+  'Tăng tốc độ chạy của George.':
+      'Aumenta la velocidad de movimiento de George.',
+  'Tốc độ chạy': 'Velocidad de movimiento',
+  'Thợ mỏ tập sự': 'Minero aprendiz',
+  'Hoàn thành và chiến thắng màn 1 lần đầu tiên.':
+      'Gana el nivel 1 por primera vez.',
+  'Chiến binh dũng cảm': 'Guerrero valiente',
+  'Hoàn thành và chiến thắng màn 6 lần đầu tiên.':
+      'Gana el nivel 6 por primera vez.',
+  'Kẻ chinh phục Boss': 'Vencedor de jefes',
+  'Hoàn thành màn 9 thành công.': 'Completa el nivel 9.',
+  'Bậc thầy chinh phục': 'Maestro conquistador',
+  'Hoàn thành và chiến thắng màn 15 lần đầu tiên.':
+      'Gana el nivel 15 por primera vez.',
+  'Huyền Thoại Gold Rush': 'Leyenda de Gold Rush',
+  'Hoàn thành và chiến thắng màn 20, kết thúc hành trình phiêu lưu.':
+      'Gana el nivel 20 y completa tu aventura.',
+  'Xem đề xuất': 'Ver recomendación',
+  'Đang tải…': 'Cargando…',
+  'Cập nhật đề xuất': 'Actualizar recomendación',
+  'Đề xuất độ khó màn {0}': 'Recomendación de dificultad del nivel {0}',
+  'Đang lấy đề xuất': 'Cargando recomendación',
+  'Xem gợi ý độ khó dựa trên lịch sử chơi.': 'Consulta recomendaciones de dificultad basadas en tu historial de juego.',
+  'Dễ': 'Fácil',
+  'Trung bình': 'Media',
+  'Khó': 'Difícil',
+  'Chưa đủ dữ liệu': 'Datos insuficientes',
+  'Theo luật': 'Basada en reglas',
+  'Dự phòng': 'Alternativa',
+  'Dữ liệu demo': 'Datos de demostración',
+  'Lịch sử đã xác minh': 'Historial verificado',
+  'Độ khó đề xuất • {0}': 'Dificultad recomendada • {0}',
+  'Điểm hiệu suất • {0}': 'Puntuación de rendimiento • {0}',
+  'Hệ số tốc độ đề xuất • ×{0}':
+      'Multiplicador de velocidad recomendado • ×{0}',
+  'Ván được đánh giá • {0}': 'Partidas evaluadas • {0}',
+  'Nguồn đề xuất • {0}': 'Origen de la recomendación • {0}',
+  'Máy chủ cần xác minh người chơi.':
+      'El servidor necesita verificar al jugador.',
+  'Bạn chưa có quyền xem đề xuất cho màn này.':
+      'Aún no puedes ver recomendaciones para este nivel.',
+  'Đang có nhiều yêu cầu. Bạn có thể thử lại sau.':
+      'Demasiadas solicitudes. Inténtalo más tarde.',
+  'Chưa cấu hình máy chủ AI.': 'El servidor de IA no está configurado.',
+  'Thông tin màn chơi chưa hợp lệ.': 'La información del nivel no es válida.',
+  'Máy chủ phản hồi quá lâu. Hãy thử lại sau.':
+      'El servidor ha tardado demasiado. Inténtalo más tarde.',
+  'Không kết nối được máy chủ. Hãy kiểm tra mạng và thử lại.': 'No se puede conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.',
+  'Máy chủ chưa chấp nhận yêu cầu đề xuất ({0}).':
+      'El servidor ha rechazado la solicitud de recomendación ({0}).',
+  'Dịch vụ đề xuất chưa sẵn sàng. Hãy thử lại sau.':
+      'El servicio de recomendaciones no está disponible. Inténtalo más tarde.',
+  'Chưa đọc được đề xuất. Hãy thử lại sau.':
+      'No se puede leer la recomendación. Inténtalo más tarde.',
+  'Nhiệm vụ màn {0}': 'Misión del nivel {0}',
+  'Đang tạo nhiệm vụ…': 'Creando misión…',
+  'Tạo một đề xuất nhiệm vụ phù hợp với màn chơi.':
+      'Crea una recomendación de misión para este nivel.',
+  'Tạo nhiệm vụ': 'Crear misión',
+  'Tạo nhiệm vụ mới': 'Crear nueva misión',
+  'Thu thập {0} xu': 'Recoge {0} monedas',
+  'Hoàn thành màn trước thời hạn':
+      'Completa el nivel antes de que termine el plazo',
+  'Hoàn thành màn, trúng đòn tối đa {0} lần':
+      'Completa el nivel recibiendo como máximo {0} golpes',
+  'Mẫu demo': 'Plantilla de demostración',
+  'Ngữ cảnh demo': 'Contexto de demostración',
+  'Ngữ cảnh đã xác minh': 'Contexto verificado',
+  'Thời hạn • {0} giây': 'Límite de tiempo • {0} segundos',
+  'Độ khó • {0}': 'Dificultad • {0}',
+  'Thưởng • {0} vàng': 'Recompensa • {0} de oro',
+  'Nguồn sinh • {0}': 'Origen de la generación • {0}',
+  'Trạng thái • Được đề xuất': 'Estado • Recomendada',
+  'Màn này chưa được ngữ cảnh người chơi cho phép.':
+      'Tu contexto de jugador aún no permite acceder a este nivel.',
+  'Cần xác thực người chơi với máy chủ.':
+      'Se requiere la autenticación del jugador.',
+  'Máy chủ đang giới hạn yêu cầu. Hãy thử lại sau.':
+      'El servidor está limitando las solicitudes. Inténtalo más tarde.',
+  'Chưa cấu hình GOLD_RUSH_API. Tính năng nhiệm vụ đang offline.':
+      'GOLD_RUSH_API no está configurado. Las misiones están sin conexión.',
+  'Thông tin yêu cầu nhiệm vụ không hợp lệ.':
+      'La solicitud de misión no es válida.',
+  'Máy chủ phản hồi quá lâu. Có thể thử lại cùng yêu cầu.':
+      'El servidor ha tardado demasiado. Puedes reintentar la misma solicitud.',
+  'Máy chủ từ chối yêu cầu nhiệm vụ ({0}).':
+      'El servidor ha rechazado la solicitud de misión ({0}).',
+  'Dịch vụ nhiệm vụ chưa sẵn sàng. Hãy thử lại sau.':
+      'El servicio de misiones no está disponible. Inténtalo más tarde.',
+  'Phản hồi nhiệm vụ không hợp lệ. Hãy tạo yêu cầu mới.':
+      'La respuesta de misión no es válida. Crea una nueva solicitud.',
+  'Thợ mỏ vàng AI': 'Minero de oro de IA',
+  'Tài khoản ví MetaMask đã thay đổi. Vui lòng đăng nhập lại SIWE.':
+      'Tu cuenta de MetaMask ha cambiado. Inicia sesión con SIWE de nuevo.',
+  'Đăng nhập MetaMask SIWE thành công!':
+      '¡Has iniciado sesión con MetaMask SIWE!',
+  'Không thể hoàn tất đăng nhập: {0}':
+      'No se ha podido completar el inicio de sesión: {0}',
+  'Chưa tìm thấy tiện ích MetaMask trên trình duyệt.':
+      'No se ha encontrado MetaMask en este navegador.',
+  'Không thể khởi tạo thử thách SIWE từ máy chủ.':
+      'No se puede crear un desafío SIWE en el servidor.',
+  'Xác thực chữ ký SIWE thất bại.':
+      'La verificación de la firma SIWE ha fallado.',
+  'Bạn đã hủy ký xác thực SIWE.': 'Has cancelado la firma SIWE.',
+  'Lỗi ví: {0}': 'Error de cartera: {0}',
+  'Đã đăng xuất phiên MetaMask an toàn.':
+      'La sesión de MetaMask se ha cerrado de forma segura.',
+  'Cần hoàn thành đủ 6 màn chơi để mở khóa tạo nhân vật AI ({0}/6).': 'Completa los 6 niveles para desbloquear la creación de personajes con IA ({0}/6).',
+  'Cần đăng nhập MetaMask SIWE trước khi lưu nhân vật.':
+      'Inicia sesión con MetaMask SIWE antes de guardar un personaje.',
+  'Tên nhân vật phải từ 1 đến 32 ký tự.':
+      'Los nombres de personajes deben tener entre 1–32 caracteres.',
+  'Ảnh đã tạo xong và được tự động lưu vào tài khoản!':
+      '¡La imagen se ha creado y guardado automáticamente en tu cuenta!',
+  'Đã lưu nhân vật "{0}" thành công vào tài khoản!':
+      '¡El personaje "{0}" se ha guardado en tu cuenta!',
+  'Lưu nhân vật thất bại ({0}).': 'No se ha podido guardar el personaje ({0}).',
+  'Lỗi kết nối': 'Error de conexión',
+  'Cần đăng nhập MetaMask SIWE để đăng ký on-chain.':
+      'Inicia sesión con MetaMask SIWE para registrar en la cadena de bloques.',
+  'Máy chủ từ chối cấp Voucher EIP-712.':
+      'El servidor se ha negado a emitir un vale EIP-712.',
+  'Đã gửi giao dịch on-chain! Tx: {0}…':
+      '¡Transacción enviada a la cadena de bloques! Tx: {0}…',
+  'Xác minh thành công! Nhân vật đã được ghi nhận On-Chain.':
+      '¡Verificado! Tu personaje se ha registrado en la cadena de bloques.',
+  'Giao dịch đang chờ xác nhận trên blockchain ({0}).':
+      'Transacción pendiente de confirmación en la cadena de bloques ({0}).',
+  'Chưa xác minh được giao dịch với Backend.':
+      'Aún no se puede verificar la transacción con el servidor.',
+  'Bạn đã hủy xác nhận giao dịch trên MetaMask.':
+      'Has cancelado la transacción en MetaMask.',
+  'Lỗi MetaMask: {0}': 'Error de MetaMask: {0}',
+  'Đăng ký on-chain gặp sự cố: {0}':
+      'Error al registrar en la cadena de bloques: {0}',
+  'Đã sao chép SHA-256 Character Hash vào bộ nhớ tạm!':
+      '¡Hash SHA-256 del personaje copiado al portapapeles!',
+  'Đang tạo ảnh…': 'Generando imagen…',
+  'Đang tải ảnh…': 'Cargando imagen…',
+  'Tạo nhân vật': 'Crear personaje',
+  'Mô tả nhân vật bạn muốn xem, như một thợ mỏ đội mũ vàng.':
+      'Describe tu personaje, por ejemplo, un minero con un casco amarillo.',
+  'Mô tả nhân vật': 'Descripción del personaje',
+  'Tối đa 500 ký tự.': 'Hasta 500 caracteres.',
+  'Hãy nhập mô tả nhân vật.': 'Introduce una descripción del personaje.',
+  'Mô tả tối đa 500 ký tự.':
+      'Las descripciones pueden contener hasta 500 caracteres.',
+  'Ảnh mẫu demo': 'Imagen de demostración',
+  'Ảnh từ mô hình AI': 'Imagen generada por IA',
+  'Phiên demo': 'Sesión de demostración',
+  'Phiên đã xác minh': 'Sesión verificada',
+  'Ảnh mẫu được chọn theo mô tả.':
+      'Una imagen de ejemplo seleccionada según tu descripción.',
+  'Ảnh xem trước nhân vật': 'Vista previa de la imagen del personaje',
+  'Chưa hiển thị được ảnh.': 'Aún no se puede mostrar la imagen.',
+  'Ảnh tĩnh để xem trước.': 'Imagen de vista previa estática.',
+  'Tải lại ảnh': 'Recargar imagen',
+  'Khóa (Cần hoàn thành 6 màn)': 'Bloqueado (completa 6 niveles)',
+  'Tạo ảnh': 'Generar imagen',
+  'Tạo ảnh mới': 'Generar nueva imagen',
+  'Người chơi: {0}': 'Jugador: {0}',
+  'Đăng xuất': 'Cerrar sesión',
+  'ĐĂNG NHẬP SIWE': 'INICIAR SESIÓN CON SIWE',
+  'TIẾN TRÌNH: {0}/6 MÀN HOÀN THÀNH': 'PROGRESO: {0}/6 NIVELES COMPLETADOS',
+  'Tải lại tiến trình': 'Recargar progreso',
+  'Chúc mừng! Bạn đã hoàn thành 6 màn chơi và mở khóa tính năng tạo nhân vật AI.': '¡Enhorabuena! Has completado 6 niveles y desbloqueado la creación de personajes con IA.',
+  'Cần hoàn thành đủ 6 màn chơi (hiện tại: {0}/6) để mở khóa tạo nhân vật AI.': 'Completa los 6 niveles (actualmente {0}/6) para desbloquear la creación de personajes con IA.',
+  'Màn {0}': 'Nivel {0}',
+  'Lỗi đồng bộ: {0}': 'Error de sincronización: {0}',
+  'LƯU Ý: Ảnh preview 128×128 pixel-art là ảnh tĩnh minh hoạ, CHƯA PHẢI sprite sheet điều khiển được trong game Flame.': 'NOTA: la vista previa de arte en píxeles de 128×128 es una ilustración estática, NO una hoja de sprites jugable de Flame.',
+  'Đã lưu: {0}': 'Guardado: {0}',
+  'Sao chép SHA-256': 'Copiar SHA-256',
+  'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. {0}{1}':
+      'Tu personaje está en Inventario > Personajes de IA. {0}{1}',
+  'Đăng ký on-chain: token #{0}':
+      'Registro en la cadena de bloques: token #{0}',
+  'Trạng thái on-chain: {0}': 'Estado en la cadena de bloques: {0}',
+  'Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet 4×4 để điều khiển trong gameplay.': 'La imagen es un PNG estático de 128×128, no una hoja de sprites jugable de 4×4.',
+  'VỀ KHO ĐỒ XEM NHÂN VẬT': 'VER PERSONAJE EN EL INVENTARIO',
+  'Tên nhân vật': 'Nombre del personaje',
+  'Tối đa 32 ký tự để lưu vào CSDL Backend.':
+      'Hasta 32 caracteres para guardarlo en el servidor.',
+  'CẦN ĐĂNG NHẬP ĐỂ LƯU': 'INICIA SESIÓN PARA GUARDAR',
+  'Đang lưu…': 'Guardando…',
+  'LƯU NHÂN VẬT VÀO TÀI KHOẢN': 'GUARDAR PERSONAJE EN LA CUENTA',
+  'NHÂN VẬT ({0})': 'PERSONAJES ({0})',
+  'Đăng nhập ví MetaMask SIWE để xem danh sách nhân vật đã lưu.':
+      'Inicia sesión con MetaMask SIWE para ver los personajes guardados.',
+  'Bạn chưa lưu nhân vật AI nào. Hãy tạo ảnh và bấm "LƯU NHÂN VẬT"!': 'Aún no hay personajes de IA guardados. ¡Genera una imagen y selecciona "GUARDAR PERSONAJE"!',
+  'Kiểm tra lại trạng thái': 'Comprobar estado de nuevo',
+  'Đăng ký On-Chain (EIP-712)': 'Registrar en la cadena de bloques (EIP-712)',
+  'Bạn chưa có quyền sử dụng ảnh này.':
+      'No tienes permiso para usar esta imagen.',
+  'Ảnh đã hết hạn hoặc không còn khả dụng. Hãy tạo ảnh mới.':
+      'Esta imagen ha caducado o no está disponible. Genera una nueva imagen.',
+  'Yêu cầu này đã dùng cho mô tả khác. Hãy tạo ảnh mới.':
+      'Esta solicitud se usó para otra descripción. Genera una nueva imagen.',
+  'Mô tả nhân vật chưa hợp lệ.': 'La descripción del personaje no es válida.',
+  'Máy chủ phản hồi quá lâu. Bạn có thể thử lại.':
+      'El servidor ha tardado demasiado. Puedes intentarlo de nuevo.',
+  'Máy chủ chưa chấp nhận yêu cầu ảnh ({0}).':
+      'El servidor ha rechazado la solicitud de imagen ({0}).',
+  'Dịch vụ ảnh chưa sẵn sàng. Bạn có thể thử lại sau.':
+      'El servicio de imágenes no está disponible. Inténtalo más tarde.',
+  'Ảnh nhận được không hợp lệ. Hãy tạo ảnh mới.':
+      'La imagen recibida no es válida. Genera una nueva imagen.',
+  'Phản hồi tạo ảnh không hợp lệ. Hãy tạo ảnh mới.': 'La respuesta de generación de imagen no es válida. Genera una nueva imagen.',
+  'Chưa có dữ liệu màn chơi. Hãy quay lại Menu và thử lại.':
+      'No hay datos del nivel. Vuelve al menú e inténtalo de nuevo.',
+  'Chưa mở': 'Bloqueado',
+  'Đã mở': 'Desbloqueado',
+  'Đã hoàn thành': 'Completado',
+  'Hoàn thành': 'Completado',
+  'ĐỊA ĐIỂM ĐANG CHỌN': 'UBICACIÓN SELECCIONADA',
+  'Đóng thông tin màn': 'Cerrar detalles del nivel',
+  'Trạng thái: {0}': 'Estado: {0}',
+  'Tiến trình mở khóa chưa được kết nối. Hiện giữ quyền chọn màn như phiên bản gốc.': 'El progreso de desbloqueo no está conectado. La selección de niveles sigue la versión original.',
+  'Thắng để mở màn kế tiếp. Tiến trình được lưu trên máy.': 'Gana para desbloquear el siguiente nivel. El progreso se guarda en este dispositivo.',
+  'Màn có cọc cần cấu hình máy chủ và kết nối ví.': 'Los niveles con depósito requieren un servidor configurado y una cartera conectada.',
+  'Vàng: {0}': 'Oro: {0}',
+  'Màn chưa mở': 'Nivel bloqueado',
+  'Hoàn thành màn trước để mở khóa màn này. Tiến trình được lưu trên máy.': 'Completa el nivel anterior para desbloquear este. El progreso se guarda en este dispositivo.',
+  'Chơi': 'Jugar',
+  'Vui lòng hoàn tất thao tác đang xử lý.':
+      'Termina primero la operación actual.',
+  'Cọc {0}': 'Depósito de {0}',
+  'Cần cấu hình máy chủ và kết nối ví để vào màn có cọc.': 'Configura el servidor y conecta tu cartera para entrar en los niveles con depósito.',
+  'Chưa đủ vàng để đặt cọc {0} vàng.':
+      'No tienes suficiente oro para un depósito de {0} de oro.',
+  'MÀN {0} · {1}': 'NIVEL {0} · {1}',
+  'Màn phiêu lưu local · {0}': 'Aventura local · {0}',
+  'Màn luyện tập · {0}': 'Nivel de práctica · {0}',
+  'Màn có đặt cọc · {0}': 'Nivel con depósito · {0}',
+  'Độ khó {0} trên 5': 'Dificultad {0} de 5',
+  'Cần thu thập': 'Por recoger',
+  'Thời gian': 'Tiempo',
+  'Không giới hạn': 'Sin límite',
+  'Đặt cọc': 'Depósito',
+  'Thưởng thêm': 'Bonificación',
+  'Hoàn thành hợp lệ: {0} vàng = {1} hoàn cọc + {2} xu + {3} thưởng. Chết, hết giờ hoặc bỏ ván sẽ mất cọc.': 'Finalización válida: {0} de oro = {1} de devolución del depósito + {2} monedas + {3} de bonificación. Morir, agotar el tiempo o abandonar la partida implica perder el depósito.',
+  'Không đăng ký được màn chơi với máy chủ: {0}':
+      'No se puede registrar el nivel en el servidor: {0}',
+  'Không nạp được bản đồ {0}.': 'No se puede cargar el mapa {0}.',
+  'Không mở được màn {0}. {1}': 'No se puede abrir el nivel {0}. {1}',
+  'Vé số {0} đã đăng ký với máy chủ nên cọc của vé này không lấy lại được — báo giảng viên kèm thông báo lỗi trong console.': 'El ticket {0} está registrado en el servidor, por lo que no se puede recuperar su depósito. Informa del error de consola a tu instructor.',
+  'Đã hoàn lại {0} vàng cọc.': 'Se ha devuelto el depósito de {0} de oro.',
+  'Không nạp được bản đồ {0} — chưa trừ vàng.':
+      'No se puede cargar el mapa {0}: no se ha descontado oro.',
+  'Vào màn {0} · {1}?': '¿Entrar en el nivel {0} · {1}?',
+  '{0}{1}• Nhặt đủ {2} xu trong {3}: nhận lại {4} cọc + {5} xu + {6} thưởng = {7} vàng.\n• Chết, hết giờ, thoát ván hoặc đóng trình duyệt: mất {8} vàng cọc.\n{9}{10}Vàng chỉ dùng trong game, không chuyển nhượng, không quy đổi ra tiền.': '{0}{1}• Recoge {2} monedas en {3}: recibe {4} de depósito + {5} monedas + {6} de bonificación = {7} de oro.\n• Si mueres, se agota el tiempo, sales o cierras el navegador: pierdes el depósito de {8} de oro.\n{9}{10}El oro solo se usa dentro del juego; no se puede transferir ni cambiar por dinero.',
+  '• Dùng lại vé số {0} đã đặt cọc {1} vàng — KHÔNG trừ thêm, không cần MetaMask.\n': '• Reutiliza el ticket {0} con un depósito de {1} de oro: SIN descuentos adicionales ni operaciones en MetaMask.\n',
+  '• Trừ ngay {0} vàng tiền cọc (một giao dịch MetaMask).\n': '• Descuenta ahora un depósito de {0} de oro (una transacción en MetaMask).\n',
+  '• Trừ ngay {0} vàng tiền cọc từ ví.\n':
+      '• Descuenta ahora un depósito de {0} de oro de tu cartera.\n',
+  '• Vé số {0} của màn này đã dùng cho một ván không hoàn thành — cần vé mới.\n': '• El ticket {0} se usó en una partida incompleta: se necesita un nuevo ticket.\n',
+  '• {0} phiếu vàng đang chờ sẽ được nhận trong CÙNG giao dịch.\n':
+      '• Se reclamarán {0} vales de oro pendientes en la MISMA transacción.\n',
+  '• Vé màn {0} đang mở (chưa hoàn thành) sẽ bị bỏ — cọc {1} của vé đó mất.\n': '• Se descartará tu ticket abierto para el nivel {0}: perderás su depósito de {1}.\n',
+  'Thôi': 'Cancelar',
+  'Vào màn': 'Entrar al nivel',
+  'Đặt cọc {0}': 'Depósito de {0}',
+  'Chưa có dữ liệu màn chơi.': 'Aún no hay datos de niveles.',
+  'Khu vực này hiện hỗ trợ tối đa 20 màn.':
+      'Esta región admite actualmente hasta 20 niveles.',
+  'Chưa có đủ dữ liệu tiến trình các màn.':
+      'Los datos de progreso de los niveles están incompletos.',
+  'Chưa nạp được ảnh bản đồ. Bấm để thử lại.':
+      'No se puede cargar la imagen del mapa. Toca para reintentar.',
+  'Định vị George': 'Localizar a George',
+  'Thu nhỏ': 'Alejar',
+  'Phóng to': 'Acercar',
+  'Toàn bản đồ': 'Mapa completo',
+  'Làng khởi đầu': 'Aldea inicial',
+  'Thảo nguyên & Cối xay gió': 'Praderas y molinos',
+  'Khu rừng': 'Bosque',
+  'Rừng Cổ Thụ & Suối Ngàn': 'Bosque ancestral y arroyos',
+  'Núi đá / Mỏ vàng': 'Montañas / Mina de oro',
+  'Đèo Đá Xám & Hầm Mỏ': 'Paso de Piedra Gris y minas',
+  'Núi lửa': 'Volcán',
+  'Hỏa Sơn & Khe Dung Nham': 'Volcán y grieta de lava',
+  'Đền cổ / Tàn tích': 'Templo antiguo / Ruinas',
+  'Thung Lũng Cổ Ngữ': 'Valle de las runas antiguas',
+  'Vùng kho báu': 'Región del tesoro',
+  'Đỉnh Kho Báu Hoàng Kim': 'Cumbre del tesoro dorado',
+  'Chưa đọc được tiến trình đã lưu. Tạm bắt đầu từ màn 1.': 'No se puede leer el progreso guardado. Por ahora comenzarás en el nivel 1.',
+  'Đã mở màn tiếp theo trong phiên này nhưng chưa lưu được trên máy.': 'El siguiente nivel está desbloqueado para esta sesión, pero no se ha podido guardar en este dispositivo.',
+  'Màn {0}, {1}, {2}': 'Nivel {0}, {1}, {2}',
+  'Màn ': 'Nivel ',
+  'ĐIỂM': 'PUNTUACIÓN',
+  'XU': 'MONEDAS',
+  'XU CÒN': 'MONEDAS RESTANTES',
+  'Đang nạp Gold Rush...': 'Cargando Gold Rush...',
+  'Không nạp được game.\n\n{0}\n\nKiểm tra lại phần assets trong pubspec.yaml và các tệp trong thư mục assets/.': 'No se puede cargar el juego.\n\n{0}\n\nComprueba pubspec.yaml y los archivos de assets/.',
+  'Đồng cỏ': 'Pradera',
+  'Rừng thưa': 'Arboleda',
+  'Hang đá': 'Cueva rocosa',
+  'Rừng rậm': 'Bosque profundo',
+  'Thung lũng xương': 'Valle de los huesos',
+  'Mỏ vàng': 'Mina de oro',
+  'Nhà thợ rèn': 'Casa del herrero',
+  'Quán trọ ven rừng': 'Posada del bosque',
+  'Trạm gác': 'Puesto de vigilancia',
+  'Hội thợ săn': 'Gremio de cazadores',
+  'Thư viện cổ': 'Biblioteca antigua',
+  'Nhà ven suối': 'Casa junto al arroyo',
+  'Xưởng chế tác': 'Taller de artesanía',
+  'Đồn phương bắc': 'Puesto del norte',
+  'Dinh thự đá': 'Mansión de piedra',
+  'Quán trọ bến sông': 'Posada junto al río',
+  'Tháp gió': 'Torre del viento',
+  'Hội quán xanh': 'Sede del gremio verde',
+  'Nhà hiền triết': 'Casa del sabio',
+  'Thành trì cuối': 'Fortaleza final',
+  'Khám phá nhà thợ rèn, thu thập đủ 24 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la casa del herrero y recoge 24 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá quán trọ ven rừng, thu thập đủ 24 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la posada del bosque y recoge 24 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá trạm gác, thu thập đủ 24 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora el puesto de vigilancia y recoge 24 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá hội thợ săn, thu thập đủ 26 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora el gremio de cazadores y recoge 26 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá thư viện cổ, thu thập đủ 26 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la biblioteca antigua y recoge 26 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá nhà ven suối, thu thập đủ 26 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la casa junto al arroyo y recoge 26 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá xưởng chế tác, thu thập đủ 28 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora el taller de artesanía y recoge 28 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá đồn phương bắc, thu thập đủ 28 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora el puesto del norte y recoge 28 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá dinh thự đá, thu thập đủ 28 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la mansión de piedra y recoge 28 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá quán trọ bến sông, thu thập đủ 30 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la posada junto al río y recoge 30 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá tháp gió, thu thập đủ 30 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la torre del viento y recoge 30 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá hội quán xanh, thu thập đủ 30 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la sede del gremio verde y recoge 30 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá nhà hiền triết, thu thập đủ 32 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la casa del sabio y recoge 32 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  'Khám phá thành trì cuối, thu thập đủ 32 xu để mở địa điểm tiếp theo. Màn local, không giao dịch blockchain.': 'Explora la fortaleza final y recoge 32 monedas para desbloquear la siguiente ubicación. Nivel local sin transacciones en la cadena de bloques.',
+  '{0} xu': '{0} monedas',
+  'Màn luyện tập.': 'Nivel de práctica.',
+  'Màn luyện tập: không giới hạn thời gian, thua không mất gì.': 'Nivel de práctica: sin límite de tiempo y sin pérdidas en caso de derrota.',
+  'Cây cối lưa thưa, ít quái — làm quen với đồng hồ.':
+      'Pocos árboles y enemigos: acostúmbrate al reloj.',
+  'Nhiều ngõ cụt; bộ xương bắt đầu đông hơn.':
+      'Muchos callejones sin salida; aparecen más esqueletos.',
+  'Vật cản dày đặc, phải tính đường trước khi đi.':
+      'Obstáculos densos: planifica tu ruta antes de moverte.',
+  'Bảy bộ xương canh giữ, chạy nhanh hơn.':
+      'Siete esqueletos más rápidos montan guardia.',
+  'Màn cuối: 24 xu, 13 kẻ địch, kẻ địch nhanh hơn 20%.': 'Nivel final: 24 monedas, 13 enemigos, los enemigos se mueven un 20% más rápido.',
+  'Yêu cầu cũ vẫn đang xử lý. Chưa thể xác nhận thu hồi phiên; hãy thử đăng xuất lại sau.': 'Una solicitud anterior sigue pendiente. La revocación de la sesión no está confirmada; intenta cerrar sesión más tarde.',
+  'Quyền tạo nhân vật đã hết hạn. Hãy ký xác thực mới.': 'El permiso de registro ha caducado. Firma un nuevo mensaje de autenticación.',
+  'Phiên đã hết hạn. Hãy kết nối và ký xác thực lại.':
+      'Tu sesión ha caducado. Conecta e inicia sesión de nuevo.',
+  'Thông điệp đăng nhập đã hết hạn. Hãy lấy thông điệp mới.':
+      'El mensaje de inicio de sesión ha caducado. Solicita un nuevo mensaje.',
+  'Hãy ký xác thực ví trước khi tạo nhân vật.':
+      'Inicia sesión con tu cartera antes de crear un personaje.',
+  'Tên nhà thám hiểm đã được sử dụng. Hãy chọn tên khác.':
+      'Este nombre de aventurero ya está en uso. Elige otro nombre.',
+  'Tên nhân vật không hợp lệ. Hãy kiểm tra rồi thử lại.':
+      'El nombre del personaje no es válido. Revísalo e inténtalo de nuevo.',
+  'Phiên máy chủ không khớp ví, mạng hoặc hồ sơ vừa xác thực. Hãy đăng nhập lại.': 'La sesión del servidor no coincide con tu cartera, red o perfil verificados. Inicia sesión de nuevo.',
+  'Chưa có phiên đăng nhập hợp lệ. Hãy ký xác thực ví.':
+      'No hay una sesión válida. Inicia sesión con tu cartera.',
+  'Quyền xác thực đã hết hạn. Hãy ký xác thực mới.':
+      'El permiso de autenticación ha caducado. Inicia sesión de nuevo.',
+  'Ví đã thay đổi. Hãy xác thực lại ví đang chọn.':
+      'Tu cartera ha cambiado. Verifica de nuevo la cartera seleccionada.',
+  'Mạng ví đã thay đổi. Hãy ký xác thực lại.':
+      'La red de tu cartera ha cambiado. Inicia sesión de nuevo.',
+  'Ví mất kết nối hoặc trả sự kiện không hợp lệ.':
+      'Tu cartera se ha desconectado o ha devuelto un evento no válido.',
+  'Yêu cầu cũ chưa kết thúc. Chưa xác nhận thu hồi phiên; hãy thử đăng xuất lại sau.': 'Una solicitud anterior está sin terminar. La revocación de la sesión no está confirmada; intenta cerrar sesión más tarde.',
+  'Chưa đối chiếu được cookie sau yêu cầu lỗi. Quyền đăng ký có thể còn trên máy chủ; chưa thể xác nhận đăng xuất.': 'No se pueden comprobar las cookies tras una solicitud fallida. El permiso de registro podría seguir activo en el servidor; el cierre de sesión no está confirmado.',
+  '{0} Gameplay đã khóa; chưa xác nhận phiên máy chủ được thu hồi.': '{0} El juego está bloqueado; la revocación de la sesión del servidor no está confirmada.',
+  'Bạn đã từ chối ký thông điệp đăng nhập.':
+      'Has rechazado la firma de inicio de sesión.',
+  'Bạn đã từ chối kết nối MetaMask.': 'Has rechazado la conexión con MetaMask.',
+  'Mạng Blockchain này chưa được phép đăng nhập.':
+      'No se permite iniciar sesión en esta red de cadena de bloques.',
+  'Địa chỉ trang không được máy chủ cho phép đăng nhập.':
+      'No se permite iniciar sesión desde el origen de este sitio.',
+  'Chữ ký đăng nhập không hợp lệ. Hãy ký thông điệp mới.':
+      'La firma de inicio de sesión no es válida. Firma un nuevo mensaje.',
+  'Quyền tạo nhân vật không còn hợp lệ. Hãy ký xác thực mới.':
+      'El permiso de registro no es válido. Inicia sesión de nuevo.',
+  'Phiên đã hết hạn. Hãy ký xác thực lại.':
+      'Tu sesión ha caducado. Inicia sesión de nuevo.',
+  'Không thể hoàn tất xác thực. Hãy kiểm tra kết nối và thử lại.':
+      'No se puede autenticar. Comprueba tu conexión e inténtalo de nuevo.',
+  'Tên nhà thám hiểm đã được sử dụng.':
+      'Este nombre de aventurero ya está en uso.',
+  'Tên nhân vật không hợp lệ.': 'El nombre del personaje no es válido.',
+  'CSRF không hợp lệ. Cần đối chiếu lại phiên.':
+      'El token CSRF no es válido. Hay que comprobar tu sesión de nuevo.',
+  'Ví đã có tài khoản. Hãy xác thực lại để đăng nhập.': 'Esta cartera ya tiene una cuenta. Autentícate de nuevo para iniciar sesión.',
+  'Challenge đã được sử dụng. Hãy bắt đầu xác thực mới.':
+      'El desafío ya se ha usado. Comienza un nuevo inicio de sesión.',
+  'Cấu hình HTTP Auth không hợp lệ.':
+      'La configuración HTTP de autenticación no es válida.',
+  'Dữ liệu gửi tới Auth không hợp lệ.':
+      'Los datos de la solicitud de autenticación no son válidos.',
+  'Không liên lạc được Auth. Kiểm tra Backend, mạng và CORS.': 'No se puede acceder a la autenticación. Comprueba el servidor, la conexión y CORS.',
+  'Auth chưa trả lời trong thời hạn; chưa xác định kết quả trên máy chủ.': 'Se ha agotado el tiempo de autenticación; se desconoce el resultado del servidor.',
+  'Máy chủ từ chối dữ liệu yêu cầu.':
+      'El servidor ha rechazado los datos de la solicitud.',
+  'Phiên hoặc quyền xác thực không còn hợp lệ.':
+      'Tu sesión o permiso de autenticación no es válido.',
+  'Yêu cầu không được phép. Kiểm tra Origin và CSRF.':
+      'Solicitud no permitida. Comprueba Origin y CSRF.',
+  'Dữ liệu Auth xung đột; cần kiểm tra lại luồng xác thực.': 'Conflicto en los datos de autenticación; comprueba de nuevo el flujo de inicio de sesión.',
+  'Challenge hoặc quyền xác thực đã hết hạn.':
+      'El desafío o el permiso de autenticación ha caducado.',
+  'Quá nhiều yêu cầu. Hãy thử lại sau theo hướng dẫn máy chủ.': 'Demasiadas solicitudes. Reintenta más tarde según las indicaciones del servidor.',
+  'Máy chủ Auth tạm thời không sẵn sàng.':
+      'El servidor de autenticación no está disponible temporalmente.',
+  'Máy chủ trả HTTP status ngoài hợp đồng Auth.':
+      'El servidor ha devuelto un estado HTTP de autenticación inesperado.',
+  'Dữ liệu Auth trả về không đúng hợp đồng.':
+      'El formato de la respuesta de autenticación no es válido.',
+  'Yêu cầu Auth trước vẫn đang xử lý; chưa được gửi mutation mới.': 'Hay una solicitud de autenticación anterior pendiente; aún no se puede enviar una nueva mutación.',
+  'HTTP client Auth đã được đóng.':
+      'El cliente HTTP de autenticación está cerrado.',
+  'Chưa thấy MetaMask. Hãy cài tiện ích rồi tải lại trang.':
+      'No se ha encontrado MetaMask. Instala la extensión y recarga la página.',
+  'Ví đang có không được nhận diện là MetaMask.':
+      'La cartera disponible no se reconoce como MetaMask.',
+  'Có nhiều provider MetaMask. Cần chọn rõ một provider.': 'Se han encontrado varios proveedores de MetaMask. Selecciona uno explícitamente.',
+  'Provider thiếu API request hoặc API quản lý sự kiện cần thiết.': 'El proveedor de cartera no dispone de la API de solicitudes o eventos necesaria.',
+  'Bạn đã từ chối yêu cầu trong MetaMask.':
+      'Has rechazado la solicitud en MetaMask.',
+  'MetaMask đang có yêu cầu chờ xử lý. Hãy xem popup đang mở.': 'MetaMask tiene una solicitud pendiente. Comprueba la ventana emergente abierta.',
+  'Chưa có tài khoản được cấp quyền. Hãy bấm kết nối MetaMask.':
+      'No hay ninguna cuenta autorizada. Selecciona Conectar MetaMask.',
+  'Tài khoản ví đã đổi. Hãy lấy challenge mới và xác thực lại.': 'La cuenta de tu cartera ha cambiado. Solicita un nuevo desafío e inicia sesión de nuevo.',
+  'Mạng ví đã đổi. Hãy lấy challenge mới và xác thực lại.': 'La red de tu cartera ha cambiado. Solicita un nuevo desafío e inicia sesión de nuevo.',
+  'Địa chỉ ví phải là 20 byte hexadecimal.':
+      'Las direcciones de cartera deben contener 20 bytes hexadecimales.',
+  'MetaMask trả chain ID không hợp lệ.':
+      'MetaMask ha devuelto un ID de cadena no válido.',
+  'Thông điệp phải giữ nguyên UTF-8, không rỗng và tối đa 4096 byte.': 'El mensaje debe conservar UTF-8, no estar vacío y contener como máximo 4096 bytes.',
+  'MetaMask trả dữ liệu không đúng định dạng.':
+      'MetaMask ha devuelto un formato de respuesta no válido.',
+  'Provider MetaMask đã mất kết nối.':
+      'El proveedor de MetaMask se ha desconectado.',
+  'Không giao tiếp được với provider MetaMask.':
+      'No se puede comunicar con el proveedor de MetaMask.',
+  'MetaMask chưa trả lời. Popup có thể vẫn đang mở; không tự gửi yêu cầu mới.': 'MetaMask no ha respondido. La ventana emergente podría seguir abierta; no envíes otra solicitud automáticamente.',
+  'Adapter MetaMask đã được đóng.': 'El adaptador de MetaMask está cerrado.',
+  'Dịch vụ tiến trình tạm thời chưa sẵn sàng (503).':
+      'El servicio de progreso no está disponible temporalmente (503).',
+  'Không thể kết nối máy chủ để tải tiến trình.':
+      'No se puede conectar con el servidor para cargar el progreso.',
+  'Lỗi không xác định khi tải tiến trình.':
+      'Error desconocido al cargar el progreso.',
+  'Bằng chứng ván chơi đã được sử dụng trước đó (409).':
+      'Las pruebas de esta partida ya se han usado (409).',
+  'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại SIWE.':
+      'Tu sesión ha caducado. Inicia sesión con SIWE de nuevo.',
+  'Hệ thống xác minh tạm thời chưa sẵn sàng (503).':
+      'El servicio de verificación no está disponible temporalmente (503).',
+  'BẮN': 'DISPARAR',
+  'Nhà tìm vàng nguyên bản.': 'El buscador de oro original.',
+  'Thợ mỏ': 'Minero',
+  'Mũ bảo hộ vàng, áo xanh công nhân.':
+      'Casco de seguridad amarillo y camisa de trabajo azul.',
+  'Cao bồi': 'Vaquero',
+  'Áo da nâu, khăn đỏ.': 'Abrigo de cuero marrón y pañuelo rojo.',
+  'Hiệp sĩ vàng': 'Caballero dorado',
+  'Giáp ánh kim — dành cho người nhặt chăm nhất.':
+      'Armadura resplandeciente para los coleccionistas más dedicados.',
+  'THUONG': 'COMÚN',
+  'KHONGPHOBIEN': 'POCO COMÚN',
+  'HIEM': 'RARO',
+  'SUTHI': 'ÉPICO',
+  'HUYENTHOAI': 'LEGENDARIO',
+  'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet 4×4 để điều khiển trong gameplay.': 'Tu personaje está en Inventario > Personajes de IA. La imagen es un PNG estático de 128×128, no una hoja de sprites jugable de 4×4.',
+  'Vàng: {0}{1}': 'Oro: {0}{1}',
+  '\nChờ nhận: {0} (tự gộp vào giao dịch)':
+      '\nPendiente: {0} (se incluye automáticamente en la transacción)',
+  'Bạn nhận được {0} ×{1}.': 'Has recibido {0} ×{1}.',
+  'Đã xóa ảnh preview khỏi kho tạm.':
+      'La imagen de vista previa se ha eliminado del almacenamiento temporal.',
+  'Không thể xóa ảnh preview. Hãy thử lại.':
+      'No se puede eliminar la imagen de vista previa. Inténtalo de nuevo.',
+  'NHÂN VẬT MẪU': 'PERSONAJE DE EJEMPLO',
+  'NHÂN VẬT AI PIXEL-ART': 'PERSONAJE DE IA EN ARTE DE PÍXELES',
+  'Nhân vật sẵn sàng để lưu vào ví.':
+      'Tu personaje está listo para guardarse en tu cartera.',
+  'Ảnh sẽ được backend chuẩn hóa thành sprite-sheet 4×4 để trang bị và chơi như George.': 'El servidor convertirá la imagen en una hoja de sprites de 4×4 para equiparlo y jugar como George.',
+  'Nhân vật đã nằm trong Kho đồ > Nhân vật AI và có thể trang bị ở đó. Sprite-sheet 4×4 sẽ được tải khi bắt đầu trang bị.': 'Tu personaje está en Inventario > Personajes de IA y puedes equiparlo allí. Su hoja de sprites de 4×4 se cargará al equiparlo.',
+  'XÓA ẢNH': 'ELIMINAR IMAGEN',
+  'Nhân vật': 'Personajes',
+  'NHÂN VẬT AI · ĐANG DÙNG': 'PERSONAJE DE IA · EN USO',
+  'PHẦN QUÀ TRONG RƯƠNG': 'RECOMPENSAS DEL COFRE',
+  'Danh sách phần thưởng có thể nhận': 'Recompensas disponibles',
+  'Vật phẩm hiếm': 'Objeto raro',
+  'Phần thưởng vàng': 'Recompensa de oro',
+  'Vật phẩm mạnh': 'Objeto potente',
+  'Vật phẩm thường': 'Objeto común',
+  'Vật phẩm sử thi': 'Objeto épico',
+  'Vật phẩm huyền thoại': 'Objeto legendario',
+  'Cần kết nối MetaMask trước khi nhận quà.':
+      'Conecta MetaMask antes de reclamar un regalo.',
+  'ĐANG KIỂM TRA MÃ QUÀ…': 'COMPROBANDO CÓDIGO DE REGALO…',
+  'ĐANG CẤP THƯỞNG…': 'ENTREGANDO RECOMPENSA…',
+  'Mã quà tặng đã được sử dụng hoặc đạt giới hạn nhận.': 'Este código de regalo ya se ha usado o ha alcanzado su límite de reclamaciones.',
+  'Không thể nhận quà: {0}': 'No se puede reclamar el regalo: {0}',
+  'XEM KHO ĐỒ': 'VER INVENTARIO',
+  'ĐANG': 'PROCESANDO',
+  'Thêm nhân vật': 'Añadir personaje',
+  'Đã lưu · sprite 4×4': 'Guardado · Sprite de 4×4',
+  'Không tải được sprite nhân vật AI.':
+      'No se puede cargar el sprite del personaje de IA.',
+  'Đã trang bị {0}. Sẽ dùng ở ván tiếp theo.':
+      'Has equipado a {0}. Se usará en tu próxima partida.',
+  'Không thể trang bị nhân vật AI: {0}':
+      'No se puede equipar el personaje de IA: {0}',
+  'Loại tài sản: Nhân vật AI gắn với ví hiện tại':
+      'Tipo de activo: personaje de IA vinculado a tu cartera actual',
+  'Gameplay: Sprite sheet 4×4, có thể trang bị ở ván tiếp theo':
+      'Jugabilidad: hoja de sprites de 4×4, equipable para la próxima partida',
+  'Vui lòng xoay ngang thiết bị': 'Gira tu dispositivo',
+  'Gold Rush được tối ưu cho màn hình ngang.':
+      'Gold Rush está optimizado para pantallas en horizontal.',
+  'QUÉT MÃ QR': 'ESCANEAR CÓDIGO QR',
+  'Quét QR hiện chỉ hỗ trợ trên trình duyệt Web.':
+      'Actualmente solo se pueden escanear códigos QR en un navegador web.',
+  'QUÉT MÃ QR QUÀ TẶNG': 'ESCANEAR QR DE REGALO',
+  'Đang yêu cầu quyền truy cập camera…': 'Solicitando acceso a la cámara…',
+  'Camera đã mở nhưng Chrome chưa hỗ trợ nhận diện QR. Hãy cập nhật Chrome.': 'La cámara está abierta, pero Chrome no admite la detección de QR. Actualiza Chrome.',
+  'Đưa mã QR vào khung để quét':
+      'Coloca el código QR dentro del marco para escanearlo',
+  'Không thể mở camera: {0}': 'No se puede abrir la cámara: {0}',
+  'Chrome chưa được cấp quyền camera hoặc camera đang bị chặn.':
+      'Chrome no tiene permiso para usar la cámara o el acceso está bloqueado.',
+  'Camera đang được ứng dụng khác sử dụng.':
+      'Otra aplicación está usando la cámara.',
+  'Không tìm thấy camera khả dụng trên máy.':
+      'No se ha encontrado ninguna cámara disponible en este dispositivo.',
+  'Chrome không tạo được luồng hình ảnh. Hãy đóng ứng dụng đang dùng camera rồi thử lại.': 'Chrome no ha podido iniciar la transmisión de vídeo. Cierra las otras aplicaciones que usen la cámara e inténtalo de nuevo.',
+  'HỦY': 'CANCELAR',
+  'Kho đồ': 'Inventario',
+  'Ngôn ngữ': 'Idioma',
+};
