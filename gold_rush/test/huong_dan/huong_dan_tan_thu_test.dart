@@ -169,6 +169,67 @@ void main() {
     },
   );
 
+  testWidgets(
+    'disposed gate ignores a late read without marking tutorial seen',
+    (tester) async {
+      final read = Completer<bool?>();
+      final store = LuuHuongDan(doc: () => read.future, ghi: () async {});
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HuongDanLanDau(luu: store, child: const Text('LOBBY')),
+        ),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      read.complete(false);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(tester.takeException(), isNull);
+      expect(await store.nenHienTuDong(), isTrue);
+    },
+  );
+
+  testWidgets('open guide reacts to language changes without losing its page', (
+    tester,
+  ) async {
+    final store = LuuHuongDan(doc: () async => false, ghi: () async {});
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    await open(tester, store, language: language);
+    await tester.tap(find.text('Tiếp theo'));
+    await tester.pumpAndSettle();
+    await language.doi('es');
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 2/5'), findsOneWidget);
+    expect(find.text('Elige tu primer nivel'), findsOneWidget);
+    await tester.tap(find.text('Omitir'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('automatic guide closes when its owning lobby disappears', (
+    tester,
+  ) async {
+    final visible = ValueNotifier(true);
+    addTearDown(visible.dispose);
+    final store = LuuHuongDan(doc: () async => false, ghi: () async {});
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ValueListenableBuilder<bool>(
+          valueListenable: visible,
+          builder: (_, value, _) => value
+              ? HuongDanLanDau(luu: store, child: const Text('LOBBY'))
+              : const Text('WELCOME'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    visible.value = false;
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('WELCOME'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('first-entry gate opens once and ignores rebuilds', (
     tester,
   ) async {

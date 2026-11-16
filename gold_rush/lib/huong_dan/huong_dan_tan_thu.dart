@@ -38,23 +38,38 @@ class LuuHuongDan {
   }
 }
 
-Future<void> moHuongDanTanThu(BuildContext context, {LuuHuongDan? luu}) async {
+/// Owned by the opening screen, so the guide cannot outlive that screen.
+class PhienHuongDan {
+  PhienHuongDan._(this._route);
+  final DialogRoute<void> _route;
+
+  void dong() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_route.isActive) _route.navigator?.removeRoute(_route);
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+}
+
+PhienHuongDan? moHuongDanTanThu(BuildContext context, {LuuHuongDan? luu}) {
   final store = luu ?? LuuHuongDan.chung;
-  if (!context.mounted || store._dangMo) return;
+  if (!context.mounted || store._dangMo) return null;
   final language = PhamViNgonNgu.of(context);
+  final route = DialogRoute<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) =>
+        PhamViNgonNgu(ngonNgu: language, child: const _HuongDanDialog()),
+  );
   store._dangMo = true;
   store._daMoTrongPhien = true;
-  try {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) =>
-          PhamViNgonNgu(ngonNgu: language, child: const _HuongDanDialog()),
-    );
-  } finally {
-    store._dangMo = false;
-    unawaited(store.danhDauDaXem());
-  }
+  unawaited(
+    Navigator.of(context, rootNavigator: true).push(route).whenComplete(() {
+      store._dangMo = false;
+      unawaited(store.danhDauDaXem());
+    }),
+  );
+  return PhienHuongDan._(route);
 }
 
 /// The readiness callback keeps delayed storage reads from covering another screen.
@@ -73,6 +88,7 @@ class HuongDanLanDau extends StatefulWidget {
 }
 
 class _HuongDanLanDauState extends State<HuongDanLanDau> {
+  PhienHuongDan? _phien;
   @override
   void initState() {
     super.initState();
@@ -86,7 +102,13 @@ class _HuongDanLanDauState extends State<HuongDanLanDau> {
         !(widget.sanSang?.call() ?? true)) {
       return;
     }
-    await moHuongDanTanThu(context, luu: store);
+    _phien = moHuongDanTanThu(context, luu: store);
+  }
+
+  @override
+  void dispose() {
+    _phien?.dong();
+    super.dispose();
   }
 
   @override

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
+import '../huong_dan/huong_dan_tan_thu.dart';
 import '../man_choi.dart';
 import '../ngon_ngu/ngon_ngu.dart';
 import 'main_lobby.dart';
@@ -147,7 +148,12 @@ class ManHinhMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GoldRushMainLobby(game: game);
+    return HuongDanLanDau(
+      sanSang: () =>
+          game.overlays.isActive(LopPhu.menu) &&
+          game.overlays.activeOverlays.length == 1,
+      child: GoldRushMainLobby(game: game),
+    );
   }
 }
 
@@ -165,6 +171,14 @@ class ManHinhCaiDat extends StatefulWidget {
 }
 
 class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
+  PhienHuongDan? _huongDan;
+
+  @override
+  void dispose() {
+    _huongDan?.dong();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
@@ -174,6 +188,14 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
       noiDung: [
         const ChonNgonNgu(),
         const SizedBox(height: 12),
+        _Nut(
+          nhan: 'Xem lại hướng dẫn',
+          bieuTuong: Icons.help_outline,
+          khiBam: () {
+            final phien = moHuongDanTanThu(context);
+            if (phien != null) _huongDan = phien;
+          },
+        ),
         SwitchListTile(
           value: AmThanh.batNhac,
           onChanged: (v) {
