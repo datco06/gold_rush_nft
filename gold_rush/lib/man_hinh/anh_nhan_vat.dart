@@ -27,6 +27,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
   final VoidCallback? onRungRuong;
   final VoidCallback? onQuaTang;
   final VoidCallback? onKhoDo;
+  final VoidCallback? onPlayerTap;
   final bool tuDongLuuSauKhiTao;
 
   const ManHinhAnhNhanVat({
@@ -42,6 +43,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
     this.onRungRuong,
     this.onQuaTang,
     this.onKhoDo,
+    this.onPlayerTap,
     this.tuDongLuuSauKhiTao = false,
   });
 
@@ -780,9 +782,14 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
           children: [
             LayoutBuilder(
               builder: (context, constraints) {
-                if (constraints.maxWidth < 600) return const SizedBox.shrink();
+                final mobile = constraints.maxWidth < 600;
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                  padding: EdgeInsets.fromLTRB(
+                    mobile ? 8 : 14,
+                    mobile ? 6 : 10,
+                    mobile ? 8 : 14,
+                    mobile ? 4 : 6,
+                  ),
                   child: GoldRushTopBar(
                     activeItem: GoldRushTopBarItem.xuongAi,
                     onSanhCho:
@@ -801,6 +808,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         widget.onKhoDo ??
                         () => Navigator.of(context).maybePop(),
                     onClose: () => Navigator.of(context).maybePop(),
+                    onPlayerTap: widget.onPlayerTap,
                     showClose: true,
                     onSettings: null,
                   ),
@@ -835,11 +843,6 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      if (_nguoiDung != null) ...[
-                        _xayDungAuthBar(),
-                        const SizedBox(height: 16),
-                      ],
-
                       // 2. Thẻ Tiến Trình Chơi Màn
                       if (_tienTrinh != null) ...[
                         _xayDungCardTienTrinh(),

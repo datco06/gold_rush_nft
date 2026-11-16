@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:ui_web' as ui_web;
@@ -76,10 +77,7 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
       // cấp quyền. `video: true` để trình duyệt tự chọn camera khả dụng.
       stream = await web.window.navigator.mediaDevices
           .getUserMedia(
-            web.MediaStreamConstraints(
-              video: true.toJS,
-              audio: false.toJS,
-            ),
+            web.MediaStreamConstraints(video: true.toJS, audio: false.toJS),
           )
           .toDart;
       if (!mounted) {
@@ -106,15 +104,18 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
       if (!barcodeDetector.isA<JSFunction>()) {
         if (mounted) {
           setState(
-            () => _thongBao =
-                'Camera đã mở nhưng Chrome chưa hỗ trợ nhận diện QR. Hãy cập nhật Chrome.',
+            () => _thongBao = 'Camera đã mở nhưng Chrome chưa hỗ trợ nhận diện QR. Hãy cập nhật Chrome.',
           );
         }
         return;
       }
       // BarcodeFormat dùng enum chuẩn của Barcode Detection API.
       // Chrome yêu cầu `qr_code`, không phải tên rút gọn `qr`.
-      _detector = _BarcodeDetector({'formats': ['qr_code']}.jsify()!);
+      _detector = _BarcodeDetector(
+        {
+          'formats': ['qr_code'],
+        }.jsify()!,
+      );
       setState(() => _thongBao = 'Đưa mã QR vào khung để quét');
       unawaited(_quetLienTuc());
     } catch (e) {
@@ -188,11 +189,16 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final khung = math
+        .min(420.0, math.min(size.width - 48, size.height * .52))
+        .clamp(180.0, 420.0)
+        .toDouble();
     return AlertDialog(
       title: const Text('QUÉT MÃ QR QUÀ TẶNG'),
-      content: SizedBox(
-        width: 420,
-        height: 360,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      content: SizedBox.square(
+        dimension: khung,
         child: Stack(
           fit: StackFit.expand,
           children: [

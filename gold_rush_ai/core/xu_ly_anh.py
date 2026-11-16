@@ -7,6 +7,9 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 from .nhan_vat_ai import KICH_THUOC_ANH_XEM_TRUOC
 
+KICH_THUOC_O_SPRITE = 64
+KICH_THUOC_SHEET_SPRITE = KICH_THUOC_O_SPRITE * 4
+
 
 class LoiAnhKhongHopLe(ValueError):
     pass
@@ -39,6 +42,42 @@ def _chuan_khung_nhan_vat(anh: Image.Image, kich_thuoc: int) -> Image.Image:
     return khung
 
 
+def _kiem_tra_luoi_nguon(data: bytes) -> None:
+    """Chặn ảnh không vuông trước khi tách cell, không tự cắt theo lưới giả."""
+    if not isinstance(data, bytes):
+        raise LoiAnhKhongHopLe("Sprite sheet AI cần dữ liệu PNG hợp lệ")
+    try:
+        with Image.open(BytesIO(data), formats=("PNG", "JPEG", "WEBP")) as source:
+            rong, cao = source.size
+            if rong != cao or rong < 4 or rong % 4 != 0:
+                raise LoiAnhKhongHopLe(
+                    "Sprite sheet AI phải là ảnh vuông có kích thước chia hết cho 4"
+                )
+    except LoiAnhKhongHopLe:
+        raise
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+        raise LoiAnhKhongHopLe("Không đọc được sprite sheet AI") from None
+
+
+def _kiem_tra_cac_frame(frames: list[Image.Image]) -> None:
+    """Kiểm tra đủ 16 frame và loại ảnh rỗng/không đồng nhất nghiêm trọng."""
+    if len(frames) != 16:
+        raise LoiAnhKhongHopLe("Sprite sheet AI phải có đúng 16 frame")
+    hop_le: list[tuple[int, int]] = []
+    for frame in frames:
+        bbox = frame.getchannel("A").getbbox()
+        if bbox is None:
+            raise LoiAnhKhongHopLe("Sprite sheet AI có frame rỗng")
+        rong = bbox[2] - bbox[0]
+        cao = bbox[3] - bbox[1]
+        if rong < 2 or cao < 2:
+            raise LoiAnhKhongHopLe("Sprite sheet AI có frame không hợp lệ")
+        hop_le.append((rong, cao))
+    chieu_cao = [cao for _, cao in hop_le]
+    if min(chieu_cao) / max(chieu_cao) < 0.25:
+        raise LoiAnhKhongHopLe("Tỉ lệ nhân vật giữa các frame không đồng nhất")
+
+
 def tao_sprite_sheet_4x4(
     data: bytes, *, kich_thuoc_o: int = 16, la_sprite_sheet: bool = False
 ) -> bytes:
@@ -51,7 +90,9 @@ def tao_sprite_sheet_4x4(
         raise ValueError("Kích thước ô sprite không hợp lệ")
     if type(la_sprite_sheet) is not bool:
         raise ValueError("Cờ sprite sheet không hợp lệ")
-    png = chuan_hoa_anh(data)
+    if la_sprite_sheet:
+        _kiem_tra_luoi_nguon(data)
+    png = chuan_hoa_anh(data, kich_thuoc=kich_thuoc_o * 4)
     with Image.open(BytesIO(png)) as source:
         rgba = source.convert("RGBA")
         # Tách nền heuristic từ bốn góc (chỉ xóa vùng liên thông gần màu góc,
@@ -85,17 +126,27 @@ def tao_sprite_sheet_4x4(
             cell_height = quantized.height // 4
             if cell_width < 1 or cell_height < 1 or cell_width != cell_height:
                 raise LoiAnhKhongHopLe("Sprite sheet AI phải là lưới vuông 4x4")
+            raw_frames: list[Image.Image] = []
             for row in range(4):
                 for col in range(4):
-                    with quantized.crop((
+                    raw_frames.append(quantized.crop((
                         col * cell_width,
                         row * cell_height,
                         (col + 1) * cell_width,
                         (row + 1) * cell_height,
-                    )) as cell:
-                        frame = _chuan_khung_nhan_vat(cell, kich_thuoc_o)
-                        canvas.paste(frame, (col * kich_thuoc_o, row * kich_thuoc_o))
-                        frame.close()
+                    )))
+            try:
+                _kiem_tra_cac_frame(raw_frames)
+                for index, cell in enumerate(raw_frames):
+                    frame = _chuan_khung_nhan_vat(cell, kich_thuoc_o)
+                    canvas.paste(
+                        frame,
+                        ((index % 4) * kich_thuoc_o, (index // 4) * kich_thuoc_o),
+                    )
+                    frame.close()
+            finally:
+                for cell in raw_frames:
+                    cell.close()
         else:
             frame = _chuan_khung_nhan_vat(quantized, kich_thuoc_o)
             for row in range(4):
@@ -107,13 +158,39 @@ def tao_sprite_sheet_4x4(
             return output.getvalue()
 
 
+def tao_debug_sprite_sheet_4x4(
+    data: bytes, *, la_sprite_sheet: bool = True
+) -> bytes:
+    """Tạo bản PNG kiểm tra 256x256 có lưới đỏ 4x4, không dùng trong gameplay."""
+    from PIL import ImageDraw
+
+    normalized = tao_sprite_sheet_4x4(
+        data, kich_thuoc_o=KICH_THUOC_O_SPRITE, la_sprite_sheet=la_sprite_sheet
+    )
+    with Image.open(BytesIO(normalized)) as sheet:
+        debug = sheet.convert("RGBA")
+        draw = ImageDraw.Draw(debug)
+        mau = (255, 64, 64, 220)
+        for index in range(5):
+            point = index * KICH_THUOC_O_SPRITE
+            draw.line((point, 0, point, KICH_THUOC_SHEET_SPRITE - 1), fill=mau, width=1)
+            draw.line((0, point, KICH_THUOC_SHEET_SPRITE - 1, point), fill=mau, width=1)
+        with BytesIO() as output:
+            debug.save(output, format="PNG", optimize=True)
+            debug.close()
+            return output.getvalue()
+
+
 def chuan_hoa_anh(
     data: bytes,
     *,
+    kich_thuoc: int = KICH_THUOC_ANH_XEM_TRUOC,
     gioi_han_byte: int = 5 * 1024 * 1024,
     gioi_han_canh: int = 2048,
     gioi_han_pixel: int = 4 * 1024 * 1024,
 ) -> bytes:
+    if type(kich_thuoc) is not int or not 1 <= kich_thuoc <= gioi_han_canh:
+        raise ValueError("Kích thước ảnh chuẩn hóa không hợp lệ")
     for value in (gioi_han_byte, gioi_han_canh, gioi_han_pixel):
         if type(value) is not int or value < 1:
             raise ValueError("Giới hạn ảnh phải là số nguyên dương")
@@ -136,7 +213,7 @@ def chuan_hoa_anh(
                 ImageOps.exif_transpose(goc) as dung_huong,
                 dung_huong.convert("RGBA") as rgba,
             ):
-                canh = KICH_THUOC_ANH_XEM_TRUOC
+                canh = kich_thuoc
                 ti_le = min(canh / rgba.width, canh / rgba.height)
                 kich_thuoc = (
                     max(1, round(rgba.width * ti_le)),

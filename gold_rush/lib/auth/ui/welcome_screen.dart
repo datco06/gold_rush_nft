@@ -282,6 +282,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   Widget _wideWelcome(BoxConstraints constraints) {
+    // Browser landscape on phones/tablets can be wide enough for two columns
+    // but still be too short for the desktop-sized hero. Scale the existing
+    // composition as one unit so the welcome screen remains visible without
+    // changing the authentication flow or its content.
+    final shortViewport = constraints.maxHeight < 680;
+    final compositionScale = shortViewport ? .82 : 1.0;
     final panelWidth = math.min(470.0, constraints.maxWidth * .36);
     return Stack(
       fit: StackFit.expand,
@@ -305,12 +311,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: child,
               ),
             ),
-            child: const _HeroCopy(),
+            child: Transform.scale(
+              scale: compositionScale,
+              alignment: Alignment.topLeft,
+              child: _HeroCopy(compact: shortViewport),
+            ),
           ),
         ),
         Positioned(
           right: math.max(42, constraints.maxWidth * .065),
-          top: math.max(140, constraints.maxHeight * .225),
+          top: shortViewport
+              ? math.max(92, constraints.maxHeight * .17)
+              : math.max(140, constraints.maxHeight * .225),
           width: panelWidth,
           child: TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: 1),
@@ -325,15 +337,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: child,
               ),
             ),
-            child: ListenableBuilder(
-              listenable: widget.controller,
-              builder: (context, _) => _panel(false),
+            child: Transform.scale(
+              scale: compositionScale,
+              alignment: Alignment.topCenter,
+              child: ListenableBuilder(
+                listenable: widget.controller,
+                builder: (context, _) => _panel(false, compact: shortViewport),
+              ),
             ),
           ),
         ),
         const Positioned(
           left: 88,
-          bottom: 28,
+          bottom: 16,
           child: Text(
             'MỖI HÀNH TRÌNH BẮT ĐẦU TỪ MỘT BƯỚC CHÂN\n'
             'v1.3.0 · Gold Rush · Hành trình số',
@@ -349,7 +365,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 
-  Widget _panel(bool narrow) {
+  Widget _panel(bool narrow, {bool compact = false}) {
+    final dense = narrow || compact;
     final controller = widget.controller;
     final action = _action(controller);
     final busy = controller.isLoading || _actionPending;
@@ -373,48 +390,48 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           ],
         ),
         child: Padding(
-          padding: EdgeInsets.all(narrow ? 20 : 22),
+          padding: EdgeInsets.all(dense ? 14 : 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const _AdventurerCrest(),
-              const SizedBox(height: 18),
+              SizedBox(height: dense ? 10 : 18),
               Text(
                 'CHÀO MỪNG\nNHÀ THÁM HIỂM!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _Palette.parchment,
-                  fontSize: narrow ? 22 : 25,
+                  fontSize: dense ? 20 : 25,
                   height: 1.25,
                   fontWeight: FontWeight.w900,
                   letterSpacing: .7,
                 ),
               ),
-              const SizedBox(height: 14),
-              const Text(
+              SizedBox(height: dense ? 8 : 14),
+              Text(
                 'Khám phá thế giới Gold Rush, thu thập kho báu '
                 'và bắt đầu hành trình của bạn.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _Palette.parchment,
-                  fontSize: 15,
-                  height: 1.6,
+                  fontSize: dense ? 13 : 15,
+                  height: dense ? 1.35 : 1.6,
                 ),
               ),
-              const SizedBox(height: 10),
-              const Text(
+              SizedBox(height: dense ? 6 : 10),
+              Text(
                 'Đăng nhập an toàn bằng ví MetaMask để lưu tài khoản phiêu lưu.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _Palette.muted,
-                  fontSize: 13,
-                  height: 1.55,
+                  fontSize: dense ? 11 : 13,
+                  height: dense ? 1.35 : 1.55,
                 ),
               ),
-              const SizedBox(height: 21),
+              SizedBox(height: dense ? 10 : 21),
               const _GoldRule(),
-              const SizedBox(height: 17),
+              SizedBox(height: dense ? 9 : 17),
               Semantics(
                 liveRegion: true,
                 child: Column(
@@ -429,7 +446,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       color: authenticated ? _Palette.sage : _Palette.gold,
                       size: 20,
                     ),
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 5),
                     Text(
                       _statusMessage(controller),
                       key: const ValueKey('welcome-auth-status'),
@@ -438,8 +455,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         color: authenticated
                             ? _Palette.sage
                             : _Palette.parchment,
-                        fontSize: 13,
-                        height: 1.5,
+                        fontSize: dense ? 11 : 13,
+                        height: dense ? 1.3 : 1.5,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -480,7 +497,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                 ),
               ],
-              const SizedBox(height: 17),
+              SizedBox(height: dense ? 10 : 17),
               _QuestButton(
                 label: action.label,
                 icon: action.icon,
@@ -490,7 +507,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ? null
                     : () => unawaited(action.run!()),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: dense ? 10 : 18),
               const _SecurityNote(),
             ],
           ),
@@ -623,46 +640,53 @@ class _GameTitle extends StatelessWidget {
 }
 
 class _HeroCopy extends StatelessWidget {
-  const _HeroCopy();
+  const _HeroCopy({this.compact = false});
+  final bool compact;
 
   @override
-  Widget build(BuildContext context) => const Column(
+  Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const _GameTitle(narrow: false, align: TextAlign.left),
-      const SizedBox(height: 24),
-      const SizedBox(
+      _GameTitle(narrow: compact, align: TextAlign.left),
+      SizedBox(height: compact ? 12 : 24),
+      SizedBox(
         width: 470,
         child: Text(
           'Một thế giới mỏ vàng pixel, nơi mỗi chuyến đào là một ván chơi '
           'và mỗi nhân vật là một câu chuyện do AI vẽ nên.',
           style: TextStyle(
             color: Color(0xFF9BB0C0),
-            fontSize: 13.5,
-            height: 1.65,
+            fontSize: compact ? 11.5 : 13.5,
+            height: compact ? 1.4 : 1.65,
           ),
         ),
       ),
-      const SizedBox(height: 22),
-      const Row(
+      SizedBox(height: compact ? 12 : 22),
+      Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Feature(
-            icon: Icons.map_outlined,
-            title: '6 màn phiêu lưu',
-            desc: 'Đào sâu qua từng tầng hang',
+          const Expanded(
+            child: _Feature(
+              icon: Icons.map_outlined,
+              title: '6 màn phiêu lưu',
+              desc: 'Đào sâu qua từng tầng hang',
+            ),
           ),
           SizedBox(width: 16),
-          _Feature(
-            icon: Icons.auto_awesome_outlined,
-            title: 'Nhân vật AI',
-            desc: 'Tạo và lưu nhân vật độc bản',
+          const Expanded(
+            child: _Feature(
+              icon: Icons.auto_awesome_outlined,
+              title: 'Nhân vật AI',
+              desc: 'Tạo và lưu nhân vật độc bản',
+            ),
           ),
           SizedBox(width: 16),
-          _Feature(
-            icon: Icons.diamond_outlined,
-            title: 'Kho báu on-chain',
-            desc: 'Tài sản gắn với ví của bạn',
+          const Expanded(
+            child: _Feature(
+              icon: Icons.diamond_outlined,
+              title: 'Kho báu on-chain',
+              desc: 'Tài sản gắn với ví của bạn',
+            ),
           ),
         ],
       ),
@@ -677,42 +701,39 @@ class _Feature extends StatelessWidget {
   final String desc;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 145,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: Color(0x14FFFFFF),
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(color: Color(0x2BFFFFFF)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(7),
-            child: Icon(icon, size: 16, color: _Palette.gold),
-          ),
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      DecoratedBox(
+        decoration: BoxDecoration(
+          color: Color(0x14FFFFFF),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: Color(0x2BFFFFFF)),
         ),
-        const SizedBox(height: 7),
-        Text(
-          title,
-          style: const TextStyle(
-            color: _Palette.parchment,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
+        child: Padding(
+          padding: const EdgeInsets.all(7),
+          child: Icon(icon, size: 16, color: _Palette.gold),
         ),
-        const SizedBox(height: 3),
-        Text(
-          desc,
-          style: const TextStyle(
-            color: _Palette.mist,
-            fontSize: 10,
-            height: 1.35,
-          ),
+      ),
+      const SizedBox(height: 7),
+      Text(
+        title,
+        style: const TextStyle(
+          color: _Palette.parchment,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
         ),
-      ],
-    ),
+      ),
+      const SizedBox(height: 3),
+      Text(
+        desc,
+        style: const TextStyle(
+          color: _Palette.mist,
+          fontSize: 10,
+          height: 1.35,
+        ),
+      ),
+    ],
   );
 }
 

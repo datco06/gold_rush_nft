@@ -19,7 +19,7 @@ from .schemas_nhan_vat import (
     YeuCauLuuNhanVat,
     chuan_hoa_vi,
 )
-from .xu_ly_anh import chuan_hoa_anh, tao_sprite_sheet_4x4
+from .xu_ly_anh import LoiAnhKhongHopLe, chuan_hoa_anh, tao_sprite_sheet_4x4
 
 
 class LoiKhoNhanVat(RuntimeError):
@@ -584,6 +584,19 @@ class KhoNhanVat:
         dt = datetime.fromtimestamp(row["created_at"], tz=UTC)
         created_str = dt.isoformat()
         char_id = row["character_id"]
+        # Một nhân vật cũ có thể chứa sprite sheet không hợp lệ. Không để một
+        # bản ghi lỗi làm hỏng toàn bộ danh sách nhân vật; endpoint ảnh riêng
+        # vẫn sẽ trả lỗi cho đúng nhân vật đó.
+        sprite_hash = None
+        try:
+            sprite_hash = tinh_character_hash(
+                tao_sprite_sheet_4x4(
+                    row["image_blob"],
+                    la_sprite_sheet=row["generation_source"] == "image_model",
+                )
+            )
+        except (LoiAnhKhongHopLe, ValueError):
+            pass
         return ThongTinNhanVat(
             character_id=char_id,
             owner_user_id=row["owner_user_id"],
@@ -599,11 +612,6 @@ class KhoNhanVat:
             transaction_hash=row["transaction_hash"],
             name=row["name"],
             sprite_format="sprite_sheet_4x4_64x64",
-            sprite_hash=tinh_character_hash(
-                tao_sprite_sheet_4x4(
-                    row["image_blob"],
-                    la_sprite_sheet=row["generation_source"] == "image_model",
-                )
-            ),
+            sprite_hash=sprite_hash,
             sprite_sheet_url=f"/api/ai/nhan-vat/{char_id}/sprite-sheet",
         )

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../ai/may_chu_nhan_vat.dart';
@@ -9,6 +11,7 @@ import '../components/qr_scanner.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import 'anh_nhan_vat.dart';
+import 'ho_so_nhan_vat.dart';
 
 class ManHinhTrungTamQuaTang extends StatefulWidget {
   final GoldRushGame game;
@@ -25,6 +28,14 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
 
   GoldRushGame get game => widget.game;
 
+  void _moHoSo() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CharacterProfileScreen(game: game),
+      ),
+    );
+  }
+
   Future<void> _moXuongAi() async {
     game.dongQuaTang();
     final api = MayChuNhanVat();
@@ -36,6 +47,13 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
             authController: game.auth,
             vi: game.phienVi?.vi,
             tienTrinhController: game.tienTrinh,
+            onPlayerTap: () {
+              Navigator.of(aiContext).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CharacterProfileScreen(game: game),
+                ),
+              );
+            },
             onSanhCho: () {
               Navigator.of(aiContext).pop();
               game.veMenu();
@@ -76,6 +94,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
       gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
       playerName: game.auth?.user?.username ?? 'datco6',
       onSanhCho: game.veMenu,
+      onPlayerTap: _moHoSo,
       onCuaHang: () {
         game.dongQuaTang();
         game.moCuaHang();
@@ -157,130 +176,166 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
       context: context,
       barrierDismissible: false,
       barrierColor: const Color(0xCC050A13),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(20),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 520),
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF263B55), Color(0xFF101D2D)],
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE4B653), width: 2),
-            boxShadow: const [
-              BoxShadow(color: Color(0x88000000), blurRadius: 30),
-            ],
+      builder: (context) {
+        final size = MediaQuery.sizeOf(context);
+        final imageSize = math
+            .min(190.0, math.min(size.width - 80, size.height * .30))
+            .clamp(96.0, 190.0)
+            .toDouble();
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '✦ CHÚC MỪNG BẠN! ✦',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFFFFD780),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 520,
+              maxHeight: size.height * .9,
+            ),
+            child: SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.fromLTRB(
+                  size.width < 420 ? 16 : 22,
+                  size.width < 420 ? 18 : 24,
+                  size.width < 420 ? 16 : 22,
+                  20,
                 ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: 190,
-                height: 190,
                 decoration: BoxDecoration(
-                  gradient: const RadialGradient(
-                    colors: [Color(0xFF5C507A), Color(0xFF1D2B43)],
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF263B55), Color(0xFF101D2D)],
                   ),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: const Color(0xFFFFD780), width: 2),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFE4B653), width: 2),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x88000000), blurRadius: 30),
+                  ],
                 ),
-                child: result.laVang
-                    ? const Icon(
-                        Icons.monetization_on_rounded,
-                        size: 92,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '✦ CHÚC MỪNG BẠN! ✦',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
                         color: Color(0xFFFFD780),
-                      )
-                    : result.imageUrl.isNotEmpty
-                    ? HinhTrangBiFrame(asset: result.imageUrl, kichThuoc: 128)
-                    : const Icon(
-                        Icons.card_giftcard_rounded,
-                        size: 92,
-                        color: Color(0xFFFFD780),
-                      ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                result.laVang ? 'PHẦN THƯỞNG VÀNG' : 'VẬT PHẨM HIẾM',
-                style: const TextStyle(
-                  color: Color(0xFFDDA9F3),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                result.laVang
-                    ? 'Bạn nhận được ${result.amount} vàng.'
-                    : 'Bạn nhận được ${result.name} ×${result.amount}.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFFB9C7D5), fontSize: 15),
-              ),
-              if (!result.laVang && result.rarity.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  result.rarity,
-                  style: const TextStyle(color: Color(0xFFB9C7D5)),
-                ),
-              ],
-              const SizedBox(height: 22),
-              Row(
-                children: [
-                  if (!result.laVang)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          game.dongQuaTang();
-                          game.moKhoDo();
-                        },
-                        child: const Text('XEM KHO ĐỒ'),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
                       ),
                     ),
-                  if (!result.laVang) const SizedBox(width: 10),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFE8B64F),
-                        foregroundColor: const Color(0xFF211A10),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 18),
+                    Container(
+                      width: imageSize,
+                      height: imageSize,
+                      decoration: BoxDecoration(
+                        gradient: const RadialGradient(
+                          colors: [Color(0xFF5C507A), Color(0xFF1D2B43)],
+                        ),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: const Color(0xFFFFD780),
+                          width: 2,
                         ),
                       ),
-                      child: const Text(
-                        'ĐÓNG',
-                        style: TextStyle(fontWeight: FontWeight.w900),
+                      child: result.laVang
+                          ? const Icon(
+                              Icons.monetization_on_rounded,
+                              size: 92,
+                              color: Color(0xFFFFD780),
+                            )
+                          : result.imageUrl.isNotEmpty
+                          ? HinhTrangBiFrame(
+                              asset: result.imageUrl,
+                              kichThuoc: 128,
+                            )
+                          : const Icon(
+                              Icons.card_giftcard_rounded,
+                              size: 92,
+                              color: Color(0xFFFFD780),
+                            ),
+                    ),
+                    SizedBox(height: size.height < 600 ? 10 : 18),
+                    Text(
+                      result.laVang ? 'PHẦN THƯỞNG VÀNG' : 'VẬT PHẨM HIẾM',
+                      style: const TextStyle(
+                        color: Color(0xFFDDA9F3),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      result.laVang
+                          ? 'Bạn nhận được ${result.amount} vàng.'
+                          : 'Bạn nhận được ${result.name} ×${result.amount}.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFFB9C7D5),
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (!result.laVang && result.rarity.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        result.rarity,
+                        style: const TextStyle(color: Color(0xFFB9C7D5)),
+                      ),
+                    ],
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        if (!result.laVang)
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                game.dongQuaTang();
+                                game.moKhoDo();
+                              },
+                              child: const Text('XEM KHO ĐỒ'),
+                            ),
+                          ),
+                        if (!result.laVang) const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFE8B64F),
+                              foregroundColor: const Color(0xFF211A10),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'ĐÓNG',
+                              style: TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final pv = widget.game.phienVi;
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 1100 || size.height < 560;
+    final giftSize = compact
+        ? math.min(150.0, math.max(112.0, size.height * .28))
+        : 190.0;
     return Material(
       color: const Color(0xFF081421),
       child: SafeArea(
@@ -289,57 +344,76 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
           children: [
             const Positioned.fill(child: _QuaTangNen()),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+              padding: EdgeInsets.fromLTRB(
+                compact ? 10 : 20,
+                compact ? 10 : 20,
+                compact ? 10 : 20,
+                compact ? 8 : 18,
+              ),
               child: Column(
                 children: [
                   _thanhTren(pv),
-                  const SizedBox(height: 26),
+                  SizedBox(height: compact ? 8 : 26),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Center(
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 720),
+                          constraints: BoxConstraints(
+                            maxWidth: compact ? 320 : 720,
+                          ),
                           child: Column(
                             children: [
-                              const Text(
+                              Text(
                                 '✦ KHO BÁU DÀNH CHO BẠN ✦',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Color(0xFFE6AE43),
-                                  fontSize: 13,
+                                  fontSize: compact ? 10 : 13,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 4,
                                 ),
                               ),
-                              const SizedBox(height: 14),
-                              const Text(
+                              SizedBox(height: compact ? 5 : 14),
+                              Text(
                                 'TRUNG TÂM\nQUÀ TẶNG',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Color(0xFFFFD889),
                                   fontFamily: 'serif',
-                                  fontSize: 42,
+                                  fontSize: compact ? 28 : 42,
                                   height: .96,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.2,
                                 ),
                               ),
-                              const SizedBox(height: 18),
-                              const Text(
+                              SizedBox(height: compact ? 6 : 18),
+                              Text(
                                 'Khám phá những mã quà đặc biệt\nvà nhận phần thưởng vào ví Gold Rush.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Color(0xFFAFC0D1),
-                                  fontSize: 17,
-                                  height: 1.5,
+                                  fontSize: compact ? 11 : 17,
+                                  height: compact ? 1.25 : 1.5,
                                 ),
                               ),
-                              const SizedBox(height: 28),
-                              const _GiftShowcase(),
-                              const SizedBox(height: 22),
+                              SizedBox(height: compact ? 8 : 28),
+                              compact
+                                  ? SizedBox(
+                                      height: giftSize,
+                                      child: FittedBox(
+                                        fit: BoxFit.contain,
+                                        child: const SizedBox(
+                                          width: 289,
+                                          height: 190,
+                                          child: _GiftShowcase(),
+                                        ),
+                                      ),
+                                    )
+                                  : const _GiftShowcase(),
+                              SizedBox(height: compact ? 8 : 22),
                               SizedBox(
                                 width: double.infinity,
-                                height: 62,
+                                height: compact ? 46 : 62,
                                 child: FilledButton.icon(
                                   onPressed: _dangXuLy ? null : _moQuetMaQr,
                                   icon: const Icon(
@@ -353,25 +427,25 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     elevation: 7,
-                                    textStyle: const TextStyle(
-                                      fontSize: 17,
+                                    textStyle: TextStyle(
+                                      fontSize: compact ? 12 : 17,
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 1,
                                     ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 14),
-                              const Text(
+                              SizedBox(height: compact ? 6 : 14),
+                              Text(
                                 '✧ Quét mã QR hợp lệ để nhận quà ✧',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Color(0xFFAFC0D1),
-                                  fontSize: 15,
+                                  fontSize: compact ? 11 : 15,
                                 ),
                               ),
                               if (_thongBao != null) ...[
-                                const SizedBox(height: 12),
+                                SizedBox(height: compact ? 6 : 12),
                                 Text(
                                   _thongBao!,
                                   textAlign: TextAlign.center,
@@ -383,7 +457,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                                   ),
                                 ),
                               ],
-                              const SizedBox(height: 18),
+                              SizedBox(height: compact ? 8 : 18),
                             ],
                           ),
                         ),

@@ -22,7 +22,9 @@ class NutTamDung extends PositionComponent with TapCallbacks {
   @override
   void onGameResize(Vector2 kichThuoc) {
     super.onGameResize(kichThuoc);
-    position = Vector2(kichThuoc.x - size.x - 14, 14);
+    final kichThuocNut = (kichThuoc.x * .08).clamp(32.0, 38.0);
+    size = Vector2.all(kichThuocNut);
+    position = Vector2(kichThuoc.x - size.x - 12, 12);
   }
 
   @override

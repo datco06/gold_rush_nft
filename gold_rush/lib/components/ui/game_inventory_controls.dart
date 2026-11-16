@@ -498,11 +498,13 @@ class _GameSegmentButtonState extends State<GameSegmentButton> {
 class GameEquipmentSlot extends StatefulWidget {
   final Widget icon;
   final bool selected;
+  final bool compact;
 
   const GameEquipmentSlot({
     super.key,
     required this.icon,
     this.selected = false,
+    this.compact = false,
   });
 
   @override
@@ -521,9 +523,9 @@ class _GameEquipmentSlotState extends State<GameEquipmentSlot> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        width: 62,
-        height: 62,
-        padding: const EdgeInsets.all(12),
+        width: widget.compact ? 52 : 62,
+        height: widget.compact ? 52 : 62,
+        padding: EdgeInsets.all(widget.compact ? 8 : 12),
         decoration: BoxDecoration(
           gradient: highlighted
               ? const LinearGradient(

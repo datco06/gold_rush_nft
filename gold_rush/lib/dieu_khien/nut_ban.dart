@@ -10,31 +10,38 @@ class NutBan extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      right: 26,
-      bottom: 26,
-      child: GestureDetector(
-        onTap: () => game.george?.banTheoHuongNhin(),
-        child: SizedBox(
-          width: 72,
-          height: 72,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Image.asset('assets/images/joystick_nen.png'),
-              const Text(
-                'BẮN',
-                style: TextStyle(
-                  color: Color(0xFFF2F4F7),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                  letterSpacing: 0.5,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact =
+            constraints.maxWidth < 600 || constraints.maxHeight < 420;
+        final size = compact ? 60.0 : 72.0;
+        return Positioned(
+          right: compact ? 14 : 26,
+          bottom: compact ? 14 : 26,
+          child: GestureDetector(
+            onTap: () => game.george?.banTheoHuongNhin(),
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Image.asset('assets/images/joystick_nen.png'),
+                  Text(
+                    'BẮN',
+                    style: TextStyle(
+                      color: Color(0xFFF2F4F7),
+                      fontWeight: FontWeight.w800,
+                      fontSize: compact ? 12 : 14,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

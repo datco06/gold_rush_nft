@@ -90,8 +90,14 @@ class Hud extends PositionComponent {
   }
 
   void _datViTriChu() {
-    _chuDiem.position = Vector2(size.x - _le, _le - 2);
-    _chuXu.position = Vector2(size.x - _le, _le + 18);
+    // Trên màn hình hẹp, nút tạm dừng chiếm góc trên phải. Đưa số liệu sang
+    // góc trên trái để HUD không chồng lên nút thao tác.
+    final manHinhHep = size.x < 600;
+    _chuDiem.anchor = manHinhHep ? Anchor.topLeft : Anchor.topRight;
+    _chuXu.anchor = manHinhHep ? Anchor.topLeft : Anchor.topRight;
+    final x = manHinhHep ? _le : size.x - _le;
+    _chuDiem.position = Vector2(x, _le - 2);
+    _chuXu.position = Vector2(x, _le + 18);
     _chuGio.position = Vector2(size.x / 2, _le - 2);
   }
 

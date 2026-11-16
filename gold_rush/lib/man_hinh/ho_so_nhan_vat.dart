@@ -193,6 +193,14 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                             authController: g.auth,
                             vi: g.phienVi?.vi,
                             tienTrinhController: g.tienTrinh,
+                            onPlayerTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      CharacterProfileScreen(game: g),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       );
@@ -1469,9 +1477,9 @@ class _DisplayedBadges extends StatelessWidget {
   const _DisplayedBadges({required this.game, required this.compact});
 
   List<ThanhTuuSBT> _getDisplayed() {
-    // SBT danh mục cứng hiện có 5 thành tựu
-    final badges = _badgesFor(game);
-    return badges.where((b) => b.displayed).toList();
+    // Hiển thị toàn bộ danh mục; trạng thái sở hữu được thể hiện bằng
+    // màu sáng hoặc làm mờ/khóa ở từng huy hiệu.
+    return _badgesFor(game);
   }
 
   @override
@@ -1641,6 +1649,7 @@ class _BadgeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isOwned = badge.owned;
     return Tooltip(
       message: badge.description,
       child: Container(
@@ -1649,37 +1658,61 @@ class _BadgeChip extends StatelessWidget {
           vertical: compact ? 6 : 8,
         ),
         decoration: BoxDecoration(
-          color: ProfileColors.gold.withValues(alpha: 0.1),
+          color: isOwned
+              ? ProfileColors.gold.withValues(alpha: 0.1)
+              : ProfileColors.panelSecondary.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: ProfileColors.gold),
+          border: Border.all(
+            color: isOwned ? ProfileColors.gold : ProfileColors.border,
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (badge.imagePath != null)
-              Image.asset(
-                badge.imagePath!,
-                width: compact ? 34 : 42,
-                height: compact ? 34 : 42,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Icon(
-                  Icons.military_tech_rounded,
-                  color: ProfileColors.gold,
-                  size: compact ? 20 : 24,
-                ),
-              )
-            else
-              Icon(
-                Icons.military_tech_rounded,
-                color: ProfileColors.gold,
-                size: compact ? 20 : 24,
+            Opacity(
+              opacity: isOwned ? 1 : 0.35,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (badge.imagePath != null)
+                    Image.asset(
+                      badge.imagePath!,
+                      width: compact ? 34 : 42,
+                      height: compact ? 34 : 42,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.military_tech_rounded,
+                        color: isOwned
+                            ? ProfileColors.gold
+                            : ProfileColors.textSecondary,
+                        size: compact ? 20 : 24,
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.military_tech_rounded,
+                      color: isOwned
+                          ? ProfileColors.gold
+                          : ProfileColors.textSecondary,
+                      size: compact ? 20 : 24,
+                    ),
+                  if (!isOwned)
+                    Icon(
+                      Icons.lock_rounded,
+                      color: ProfileColors.textSecondary,
+                      size: compact ? 15 : 18,
+                    ),
+                ],
               ),
+            ),
             const SizedBox(height: 5),
             Text(
               badge.name,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: ProfileColors.textPrimary,
+                color: isOwned
+                    ? ProfileColors.textPrimary
+                    : ProfileColors.textSecondary.withValues(alpha: 0.65),
                 fontSize: compact ? 11 : 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -2073,6 +2106,13 @@ class _TabNhanVat extends StatelessWidget {
                       authController: game.auth,
                       vi: game.phienVi?.vi,
                       tienTrinhController: game.tienTrinh,
+                      onPlayerTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => CharacterProfileScreen(game: game),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 );
@@ -2106,6 +2146,13 @@ class _TabNhanVat extends StatelessWidget {
                       authController: game.auth,
                       vi: game.phienVi?.vi,
                       tienTrinhController: game.tienTrinh,
+                      onPlayerTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => CharacterProfileScreen(game: game),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 );

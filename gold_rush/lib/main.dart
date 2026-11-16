@@ -4,6 +4,7 @@ import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'am_thanh/am_thanh.dart';
 import 'ai/may_chu_nhan_vat.dart';
@@ -24,6 +25,7 @@ import 'man_hinh/cua_hang.dart';
 import 'man_hinh/kho_do.dart';
 import 'man_hinh/rung_ruong.dart';
 import 'man_hinh/trung_tam_qua_tang.dart';
+import 'man_hinh/ho_so_nhan_vat.dart';
 import 'man_hinh/lop_phu.dart';
 import 'components/ui/gold_rush_top_bar.dart';
 
@@ -49,6 +51,10 @@ Future<void> main() async {
   // Toàn màn hình và hướng ngang cho nền tảng hỗ trợ.
   if (!kIsWeb) {
     try {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
       await Flame.device.fullScreen();
       await Flame.device.setLandscape();
     } catch (_) {
@@ -106,10 +112,64 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
         ),
         scaffoldBackgroundColor: CauHinh.mauNen,
       ),
+      builder: (context, child) =>
+          _LandscapeGate(child: child ?? const SizedBox.shrink()),
       home: AuthGate(
         controller: _auth,
         retainGameDuringSessionCheck: true,
         authenticatedBuilder: (_) => ManHinhGame(auth: _auth, wallet: _wallet),
+      ),
+    );
+  }
+}
+
+class _LandscapeGate extends StatelessWidget {
+  const _LandscapeGate({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final isPhone = size.shortestSide < 600;
+    final isPortrait = size.height > size.width;
+
+    if (!isPhone || !isPortrait) return child;
+
+    return const ColoredBox(
+      color: Color(0xFF07121D),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.screen_rotation_alt_rounded,
+                  color: Color(0xFFFFD67A),
+                  size: 58,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Vui lòng xoay ngang thiết bị',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFEAF2F8),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Gold Rush được tối ưu cho màn hình ngang.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF9BB0C0), fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -309,6 +369,13 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       thanhTren: GoldRushTopBar(
         activeItem: GoldRushTopBarItem.khoDo,
         gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
+        onPlayerTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => CharacterProfileScreen(game: game),
+            ),
+          );
+        },
         onSanhCho: game.veMenu,
         onCuaHang: () {
           game.dongKhoDo();
@@ -368,6 +435,13 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
             authController: game.auth,
             vi: game.phienVi?.vi,
             tienTrinhController: game.tienTrinh,
+            onPlayerTap: () {
+              Navigator.of(aiContext).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CharacterProfileScreen(game: game),
+                ),
+              );
+            },
             onSanhCho: () {
               Navigator.of(aiContext).pop();
               game.veMenu();

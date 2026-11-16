@@ -10,6 +10,7 @@ import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_trang_bi.dart';
 import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import 'anh_nhan_vat.dart';
+import 'ho_so_nhan_vat.dart';
 
 /// Giao diện mở rương may mắn. Phần thưởng thật sẽ nối ở bước nghiệp vụ sau.
 class ManHinhRungRuong extends StatefulWidget {
@@ -28,6 +29,14 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
 
   GoldRushGame get _game => widget.game;
 
+  void _moHoSo() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CharacterProfileScreen(game: _game),
+      ),
+    );
+  }
+
   Future<void> _moXuongAi() async {
     _game.dongRungRuong();
     final api = MayChuNhanVat();
@@ -39,6 +48,13 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
             authController: _game.auth,
             vi: _game.phienVi?.vi,
             tienTrinhController: _game.tienTrinh,
+            onPlayerTap: () {
+              Navigator.of(aiContext).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CharacterProfileScreen(game: _game),
+                ),
+              );
+            },
             onSanhCho: () {
               Navigator.of(aiContext).pop();
               _game.veMenu();
@@ -119,111 +135,138 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
       context: context,
       barrierDismissible: false,
       barrierColor: const Color(0xCC050A13),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(20),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 520),
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF263B55), Color(0xFF101D2D)],
+      builder: (context) {
+        final size = MediaQuery.sizeOf(context);
+        final imageSize = math
+            .min(190.0, math.min(size.width - 80, size.height * 0.30))
+            .clamp(120.0, 190.0)
+            .toDouble();
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 520,
+              maxHeight: size.height * .9,
             ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE4B653), width: 2),
-            boxShadow: const [
-              BoxShadow(color: Color(0x88000000), blurRadius: 30),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '✦ CHÚC MỪNG BẠN! ✦',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFFFFD780),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
+            child: SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.fromLTRB(
+                  size.width < 420 ? 16 : 22,
+                  size.width < 420 ? 18 : 24,
+                  size.width < 420 ? 16 : 22,
+                  20,
                 ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: 190,
-                height: 190,
                 decoration: BoxDecoration(
-                  gradient: const RadialGradient(
-                    colors: [Color(0xFF5C507A), Color(0xFF1D2B43)],
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF263B55), Color(0xFF101D2D)],
                   ),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: const Color(0xFFFFD780), width: 2),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFE4B653), width: 2),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x88000000), blurRadius: 30),
+                  ],
                 ),
-                child: kq.laVang
-                    ? const Icon(
-                        Icons.monetization_on_rounded,
-                        size: 92,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '✦ CHÚC MỪNG BẠN! ✦',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
                         color: Color(0xFFFFD780),
-                      )
-                    : vatPham?.duongDanAnh == null
-                    ? const Icon(
-                        Icons.card_giftcard_rounded,
-                        size: 92,
-                        color: Color(0xFFFFD780),
-                      )
-                    : HinhTrangBiFrame(
-                        asset: vatPham!.duongDanAnh!,
-                        kichThuoc: 128,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
                       ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                kq.laVang ? 'PHẦN THƯỞNG VÀNG' : 'VẬT PHẨM HIẾM',
-                style: TextStyle(
-                  color: Color(0xFFDDA9F3),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                kq.laVang
-                    ? 'Bạn nhận được ${kq.giaTri} vàng.'
-                    : 'Bạn nhận được ${vatPham?.ten ?? 'vật phẩm'} ×${kq.soLuong}.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFFB9C7D5), fontSize: 15),
-              ),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFE8B64F),
-                    foregroundColor: const Color(0xFF211A10),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  child: const Text(
-                    'ĐÓNG',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
+                    const SizedBox(height: 18),
+                    Container(
+                      width: imageSize,
+                      height: imageSize,
+                      decoration: BoxDecoration(
+                        gradient: const RadialGradient(
+                          colors: [Color(0xFF5C507A), Color(0xFF1D2B43)],
+                        ),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: const Color(0xFFFFD780),
+                          width: 2,
+                        ),
+                      ),
+                      child: kq.laVang
+                          ? const Icon(
+                              Icons.monetization_on_rounded,
+                              size: 92,
+                              color: Color(0xFFFFD780),
+                            )
+                          : vatPham?.duongDanAnh == null
+                          ? const Icon(
+                              Icons.card_giftcard_rounded,
+                              size: 92,
+                              color: Color(0xFFFFD780),
+                            )
+                          : HinhTrangBiFrame(
+                              asset: vatPham!.duongDanAnh!,
+                              kichThuoc: 128,
+                            ),
+                    ),
+                    SizedBox(height: size.height < 600 ? 10 : 18),
+                    Text(
+                      kq.laVang ? 'PHẦN THƯỞNG VÀNG' : 'VẬT PHẨM HIẾM',
+                      style: TextStyle(
+                        color: Color(0xFFDDA9F3),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      kq.laVang
+                          ? 'Bạn nhận được ${kq.giaTri} vàng.'
+                          : 'Bạn nhận được ${vatPham?.ten ?? 'vật phẩm'} ×${kq.soLuong}.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFFB9C7D5), fontSize: 15),
+                    ),
+                    const SizedBox(height: 22),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFE8B64F),
+                          foregroundColor: const Color(0xFF211A10),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'ĐÓNG',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final pv = _game.phienVi;
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 1100 || size.height < 500;
     return Material(
       color: const Color(0xFF07121F),
       child: SafeArea(
@@ -232,7 +275,12 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
           children: [
             const Positioned.fill(child: _RungRuongBackground()),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+              padding: EdgeInsets.fromLTRB(
+                compact ? 10 : 20,
+                compact ? 10 : 20,
+                compact ? 10 : 20,
+                compact ? 10 : 18,
+              ),
               child: Column(
                 children: [
                   if (pv == null)
@@ -241,6 +289,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                       gold: '0',
                       playerName: _game.auth?.user?.username ?? 'datco6',
                       onSanhCho: _game.veMenu,
+                      onPlayerTap: _moHoSo,
                       onCuaHang: () {
                         _game.dongRungRuong();
                         _game.moCuaHang();
@@ -263,6 +312,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                         gold: pv.dangXuLy ? '...' : pv.vangDinhDang,
                         playerName: _game.auth?.user?.username ?? 'datco6',
                         onSanhCho: _game.veMenu,
+                        onPlayerTap: _moHoSo,
                         onCuaHang: () {
                           _game.dongRungRuong();
                           _game.moCuaHang();
@@ -282,41 +332,44 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                         showClose: false,
                       ),
                     ),
-                  const SizedBox(height: 18),
-                  const Text(
+                  SizedBox(height: compact ? 8 : 18),
+                  Text(
                     '✦ TREASURE UNLOCK ✦',
                     style: TextStyle(
                       color: Color(0xFFE6AE43),
-                      fontSize: 12,
+                      fontSize: compact ? 10 : 12,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 4,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
+                  SizedBox(height: compact ? 4 : 10),
+                  Text(
                     'RƯƠNG MAY MẮN',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFFFFDA8A),
-                      fontSize: 38,
+                      fontSize: compact ? 28 : 38,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: compact ? 3 : 8),
+                  Text(
                     'Chạm vào nút để đánh thức kho báu',
-                    style: TextStyle(color: Color(0xFFAFC0D1), fontSize: 16),
+                    style: TextStyle(
+                      color: Color(0xFFAFC0D1),
+                      fontSize: compact ? 12 : 16,
+                    ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: compact ? 4 : 10),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Column(
                         children: [
-                          _khungRuong(),
-                          const SizedBox(height: 8),
-                          _chiPhiVaNutMo(),
+                          _khungRuong(compact: compact),
+                          SizedBox(height: compact ? 2 : 8),
+                          _chiPhiVaNutMo(compact: compact),
                         ],
                       ),
                     ),
@@ -330,9 +383,9 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
     );
   }
 
-  Widget _khungRuong() {
+  Widget _khungRuong({required bool compact}) {
     return SizedBox(
-      height: 260,
+      height: compact ? 172 : 260,
       child: Center(
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -356,30 +409,33 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
     );
   }
 
-  Widget _chiPhiVaNutMo() {
+  Widget _chiPhiVaNutMo({required bool compact}) {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: compact ? 5 : 8,
+          ),
           decoration: BoxDecoration(
             color: const Color(0x1FF2B33D),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: const Color(0x66F2B33D)),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.monetization_on_outlined,
                 color: Color(0xFFF2B33D),
-                size: 18,
+                size: compact ? 16 : 18,
               ),
               SizedBox(width: 9),
               Text(
                 '100 vàng',
                 style: TextStyle(
                   color: Color(0xFFFFD67A),
-                  fontSize: 17,
+                  fontSize: compact ? 14 : 17,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -391,15 +447,18 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
               SizedBox(width: 10),
               Text(
                 'mỗi lượt mở',
-                style: TextStyle(color: Color(0xFFD9BC8C), fontSize: 12),
+                style: TextStyle(
+                  color: Color(0xFFD9BC8C),
+                  fontSize: compact ? 10 : 12,
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: compact ? 8 : 14),
         SizedBox(
-          width: 270,
-          height: 52,
+          width: compact ? 240 : 270,
+          height: compact ? 44 : 52,
           child: FilledButton.icon(
             onPressed: _dangMo ? null : _moRuong,
             icon: Icon(

@@ -219,6 +219,10 @@ class GeminiRestAnhProvider:
     """
 
     generation_source: Literal["image_model"] = "image_model"
+    # Gemini/Imagen cũng là text-to-image; backend cần tự đóng sheet từ một
+    # nhân vật đơn thay vì tin rằng model sẽ giữ đúng lưới 4x4.
+    supports_sprite_sheet = False
+    supports_single_frame = True
 
     def __init__(
         self,
@@ -259,25 +263,25 @@ class GeminiRestAnhProvider:
         self._client = client
 
     def _xay_dung_prompt(self, system_prompt: str, user_prompt: str) -> str:
-        """Tạo prompt pixel-art chuyên biệt cho game phiêu lưu đào vàng."""
-        mo_ta = user_prompt.strip()
+        """Dùng nguyên prompt sprite cố định của backend.
+
+        Trước đây Gemini thay prompt này bằng yêu cầu một ảnh đơn, khiến model
+        bỏ qua lưới 4x4. Mô tả đã được backend ghép vào system_prompt; user
+        prompt chỉ giữ lại để kiểm tra hợp đồng provider.
+        """
+        if not isinstance(system_prompt, str) or not system_prompt.strip():
+            raise LoiProviderAnh("Prompt sprite Gemini không hợp lệ")
+        if not isinstance(user_prompt, str) or not user_prompt.strip():
+            raise LoiProviderAnh("Mô tả nhân vật Gemini không hợp lệ")
+        prompt = system_prompt.strip()
         try:
             parsed = json.loads(user_prompt)
-            if isinstance(parsed, dict) and "description" in parsed:
-                mo_ta = str(parsed["description"]).strip()
-        except Exception:
-            pass
-
-        return (
-            "A single full-body pixel-art video game character sprite for a 16-bit retro gold mining adventure game.\n"
-            f"Character concept and details: {mo_ta}\n"
-            "Visual requirements:\n"
-            "- Full-body standing character, completely visible from head to feet, centered in frame.\n"
-            "- 16-bit retro pixel art style, sharp square pixels, vibrant game palette, clean silhouette.\n"
-            "- Theme: gold miner, adventurer, explorer, prospector or dungeon delver.\n"
-            "- Solid plain neutral background or transparent background, no scenery or landscape.\n"
-            "- Single still frame illustration only, not a sprite sheet, no animation frames."
-        )
+            mo_ta = parsed.get("description") if isinstance(parsed, dict) else None
+        except (TypeError, ValueError, json.JSONDecodeError):
+            mo_ta = None
+        if isinstance(mo_ta, str) and mo_ta.strip() and mo_ta not in prompt:
+            prompt = f"{prompt}\n\nCHARACTER DESCRIPTION:\n{mo_ta.strip()}"
+        return prompt
 
     def sinh(self, *, system_prompt: str, user_prompt: str) -> bytes:
         try:
