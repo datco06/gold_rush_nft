@@ -3,11 +3,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../ai/may_chu_nhan_vat.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../blockchain/may_chu_phieu.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_trang_bi.dart';
 import '../kho_do/nhan_vat_voi_trang_bi.dart';
+import 'anh_nhan_vat.dart';
 
 /// Giao diện mở rương may mắn. Phần thưởng thật sẽ nối ở bước nghiệp vụ sau.
 class ManHinhRungRuong extends StatefulWidget {
@@ -25,6 +27,51 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
   bool _dangMo = false;
 
   GoldRushGame get _game => widget.game;
+
+  Future<void> _moXuongAi() async {
+    _game.dongRungRuong();
+    final api = MayChuNhanVat();
+    try {
+      await Navigator.of(context).push<void>(
+        PageRouteBuilder<void>(
+          pageBuilder: (aiContext, _, _) => ManHinhAnhNhanVat(
+            mayChu: api,
+            authController: _game.auth,
+            vi: _game.phienVi?.vi,
+            tienTrinhController: _game.tienTrinh,
+            onSanhCho: () {
+              Navigator.of(aiContext).pop();
+              _game.veMenu();
+            },
+            onCuaHang: () {
+              Navigator.of(aiContext).pop();
+              _game.moCuaHang();
+            },
+            onRungRuong: () => Navigator.of(aiContext).maybePop(),
+            onQuaTang: () {
+              Navigator.of(aiContext).pop();
+              _game.moQuaTang();
+            },
+            onKhoDo: () {
+              Navigator.of(aiContext).pop();
+              _game.moKhoDo();
+            },
+          ),
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
+          ),
+        ),
+      );
+    } finally {
+      api.dong();
+    }
+  }
 
   @override
   void initState() {
@@ -203,7 +250,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                         _game.dongRungRuong();
                         _game.moKhoDo();
                       },
-                      onXuongAi: null,
+                      onXuongAi: _moXuongAi,
                       onSettings: _game.moCaiDat,
                       onClose: _game.veMenu,
                       showClose: false,
@@ -229,7 +276,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                           _game.dongRungRuong();
                           _game.moKhoDo();
                         },
-                        onXuongAi: null,
+                        onXuongAi: _moXuongAi,
                         onSettings: _game.moCaiDat,
                         onClose: _game.veMenu,
                         showClose: false,

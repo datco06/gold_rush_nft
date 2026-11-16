@@ -81,36 +81,50 @@ class GoldRushTopBar extends StatelessWidget {
   }
 
   Widget _buildWide(BuildContext context) {
-    return Row(
-      children: [
-        const _GoldRushBrand(),
-        const SizedBox(width: 22),
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Center(
-              child: _NavItems(
-                activeItem: activeItem,
-                onSanhCho: onSanhCho,
-                onCuaHang: onCuaHang,
-                onRungRuong: onRungRuong,
-                onQuaTang: onQuaTang,
-                onKhoDo: onKhoDo,
-                onXuongAi: onXuongAi,
+    return SizedBox(
+      height: 64,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Positioned.fill(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _GoldRushBrand(),
+            ),
+          ),
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.center,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: _NavItems(
+                  activeItem: activeItem,
+                  onSanhCho: onSanhCho,
+                  onCuaHang: onCuaHang,
+                  onRungRuong: onRungRuong,
+                  onQuaTang: onQuaTang,
+                  onKhoDo: onKhoDo,
+                  onXuongAi: onXuongAi,
+                ),
               ),
             ),
           ),
-        ),
-        _StatusArea(
-          gold: gold,
-          playerName: playerName,
-          walletAddress: walletAddress,
-          onPlayerTap: onPlayerTap,
-          onSettings: onSettings,
-          onClose: onClose,
-          showClose: showClose,
-        ),
-      ],
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _StatusArea(
+                gold: gold,
+                playerName: playerName,
+                walletAddress: walletAddress,
+                onPlayerTap: onPlayerTap,
+                onSettings: onSettings,
+                onClose: onClose,
+                showClose: showClose,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

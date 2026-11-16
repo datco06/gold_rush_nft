@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../ai/may_chu_nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
+import 'anh_nhan_vat.dart';
 
 /// Cửa hàng trang bị. Đây là một lớp phủ riêng của game nên không tạo
 /// Navigator mới và không làm thay đổi các màn hình đang có.
@@ -26,6 +28,51 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
 
   GoldRushGame get _game => widget.game;
   PhienVi? get _phienVi => _game.phienVi;
+
+  Future<void> _moXuongAi() async {
+    _game.dongCuaHang();
+    final api = MayChuNhanVat();
+    try {
+      await Navigator.of(context).push<void>(
+        PageRouteBuilder<void>(
+          pageBuilder: (aiContext, _, _) => ManHinhAnhNhanVat(
+            mayChu: api,
+            authController: _game.auth,
+            vi: _game.phienVi?.vi,
+            tienTrinhController: _game.tienTrinh,
+            onSanhCho: () {
+              Navigator.of(aiContext).pop();
+              _game.veMenu();
+            },
+            onCuaHang: () => Navigator.of(aiContext).maybePop(),
+            onRungRuong: () {
+              Navigator.of(aiContext).pop();
+              _game.moRungRuong();
+            },
+            onQuaTang: () {
+              Navigator.of(aiContext).pop();
+              _game.moQuaTang();
+            },
+            onKhoDo: () {
+              Navigator.of(aiContext).pop();
+              _game.moKhoDo();
+            },
+          ),
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
+          ),
+        ),
+      );
+    } finally {
+      api.dong();
+    }
+  }
 
   @override
   void initState() {
@@ -94,7 +141,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                               _game.dongCuaHang();
                               _game.moKhoDo();
                             },
-                            onXuongAi: null,
+                            onXuongAi: _moXuongAi,
                             onPlayerTap: null,
                             onSettings: _game.moCaiDat,
                             onClose: _game.veMenu,

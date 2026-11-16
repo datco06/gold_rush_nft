@@ -2139,9 +2139,11 @@ class _XemTruocNhanVat extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                nv == null
-                    ? 'CHƯA CÓ DỮ LIỆU NHÂN VẬT HỢP LỆ'
-                    : '${nv.ten} · ĐANG DÙNG',
+                nv != null
+                    ? '${nv.ten} · ĐANG DÙNG'
+                    : anhNhanVat != null
+                    ? 'NHÂN VẬT AI · ĐANG DÙNG'
+                    : 'CHƯA CÓ DỮ LIỆU NHÂN VẬT HỢP LỆ',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: MauGame.chuPhu,

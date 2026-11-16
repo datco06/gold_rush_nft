@@ -362,16 +362,41 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
     final api = MayChuNhanVat();
     try {
       await Navigator.of(context).push<bool>(
-        MaterialPageRoute<bool>(
-          builder: (_) => ManHinhAnhNhanVat(
+        PageRouteBuilder<bool>(
+          pageBuilder: (aiContext, _, _) => ManHinhAnhNhanVat(
             mayChu: api,
             authController: game.auth,
             vi: game.phienVi?.vi,
             tienTrinhController: game.tienTrinh,
+            onSanhCho: () {
+              Navigator.of(aiContext).pop();
+              game.veMenu();
+            },
+            onCuaHang: () {
+              Navigator.of(aiContext).pop();
+              game.moCuaHang();
+            },
             onRungRuong: () {
-              Navigator.of(context).pop();
+              Navigator.of(aiContext).pop();
               game.moRungRuong();
             },
+            onQuaTang: () {
+              Navigator.of(aiContext).pop();
+              game.moQuaTang();
+            },
+            onKhoDo: () {
+              Navigator.of(aiContext).pop();
+              game.moKhoDo();
+            },
+          ),
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
           ),
         ),
       );

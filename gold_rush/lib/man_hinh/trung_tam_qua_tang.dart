@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../ai/may_chu_nhan_vat.dart';
 import '../blockchain/may_chu_phieu.dart';
 import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
@@ -7,6 +8,7 @@ import '../components/ui/gold_rush_top_bar.dart';
 import '../components/qr_scanner.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/nhan_vat_voi_trang_bi.dart';
+import 'anh_nhan_vat.dart';
 
 class ManHinhTrungTamQuaTang extends StatefulWidget {
   final GoldRushGame game;
@@ -22,6 +24,51 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
   String? _thongBao;
 
   GoldRushGame get game => widget.game;
+
+  Future<void> _moXuongAi() async {
+    game.dongQuaTang();
+    final api = MayChuNhanVat();
+    try {
+      await Navigator.of(context).push<void>(
+        PageRouteBuilder<void>(
+          pageBuilder: (aiContext, _, _) => ManHinhAnhNhanVat(
+            mayChu: api,
+            authController: game.auth,
+            vi: game.phienVi?.vi,
+            tienTrinhController: game.tienTrinh,
+            onSanhCho: () {
+              Navigator.of(aiContext).pop();
+              game.veMenu();
+            },
+            onCuaHang: () {
+              Navigator.of(aiContext).pop();
+              game.moCuaHang();
+            },
+            onRungRuong: () {
+              Navigator.of(aiContext).pop();
+              game.moRungRuong();
+            },
+            onQuaTang: () => Navigator.of(aiContext).maybePop(),
+            onKhoDo: () {
+              Navigator.of(aiContext).pop();
+              game.moKhoDo();
+            },
+          ),
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
+          ),
+        ),
+      );
+    } finally {
+      api.dong();
+    }
+  }
 
   Widget _thanhTren(PhienVi? pv) {
     Widget taoThanhTren() => GoldRushTopBar(
@@ -42,7 +89,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
         game.dongQuaTang();
         game.moKhoDo();
       },
-      onXuongAi: null,
+      onXuongAi: _moXuongAi,
       onSettings: game.moCaiDat,
       onClose: game.veMenu,
       showClose: false,

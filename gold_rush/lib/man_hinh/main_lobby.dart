@@ -169,13 +169,38 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
     final api = MayChuNhanVat();
     try {
       await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => ManHinhAnhNhanVat(
+        PageRouteBuilder<void>(
+          pageBuilder: (_, _, _) => ManHinhAnhNhanVat(
             mayChu: api,
             authController: widget.game.auth,
             vi: widget.game.phienVi?.vi,
             tienTrinhController: widget.game.tienTrinh,
-            onRungRuong: widget.game.moRungRuong,
+            onSanhCho: () => Navigator.of(context).maybePop(),
+            onCuaHang: () {
+              Navigator.of(context).pop();
+              widget.game.moCuaHang();
+            },
+            onRungRuong: () {
+              Navigator.of(context).pop();
+              widget.game.moRungRuong();
+            },
+            onQuaTang: () {
+              Navigator.of(context).pop();
+              widget.game.moQuaTang();
+            },
+            onKhoDo: () {
+              Navigator.of(context).pop();
+              widget.game.moKhoDo();
+            },
+          ),
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
           ),
         ),
       );

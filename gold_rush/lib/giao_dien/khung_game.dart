@@ -56,10 +56,10 @@ class KhungGame extends StatelessWidget {
                           if (thanhTren != null)
                             Padding(
                               padding: EdgeInsets.fromLTRB(
-                                gon ? 8 : 14,
-                                gon ? 4 : 10,
-                                gon ? 8 : 14,
-                                gon ? 4 : 10,
+                                gon ? 10 : 20,
+                                gon ? 6 : 16,
+                                gon ? 10 : 20,
+                                gon ? 6 : 16,
                               ),
                               child: thanhTren,
                             )
