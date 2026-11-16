@@ -7,6 +7,8 @@ import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/man_choi.dart';
 import 'package:gold_rush/man_hinh/chon_man.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
+import 'package:gold_rush/ngon_ngu/ban_dich_phap.dart';
+import 'package:gold_rush/ngon_ngu/ban_dich_tay_ban_nha.dart';
 import 'package:gold_rush/world_map/ban_do_the_gioi.dart';
 import 'package:gold_rush/world_map/canh_quan_world_map.dart';
 import 'package:gold_rush/world_map/tien_trinh_world_map.dart';
@@ -172,6 +174,61 @@ void main() {
     expect(find.text('MÀN 20 · VÙNG KHO BÁU'), findsOneWidget);
     expect(game.danhSachMan, same(allStages));
     expect(game.cacManDuocYeuCauChoi, isEmpty);
+  });
+
+  testWidgets('French and Spanish translate details for all 20 map locations', (
+    tester,
+  ) async {
+    final allStages = ManChoi.docBoManChoi(
+      File('assets/tiles/man_choi.json').readAsStringSync(),
+      File('assets/tiles/man_mo_rong.json').readAsStringSync(),
+    );
+    for (final entry in {'fr': banDichPhap, 'es': banDichTayBanNha}.entries) {
+      game.danhSachMan = allStages;
+      final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+      await language.doi(entry.key);
+      await moChonMan(tester, ngonNgu: language);
+      for (var i = 0; i < allStages.length; i++) {
+        final stage = allStages[i];
+        if (i > 0) {
+          await tester.tap(find.byTooltip(entry.value['Đóng thông tin màn']!));
+          await tester.pumpAndSettle();
+        }
+        await duaManVaoKhung(tester, stage.id);
+        final node = find.byKey(ValueKey('world-map-level-${stage.id}'));
+        final name = entry.value[stage.ten]!;
+        expect(name, isNot(stage.ten));
+        expect(
+          find.descendant(of: node, matching: find.text(name)),
+          findsOneWidget,
+        );
+        await tester.tap(node);
+        await tester.pumpAndSettle();
+        final panel = find.byKey(const ValueKey('bang-thong-tin-man'));
+        expect(
+          find.descendant(of: panel, matching: find.text(name)),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: panel,
+            matching: find.text(entry.value[stage.moTa]!),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: panel, matching: find.text(stage.ten)),
+          findsNothing,
+        );
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '${entry.key} / ${stage.id}',
+        );
+      }
+      expect(game.cacManDuocYeuCauChoi, isEmpty);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
   });
 
   testWidgets('Chỉ mở bảng chi tiết sau khi người dùng chọn màn', (

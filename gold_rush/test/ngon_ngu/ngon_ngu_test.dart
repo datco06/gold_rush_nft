@@ -21,7 +21,7 @@ void main() {
       ),
     );
     expect(find.text('CÀI ĐẶT'), findsOneWidget);
-    await tester.tap(find.text('English'));
+    await _chonNgonNgu(tester, 'English');
     await tester.pumpAndSettle();
     expect(find.text('SETTINGS'), findsOneWidget);
     expect(find.text('Background music'), findsOneWidget);
@@ -46,21 +46,30 @@ void main() {
       const Size(1280, 720),
     ]) {
       tester.view.physicalSize = size;
-      for (final code in ['vi', 'en']) {
+      for (final code in ['vi', 'en', 'fr', 'es']) {
         await language.doi(code);
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull, reason: '$size / $code');
         if (size.height > size.width && size.shortestSide < 600) {
-          expect(
-            find.text(
-              code == 'vi'
-                  ? 'Vui lòng xoay ngang thiết bị'
-                  : 'Please rotate your device',
-            ),
-            findsOneWidget,
-          );
+          if (code == 'vi' || code == 'en') {
+            expect(
+              find.text(
+                code == 'vi'
+                    ? 'Vui lòng xoay ngang thiết bị'
+                    : 'Please rotate your device',
+              ),
+              findsOneWidget,
+            );
+          }
         } else {
-          expect(find.text('English'), findsOneWidget);
+          expect(
+            tester
+                .widget<DropdownButton<String>>(
+                  find.byType(DropdownButton<String>),
+                )
+                .value,
+            code,
+          );
         }
       }
     }
@@ -70,7 +79,7 @@ void main() {
   test(
     'defaults to Vietnamese and restores only supported languages',
     () async {
-      final language = NgonNgu(doc: () async => 'fr', ghi: (_) async {});
+      final language = NgonNgu(doc: () async => 'de', ghi: (_) async {});
       expect(language.ma, 'vi');
       await language.nap();
       expect(language.ma, 'vi');
@@ -103,7 +112,7 @@ void main() {
       ghi: (_) async => throw StateError('write'),
     );
     await language.nap();
-    expect(await language.doi('fr'), isFalse);
+    expect(await language.doi('de'), isFalse);
     expect(language.ma, 'vi');
     expect(await language.doi('en'), isFalse);
     expect(language.ma, 'en');
@@ -213,11 +222,11 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('English'));
+    await _chonNgonNgu(tester, 'English');
     await tester.pumpAndSettle();
     expect(find.text('Inventory'), findsOneWidget);
     expect(saved.last, 'en');
-    await tester.tap(find.text('Tiếng Việt'));
+    await _chonNgonNgu(tester, 'Tiếng Việt');
     await tester.pumpAndSettle();
     expect(find.text('Kho đồ'), findsOneWidget);
     expect(saved.last, 'vi');
@@ -229,7 +238,7 @@ void main() {
     final language = NgonNgu(doc: () async => null, ghi: (_) async {});
     await tester.pumpWidget(UngDungGoldRush(ngonNgu: language));
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('English'));
+    await _chonNgonNgu(tester, 'English');
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('WELCOME,\nADVENTURER!'), findsOneWidget);
     expect(find.byType(ManHinhGame), findsNothing);
@@ -260,6 +269,14 @@ void main() {
     expect(find.text('Alice'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+}
+
+Future<void> _chonNgonNgu(WidgetTester tester, String label) async {
+  await tester.tap(find.byType(DropdownButton<String>));
+  // The welcome background animates continuously; only advance the menu transition.
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.tap(find.text(label).last);
 }
 
 class _Probe extends StatefulWidget {

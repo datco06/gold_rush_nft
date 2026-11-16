@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ban_dich.dart';
+import 'ban_dich_phap.dart';
+import 'ban_dich_tay_ban_nha.dart';
 
 /// App text only: never changes protocol values, signed messages or game state.
 class NgonNgu extends ChangeNotifier {
@@ -12,6 +14,12 @@ class NgonNgu extends ChangeNotifier {
       _ghi = ghi ?? ((code) => SharedPreferencesAsync().setString(khoa, code));
 
   static const khoa = 'gold_rush.language.v1';
+  static const hoTro = {
+    'vi': 'Tiếng Việt',
+    'en': 'English',
+    'fr': 'Français',
+    'es': 'Español',
+  };
   static final chung = NgonNgu();
   final Future<String?> Function() _doc;
   final Future<void> Function(String) _ghi;
@@ -24,7 +32,7 @@ class NgonNgu extends ChangeNotifier {
     final phien = _phien;
     try {
       final saved = await _doc();
-      if (phien == _phien && (saved == 'vi' || saved == 'en')) {
+      if (phien == _phien && hoTro.containsKey(saved)) {
         _ma = saved!;
         notifyListeners();
       }
@@ -34,7 +42,7 @@ class NgonNgu extends ChangeNotifier {
   }
 
   Future<bool> doi(String code) async {
-    if (code != 'vi' && code != 'en') return false;
+    if (!hoTro.containsKey(code)) return false;
     ++_phien;
     _ma = code;
     notifyListeners();
@@ -52,35 +60,54 @@ class NgonNgu extends ChangeNotifier {
 
   String dich(String source) {
     if (_ma == 'vi') return source;
-    final exact = banDichAnh[source];
+    return _cacBanDich[_ma]!.dich(source);
+  }
+}
+
+final _cacBanDich = {
+  'en': _BanDich(banDichAnh),
+  'fr': _BanDich(banDichPhap),
+  'es': _BanDich(banDichTayBanNha),
+};
+
+class _BanDich {
+  _BanDich(Map<String, String> noiDung) : tu = {...banDichAnh, ...noiDung} {
+    vietHoa = {
+      for (final entry in tu.entries)
+        if (!entry.key.contains(RegExp(r'\{\d+\}')))
+          entry.key.toUpperCase(): entry.value.toUpperCase(),
+    };
+    mau =
+        tu.entries
+            .where((e) => e.key.contains(RegExp(r'\{\d+\}')))
+            .map((e) => _MauDich(e.key, e.value))
+            .toList()
+          ..sort((a, b) => b.literalLength.compareTo(a.literalLength));
+  }
+
+  final Map<String, String> tu;
+  late final Map<String, String> vietHoa;
+  late final List<_MauDich> mau;
+
+  String dich(String source) {
+    final exact = tu[source];
     if (exact != null) return exact;
-    final uppercase = _nhanVietHoa[source];
+    final uppercase = vietHoa[source];
     if (uppercase != null) return uppercase;
-    for (final template in _mauDich) {
+    for (final template in mau) {
       final match = template.pattern.firstMatch(source);
       if (match == null) continue;
       // Substitute in one pass: user-supplied braces/$ are never re-evaluated.
       return template.english.replaceAllMapped(RegExp(r'\{(\d+)\}'), (m) {
         final value = match.group(int.parse(m[1]!) + 1) ?? '';
-        return template.translateValues ? (banDichAnh[value] ?? value) : value;
+        return template.translateValues
+            ? (tu[value] ?? vietHoa[value] ?? value)
+            : value;
       });
     }
     return source;
   }
 }
-
-final _nhanVietHoa = {
-  for (final entry in banDichAnh.entries)
-    if (!entry.key.contains(RegExp(r'\{\d+\}')))
-      entry.key.toUpperCase(): entry.value.toUpperCase(),
-};
-
-final _mauDich =
-    banDichAnh.entries
-        .where((e) => e.key.contains(RegExp(r'\{\d+\}')))
-        .map((e) => _MauDich(e.key, e.value))
-        .toList()
-      ..sort((a, b) => b.literalLength.compareTo(a.literalLength));
 
 class _MauDich {
   _MauDich(String source, this.english)
@@ -135,14 +162,38 @@ class ChonNgonNgu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final language = PhamViNgonNgu.of(context);
-    return SegmentedButton<String>(
-      segments: const [
-        ButtonSegment(value: 'vi', label: Text('Tiếng Việt')),
-        ButtonSegment(value: 'en', label: Text('English')),
-      ],
-      selected: {language.ma},
-      onSelectionChanged: (values) => unawaited(language.doi(values.single)),
-      showSelectedIcon: false,
+    return Semantics(
+      label: language.dich('Ngôn ngữ'),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF14221B),
+          border: Border.all(color: const Color(0x887E7655)),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: language.ma,
+              dropdownColor: const Color(0xFF14221B),
+              borderRadius: BorderRadius.circular(6),
+              style: const TextStyle(color: Color(0xFFF1E4C4), fontSize: 13),
+              icon: const Icon(
+                Icons.language,
+                color: Color(0xFFE7D9B2),
+                size: 20,
+              ),
+              items: [
+                for (final entry in NgonNgu.hoTro.entries)
+                  DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+              ],
+              onChanged: (code) {
+                if (code != null) unawaited(language.doi(code));
+              },
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
