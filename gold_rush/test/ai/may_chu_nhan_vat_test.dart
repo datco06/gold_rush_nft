@@ -78,7 +78,7 @@ void main() {
     expect(requests, hasLength(2));
     expect(
       requests.first.url.toString(),
-      'http://localhost:8000/base/api/ai/nhan-vat/tao',
+      'http://localhost:8000/base/api/ai/nhan-vat/pixellab-tao',
     );
     expect(jsonDecode(requests.first.body), {'description': 'Thợ mỏ mũ vàng'});
     expect(requests.first.headers['Idempotency-Key'], 'req_1');

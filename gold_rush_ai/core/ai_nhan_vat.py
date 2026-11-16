@@ -7,7 +7,12 @@ from typing import Literal
 
 from .nhan_vat_ai import YeuCauTaoNhanVat
 from .providers.anh import LoiProviderAnh, NhaCungCapAnh
-from .xu_ly_anh import LoiAnhKhongHopLe, chuan_hoa_anh, tao_sprite_sheet_4x4
+from .xu_ly_anh import (
+    LoiAnhKhongHopLe,
+    chuan_hoa_anh,
+    la_sprite_sheet_4x4_256,
+    tao_sprite_sheet_4x4,
+)
 
 log = logging.getLogger(__name__)
 
@@ -100,7 +105,11 @@ def tao_anh_nhan_vat(
                 # này về 64x64 (16x16 mỗi frame).
                 png = tao_sprite_sheet_4x4(raw, kich_thuoc_o=32, la_sprite_sheet=False)
             elif la_sprite_sheet:
-                png = tao_sprite_sheet_4x4(raw, kich_thuoc_o=64, la_sprite_sheet=True)
+                # PixelLab đã trả đúng sheet 256x256 như web test; giữ nguyên
+                # từng frame để không làm thay đổi tỷ lệ nhân vật khi lưu.
+                png = raw if la_sprite_sheet_4x4_256(raw) else tao_sprite_sheet_4x4(
+                    raw, kich_thuoc_o=64, la_sprite_sheet=True
+                )
             else:
                 # Giữ tương thích với provider ảnh cũ: provider đó trả một
                 # ảnh preview 128x128, không tự suy diễn thành sprite sheet.

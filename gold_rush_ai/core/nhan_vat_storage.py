@@ -19,7 +19,12 @@ from .schemas_nhan_vat import (
     YeuCauLuuNhanVat,
     chuan_hoa_vi,
 )
-from .xu_ly_anh import LoiAnhKhongHopLe, chuan_hoa_anh, tao_sprite_sheet_4x4
+from .xu_ly_anh import (
+    LoiAnhKhongHopLe,
+    chuan_hoa_anh,
+    la_sprite_sheet_4x4_256,
+    tao_sprite_sheet_4x4,
+)
 
 
 class LoiKhoNhanVat(RuntimeError):
@@ -265,8 +270,14 @@ class KhoNhanVat:
         if generation_source not in ("demo", "image_model"):
             raise ValueError("generation_source phải là demo hoặc image_model")
 
-        # 1. Chuẩn hóa bytes và tính SHA-256
-        png_chuan = chuan_hoa_anh(image_bytes)
+        # 1. Giữ sheet 256x256 thật của PixelLab; ảnh cũ/ảnh demo vẫn
+        # chuẩn hóa về preview 128x128 như trước.
+        if generation_source == "image_model" and la_sprite_sheet_4x4_256(image_bytes):
+            # PixelLab đã ghép sẵn đúng như web test; không cắt/scale lại
+            # để giữ nguyên tỷ lệ và dáng nhân vật trong từng frame.
+            png_chuan = image_bytes
+        else:
+            png_chuan = chuan_hoa_anh(image_bytes)
         char_hash = tinh_character_hash(png_chuan)
 
         with self._giao_dich() as conn:
@@ -334,6 +345,22 @@ class KhoNhanVat:
                 "SELECT * FROM nhan_vat WHERE character_id = ?", (char_id,)
             ).fetchone()
             return self._row_to_model(saved_row)
+
+    def tim_theo_image_id(
+        self, player: NguoiChoiXacThuc, image_id: str
+    ) -> ThongTinNhanVat | None:
+        """Tìm bản ghi đã lưu để giữ tính idempotent sau khi xóa preview."""
+        if not isinstance(player, NguoiChoiXacThuc):
+            raise ValueError("Cần thông tin người chơi đã xác thực")
+        if not isinstance(image_id, str) or not re.fullmatch(r"^img_[0-9a-f]{32}$", image_id):
+            raise ValueError("image_id không hợp lệ")
+        with self._ket_noi_doc() as conn:
+            row = conn.execute(
+                """SELECT * FROM nhan_vat
+                   WHERE image_id = ? AND (owner_user_id = ? OR verified_wallet_address = ?)""",
+                (image_id, player.user_id, player.wallet_address.lower()),
+            ).fetchone()
+        return self._row_to_model(row) if row is not None else None
 
     def doc_nhan_vat(
         self, character_id: str, *, nguoi_yeu_cau: NguoiChoiXacThuc | None = None
@@ -588,6 +615,7 @@ class KhoNhanVat:
         # bản ghi lỗi làm hỏng toàn bộ danh sách nhân vật; endpoint ảnh riêng
         # vẫn sẽ trả lỗi cho đúng nhân vật đó.
         sprite_hash = None
+        la_sheet_that = la_sprite_sheet_4x4_256(row["image_blob"])
         try:
             sprite_hash = tinh_character_hash(
                 tao_sprite_sheet_4x4(
@@ -603,7 +631,7 @@ class KhoNhanVat:
             verified_wallet_address=row["verified_wallet_address"],
             character_hash=row["character_hash"],
             image_id=row["image_id"],
-            image_url=f"/api/ai/nhan-vat/{char_id}/anh",
+            image_url=f"/api/ai/nhan-vat/{char_id}/preview",
             image_storage_ref=row["image_storage_ref"],
             generation_source=row["generation_source"],
             created_at=created_str,
@@ -611,7 +639,8 @@ class KhoNhanVat:
             onchain_status=row["onchain_status"],
             transaction_hash=row["transaction_hash"],
             name=row["name"],
-            sprite_format="sprite_sheet_4x4_64x64",
+            playable_ready=la_sheet_that,
+            sprite_format="sprite_sheet_4x4_64x64" if la_sheet_that else "static_png_128x128",
             sprite_hash=sprite_hash,
             sprite_sheet_url=f"/api/ai/nhan-vat/{char_id}/sprite-sheet",
         )

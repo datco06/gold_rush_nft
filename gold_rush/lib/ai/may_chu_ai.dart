@@ -77,6 +77,7 @@ class MayChuAi {
     String duongDan, {
     required Map<String, Object> body,
     Map<String, String> headers = const {},
+    Duration? thoiGianChoRieng,
   }) async {
     final kq = await _goi(
       'POST',
@@ -84,6 +85,7 @@ class MayChuAi {
       body: body,
       headers: headers,
       gioiHanByte: 65536,
+      thoiGianChoRieng: thoiGianChoRieng,
     );
     Map<String, dynamic>? json;
     if (kq.bytes != null && kq.bytes!.isNotEmpty) {
@@ -179,6 +181,7 @@ class MayChuAi {
     Map<String, Object>? body,
     required Map<String, String> headers,
     required int gioiHanByte,
+    Duration? thoiGianChoRieng,
   }) async {
     final mayChu = _mayChu;
     if (mayChu == null) return const KetQuaApiAi._(loi: LoiApiAi.chuaCauHinh);
@@ -198,7 +201,11 @@ class MayChuAi {
               ...headers,
             });
       if (body != null) request.body = jsonEncode(body);
-      return await _gui(httpClient, request, gioiHanByte).timeout(thoiGianCho);
+      return await _gui(
+        httpClient,
+        request,
+        gioiHanByte,
+      ).timeout(thoiGianChoRieng ?? thoiGianCho);
     } on TimeoutException {
       return const KetQuaApiAi._(loi: LoiApiAi.hetThoiGian);
     } on FormatException {

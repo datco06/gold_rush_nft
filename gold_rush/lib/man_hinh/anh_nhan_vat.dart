@@ -499,7 +499,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     try {
       final kq = await api
           .tao(moTa: moTa, maYeuCau: ma)
-          .timeout(const Duration(seconds: 65));
+          .timeout(const Duration(minutes: 7, seconds: 5));
       if (!mounted || phien != _phienTai) return;
       if (kq.loi != null) {
         setState(() {
@@ -594,9 +594,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
   void _batDauBoDemTaoAnh(int phien) {
     _boDemTaoAnh?.cancel();
-    // API tạo ảnh tối đa 45 giây, tải/giải mã preview tối đa 10 giây.
-    // Watchdog này là lớp bảo vệ cuối cùng cho Flutter Web khi stream bị treo.
-    _boDemTaoAnh = Timer(const Duration(seconds: 60), () {
+    // Hai giai đoạn tạo character và animation của PixelLab có thể kéo dài
+    // hơn một phút. Watchdog chỉ báo lỗi sau timeout tạo và tải preview.
+    _boDemTaoAnh = Timer(const Duration(minutes: 7, seconds: 20), () {
       if (!mounted || phien != _phienTai || !_dangTai) return;
       _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
     });
@@ -983,10 +983,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // 3. Danh Sách Nhân Vật Thuộc Tài Khoản
-                      _xayDungDanhSachNhanVat(),
+                      // Danh sách nhân vật đã lưu được quản lý ở Bộ sưu tập
+                      // nhân vật trong Kho đồ, không lặp lại bên dưới form này.
                     ],
                   ),
                 ),
@@ -1428,6 +1426,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
     );
   }
 
+  // ignore: unused_element
   Widget _xayDungDanhSachNhanVat() {
     return Card(
       child: Padding(

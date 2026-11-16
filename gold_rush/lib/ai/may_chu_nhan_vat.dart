@@ -147,7 +147,7 @@ class MayChuNhanVat {
     ),
     String? maNguoiChoiDemo,
     http.Client? client,
-    Duration thoiGianCho = const Duration(seconds: 45),
+    Duration thoiGianCho = const Duration(seconds: 60),
   }) : this._(
          mayChu: mayChu,
          maNguoiChoiDemo: maNguoiChoiDemo,
@@ -190,9 +190,12 @@ class MayChuNhanVat {
       return const KetQuaAnhNhanVat._(loi: LoiAnhNhanVat.yeuCauKhongHopLe);
     }
     final kq = await _api.postJson(
-      '/api/ai/nhan-vat/tao',
+      // Xưởng AI dùng luồng PixelLab riêng; preview, lưu ví và tải sprite
+      // vẫn dùng các endpoint hiện tại nên các chức năng khác không đổi.
+      '/api/ai/nhan-vat/pixellab-tao',
       body: {'description': noiDung},
       headers: {'Idempotency-Key': maYeuCau},
+      thoiGianChoRieng: const Duration(minutes: 7),
     );
     if (kq.loi != null) {
       return KetQuaAnhNhanVat._(loi: kq.loi, maHttp: kq.maHttp);

@@ -59,6 +59,33 @@ def _kiem_tra_luoi_nguon(data: bytes) -> None:
         raise LoiAnhKhongHopLe("Không đọc được sprite sheet AI") from None
 
 
+def la_sprite_sheet_4x4_256(data: bytes) -> bool:
+    """Nhận diện sheet gameplay đã chuẩn hóa, không tự cắt ảnh đoán lưới."""
+    if not isinstance(data, bytes):
+        return False
+    try:
+        with Image.open(BytesIO(data), formats=("PNG",)) as source:
+            return source.size == (KICH_THUOC_SHEET_SPRITE, KICH_THUOC_SHEET_SPRITE) and not getattr(source, "is_animated", False)
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+        return False
+
+
+def tao_anh_xem_truoc_tu_sprite(data: bytes) -> bytes:
+    """Lấy frame đầu làm ảnh đại diện; sprite sheet vẫn được giữ nguyên."""
+    if not la_sprite_sheet_4x4_256(data):
+        return chuan_hoa_anh(data)
+    try:
+        with Image.open(BytesIO(data), formats=("PNG",)) as sheet:
+            with sheet.crop((0, 0, KICH_THUOC_O_SPRITE, KICH_THUOC_O_SPRITE)) as frame:
+                normalized = _chuan_khung_nhan_vat(frame, KICH_THUOC_ANH_XEM_TRUOC)
+                with BytesIO() as output:
+                    normalized.save(output, format="PNG", optimize=True)
+                    normalized.close()
+                    return output.getvalue()
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError):
+        raise LoiAnhKhongHopLe("Không tạo được ảnh xem trước từ sprite sheet") from None
+
+
 def _kiem_tra_cac_frame(frames: list[Image.Image]) -> None:
     """Kiểm tra đủ 16 frame và loại ảnh rỗng/không đồng nhất nghiêm trọng."""
     if len(frames) != 16:

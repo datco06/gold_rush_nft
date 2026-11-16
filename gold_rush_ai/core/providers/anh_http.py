@@ -109,6 +109,9 @@ def provider_anh_tu_moi_truong(
     if bat not in ("true", "1"):
         raise ValueError("AI_IMAGE_ENABLED phải là true hoặc false")
     provider_type = env.get("AI_IMAGE_PROVIDER", "").strip().lower()
+    if provider_type == "pixellab" or (env.get("PIXELLAB_API_TOKEN") and not provider_type):
+        from .pixellab_anh import pixellab_provider_tu_moi_truong
+        return pixellab_provider_tu_moi_truong(env, client=client)
     if provider_type == "cloudflare":
         from .cloudflare_anh import cloudflare_provider_tu_moi_truong
         return cloudflare_provider_tu_moi_truong(env, client=client)

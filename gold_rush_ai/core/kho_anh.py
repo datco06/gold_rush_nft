@@ -12,7 +12,7 @@ from uuid import uuid4
 
 from .ai_nhan_vat import KetQuaTaoAnh
 from .nhan_vat_ai import AnhNhanVat, KICH_THUOC_ANH_XEM_TRUOC, YeuCauTaoNhanVat
-from .xu_ly_anh import chuan_hoa_anh
+from .xu_ly_anh import chuan_hoa_anh, la_sprite_sheet_4x4_256
 
 
 class LoiKhoAnh(RuntimeError):
@@ -118,7 +118,12 @@ class KhoAnh:
         metadata = AnhNhanVat(image_id=image_id, image_url=f"/api/ai/nhan-vat/anh/{image_id}",
                              width=KICH_THUOC_ANH_XEM_TRUOC, height=KICH_THUOC_ANH_XEM_TRUOC,
                              generation_source=ket_qua.generation_source)
-        png = chuan_hoa_anh(ket_qua.png)
+        if ket_qua.generation_source == "image_model" and la_sprite_sheet_4x4_256(ket_qua.png):
+            # Giữ nguyên sheet thật để gameplay dùng đủ 16 frame; ảnh đại diện
+            # được tách riêng ở endpoint preview, không hiển thị collage cho người chơi.
+            png = ket_qua.png
+        else:
+            png = chuan_hoa_anh(ket_qua.png)
         return metadata, png, sha256(png).hexdigest()
 
     @staticmethod

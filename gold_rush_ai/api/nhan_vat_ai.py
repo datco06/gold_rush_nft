@@ -26,6 +26,7 @@ from core.character_voucher import (
     tao_dich_vu_voucher_tu_moi_truong,
 )
 from core.dich_vu_anh import DichVuAnh
+from core.dich_vu_pixellab_nhan_vat import DichVuPixelLabNhanVat
 from core.kho_anh import KhoAnh, LoiKhoAnh, XungDotYeuCauAnh
 from core.nhan_vat_ai import AnhNhanVat, YeuCauTaoNhanVat
 from core.nhan_vat_storage import (
@@ -41,8 +42,9 @@ from core.nhan_vat_storage import (
 )
 from core.providers.anh import AnhMauOffline, LoiProviderAnh
 from core.providers.anh_http import provider_anh_tu_moi_truong
+from core.providers.pixellab_anh import pixellab_provider_tu_moi_truong
 from core.quota_ai import ChoLaiAI, KhoQuotaAI, LoiQuotaAI, VuotQuotaAI
-from core.xu_ly_anh import tao_sprite_sheet_4x4
+from core.xu_ly_anh import tao_anh_xem_truoc_tu_sprite, tao_sprite_sheet_4x4
 from core.schemas_nhan_vat import (
     DuLieuChuanBiOnchain,
     KetQuaKiemTraHash,
@@ -77,6 +79,7 @@ class TrangThaiNhanVatAI:
     kho_nhan_vat: KhoNhanVat | None = None
     service: DichVuAnh | None = None
     demo_service: DichVuAnh | None = None
+    pixellab_service: DichVuPixelLabNhanVat | None = None
     blockchain_verifier: BlockchainVerifier | None = None
     voucher_service: DichVuVoucherNhanVat | None = None
 
@@ -131,6 +134,13 @@ def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
             cho_phep_fallback=fallback_demo,
         )
         state.demo_service = DichVuAnh(kho, demo_provider=provider_demo)
+        if os.environ.get("PIXELLAB_API_TOKEN", "").strip():
+            try:
+                state.pixellab_service = DichVuPixelLabNhanVat(
+                    kho, pixellab_provider_tu_moi_truong()
+                )
+            except (ValueError, TypeError, LoiProviderAnh) as e:
+                log.warning("Cấu hình PixelLab riêng không hợp lệ (%s)", type(e).__name__)
         state.demo_enabled = demo in ("true", "1")
     except (OSError, ValueError, TypeError, LoiKhoAnh, LoiKhoNhanVat, LoiProviderAnh, LoiQuotaAI) as e:
         log.error("Không khởi động được API ảnh nhân vật (%s)", type(e).__name__)
@@ -147,7 +157,7 @@ def lay_trang_thai(request: Request) -> TrangThaiNhanVatAI:
         raise HTTPException(503, "API ảnh nhân vật chưa được khởi tạo")
     if not state.enabled:
         raise HTTPException(404, "Thành phần ảnh nhân vật đang tắt")
-    if state.service is None or state.kho is None:
+    if state.kho is None or state.kho_nhan_vat is None:
         raise HTTPException(503, "API ảnh nhân vật chưa sẵn sàng")
     return state
 
@@ -409,6 +419,50 @@ def _player_key(ctx: NguCanhNguoiChoi) -> str:
     return sha256(f"{ctx.context_source}:{ctx.player_id}".encode("ascii")).hexdigest()
 
 
+def _kiem_tra_tien_trinh_tao_nhan_vat(ctx: NguCanhNguoiChoi) -> None:
+    if ctx.context_source != "verified":
+        return
+    if not isinstance(ctx, NguCanhAnhNhanVat) or not ctx.progress_verified:
+        raise HTTPException(
+            status_code=503,
+            detail="Không thể xác minh tiến trình chơi của người chơi. Dịch vụ tiến trình chưa sẵn sàng.",
+        )
+    if not frozenset(range(1, 7)) <= ctx.completed_stage_ids:
+        so_man = len(ctx.completed_stage_ids & frozenset(range(1, 7)))
+        raise HTTPException(
+            status_code=403,
+            detail=f"Cần hoàn thành đủ màn 1–6 để tạo ảnh nhân vật (hiện tại: {so_man}/6 màn).",
+        )
+
+
+# ---------- Endpoint riêng: PixelLab web-test cho Xưởng AI ----------
+
+@router.post("/pixellab-tao", response_model=PhanHoiAnhNhanVat)
+def tao_nhan_vat_pixellab(
+    yc: YeuCauTaoNhanVat,
+    ctx: Annotated[NguCanhNguoiChoi, Depends(lay_ngu_canh_anh)],
+    state: Annotated[TrangThaiNhanVatAI, Depends(lay_trang_thai)],
+    request_id: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=64,
+                                     pattern=r"^[A-Za-z0-9_-]+$")],
+) -> PhanHoiAnhNhanVat:
+    _kiem_tra_tien_trinh_tao_nhan_vat(ctx)
+    # Demo vẫn dùng luồng demo cũ để không làm thay đổi hành vi demo; phiên ví
+    # thật mới đi qua PixelLab riêng và có thể lưu tiếp vào kho nhân vật.
+    service = state.demo_service if ctx.context_source == "demo" else state.pixellab_service
+    if service is None:
+        raise HTTPException(503, "Dịch vụ PixelLab chưa được cấu hình hoặc chưa sẵn sàng")
+    try:
+        anh = service.tao(player_id=_player_key(ctx), request_id=request_id, yeu_cau=yc)
+    except XungDotYeuCauAnh:
+        raise HTTPException(409, "Idempotency-Key đã được dùng cho mô tả khác") from None
+    except LoiProviderAnh as e:
+        log.warning("Lỗi PixelLab: %s", str(e))
+        raise HTTPException(503, str(e)) from None
+    except (LoiKhoAnh, ValueError):
+        raise HTTPException(503, "Chưa tạo được nhân vật PixelLab hợp lệ; hãy thử lại sau") from None
+    return PhanHoiAnhNhanVat(**anh.model_dump(), context_source=ctx.context_source)
+
+
 # ---------- Endpoint cũ: Tạo ảnh preview & xem trước ----------
 
 @router.post("/tao", response_model=PhanHoiAnhNhanVat)
@@ -419,19 +473,10 @@ def tao_anh(
     request_id: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=64,
                                      pattern=r"^[A-Za-z0-9_-]+$")],
 ) -> PhanHoiAnhNhanVat:
-    if ctx.context_source == "verified":
-        if not isinstance(ctx, NguCanhAnhNhanVat) or not ctx.progress_verified:
-            raise HTTPException(
-                status_code=503,
-                detail="Không thể xác minh tiến trình chơi của người chơi. Dịch vụ tiến trình chưa sẵn sàng.",
-            )
-        if not frozenset(range(1, 7)) <= ctx.completed_stage_ids:
-            so_man = len(ctx.completed_stage_ids & frozenset(range(1, 7)))
-            raise HTTPException(
-                status_code=403,
-                detail=f"Cần hoàn thành đủ màn 1–6 để tạo ảnh nhân vật (hiện tại: {so_man}/6 màn).",
-            )
+    _kiem_tra_tien_trinh_tao_nhan_vat(ctx)
     service = state.demo_service if ctx.context_source == "demo" else state.service
+    if service is None:
+        raise HTTPException(503, "API ảnh nhân vật chưa sẵn sàng")
     try:
         anh = service.tao(player_id=_player_key(ctx), request_id=request_id, yeu_cau=yc)
     except (VuotQuotaAI, ChoLaiAI) as e:
@@ -460,7 +505,7 @@ def lay_anh(
         raise HTTPException(503, "Chưa đọc được ảnh nhân vật hợp lệ") from None
     if anh is None:
         raise HTTPException(404, "Không có ảnh khả dụng cho người chơi")
-    return Response(content=anh[1], media_type="image/png",
+    return Response(content=tao_anh_xem_truoc_tu_sprite(anh[1]), media_type="image/png",
                     headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
 
@@ -504,6 +549,14 @@ async def luu_nhan_vat(
         raise HTTPException(503, "Chưa đọc được dữ liệu preview cache") from None
 
     if anh_preview is None:
+        # Preview bị xóa ngay sau lần lưu đầu tiên; cho phép client retry mà
+        # không tạo thêm nhân vật trùng.
+        try:
+            da_luu = state.kho_nhan_vat.tim_theo_image_id(player, yc.image_id)
+        except (LoiKhoNhanVat, ValueError):
+            da_luu = None
+        if da_luu is not None:
+            return da_luu
         raise HTTPException(404, "Ảnh nhân vật không tồn tại hoặc đã hết hạn trong preview cache")
 
     meta_preview, png_bytes = anh_preview
@@ -527,13 +580,22 @@ async def luu_nhan_vat(
 
     # 3. Lưu vào kho nhân vật bền vững
     try:
-        return state.kho_nhan_vat.luu_nhan_vat(
+        saved = state.kho_nhan_vat.luu_nhan_vat(
             player=player,
             image_id=yc.image_id,
             image_bytes=png_bytes,
             generation_source=meta_preview.generation_source,
             name=yc.name,
         )
+        # Preview chỉ là bản tạm của xưởng AI; sau khi đã ghi vào kho bền
+        # vững, xóa đúng preview của người chơi để trang tạo không còn thẻ cũ.
+        for owner_key in (
+            f"verified:{player.user_id}",
+            f"verified:{player.wallet_address}",
+            f"verified:{player.wallet_address.lower()}",
+        ):
+            state.kho.xoa_cho_nguoi(sha256(owner_key.encode("ascii")).hexdigest(), yc.image_id)
+        return saved
     except VuotGioiHanNhanVat as e:
         raise HTTPException(429, str(e)) from None
     except KhoNhanVatDay as e:
@@ -573,6 +635,30 @@ def lay_thong_tin_nhan_vat(
         raise HTTPException(403, "Không có quyền truy cập nhân vật này") from None
     except (LoiKhoNhanVat, ValueError):
         raise HTTPException(503, "Chưa đọc được thông tin nhân vật") from None
+
+
+@router.get("/{character_id}/preview", response_class=Response, responses={200: {"content": {"image/png": {}}}})
+def tai_preview_nhan_vat(
+    character_id: Annotated[str, Path(min_length=37, max_length=37, pattern=r"^char_[0-9a-f]{32}$")],
+    player: Annotated[NguoiChoiXacThuc, Depends(lay_nguoi_choi_xac_thuc)],
+    state: Annotated[TrangThaiNhanVatAI, Depends(lay_trang_thai)],
+) -> Response:
+    """Ảnh đại diện một frame; không đưa nguyên sheet 4x4 vào thẻ giao diện."""
+    if state.kho_nhan_vat is None:
+        raise HTTPException(503, "Kho lưu trữ nhân vật chưa sẵn sàng")
+    try:
+        _, blob = state.kho_nhan_vat.doc_anh_nhan_vat(character_id, nguoi_yeu_cau=player)
+        preview = tao_anh_xem_truoc_tu_sprite(blob)
+    except NhanVatKhongTonTai:
+        raise HTTPException(404, "Nhân vật không tồn tại") from None
+    except LoiQuyenTruyCapNhanVat:
+        raise HTTPException(403, "Không có quyền tải ảnh xem trước này") from None
+    except LoiToanVenNhanVat:
+        raise HTTPException(500, "Dữ liệu ảnh nhân vật bị sai lệch tính toàn vẹn SHA-256") from None
+    except (LoiKhoNhanVat, ValueError):
+        raise HTTPException(503, "Chưa tạo được ảnh xem trước nhân vật") from None
+    return Response(content=preview, media_type="image/png",
+                    headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
 
 @router.get("/{character_id}/anh", response_class=Response, responses={200: {"content": {"image/png": {}}}})
