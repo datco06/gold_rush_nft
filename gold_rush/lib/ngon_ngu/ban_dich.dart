@@ -1,5 +1,6 @@
 /// UI text only. Protocol fields and signed messages are never translated.
 const banDichAnh = <String, String>{
+  'Ngôn ngữ': 'Language',
   'ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...': 'CHECKING ADVENTURER PROFILE...',
   'Hành trình đang tạm dừng để đối chiếu phiên và ví.':
       'Your adventure is paused while we check your session and wallet.',
