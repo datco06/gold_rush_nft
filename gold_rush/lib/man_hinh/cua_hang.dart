@@ -73,6 +73,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
               Navigator.of(aiContext).pop();
               _game.moKhoDo();
             },
+            onSettings: _game.moCaiDat,
           ),
           transitionDuration: const Duration(milliseconds: 180),
           reverseTransitionDuration: const Duration(milliseconds: 180),

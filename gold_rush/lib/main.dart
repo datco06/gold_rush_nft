@@ -394,6 +394,8 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
           game.dongKhoDo();
           unawaited(_moXuongAi());
         },
+        onSettings: game.moCaiDat,
+        showClose: false,
         onClose: game.veMenu,
       ),
       trangThaiTrangBi: TrangThaiKhoDo.daTai,
@@ -462,6 +464,7 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
               Navigator.of(aiContext).pop();
               game.moKhoDo();
             },
+            onSettings: game.moCaiDat,
           ),
           transitionDuration: const Duration(milliseconds: 180),
           reverseTransitionDuration: const Duration(milliseconds: 180),

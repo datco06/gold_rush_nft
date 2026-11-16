@@ -84,27 +84,29 @@ class NhanVatVoiTrangBi extends StatelessWidget {
   Widget _lopSprite4x4({
     required String duongDanAnh,
     required double kichThuoc,
+    required double tyLe,
     Offset offset16x16 = Offset.zero,
   }) {
-    final uiDx = (offset16x16.dx / 16.0) * kichThuoc;
-    final uiDy = (offset16x16.dy / 16.0) * kichThuoc;
+    final kichThuocLop = kichThuoc * tyLe;
+    final tamX = kichThuoc / 2 + (offset16x16.dx / 16.0) * kichThuoc;
+    final tamY = kichThuoc / 2 + (offset16x16.dy / 16.0) * kichThuoc;
 
     return Positioned(
-      left: uiDx,
-      top: uiDy,
-      width: kichThuoc,
-      height: kichThuoc,
+      left: tamX - kichThuocLop / 2,
+      top: tamY - kichThuocLop / 2,
+      width: kichThuocLop,
+      height: kichThuocLop,
       child: ClipRect(
         child: OverflowBox(
           alignment: Alignment.topLeft,
-          minWidth: kichThuoc * 4,
-          maxWidth: kichThuoc * 4,
-          minHeight: kichThuoc * 4,
-          maxHeight: kichThuoc * 4,
+          minWidth: kichThuocLop * 4,
+          maxWidth: kichThuocLop * 4,
+          minHeight: kichThuocLop * 4,
+          maxHeight: kichThuocLop * 4,
           child: Image.asset(
             HinhTrangBiFrame.chuanHoaAssetPath(duongDanAnh),
-            width: kichThuoc * 4,
-            height: kichThuoc * 4,
+            width: kichThuocLop * 4,
+            height: kichThuocLop * 4,
             fit: BoxFit.fill,
             alignment: Alignment.topLeft,
             filterQuality: FilterQuality.none,
@@ -150,7 +152,8 @@ class NhanVatVoiTrangBi extends StatelessWidget {
             _lopSprite4x4(
               duongDanAnh: giay.duongDanAnh!,
               kichThuoc: kichThuoc,
-              offset16x16: const Offset(0, 2),
+              tyLe: 0.55,
+              offset16x16: const Offset(0, 3.5),
             ),
 
           // 3. Giáp (nếu có sprite sheet, offset (0, 0) như trong game)
@@ -158,6 +161,7 @@ class NhanVatVoiTrangBi extends StatelessWidget {
             _lopSprite4x4(
               duongDanAnh: giap.duongDanAnh!,
               kichThuoc: kichThuoc,
+              tyLe: 0.72,
               offset16x16: const Offset(0, 0),
             ),
 
@@ -167,6 +171,7 @@ class NhanVatVoiTrangBi extends StatelessWidget {
             _lopSprite4x4(
               duongDanAnh: vuKhi.duongDanAnh!,
               kichThuoc: kichThuoc,
+              tyLe: 0.55,
               offset16x16: const Offset(5.0, 4.0),
             ),
 

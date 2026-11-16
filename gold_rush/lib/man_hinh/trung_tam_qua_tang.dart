@@ -71,6 +71,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
               Navigator.of(aiContext).pop();
               game.moKhoDo();
             },
+            onSettings: game.moCaiDat,
           ),
           transitionDuration: const Duration(milliseconds: 180),
           reverseTransitionDuration: const Duration(milliseconds: 180),

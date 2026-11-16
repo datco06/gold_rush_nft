@@ -199,6 +199,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
               Navigator.of(context).pop();
               widget.game.moKhoDo();
             },
+            onSettings: widget.game.moCaiDat,
           ),
           transitionDuration: const Duration(milliseconds: 180),
           reverseTransitionDuration: const Duration(milliseconds: 180),

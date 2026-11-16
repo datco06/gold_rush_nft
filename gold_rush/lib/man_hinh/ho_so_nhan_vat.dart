@@ -201,6 +201,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                                 ),
                               );
                             },
+                            onSettings: g.moCaiDat,
                           ),
                         ),
                       );
@@ -2113,6 +2114,7 @@ class _TabNhanVat extends StatelessWidget {
                           ),
                         );
                       },
+                      onSettings: game.moCaiDat,
                     ),
                   ),
                 );
@@ -2153,6 +2155,7 @@ class _TabNhanVat extends StatelessWidget {
                           ),
                         );
                       },
+                      onSettings: game.moCaiDat,
                     ),
                   ),
                 );

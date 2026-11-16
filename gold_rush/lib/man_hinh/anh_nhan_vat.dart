@@ -28,6 +28,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
   final VoidCallback? onQuaTang;
   final VoidCallback? onKhoDo;
   final VoidCallback? onPlayerTap;
+  final VoidCallback? onSettings;
   final bool tuDongLuuSauKhiTao;
 
   const ManHinhAnhNhanVat({
@@ -44,6 +45,7 @@ class ManHinhAnhNhanVat extends StatefulWidget {
     this.onQuaTang,
     this.onKhoDo,
     this.onPlayerTap,
+    this.onSettings,
     this.tuDongLuuSauKhiTao = false,
   });
 
@@ -809,8 +811,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         () => Navigator.of(context).maybePop(),
                     onClose: () => Navigator.of(context).maybePop(),
                     onPlayerTap: widget.onPlayerTap,
-                    showClose: true,
-                    onSettings: null,
+                    showClose: false,
+                    onSettings: widget.onSettings,
                   ),
                 );
               },

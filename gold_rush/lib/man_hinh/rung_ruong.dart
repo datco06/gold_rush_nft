@@ -9,6 +9,7 @@ import '../blockchain/may_chu_phieu.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_trang_bi.dart';
 import '../kho_do/nhan_vat_voi_trang_bi.dart';
+import '../kho_do/vat_pham_hien_thi.dart';
 import 'anh_nhan_vat.dart';
 import 'ho_so_nhan_vat.dart';
 
@@ -22,9 +23,36 @@ class ManHinhRungRuong extends StatefulWidget {
   State<ManHinhRungRuong> createState() => _ManHinhRungRuongState();
 }
 
+class _MucPhanThuongRuong {
+  final int? soVang;
+  final int? tokenId;
+
+  const _MucPhanThuongRuong.vang(this.soVang) : tokenId = null;
+  const _MucPhanThuongRuong.vatPham(this.tokenId) : soVang = null;
+}
+
+// Giữ đúng danh sách phần thưởng được backend quay trong core/rung_ruong.py.
+const _danhSachPhanThuongRuong = [
+  _MucPhanThuongRuong.vang(150),
+  _MucPhanThuongRuong.vang(400),
+  _MucPhanThuongRuong.vang(700),
+  _MucPhanThuongRuong.vang(1000),
+  _MucPhanThuongRuong.vang(50000),
+  _MucPhanThuongRuong.vatPham(16),
+  _MucPhanThuongRuong.vatPham(17),
+  _MucPhanThuongRuong.vatPham(18),
+  _MucPhanThuongRuong.vatPham(25),
+  _MucPhanThuongRuong.vatPham(26),
+  _MucPhanThuongRuong.vatPham(27),
+  _MucPhanThuongRuong.vatPham(7),
+  _MucPhanThuongRuong.vatPham(8),
+  _MucPhanThuongRuong.vatPham(9),
+];
+
 class _ManHinhRungRuongState extends State<ManHinhRungRuong>
     with SingleTickerProviderStateMixin {
   late final AnimationController _rungController;
+  late final ScrollController _phanThuongScrollController;
   bool _dangMo = false;
 
   GoldRushGame get _game => widget.game;
@@ -72,6 +100,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
               Navigator.of(aiContext).pop();
               _game.moKhoDo();
             },
+            onSettings: _game.moCaiDat,
           ),
           transitionDuration: const Duration(milliseconds: 180),
           reverseTransitionDuration: const Duration(milliseconds: 180),
@@ -96,11 +125,13 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
       vsync: this,
       duration: const Duration(milliseconds: 750),
     );
+    _phanThuongScrollController = ScrollController();
   }
 
   @override
   void dispose() {
     _rungController.dispose();
+    _phanThuongScrollController.dispose();
     super.dispose();
   }
 
@@ -108,11 +139,32 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
     if (_dangMo) return;
     setState(() => _dangMo = true);
     final pv = _game.phienVi;
-    final kq = await pv?.moRuong();
+    if (pv == null) {
+      if (mounted) setState(() => _dangMo = false);
+      return;
+    }
+
+    // AuthGate có thể đã kết nối ví nhưng phiên blockchain dùng chung vẫn
+    // đang được đồng bộ bất đồng bộ từ lúc game khởi động.
+    for (var i = 0; i < 100 && pv.dangXuLy && !pv.daKetNoi; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (!pv.daKetNoi) {
+      final wallet = _game.auth?.canEnterGame == true
+          ? _game.auth?.walletAddress
+          : null;
+      if (wallet != null && wallet.isNotEmpty) {
+        await pv.ketNoiDaXacThuc(wallet);
+      } else {
+        await pv.ketNoi();
+      }
+    }
+    if (!mounted) return;
+    final kq = pv.daKetNoi ? await pv.moRuong() : null;
     if (!mounted) return;
     if (kq == null) {
       setState(() => _dangMo = false);
-      final loi = pv?.thongBao;
+      final loi = pv.thongBao;
       if (loi != null && loi.isNotEmpty) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(loi)));
@@ -365,13 +417,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: Column(
-                        children: [
-                          _khungRuong(compact: compact),
-                          SizedBox(height: compact ? 2 : 8),
-                          _chiPhiVaNutMo(compact: compact),
-                        ],
-                      ),
+                      child: _noiDungRungRuong(compact: compact),
                     ),
                   ),
                 ],
@@ -381,6 +427,241 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
         ),
       ),
     );
+  }
+
+  Widget _noiDungRungRuong({required bool compact}) {
+    final khuVucRuong = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _khungRuong(compact: compact),
+        SizedBox(height: compact ? 2 : 8),
+        _chiPhiVaNutMo(compact: compact),
+      ],
+    );
+    final danhSach = _khungPhanThuong(compact: compact);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final khoangCach = compact ? 8.0 : 20.0;
+        final chieuRongPanel = compact
+            ? (constraints.maxWidth * .43).clamp(170.0, 240.0).toDouble()
+            : 330.0;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Center(
+                // Co riêng vùng rương để panel phần quà luôn ở bên phải,
+                // đồng thời đưa tâm rương thẳng với tiêu đề ở màn hình đủ rộng.
+                child: Transform.translate(
+                  offset: Offset(
+                    constraints.maxWidth >= 700 ? chieuRongPanel / 2 : 0,
+                    0,
+                  ),
+                  child: FittedBox(fit: BoxFit.scaleDown, child: khuVucRuong),
+                ),
+              ),
+            ),
+            SizedBox(width: khoangCach),
+            SizedBox(width: chieuRongPanel, child: danhSach),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _khungPhanThuong({required bool compact}) {
+    final catalog = danhSachTrangBiCuaHang();
+    final chieuCao = compact ? 238.0 : 348.0;
+
+    return SizedBox(
+      width: double.infinity,
+      height: chieuCao,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          compact ? 10 : 14,
+          compact ? 10 : 14,
+          compact ? 8 : 10,
+          compact ? 8 : 10,
+        ),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xE61A2B3E), Color(0xE60B1726)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xCCCD961E), width: 1.4),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x55000000),
+              blurRadius: 16,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.card_giftcard_rounded,
+                  color: const Color(0xFFFFD166),
+                  size: compact ? 19 : 22,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'PHẦN QUÀ TRONG RƯƠNG',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xFFFFD166),
+                      fontSize: compact ? 13 : 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: compact ? .5 : 1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'Danh sách phần thưởng có thể nhận',
+              style: TextStyle(
+                color: const Color(0xFFAFC0D1),
+                fontSize: compact ? 10 : 11,
+              ),
+            ),
+            const SizedBox(height: 9),
+            Expanded(
+              child: Scrollbar(
+                controller: _phanThuongScrollController,
+                thumbVisibility: true,
+                child: ListView.separated(
+                  controller: _phanThuongScrollController,
+                  padding: const EdgeInsets.only(right: 4),
+                  itemCount: _danhSachPhanThuongRuong.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) => _dongPhanThuong(
+                    muc: _danhSachPhanThuongRuong[index],
+                    catalog: catalog,
+                    compact: compact,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dongPhanThuong({
+    required _MucPhanThuongRuong muc,
+    required List<VatPhamHienThi> catalog,
+    required bool compact,
+  }) {
+    final vatPham = muc.tokenId != null && muc.tokenId! <= catalog.length
+        ? catalog[muc.tokenId! - 1]
+        : null;
+    final kichThuoc = compact ? 38.0 : 44.0;
+    final noiDungAnh = muc.soVang != null
+        ? Icon(
+            Icons.monetization_on_rounded,
+            color: const Color(0xFFFFD166),
+            size: compact ? 26 : 30,
+          )
+        : vatPham?.duongDanAnh != null
+        ? HinhTrangBiFrame(asset: vatPham!.duongDanAnh!, kichThuoc: kichThuoc)
+        : Icon(
+            Icons.card_giftcard_rounded,
+            color: const Color(0xFFFFD166),
+            size: compact ? 24 : 28,
+          );
+
+    final ten = muc.soVang != null
+        ? '${muc.soVang} vàng'
+        : vatPham?.ten ?? 'Vật phẩm hiếm';
+    final moTa = muc.soVang != null
+        ? 'Phần thưởng vàng'
+        : _tenDoHiem(vatPham?.doHiem);
+
+    return Container(
+      constraints: BoxConstraints(minHeight: compact ? 48 : 56),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 9,
+        vertical: compact ? 5 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xCC0B1A2C),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: const Color(0x665B7691)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: kichThuoc,
+            height: kichThuoc,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFF15283D),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0x5588A0BA)),
+            ),
+            child: noiDungAnh,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  ten,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: const Color(0xFFF6F0E3),
+                    fontSize: compact ? 11 : 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  moTa,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: const Color(0xFF9FB0C2),
+                    fontSize: compact ? 9 : 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _tenDoHiem(DoHiemVatPham? doHiem) {
+    switch (doHiem) {
+      case DoHiemVatPham.hiem:
+        return 'Vật phẩm hiếm';
+      case DoHiemVatPham.khongPhoBien:
+        return 'Vật phẩm mạnh';
+      case DoHiemVatPham.thuong:
+        return 'Vật phẩm thường';
+      case DoHiemVatPham.suThi:
+        return 'Vật phẩm sử thi';
+      case DoHiemVatPham.huyenThoai:
+        return 'Vật phẩm huyền thoại';
+      case null:
+        return 'Vật phẩm hiếm';
+    }
   }
 
   Widget _khungRuong({required bool compact}) {

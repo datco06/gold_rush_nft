@@ -18,12 +18,14 @@ class _Khung extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 600 || size.height < 620;
     return Material(
       color: CauHinh.mauNenMo,
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(compact ? 8 : 16),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
               child: SizedBox(
@@ -40,7 +42,7 @@ class _Khung extends StatelessWidget {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all(compact ? 14 : 24),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -48,8 +50,8 @@ class _Khung extends StatelessWidget {
                         Text(
                           tieuDe,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 32,
+                          style: TextStyle(
+                            fontSize: compact ? 26 : 32,
                             fontWeight: FontWeight.w900,
                             color: CauHinh.mauChinh,
                             letterSpacing: 1,
@@ -67,7 +69,7 @@ class _Khung extends StatelessWidget {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 24),
+                        SizedBox(height: compact ? 12 : 24),
                         ...noiDung,
                       ],
                     ),
@@ -97,11 +99,13 @@ class _Nut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 600 || size.height < 620;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: compact ? 6 : 10),
       child: SizedBox(
         width: double.infinity,
-        height: 50,
+        height: compact ? 44 : 50,
         child: chinh
             ? FilledButton.icon(
                 onPressed: khiBam,
@@ -110,8 +114,8 @@ class _Nut extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: CauHinh.mauChinh,
                   foregroundColor: const Color(0xFF241A05),
-                  textStyle: const TextStyle(
-                    fontSize: 17,
+                  textStyle: TextStyle(
+                    fontSize: compact ? 14 : 17,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -123,7 +127,7 @@ class _Nut extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: CauHinh.mauChu,
                   side: const BorderSide(color: Color(0x66FFFFFF)),
-                  textStyle: const TextStyle(fontSize: 16),
+                  textStyle: TextStyle(fontSize: compact ? 14 : 16),
                 ),
               ),
       ),
@@ -162,6 +166,8 @@ class ManHinhCaiDat extends StatefulWidget {
 class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 600 || size.height < 620;
     return _Khung(
       tieuDe: 'CÀI ĐẶT',
       noiDung: [
@@ -180,6 +186,10 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
             style: TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
           ),
           contentPadding: EdgeInsets.zero,
+          dense: compact,
+          visualDensity: compact
+              ? VisualDensity.compact
+              : VisualDensity.standard,
         ),
         SwitchListTile(
           value: AmThanh.batHieuUng,
@@ -195,6 +205,10 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
             style: TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
           ),
           contentPadding: EdgeInsets.zero,
+          dense: compact,
+          visualDensity: compact
+              ? VisualDensity.compact
+              : VisualDensity.standard,
         ),
         SwitchListTile(
           value: widget.game.doKho.batThichUng,
@@ -215,6 +229,10 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
             style: const TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
           ),
           contentPadding: EdgeInsets.zero,
+          dense: compact,
+          visualDensity: compact
+              ? VisualDensity.compact
+              : VisualDensity.standard,
         ),
         if (widget.game.auth != null) ...[
           const SizedBox(height: 12),
@@ -227,7 +245,7 @@ class _ManHinhCaiDatState extends State<ManHinhCaiDat> {
             },
           ),
         ],
-        const SizedBox(height: 18),
+        SizedBox(height: compact ? 10 : 18),
         _Nut(
           nhan: 'Quay lại',
           bieuTuong: Icons.arrow_back_rounded,
