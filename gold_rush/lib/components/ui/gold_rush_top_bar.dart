@@ -305,14 +305,6 @@ class _NavItems extends StatelessWidget {
           activeItem: activeItem,
           onTap: onKhoDo,
         ),
-        _NavItem(
-          item: GoldRushTopBarItem.xuongAi,
-          label: 'Xưởng AI',
-          icon: Icons.auto_awesome_outlined,
-          dense: dense,
-          activeItem: activeItem,
-          onTap: onXuongAi,
-        ),
       ],
     );
   }

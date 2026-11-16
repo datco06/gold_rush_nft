@@ -23,7 +23,7 @@ void main() {
     expect(find.text('Sảnh chờ'), findsOneWidget);
     expect(find.text('Cửa hàng'), findsOneWidget);
     expect(find.text('Kho đồ'), findsOneWidget);
-    expect(find.text('Xưởng AI'), findsOneWidget);
+    expect(find.text('Xưởng AI'), findsNothing);
 
     await tester.tap(find.text('Kho đồ'));
     expect(khoDoTapped, isTrue);
@@ -37,6 +37,6 @@ void main() {
     );
 
     expect(find.text('GOLD RUSH'), findsOneWidget);
-    expect(find.text('Xưởng AI'), findsOneWidget);
+    expect(find.text('Xưởng AI'), findsNothing);
   });
 }
