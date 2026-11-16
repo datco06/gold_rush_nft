@@ -5,6 +5,7 @@ import 'dart:js_interop_unsafe';
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
+import '../ngon_ngu/ngon_ngu.dart';
 // `web` đã có trong package graph của Flutter Web; không thêm package mới.
 // ignore: depend_on_referenced_packages
 import 'package:web/web.dart' as web;
@@ -195,7 +196,7 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
         .clamp(180.0, 420.0)
         .toDouble();
     return AlertDialog(
-      title: const Text('QUÉT MÃ QR QUÀ TẶNG'),
+      title: const ChuGame('QUÉT MÃ QR QUÀ TẶNG'),
       insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       content: SizedBox.square(
         dimension: khung,
@@ -222,7 +223,7 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(10),
-                  child: Text(
+                  child: ChuGame(
                     _thongBao,
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white),
@@ -236,7 +237,7 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('HỦY'),
+          child: const ChuGame('HỦY'),
         ),
       ],
     );
