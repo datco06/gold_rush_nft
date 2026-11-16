@@ -29,9 +29,24 @@ class TrangBiGeorge extends Component {
   double _thoiGianBan = 0;
 
   TrangBiGeorge({this.vuKhi, this.giap, this.giay})
-      : _lopGiay = _taoLop(giay, priority: -2, offset: const Offset(0, 2)),
-        _lopGiap = _taoLop(giap, priority: -1, offset: const Offset(0, 0)),
-        _lopVuKhi = _taoLop(vuKhi, priority: 1, offset: viTriVuKhi(HuongDi.xuong));
+    : _lopGiay = _taoLop(
+        giay,
+        priority: -2,
+        offset: const Offset(0, 3.5),
+        scale: 0.55,
+      ),
+      _lopGiap = _taoLop(
+        giap,
+        priority: -1,
+        offset: const Offset(0, 0),
+        scale: 0.72,
+      ),
+      _lopVuKhi = _taoLop(
+        vuKhi,
+        priority: 1,
+        offset: viTriVuKhi(HuongDi.xuong),
+        scale: 0.55,
+      );
 
   /// Vị trí lệch của vũ khí theo từng hướng để cán súng gắn vào tay George
   /// và nòng súng chỉa thẳng theo hướng mặt mà không che mặt nhân vật.
@@ -70,6 +85,7 @@ class TrangBiGeorge extends Component {
     Map<HuongDi, SpriteAnimation>? animations, {
     required int priority,
     required Offset offset,
+    required double scale,
   }) {
     final coHieuLuc = animations != null && animations.isNotEmpty;
     return SpriteAnimationGroupComponent<HuongDi>(
@@ -81,7 +97,7 @@ class TrangBiGeorge extends Component {
         CauHinh.kichThuocO / 2 + offset.dx,
         CauHinh.kichThuocO / 2 + offset.dy,
       ),
-      size: Vector2.all(CauHinh.kichThuocO),
+      size: Vector2.all(CauHinh.kichThuocO * scale),
       anchor: Anchor.center,
       priority: priority,
     );

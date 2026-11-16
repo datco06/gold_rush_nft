@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../ngon_ngu/ngon_ngu.dart';
 
 import '../ai/may_chu_nhan_vat.dart';
+import '../ai/nhan_vat_ai_models.dart';
 import '../auth/auth_controller.dart';
 import '../blockchain/nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
@@ -49,6 +51,8 @@ class ManHinhKhoDo extends StatefulWidget {
   /// Tên sprite sheet, ví dụ george.png.
   /// Null nghĩa là chưa nhận được lựa chọn nhân vật.
   final String? tepNhanVatDangDung;
+  final ui.Image? anhNhanVatDangDung;
+  final String? tenNhanVatDangDung;
 
   /// Callback nhận ID dưới dạng chuỗi.
   /// Bên gọi kiểm tra, xác nhận và cập nhật lựa chọn thật.
@@ -62,6 +66,8 @@ class ManHinhKhoDo extends StatefulWidget {
   final AuthController? authController;
   final MayChuNhanVat? mayChuNhanVat;
   final Future<void> Function()? khiMoTaoNhanVat;
+  final Future<void> Function(ThongTinNhanVat nhanVat, Uint8List spriteSheet)?
+  khiTrangBiNhanVatAi;
   final GoldRushTopBar? thanhTren;
 
   const ManHinhKhoDo({
@@ -77,6 +83,8 @@ class ManHinhKhoDo extends StatefulWidget {
     this.khiLamMoiKhoDo,
     this.phienVi,
     this.tepNhanVatDangDung,
+    this.anhNhanVatDangDung,
+    this.tenNhanVatDangDung,
     this.khiChonNhanVat,
     this.loiTrangBi,
     this.loiNhanVat,
@@ -86,6 +94,7 @@ class ManHinhKhoDo extends StatefulWidget {
     this.authController,
     this.mayChuNhanVat,
     this.khiMoTaoNhanVat,
+    this.khiTrangBiNhanVatAi,
     this.thanhTren,
   });
 
@@ -318,10 +327,8 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
             danhSachVatPham: widget.danhSachVatPham,
           ),
           const SizedBox(height: 14),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _OTrangBi(
                 nhan: 'Vũ khí chính',
@@ -330,12 +337,14 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                 duongDanAnh: _trangBiTai(OTrangBi.vuKhiChinh)?.duongDanAnh,
                 noiBat: true,
               ),
+              const SizedBox(width: 4),
               _OTrangBi(
                 nhan: 'Giày',
                 loai: _LoaiOTrangBi.giay,
                 noiDung: _tenTrangBiTai(OTrangBi.giay),
                 duongDanAnh: _trangBiTai(OTrangBi.giay)?.duongDanAnh,
               ),
+              const SizedBox(width: 4),
               _OTrangBi(
                 nhan: 'Giáp',
                 loai: _LoaiOTrangBi.giap,
@@ -1236,14 +1245,17 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
         children: [
           _XemTruocNhanVat(
             nhanVat: nv,
+            anhNhanVat: widget.anhNhanVatDangDung,
             danhSachVatPham: widget.danhSachVatPham,
           ),
           const SizedBox(height: 18),
           ChuGame(
             nv?.ten ??
+                widget.tenNhanVatDangDung ??
                 (daTai
                     ? 'Chưa xác nhận được nhân vật đang dùng'
                     : 'Chưa có dữ liệu nhân vật'),
+            dichNoiDung: nv != null || widget.tenNhanVatDangDung == null,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: MauGame.chu,
@@ -1348,6 +1360,8 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                   authController: widget.authController,
                   mayChu: widget.mayChuNhanVat,
                   khiMoTaoNhanVat: widget.khiMoTaoNhanVat,
+                  tepNhanVatDangDung: widget.tepNhanVatDangDung,
+                  khiTrangBi: widget.khiTrangBiNhanVatAi,
                 ),
               ],
             ),
@@ -2027,115 +2041,133 @@ class _KhungMuc extends StatelessWidget {
 
 class _XemTruocNhanVat extends StatelessWidget {
   final NhanVatBan? nhanVat;
+  final ui.Image? anhNhanVat;
   final List<VatPhamHienThi> danhSachVatPham;
 
-  const _XemTruocNhanVat({this.nhanVat, this.danhSachVatPham = const []});
+  const _XemTruocNhanVat({
+    this.nhanVat,
+    this.anhNhanVat,
+    this.danhSachVatPham = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
     final nv = nhanVat;
-
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MauGame.chinh.withValues(alpha: 0.8)),
-        boxShadow: [
-          BoxShadow(
-            color: MauGame.chinh.withValues(alpha: 0.22),
-            blurRadius: 16,
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0.0, -0.05),
-                radius: 1.15,
-                colors: [
-                  Color(0xFF132A48),
-                  Color(0xFF0A1A30),
-                  Color(0xFF071120),
-                ],
-                stops: [0.0, 0.55, 1.0],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 300;
+        final previewHeight = compact ? 132.0 : 180.0;
+        final glowSize = compact ? 108.0 : 148.0;
+        final characterSize = compact ? 72.0 : 96.0;
+        return Container(
+          height: previewHeight,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: MauGame.chinh.withValues(alpha: 0.8)),
+            boxShadow: [
+              BoxShadow(
+                color: MauGame.chinh.withValues(alpha: 0.22),
+                blurRadius: 16,
               ),
-            ),
+            ],
           ),
-          Center(
-            child: Container(
-              width: 148,
-              height: 148,
-              margin: const EdgeInsets.only(bottom: 18),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFFFD76A).withValues(alpha: 0.24),
-                    const Color(0xFF27C6FF).withValues(alpha: 0.08),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.55, 1.0],
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(0.0, -0.05),
+                    radius: 1.15,
+                    colors: [
+                      Color(0xFF132A48),
+                      Color(0xFF0A1A30),
+                      Color(0xFF071120),
+                    ],
+                    stops: [0.0, 0.55, 1.0],
+                  ),
                 ),
               ),
-            ),
-          ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 22),
-              child: nv != null
-                  ? NhanVatVoiTrangBi(
-                      tepAnh: nv.tepAnh,
-                      kichThuoc: 96,
-                      danhSachVatPham: danhSachVatPham,
-                    )
-                  : Container(
-                      width: 66,
-                      height: 84,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: MauGame.nen.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: MauGame.chu.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.person_outline_rounded,
-                        size: 48,
-                        color: MauGame.chuPhu,
-                      ),
+              Center(
+                child: Container(
+                  width: glowSize,
+                  height: glowSize,
+                  margin: EdgeInsets.only(bottom: compact ? 12 : 18),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFFFFD76A).withValues(alpha: 0.24),
+                        const Color(0xFF27C6FF).withValues(alpha: 0.08),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.55, 1.0],
                     ),
-            ),
-          ),
-          Positioned(
-            left: 8,
-            right: 8,
-            bottom: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
-              decoration: BoxDecoration(
-                color: MauGame.nen.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: ChuGame(
-                nv == null
-                    ? 'CHƯA CÓ DỮ LIỆU NHÂN VẬT HỢP LỆ'
-                    : '${nv.ten} · ĐANG DÙNG',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: MauGame.chuPhu,
-                  fontSize: 10,
-                  letterSpacing: 0.5,
+                  ),
                 ),
               ),
-            ),
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: compact ? 16 : 22),
+                  child: nv != null || anhNhanVat != null
+                      ? NhanVatVoiTrangBi(
+                          tepAnh: nv?.tepAnh ?? georgeGoc.tepAnh,
+                          kichThuoc: characterSize,
+                          danhSachVatPham: danhSachVatPham,
+                          anhNhanVat: anhNhanVat,
+                        )
+                      : Container(
+                          width: compact ? 54 : 66,
+                          height: compact ? 68 : 84,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: MauGame.nen.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: MauGame.chu.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.person_outline_rounded,
+                            size: compact ? 38 : 48,
+                            color: MauGame.chuPhu,
+                          ),
+                        ),
+                ),
+              ),
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 5 : 7,
+                    vertical: compact ? 4 : 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: MauGame.nen.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: ChuGame(
+                    nv != null
+                        ? '${nv.ten} · ĐANG DÙNG'
+                        : anhNhanVat != null
+                        ? 'NHÂN VẬT AI · ĐANG DÙNG'
+                        : 'CHƯA CÓ DỮ LIỆU NHÂN VẬT HỢP LỆ',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: MauGame.chuPhu,
+                      fontSize: compact ? 9 : 10,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -2160,13 +2192,15 @@ class _OTrangBi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final coAnh = duongDanAnh != null && duongDanAnh!.trim().isNotEmpty;
+    final compact = MediaQuery.sizeOf(context).width < 600;
 
     return SizedBox(
-      width: 90,
+      width: compact ? 64 : 76,
       child: Column(
         children: [
           GameEquipmentSlot(
             selected: noiBat,
+            compact: compact,
             icon: coAnh
                 ? HinhTrangBiFrame(
                     asset: duongDanAnh!,
@@ -2177,23 +2211,23 @@ class _OTrangBi extends StatelessWidget {
                     child: CustomPaint(painter: _HinhLoaiTrangBi(loai)),
                   ),
           ),
-          const SizedBox(height: 7),
+          SizedBox(height: compact ? 4 : 7),
           ChuGame(
             nhan,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: GameInventoryStyle.textPrimary,
-              fontSize: 12,
+              fontSize: compact ? 10 : 12,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: compact ? 2 : 3),
           ChuGame(
             noiDung,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: GameInventoryStyle.textMuted,
-              fontSize: 10,
+              fontSize: compact ? 8 : 10,
               height: 1.4,
             ),
           ),

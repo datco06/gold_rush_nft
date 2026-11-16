@@ -41,7 +41,7 @@ from core.nhan_vat_storage import (
 )
 from core.providers.anh import AnhMauOffline, LoiProviderAnh
 from core.providers.anh_http import provider_anh_tu_moi_truong
-from core.quota_ai import KhoQuotaAI, LoiQuotaAI, VuotQuotaAI
+from core.quota_ai import ChoLaiAI, KhoQuotaAI, LoiQuotaAI, VuotQuotaAI
 from core.xu_ly_anh import tao_sprite_sheet_4x4
 from core.schemas_nhan_vat import (
     DuLieuChuanBiOnchain,
@@ -127,6 +127,7 @@ def khoi_dong_nhan_vat_ai(app: FastAPI) -> None:
             provider=provider,
             quota=quota,
             gioi_han_ngay=int(os.environ.get("AI_IMAGE_DAILY_LIMIT", "5")),
+            khoang_cach_giay=float(os.environ.get("AI_IMAGE_MIN_INTERVAL_SECONDS", "20")),
             cho_phep_fallback=fallback_demo,
         )
         state.demo_service = DichVuAnh(kho, demo_provider=provider_demo)
@@ -433,8 +434,9 @@ def tao_anh(
     service = state.demo_service if ctx.context_source == "demo" else state.service
     try:
         anh = service.tao(player_id=_player_key(ctx), request_id=request_id, yeu_cau=yc)
-    except VuotQuotaAI as e:
-        raise HTTPException(429, "Đã hết lượt gọi AI trong ngày; hãy thử lại sau",
+    except (VuotQuotaAI, ChoLaiAI) as e:
+        message = "Đã hết lượt gọi AI trong ngày; hãy thử lại sau" if isinstance(e, VuotQuotaAI) else "Vui lòng chờ trước khi tạo nhân vật AI tiếp theo"
+        raise HTTPException(429, message,
                             headers={"Retry-After": str(e.cho_lai_sau)}) from None
     except XungDotYeuCauAnh:
         raise HTTPException(409, "Idempotency-Key đã được dùng cho mô tả khác") from None
@@ -460,6 +462,23 @@ def lay_anh(
         raise HTTPException(404, "Không có ảnh khả dụng cho người chơi")
     return Response(content=anh[1], media_type="image/png",
                     headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
+
+@router.delete("/anh/{image_id}", status_code=204)
+def xoa_anh_preview(
+    image_id: Annotated[str, Path(min_length=36, max_length=36, pattern=r"^img_[0-9a-f]{32}$")],
+    ctx: Annotated[NguCanhNguoiChoi, Depends(lay_ngu_canh_anh)],
+    state: Annotated[TrangThaiNhanVatAI, Depends(lay_trang_thai)],
+) -> None:
+    """Xóa preview tạm của đúng phiên; nhân vật đã lưu vẫn giữ nguyên."""
+    if ctx.context_source != "verified":
+        raise HTTPException(403, "Chỉ phiên ví đã xác thực mới được xóa preview")
+    try:
+        deleted = state.kho.xoa_cho_nguoi(_player_key(ctx), image_id)
+    except (LoiKhoAnh, ValueError):
+        raise HTTPException(503, "Chưa xóa được ảnh preview") from None
+    if not deleted:
+        raise HTTPException(404, "Ảnh preview không tồn tại hoặc không thuộc phiên hiện tại")
 
 
 # ---------- Endpoint mới: Lưu trữ nhân vật bền vững & Quản lý sở hữu ----------
@@ -592,8 +611,12 @@ def tai_sprite_sheet_nhan_vat(
     if state.kho_nhan_vat is None:
         raise HTTPException(503, "Kho lưu trữ nhân vật chưa sẵn sàng")
     try:
-        _, blob = state.kho_nhan_vat.doc_anh_nhan_vat(character_id, nguoi_yeu_cau=player)
-        sprite = tao_sprite_sheet_4x4(blob)
+        meta, blob = state.kho_nhan_vat.doc_anh_nhan_vat(
+            character_id, nguoi_yeu_cau=player
+        )
+        sprite = tao_sprite_sheet_4x4(
+            blob, la_sprite_sheet=meta.generation_source == "image_model"
+        )
     except NhanVatKhongTonTai:
         raise HTTPException(404, "Nhân vật không tồn tại") from None
     except LoiQuyenTruyCapNhanVat:

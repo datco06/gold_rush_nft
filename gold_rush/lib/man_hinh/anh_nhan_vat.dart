@@ -13,6 +13,7 @@ import '../ai/nhan_vat_ai_models.dart';
 import '../ai/tien_trinh_controller.dart';
 import '../auth/auth_controller.dart';
 import '../blockchain/abi_dang_ky_nhan_vat.dart';
+import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
 import '../cau_hinh.dart';
 import '../components/ui/gold_rush_top_bar.dart';
@@ -20,22 +21,36 @@ import '../components/ui/gold_rush_top_bar.dart';
 class ManHinhAnhNhanVat extends StatefulWidget {
   final MayChuNhanVat mayChu;
   final Vi? vi;
+  final PhienVi? phienVi;
   final bool kiemTraPhienTuDong;
   final AuthController? authController;
   final TienTrinhController? tienTrinhController;
   final MayChuTienTrinh? mayChuTienTrinh;
+  final VoidCallback? onSanhCho;
+  final VoidCallback? onCuaHang;
   final VoidCallback? onRungRuong;
+  final VoidCallback? onQuaTang;
+  final VoidCallback? onKhoDo;
+  final VoidCallback? onPlayerTap;
+  final VoidCallback? onSettings;
   final bool tuDongLuuSauKhiTao;
 
   const ManHinhAnhNhanVat({
     super.key,
     required this.mayChu,
     this.vi,
+    this.phienVi,
     this.kiemTraPhienTuDong = false,
     this.authController,
     this.tienTrinhController,
     this.mayChuTienTrinh,
+    this.onSanhCho,
+    this.onCuaHang,
     this.onRungRuong,
+    this.onQuaTang,
+    this.onKhoDo,
+    this.onPlayerTap,
+    this.onSettings,
     this.tuDongLuuSauKhiTao = false,
   });
 
@@ -62,7 +77,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
   bool _dangLuu = false;
   bool _dangKetNoiAuth = false;
   bool _dangDangKyOnchain = false;
+  bool _dangXoa = false;
   int _phienTai = 0;
+  Timer? _boDemTaoAnh;
 
   // Trạng thái phiên SIWE & CSRF
   NguoiDungAuth? _nguoiDung;
@@ -245,6 +262,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
   @override
   void dispose() {
+    _boDemTaoAnh?.cancel();
     _tienTrinh?.removeListener(_khiTienTrinhDoi);
     if (_tienTrinhOwned) {
       _tienTrinh?.dispose();
@@ -477,6 +495,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       _ketQua = null;
       _nhanVatVuaLuu = null;
     });
+    _batDauBoDemTaoAnh(phien);
     try {
       final kq = await api
           .tao(moTa: moTa, maYeuCau: ma)
@@ -484,18 +503,28 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       if (!mounted || phien != _phienTai) return;
       if (kq.loi != null) {
         setState(() {
-          _dangTai = false;
-          _dangTao = false;
           _ketQua = kq;
         });
         return;
       }
-      _anh = kq.anh!;
-      await _taiVaHienThi(api, _anh!, phien);
+      final anh = kq.anh;
+      if (anh == null) {
+        setState(() {
+          _ketQua = const KetQuaAnhNhanVat.thatBai(
+            LoiAnhNhanVat.phanHoiKhongHopLe,
+          );
+        });
+        return;
+      }
+      _anh = anh;
+      await _taiVaHienThi(api, anh, phien);
     } on TimeoutException {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
-    } on Exception {
+    } catch (_) {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.ketNoi);
+    } finally {
+      // Luôn mở khóa nút tạo khi model/API trả lỗi bất ngờ hoặc payload sai.
+      _ketThucLoading(phien);
     }
   }
 
@@ -507,6 +536,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       _dangTai = true;
       _ketQua = null;
     });
+    _batDauBoDemTaoAnh(phien);
     await _taiVaHienThi(widget.mayChu, anh, phien);
   }
 
@@ -534,17 +564,41 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
       }
     } on TimeoutException {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
-    } on Exception {
+    } catch (_) {
       _ketThucVoiLoi(phien, LoiAnhNhanVat.ketNoi);
+    } finally {
+      _ketThucLoading(phien);
     }
+  }
+
+  void _ketThucLoading(int phien) {
+    if (!mounted || phien != _phienTai || (!_dangTai && !_dangTao)) return;
+    _boDemTaoAnh?.cancel();
+    _boDemTaoAnh = null;
+    setState(() {
+      _dangTai = false;
+      _dangTao = false;
+    });
   }
 
   void _ketThucVoiLoi(int phien, LoiAnhNhanVat loi) {
     if (!mounted || phien != _phienTai) return;
+    _boDemTaoAnh?.cancel();
+    _boDemTaoAnh = null;
     setState(() {
       _dangTai = false;
       _dangTao = false;
       _ketQua = KetQuaAnhNhanVat.thatBai(loi);
+    });
+  }
+
+  void _batDauBoDemTaoAnh(int phien) {
+    _boDemTaoAnh?.cancel();
+    // API tạo ảnh tối đa 45 giây, tải/giải mã preview tối đa 10 giây.
+    // Watchdog này là lớp bảo vệ cuối cùng cho Flutter Web khi stream bị treo.
+    _boDemTaoAnh = Timer(const Duration(seconds: 60), () {
+      if (!mounted || phien != _phienTai || !_dangTai) return;
+      _ketThucVoiLoi(phien, LoiAnhNhanVat.hetThoiGian);
     });
   }
 
@@ -582,6 +636,11 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
     if (kq.thanhCong) {
       setState(() => _nhanVatVuaLuu = kq.nhanVat);
+      // Preview chỉ là cache tạm; bản nhân vật chính thức đã nằm trong kho ví.
+      await widget.mayChu.xoaAnhPreview(
+        anh.maAnh,
+        csrfToken: _nguoiDung?.csrfToken,
+      );
       _thongBao(
         tuDong
             ? 'Ảnh đã tạo xong và được tự động lưu vào tài khoản!'
@@ -594,6 +653,30 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
             'Lưu nhân vật thất bại (${kq.maHttp ?? 'Lỗi kết nối'}).',
         loi: true,
       );
+    }
+  }
+
+  Future<void> _xoaAnhPreview() async {
+    final anh = _anh;
+    if (anh == null || _dangXoa || _dangLuu) return;
+    setState(() => _dangXoa = true);
+    final daXoa = await widget.mayChu.xoaAnhPreview(
+      anh.maAnh,
+      csrfToken: _nguoiDung?.csrfToken,
+    );
+    if (!mounted) return;
+    if (daXoa) {
+      setState(() {
+        _ketQua = null;
+        _anh = null;
+        _maYeuCau = null;
+        _moTaDaGui = null;
+        _dangXoa = false;
+      });
+      _thongBao('Đã xóa ảnh preview khỏi kho tạm.');
+    } else {
+      setState(() => _dangXoa = false);
+      _thongBao('Không thể xóa ảnh preview. Hãy thử lại.', loi: true);
     }
   }
 
@@ -706,19 +789,15 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
           children: [
             LayoutBuilder(
               builder: (context, constraints) {
-                if (constraints.maxWidth < 600) return const SizedBox.shrink();
+                final mobile = constraints.maxWidth < 600;
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-                  child: GoldRushTopBar(
-                    activeItem: GoldRushTopBarItem.xuongAi,
-                    onSanhCho: () => Navigator.of(context).maybePop(),
-                    onCuaHang: () => Navigator.of(context).maybePop(),
-                    onRungRuong: widget.onRungRuong,
-                    onKhoDo: () => Navigator.of(context).maybePop(),
-                    onClose: () => Navigator.of(context).maybePop(),
-                    showClose: true,
-                    onSettings: null,
+                  padding: EdgeInsets.fromLTRB(
+                    mobile ? 8 : 14,
+                    mobile ? 6 : 10,
+                    mobile ? 8 : 14,
+                    mobile ? 4 : 6,
                   ),
+                  child: _thanhTrenXuongAi(context),
                 );
               },
             ),
@@ -750,11 +829,6 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      if (_nguoiDung != null) ...[
-                        _xayDungAuthBar(),
-                        const SizedBox(height: 16),
-                      ],
-
                       // 2. Thẻ Tiến Trình Chơi Màn
                       if (_tienTrinh != null) ...[
                         _xayDungCardTienTrinh(),
@@ -810,8 +884,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                     children: [
                                       ChuGame(
                                         anh.nguonSinh == 'demo'
-                                            ? 'Ảnh mẫu demo'
-                                            : 'Ảnh từ mô hình AI',
+                                            ? 'NHÂN VẬT MẪU'
+                                            : 'NHÂN VẬT AI PIXEL-ART',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -848,7 +922,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-                                      const ChuGame('Ảnh tĩnh để xem trước.'),
+                                      const ChuGame(
+                                        'Nhân vật sẵn sàng để lưu vào ví.',
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -920,6 +996,27 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
         ),
       ),
     );
+  }
+
+  Widget _thanhTrenXuongAi(BuildContext context) {
+    final pv = widget.phienVi;
+
+    Widget taoTopBar() => GoldRushTopBar(
+      activeItem: GoldRushTopBarItem.xuongAi,
+      gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
+      onSanhCho: widget.onSanhCho ?? () => Navigator.of(context).maybePop(),
+      onCuaHang: widget.onCuaHang ?? () => Navigator.of(context).maybePop(),
+      onRungRuong: widget.onRungRuong ?? () => Navigator.of(context).maybePop(),
+      onQuaTang: widget.onQuaTang ?? () => Navigator.of(context).maybePop(),
+      onKhoDo: widget.onKhoDo ?? () => Navigator.of(context).maybePop(),
+      onClose: () => Navigator.of(context).maybePop(),
+      onPlayerTap: widget.onPlayerTap,
+      showClose: false,
+      onSettings: widget.onSettings,
+    );
+
+    if (pv == null) return taoTopBar();
+    return ListenableBuilder(listenable: pv, builder: (_, _) => taoTopBar());
   }
 
   // Giữ helper xác thực để tương thích các luồng cũ; thanh TopBar hiện thay
@@ -1172,7 +1269,6 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Cảnh báo quan trọng: ảnh preview chưa phải sprite sheet chơi được trong Flame
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -1180,7 +1276,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const ChuGame(
-                'LƯU Ý: Ảnh preview 128×128 pixel-art là ảnh tĩnh minh hoạ, CHƯA PHẢI sprite sheet điều khiển được trong game Flame.',
+                'Ảnh sẽ được backend chuẩn hóa thành sprite-sheet 4×4 để trang bị và chơi như George.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
@@ -1237,9 +1333,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     ),
                     const SizedBox(height: 8),
                     const ChuGame(
-                      'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. '
-                      'Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet '
-                      '4×4 để điều khiển trong gameplay.',
+                      'Nhân vật đã nằm trong Kho đồ > Nhân vật AI và có thể trang bị ở đó. '
+                      'Sprite-sheet 4×4 sẽ được tải khi bắt đầu trang bị.',
                       style: TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                     const SizedBox(height: 10),
@@ -1270,32 +1365,58 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: (_dangLuu || _nguoiDung == null)
-                          ? null
-                          : _luuNhanVat,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber.shade700,
-                        foregroundColor: Colors.black,
-                      ),
-                      icon: _dangLuu
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.black,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: (_dangXoa || _dangLuu)
+                                ? null
+                                : _xoaAnhPreview,
+                            icon: _dangXoa
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.delete_outline),
+                            label: const ChuGame('XÓA ẢNH'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: (_dangLuu || _nguoiDung == null)
+                                ? null
+                                : _luuNhanVat,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber.shade700,
+                              foregroundColor: Colors.black,
+                            ),
+                            icon: _dangLuu
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.black,
+                                    ),
+                                  )
+                                : const Icon(Icons.save),
+                            label: ChuGame(
+                              _nguoiDung == null
+                                  ? 'CẦN ĐĂNG NHẬP ĐỂ LƯU'
+                                  : (_dangLuu
+                                        ? 'Đang lưu…'
+                                        : 'LƯU NHÂN VẬT VÀO TÀI KHOẢN'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                            )
-                          : const Icon(Icons.save),
-                      label: ChuGame(
-                        _nguoiDung == null
-                            ? 'CẦN ĐĂNG NHẬP ĐỂ LƯU'
-                            : (_dangLuu
-                                  ? 'Đang lưu…'
-                                  : 'LƯU NHÂN VẬT VÀO TÀI KHOẢN'),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

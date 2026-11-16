@@ -5,6 +5,10 @@ import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import 'ngon_ngu/ngon_ngu.dart';
+
+import 'package:flutter/services.dart';
+
 import 'am_thanh/am_thanh.dart';
 import 'ai/may_chu_nhan_vat.dart';
 import 'auth/app_platform_stub.dart'
@@ -16,7 +20,6 @@ import 'auth/ui/auth_gate.dart';
 import 'blockchain/nhan_vat.dart';
 import 'blockchain/vi.dart';
 import 'cau_hinh.dart';
-import 'ngon_ngu/ngon_ngu.dart';
 import 'gold_rush_game.dart';
 import 'dieu_khien/nut_ban.dart';
 import 'man_hinh/chon_man.dart';
@@ -25,8 +28,25 @@ import 'man_hinh/cua_hang.dart';
 import 'man_hinh/kho_do.dart';
 import 'man_hinh/rung_ruong.dart';
 import 'man_hinh/trung_tam_qua_tang.dart';
+import 'man_hinh/ho_so_nhan_vat.dart';
 import 'man_hinh/lop_phu.dart';
 import 'components/ui/gold_rush_top_bar.dart';
+
+class _LopPhuFadeIn extends StatelessWidget {
+  const _LopPhuFadeIn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    duration: const Duration(milliseconds: 180),
+    curve: Curves.easeOutCubic,
+    tween: Tween(begin: 0, end: 1),
+    builder: (context, opacity, child) =>
+        Opacity(opacity: opacity, child: child),
+    child: child,
+  );
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +54,10 @@ Future<void> main() async {
   // Toàn màn hình và hướng ngang cho nền tảng hỗ trợ.
   if (!kIsWeb) {
     try {
+      await SystemChrome.setPreferredOrientations(const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
       await Flame.device.fullScreen();
       await Flame.device.setLandscape();
     } catch (_) {
@@ -98,11 +122,65 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
           ),
           scaffoldBackgroundColor: CauHinh.mauNen,
         ),
+        builder: (context, child) =>
+            _LandscapeGate(child: child ?? const SizedBox.shrink()),
         home: AuthGate(
           controller: _auth,
           retainGameDuringSessionCheck: true,
           authenticatedBuilder: (_) =>
               ManHinhGame(auth: _auth, wallet: _wallet),
+        ),
+      ),
+    );
+  }
+}
+
+class _LandscapeGate extends StatelessWidget {
+  const _LandscapeGate({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final isPhone = size.shortestSide < 600;
+    final isPortrait = size.height > size.width;
+
+    if (!isPhone || !isPortrait) return child;
+
+    return const ColoredBox(
+      color: Color(0xFF07121D),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.screen_rotation_alt_rounded,
+                  color: Color(0xFFFFD67A),
+                  size: 58,
+                ),
+                SizedBox(height: 16),
+                ChuGame(
+                  'Vui lòng xoay ngang thiết bị',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFEAF2F8),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 8),
+                ChuGame(
+                  'Gold Rush được tối ưu cho màn hình ngang.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF9BB0C0), fontSize: 14),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -176,14 +254,18 @@ class _ManHinhGameState extends State<ManHinhGame> {
           focusNode: _gameFocusNode,
           autofocus: true,
           overlayBuilderMap: {
-            LopPhu.menu: (_, game) => ManHinhMenu(game: game),
+            LopPhu.menu: (_, game) =>
+                _LopPhuFadeIn(child: ManHinhMenu(game: game)),
             LopPhu.caiDat: (_, game) => ManHinhCaiDat(game: game),
             LopPhu.tamDung: (_, game) => ManHinhTamDung(game: game),
             LopPhu.ketThuc: (_, game) => ManHinhKetThuc(game: game),
             LopPhu.huyHieu: (_, game) => ManHinhHuyHieu(game: game),
-            LopPhu.cuaHang: (_, game) => ManHinhCuaHang(game: game),
-            LopPhu.rungRuong: (_, game) => ManHinhRungRuong(game: game),
-            LopPhu.quaTang: (_, game) => ManHinhTrungTamQuaTang(game: game),
+            LopPhu.cuaHang: (_, game) =>
+                _LopPhuFadeIn(child: ManHinhCuaHang(game: game)),
+            LopPhu.rungRuong: (_, game) =>
+                _LopPhuFadeIn(child: ManHinhRungRuong(game: game)),
+            LopPhu.quaTang: (_, game) =>
+                _LopPhuFadeIn(child: ManHinhTrungTamQuaTang(game: game)),
             LopPhu.chonMan: (_, game) => ListenableBuilder(
               listenable: game.tienTrinhWorldMap,
               builder: (context, _) => ManHinhChonMan(
@@ -192,7 +274,8 @@ class _ManHinhGameState extends State<ManHinhGame> {
                 loiLuuTienTrinh: game.tienTrinhWorldMap.loi,
               ),
             ),
-            LopPhu.khoDo: (_, game) => _KhoDoTrongGame(game: game),
+            LopPhu.khoDo: (_, game) =>
+                _LopPhuFadeIn(child: _KhoDoTrongGame(game: game)),
             LopPhu.nutBan: (_, game) => NutBan(game: game),
           },
           loadingBuilder: (_) => const ColoredBox(
@@ -294,11 +377,18 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
     final pv = game.phienVi;
 
     return ManHinhKhoDo(
-      khiDong: game.dongKhoDo,
+      khiDong: game.veMenu,
       thanhTren: GoldRushTopBar(
         activeItem: GoldRushTopBarItem.khoDo,
         gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
-        onSanhCho: game.dongKhoDo,
+        onPlayerTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => CharacterProfileScreen(game: game),
+            ),
+          );
+        },
+        onSanhCho: game.veMenu,
         onCuaHang: () {
           game.dongKhoDo();
           game.moCuaHang();
@@ -316,7 +406,9 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
           game.dongKhoDo();
           unawaited(_moXuongAi());
         },
-        onClose: game.dongKhoDo,
+        onSettings: game.moCaiDat,
+        showClose: false,
+        onClose: game.veMenu,
       ),
       trangThaiTrangBi: TrangThaiKhoDo.daTai,
       danhSachVatPham: game.danhSachVatPham.value,
@@ -331,7 +423,17 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       phienVi: game.phienVi,
       authController: game.auth,
       tepNhanVatDangDung: game.nhanVatDangDung,
+      anhNhanVatDangDung: game.taiNguyen.anhNhanVat(game.nhanVatDangDung),
+      tenNhanVatDangDung: game.tenNhanVatDangDung,
       khiChonNhanVat: _chonNhanVat,
+      khiTrangBiNhanVatAi: (nhanVat, spriteSheet) async {
+        await game.trangBiNhanVatAi(
+          characterId: nhanVat.characterId,
+          tenNhanVat: nhanVat.name,
+          spriteSheet: spriteSheet,
+        );
+        if (mounted) setState(() {});
+      },
       khiMoTaoNhanVat: _moXuongAi,
     );
   }
@@ -341,16 +443,50 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
     final api = MayChuNhanVat();
     try {
       await Navigator.of(context).push<bool>(
-        MaterialPageRoute<bool>(
-          builder: (_) => ManHinhAnhNhanVat(
+        PageRouteBuilder<bool>(
+          pageBuilder: (aiContext, _, _) => ManHinhAnhNhanVat(
             mayChu: api,
             authController: game.auth,
             vi: game.phienVi?.vi,
+            phienVi: game.phienVi,
             tienTrinhController: game.tienTrinh,
+            onPlayerTap: () {
+              Navigator.of(aiContext).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CharacterProfileScreen(game: game),
+                ),
+              );
+            },
+            onSanhCho: () {
+              Navigator.of(aiContext).pop();
+              game.veMenu();
+            },
+            onCuaHang: () {
+              Navigator.of(aiContext).pop();
+              game.moCuaHang();
+            },
             onRungRuong: () {
-              Navigator.of(context).pop();
+              Navigator.of(aiContext).pop();
               game.moRungRuong();
             },
+            onQuaTang: () {
+              Navigator.of(aiContext).pop();
+              game.moQuaTang();
+            },
+            onKhoDo: () {
+              Navigator.of(aiContext).pop();
+              game.moKhoDo();
+            },
+            onSettings: game.moCaiDat,
+          ),
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
           ),
         ),
       );

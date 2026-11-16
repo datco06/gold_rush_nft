@@ -65,12 +65,12 @@ class ThongTinNhanVat(_Schema):
 
     # Chuẩn bị cho gameplay (Section 8)
     preview_ready: bool = True
-    playable_ready: bool = False
+    playable_ready: bool = True
     sprite_format: Literal["static_png_128x128", "sprite_sheet_4x4_64x64"] = "static_png_128x128"
     sprite_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     sprite_sheet_url: str | None = Field(default=None, max_length=160)
     gameplay_notes: str = (
-        "Sprite sheet 4x4 được chuẩn hóa từ ảnh AI; MVP lặp khung tĩnh cho 16 ô."
+        "Sprite sheet 4x4 được chuẩn hóa từ ảnh AI; khung tĩnh được lặp để dùng trong gameplay."
     )
 
 

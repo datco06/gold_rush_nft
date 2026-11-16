@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -20,6 +21,7 @@ import 'ai/tim_duong.dart';
 import 'am_thanh/am_thanh.dart';
 import 'auth/auth_controller.dart';
 import 'blockchain/may_chu_phieu.dart';
+import 'blockchain/cua_hang.dart';
 import 'blockchain/nhan_vat.dart';
 import 'blockchain/phien_vi.dart';
 import 'blockchain/vi.dart';
@@ -178,10 +180,31 @@ class GoldRushGame extends FlameGame
   final DieuChinhDoKho doKho = DieuChinhDoKho();
   final NhatKyChoi nhatKy = NhatKyChoi();
 
+  /// AI thích ứng chỉ áp dụng cho màn luyện tập đầu tiên.
+  bool get _aiDoKhoDuocPhep => manHienTai.id == 1;
+
+  double _heSoTocDoKeDich() =>
+      (_aiDoKhoDuocPhep ? doKho.heSoTocDo : 1.0) * manHienTai.heSoKeDich;
+
   bool _vanDangDienRa = false;
 
   /// Ngoại hình dùng khi dựng ván tiếp theo.
   String nhanVatDangDung = georgeGoc.tepAnh;
+  String tenNhanVatDangDung = georgeGoc.ten;
+
+  static String khoaNhanVatAi(String characterId) => 'ai:$characterId';
+
+  /// Tải sprite-sheet của nhân vật AI đã lưu và chọn làm ngoại hình cho ván sau.
+  Future<void> trangBiNhanVatAi({
+    required String characterId,
+    required String tenNhanVat,
+    required Uint8List spriteSheet,
+  }) async {
+    final khoa = khoaNhanVatAi(characterId);
+    await taiNguyen.napNhanVatAi(khoa, spriteSheet);
+    nhanVatDangDung = khoa;
+    tenNhanVatDangDung = tenNhanVat;
+  }
 
   /// Danh sách vật phẩm & trang bị đồng bộ giữa Main Lobby và Kho đồ.
   final ValueNotifier<List<VatPhamHienThi>> danhSachVatPham = ValueNotifier([]);
@@ -393,6 +416,72 @@ class GoldRushGame extends FlameGame
       );
       await capNhatSauKhiChuyenNFT(vatPham.id, ketQua.vatPham.balance);
       await dongBoNFTKhoDo();
+    } finally {
+      dichVu.dispose();
+    }
+  }
+
+  /// Nộp các phiếu vàng quà tặng do Backend ký trong một giao dịch hiện có.
+  Future<String> nhanQuaTangVang(List<PhieuCho> vouchers) async {
+    final pv = phienVi;
+    if (pv == null || !pv.daKetNoi || vouchers.isEmpty) {
+      throw const LoiVi('Chưa kết nối ví hoặc voucher vàng không hợp lệ.');
+    }
+    await pv.lamMoi();
+    await pv.cuaHang!.thucHien(diaChi: pv.diaChi!, phieu: vouchers);
+    final hash = pv.cuaHang!.bo.maGiaoDichCuoi;
+    await pv.lamMoi();
+    if (hash == null || hash.isEmpty) {
+      throw const LoiVi('Không lấy được mã giao dịch nhận vàng.');
+    }
+    return hash;
+  }
+
+  /// Claim NFT quà tặng bằng cơ chế claimItem hiện có của VatPhamGoldRush.
+  Future<String> nhanQuaTangNFT(PhieuVatPhamQuaTang voucher) async {
+    final pv = phienVi;
+    final cauHinh = pv?.cauHinh;
+    final hopDong = cauHinh?.hopDongVatPham;
+    final tokenId = voucher.tokenId;
+    final catalog = danhSachTrangBiCuaHang();
+    if (pv == null ||
+        !pv.daKetNoi ||
+        cauHinh == null ||
+        hopDong == null ||
+        hopDong.isEmpty) {
+      throw const LoiVi('Chưa cấu hình hợp đồng NFT vật phẩm.');
+    }
+    if (voucher.chainId != cauHinh.chainId ||
+        voucher.contractAddress.toLowerCase() != hopDong.toLowerCase() ||
+        tokenId < 1 ||
+        tokenId > catalog.length) {
+      throw const LoiVi('Voucher NFT không thuộc mạng hoặc danh mục hiện tại.');
+    }
+    final item = catalog[tokenId - 1];
+    final dichVu = DichVuNFT(
+      phienVi: pv,
+      cauHinh: CauHinhNFT(chainId: cauHinh.chainId, hopDong: hopDong),
+    );
+    try {
+      final ketQua = await dichVu.nhanVatPham(
+        _metadataNFT(item, tokenId, hopDong, cauHinh.chainId),
+        phieu: PhieuVatPhamDaKy(
+          phieu: PhieuVatPham(
+            player: voucher.player,
+            tokenId: BigInt.from(tokenId),
+            amount: BigInt.from(voucher.amount),
+            nonce: voucher.nonce,
+            deadline: BigInt.from(voucher.deadline),
+          ),
+          chuKy: voucher.signature,
+          cauHinh: CauHinhNFT(
+            chainId: voucher.chainId,
+            hopDong: voucher.contractAddress,
+          ),
+        ),
+      );
+      await dongBoNFTKhoDo();
+      return ketQua.transactionHash;
     } finally {
       dichVu.dispose();
     }
@@ -881,8 +970,6 @@ class GoldRushGame extends FlameGame
 
     Vector2 viTriNguoiChoi() => george?.position ?? Vector2.zero();
 
-    double heSoTocDo() => doKho.heSoTocDo * manHienTai.heSoKeDich;
-
     for (final d in banDo.diemXuatHien) {
       switch (d.ten) {
         case 'coin':
@@ -897,7 +984,12 @@ class GoldRushGame extends FlameGame
         case 'khong_lo':
           _soQuaiBanDau++;
           _loaiQuaiGoc.add(d.ten);
-          _sinhQuai(d.ten, viTriNguoiChoi, heSoTocDo, viTri: d.viTri.clone());
+          _sinhQuai(
+            d.ten,
+            viTriNguoiChoi,
+            _heSoTocDoKeDich,
+            viTri: d.viTri.clone(),
+          );
           break;
       }
     }
@@ -1247,13 +1339,13 @@ class GoldRushGame extends FlameGame
 
     if (g != null) {
       Vector2 viTriNguoiChoi() => g.position;
-      double heSoTocDo() => doKho.heSoTocDo * manHienTai.heSoKeDich;
-      _capNhatSinhQuai(dt, viTriNguoiChoi, heSoTocDo);
+      _capNhatSinhQuai(dt, viTriNguoiChoi, _heSoTocDoKeDich);
       _kiemTraThang();
     }
 
     if (g != null && nhatKy.troiThoiGian(dt)) {
-      doKho.capNhat(nhatKy.chup(g.mau, CauHinh.mauToiDa));
+      final dacTrung = nhatKy.chup(g.mau, CauHinh.mauToiDa);
+      if (_aiDoKhoDuocPhep) doKho.capNhat(dacTrung);
     }
   }
 
@@ -1278,7 +1370,8 @@ class GoldRushGame extends FlameGame
       ketQua: ketQua,
       diem: g?.diem ?? 0,
       phienBanApp: phienBanApp,
-      doKhoThichUng: doKho.batThichUng && doKho.moHinh != null,
+      doKhoThichUng:
+          _aiDoKhoDuocPhep && doKho.batThichUng && doKho.moHinh != null,
       banDo: banDo.tep,
       man: manHienTai.id,
     );
@@ -1576,7 +1669,9 @@ class GoldRushGame extends FlameGame
     // Đợi hết lượt xử lý pointer/layout hiện tại rồi mới đổi overlay, tránh
     // assertion của Flutter khi vừa xóa overlay cũ vừa thêm overlay mới.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final menuDangMo = overlays.isActive(LopPhu.menu);
       _anTatCaLopPhu();
+      if (menuDangMo) overlays.add(LopPhu.menu);
       if (!overlays.isActive(LopPhu.rungRuong)) {
         overlays.add(LopPhu.rungRuong);
       }
@@ -1606,9 +1701,8 @@ class GoldRushGame extends FlameGame
 
   /// Kho đồ chỉ mở từ Menu, không mở giữa ván.
   void moKhoDo() {
-    if (trangThai != TrangThaiChoi.tamDung || !overlays.isActive(LopPhu.menu)) {
-      return;
-    }
+    if (trangThai != TrangThaiChoi.tamDung) return;
+    if (!overlays.isActive(LopPhu.menu)) overlays.add(LopPhu.menu);
 
     overlays.add(LopPhu.khoDo);
   }

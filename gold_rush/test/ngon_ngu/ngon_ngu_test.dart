@@ -50,7 +50,18 @@ void main() {
         await language.doi(code);
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull, reason: '$size / $code');
-        expect(find.text('English'), findsOneWidget);
+        if (size.height > size.width && size.shortestSide < 600) {
+          expect(
+            find.text(
+              code == 'vi'
+                  ? 'Vui lòng xoay ngang thiết bị'
+                  : 'Please rotate your device',
+            ),
+            findsOneWidget,
+          );
+        } else {
+          expect(find.text('English'), findsOneWidget);
+        }
       }
     }
     await tester.pumpWidget(const SizedBox.shrink());

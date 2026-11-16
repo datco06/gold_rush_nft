@@ -50,8 +50,10 @@ class GoldRushTopBar extends StatelessWidget {
       color: Colors.transparent,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 860;
-          final tiny = constraints.maxWidth < 500;
+          // Màn hình điện thoại ngang thường rộng 800–1000 px trong
+          // browser/device preview. Giữ mọi thành phần trên một hàng rồi
+          // thu nhỏ đồng bộ, tránh việc menu rơi xuống và làm mất ví.
+          final compact = constraints.maxWidth < 1100;
           return Container(
             constraints: const BoxConstraints(minHeight: 56),
             padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14),
@@ -71,11 +73,7 @@ class GoldRushTopBar extends StatelessWidget {
                 ),
               ],
             ),
-            child: tiny
-                ? _buildTiny(context)
-                : compact
-                ? _buildCompact(context)
-                : _buildWide(context),
+            child: compact ? _buildCompact(context) : _buildWide(context),
           );
         },
       ),
@@ -83,108 +81,119 @@ class GoldRushTopBar extends StatelessWidget {
   }
 
   Widget _buildWide(BuildContext context) {
-    return Row(
-      children: [
-        const _GoldRushBrand(),
-        const SizedBox(width: 22),
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Center(
-              child: _NavItems(
-                activeItem: activeItem,
-                onSanhCho: onSanhCho,
-                onCuaHang: onCuaHang,
-                onRungRuong: onRungRuong,
-                onQuaTang: onQuaTang,
-                onKhoDo: onKhoDo,
-                onXuongAi: onXuongAi,
+    return SizedBox(
+      height: 64,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Positioned.fill(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _GoldRushBrand(),
+            ),
+          ),
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.center,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: _NavItems(
+                  activeItem: activeItem,
+                  onSanhCho: onSanhCho,
+                  onCuaHang: onCuaHang,
+                  onRungRuong: onRungRuong,
+                  onQuaTang: onQuaTang,
+                  onKhoDo: onKhoDo,
+                  onXuongAi: onXuongAi,
+                ),
               ),
             ),
           ),
-        ),
-        _StatusArea(
-          gold: gold,
-          playerName: playerName,
-          walletAddress: walletAddress,
-          onPlayerTap: onPlayerTap,
-          onSettings: onSettings,
-          onClose: onClose,
-          showClose: showClose,
-        ),
-      ],
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _StatusArea(
+                gold: gold,
+                playerName: playerName,
+                walletAddress: walletAddress,
+                onPlayerTap: onPlayerTap,
+                onSettings: onSettings,
+                onClose: onClose,
+                showClose: showClose,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildCompact(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            const Expanded(child: _GoldRushBrand()),
-            _StatusArea(
-              gold: gold,
-              playerName: playerName,
-              walletAddress: walletAddress,
-              onPlayerTap: onPlayerTap,
-              onSettings: onSettings,
-              onClose: onClose,
-              showClose: showClose,
-              compact: true,
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: _NavItems(
-            activeItem: activeItem,
-            onSanhCho: onSanhCho,
-            onCuaHang: onCuaHang,
-            onRungRuong: onRungRuong,
-            onQuaTang: onQuaTang,
-            onKhoDo: onKhoDo,
-            onXuongAi: onXuongAi,
+    return SizedBox(
+      height: 48,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 1040,
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 150,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: _GoldRushBrand(compact: true),
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _NavItems(
+                      dense: true,
+                      activeItem: activeItem,
+                      onSanhCho: onSanhCho,
+                      onCuaHang: onCuaHang,
+                      onRungRuong: onRungRuong,
+                      onQuaTang: onQuaTang,
+                      onKhoDo: onKhoDo,
+                      onXuongAi: onXuongAi,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 270,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: _StatusArea(
+                      gold: gold,
+                      playerName: playerName,
+                      walletAddress: walletAddress,
+                      onPlayerTap: onPlayerTap,
+                      onSettings: onSettings,
+                      onClose: onClose,
+                      showClose: showClose,
+                      compact: true,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildTiny(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            const Expanded(child: _GoldRushBrand()),
-            if (showClose)
-              _IconButton(icon: Icons.close_rounded, onTap: onClose),
-          ],
-        ),
-        const SizedBox(height: 6),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: _NavItems(
-            activeItem: activeItem,
-            onSanhCho: onSanhCho,
-            onCuaHang: onCuaHang,
-            onRungRuong: onRungRuong,
-            onQuaTang: onQuaTang,
-            onKhoDo: onKhoDo,
-            onXuongAi: onXuongAi,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
 class _GoldRushBrand extends StatelessWidget {
-  const _GoldRushBrand();
+  const _GoldRushBrand({this.compact = false});
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -192,8 +201,8 @@ class _GoldRushBrand extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: compact ? 28 : 32,
+          height: compact ? 28 : 32,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topRight,
@@ -209,18 +218,18 @@ class _GoldRushBrand extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.monetization_on_rounded,
-            size: 17,
+            size: compact ? 15 : 17,
             color: Color(0xFF12202A),
           ),
         ),
-        const SizedBox(width: 10),
-        const ChuGame(
+        SizedBox(width: compact ? 7 : 10),
+        ChuGame(
           'GOLD RUSH',
           style: TextStyle(
             color: Color(0xFFEAF2F8),
-            fontSize: 16,
+            fontSize: compact ? 14 : 16,
             fontWeight: FontWeight.w800,
             letterSpacing: .6,
           ),
@@ -232,6 +241,7 @@ class _GoldRushBrand extends StatelessWidget {
 
 class _NavItems extends StatelessWidget {
   const _NavItems({
+    this.dense = false,
     required this.activeItem,
     required this.onSanhCho,
     required this.onCuaHang,
@@ -241,6 +251,7 @@ class _NavItems extends StatelessWidget {
     required this.onXuongAi,
   });
 
+  final bool dense;
   final GoldRushTopBarItem? activeItem;
   final VoidCallback? onSanhCho;
   final VoidCallback? onCuaHang;
@@ -258,6 +269,7 @@ class _NavItems extends StatelessWidget {
           item: GoldRushTopBarItem.sanhCho,
           label: 'Sảnh chờ',
           icon: Icons.explore_outlined,
+          dense: dense,
           activeItem: activeItem,
           onTap: onSanhCho,
         ),
@@ -265,6 +277,7 @@ class _NavItems extends StatelessWidget {
           item: GoldRushTopBarItem.cuaHang,
           label: 'Cửa hàng',
           icon: Icons.storefront_outlined,
+          dense: dense,
           activeItem: activeItem,
           onTap: onCuaHang,
         ),
@@ -272,6 +285,7 @@ class _NavItems extends StatelessWidget {
           item: GoldRushTopBarItem.rungRuong,
           label: 'Rung rương',
           icon: Icons.card_giftcard_outlined,
+          dense: dense,
           activeItem: activeItem,
           onTap: onRungRuong,
         ),
@@ -279,6 +293,7 @@ class _NavItems extends StatelessWidget {
           item: GoldRushTopBarItem.quaTang,
           label: 'Quà tặng',
           icon: Icons.redeem_outlined,
+          dense: dense,
           activeItem: activeItem,
           onTap: onQuaTang,
         ),
@@ -286,6 +301,7 @@ class _NavItems extends StatelessWidget {
           item: GoldRushTopBarItem.khoDo,
           label: 'Kho đồ',
           icon: Icons.inventory_2_outlined,
+          dense: dense,
           activeItem: activeItem,
           onTap: onKhoDo,
         ),
@@ -293,6 +309,7 @@ class _NavItems extends StatelessWidget {
           item: GoldRushTopBarItem.xuongAi,
           label: 'Xưởng AI',
           icon: Icons.auto_awesome_outlined,
+          dense: dense,
           activeItem: activeItem,
           onTap: onXuongAi,
         ),
@@ -308,6 +325,7 @@ class _NavItem extends StatelessWidget {
     required this.icon,
     required this.activeItem,
     required this.onTap,
+    this.dense = false,
   });
 
   final GoldRushTopBarItem item;
@@ -315,6 +333,7 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final GoldRushTopBarItem? activeItem;
   final VoidCallback? onTap;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -323,7 +342,7 @@ class _NavItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: TextButton.icon(
         onPressed: onTap,
-        icon: Icon(icon, size: 13),
+        icon: Icon(icon, size: dense ? 12 : 13),
         label: ChuGame(label),
         style: TextButton.styleFrom(
           foregroundColor: active
@@ -335,11 +354,17 @@ class _NavItem extends StatelessWidget {
           side: active
               ? const BorderSide(color: Color(0x4DF2B33D))
               : BorderSide.none,
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+          padding: EdgeInsets.symmetric(
+            horizontal: dense ? 8 : 11,
+            vertical: dense ? 5 : 6,
+          ),
           minimumSize: const Size(0, 32),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          textStyle: TextStyle(
+            fontSize: dense ? 11 : 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -373,17 +398,35 @@ class _StatusArea extends StatelessWidget {
       _GoldChip(value: gold),
       _PlayerChip(name: playerName, address: walletAddress, onTap: onPlayerTap),
       _IconButton(icon: Icons.settings_outlined, onTap: onSettings),
-      if (showClose) _IconButton(icon: Icons.close_rounded, onTap: onClose),
+      Visibility(
+        visible: showClose,
+        maintainSize: true,
+        maintainAnimation: true,
+        maintainState: true,
+        child: _IconButton(icon: Icons.close_rounded, onTap: onClose),
+      ),
     ];
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: compact
           ? [
               _GoldChip(value: gold),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
+              _PlayerChip(
+                name: playerName,
+                address: walletAddress,
+                onTap: onPlayerTap,
+                compact: true,
+              ),
+              const SizedBox(width: 4),
               _IconButton(icon: Icons.settings_outlined, onTap: onSettings),
-              if (showClose)
-                _IconButton(icon: Icons.close_rounded, onTap: onClose),
+              Visibility(
+                visible: showClose,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: _IconButton(icon: Icons.close_rounded, onTap: onClose),
+              ),
             ]
           : controls,
     );
@@ -430,18 +473,25 @@ class _PlayerChip extends StatelessWidget {
     required this.name,
     required this.address,
     required this.onTap,
+    this.compact = false,
   });
 
   final String name;
   final String address;
   final VoidCallback? onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) => InkWell(
     onTap: onTap,
     borderRadius: BorderRadius.circular(999),
     child: Container(
-      padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 3 : 4,
+        compact ? 3 : 4,
+        compact ? 7 : 10,
+        compact ? 3 : 4,
+      ),
       decoration: BoxDecoration(
         color: const Color(0x0FFFFFFF),
         borderRadius: BorderRadius.circular(999),
@@ -451,8 +501,8 @@ class _PlayerChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 26,
-            height: 26,
+            width: compact ? 22 : 26,
+            height: compact ? 22 : 26,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -460,35 +510,33 @@ class _PlayerChip extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: compact ? 5 : 8),
           Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ChuGame(
-                name,
-                dichNoiDung: false,
-                style: const TextStyle(
+                name, dichNoiDung: false,
+                style: TextStyle(
                   color: Color(0xFFEAF2F8),
-                  fontSize: 11,
+                  fontSize: compact ? 9 : 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               ChuGame(
-                address,
-                dichNoiDung: false,
-                style: const TextStyle(
+                address, dichNoiDung: false,
+                style: TextStyle(
                   color: Color(0xFF7D90A0),
-                  fontSize: 8,
+                  fontSize: compact ? 7 : 8,
                   fontFamily: 'monospace',
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 8),
-          const Icon(
+          SizedBox(width: compact ? 5 : 8),
+          Icon(
             Icons.keyboard_arrow_down_rounded,
-            size: 13,
+            size: compact ? 11 : 13,
             color: Color(0xFF7D90A0),
           ),
         ],

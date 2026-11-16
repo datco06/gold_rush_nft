@@ -884,5 +884,65 @@ const banDichAnh = <String, String>{
   '\nChờ nhận: {0} (tự gộp vào giao dịch)':
       '\nPending: {0} (automatically included in the transaction)',
   'Bạn nhận được {0} ×{1}.': 'You received {0} ×{1}.',
+  'Đã xóa ảnh preview khỏi kho tạm.':
+      'Preview image removed from temporary storage.',
+  'Không thể xóa ảnh preview. Hãy thử lại.':
+      'Unable to delete the preview image. Please try again.',
+  'NHÂN VẬT MẪU': 'SAMPLE CHARACTER',
+  'NHÂN VẬT AI PIXEL-ART': 'PIXEL ART AI CHARACTER',
+  'Nhân vật sẵn sàng để lưu vào ví.':
+      'Your character is ready to save to your wallet.',
+  'Ảnh sẽ được backend chuẩn hóa thành sprite-sheet 4×4 để trang bị và chơi như George.': 'The server will convert the image into a 4×4 sprite sheet to equip and play like George.',
+  'Nhân vật đã nằm trong Kho đồ > Nhân vật AI và có thể trang bị ở đó. Sprite-sheet 4×4 sẽ được tải khi bắt đầu trang bị.': 'Your character is in Inventory > AI Characters and can be equipped there. Its 4×4 sprite sheet will load when equipping.',
+  'XÓA ẢNH': 'DELETE IMAGE',
+  'Nhân vật': 'Characters',
+  'NHÂN VẬT AI · ĐANG DÙNG': 'AI CHARACTER · IN USE',
+  'PHẦN QUÀ TRONG RƯƠNG': 'CHEST REWARDS',
+  'Danh sách phần thưởng có thể nhận': 'Available rewards',
+  'Vật phẩm hiếm': 'Rare item',
+  'Phần thưởng vàng': 'Gold reward',
+  'Vật phẩm mạnh': 'Powerful item',
+  'Vật phẩm thường': 'Common item',
+  'Vật phẩm sử thi': 'Epic item',
+  'Vật phẩm huyền thoại': 'Legendary item',
+  'Cần kết nối MetaMask trước khi nhận quà.':
+      'Connect MetaMask before claiming a gift.',
+  'ĐANG KIỂM TRA MÃ QUÀ…': 'CHECKING GIFT CODE…',
+  'ĐANG CẤP THƯỞNG…': 'ISSUING REWARD…',
+  'Mã quà tặng đã được sử dụng hoặc đạt giới hạn nhận.':
+      'This gift code has already been used or reached its claim limit.',
+  'Không thể nhận quà: {0}': 'Unable to claim gift: {0}',
+  'XEM KHO ĐỒ': 'VIEW INVENTORY',
+  'ĐANG': 'PROCESSING',
+  'Thêm nhân vật': 'Add character',
+  'Đã lưu · sprite 4×4': 'Saved · 4×4 sprite',
+  'Không tải được sprite nhân vật AI.':
+      'Unable to load the AI character sprite.',
+  'Đã trang bị {0}. Sẽ dùng ở ván tiếp theo.':
+      'Equipped {0}. It will be used in your next run.',
+  'Không thể trang bị nhân vật AI: {0}': 'Unable to equip AI character: {0}',
+  'Loại tài sản: Nhân vật AI gắn với ví hiện tại':
+      'Asset type: AI character linked to your current wallet',
+  'Gameplay: Sprite sheet 4×4, có thể trang bị ở ván tiếp theo':
+      'Gameplay: 4×4 sprite sheet, equippable for the next run',
+  'Vui lòng xoay ngang thiết bị': 'Please rotate your device',
+  'Gold Rush được tối ưu cho màn hình ngang.':
+      'Gold Rush is optimized for landscape screens.',
+  'QUÉT MÃ QR': 'SCAN QR CODE',
+  'Quét QR hiện chỉ hỗ trợ trên trình duyệt Web.':
+      'QR scanning is currently supported only in a web browser.',
+  'QUÉT MÃ QR QUÀ TẶNG': 'SCAN GIFT QR CODE',
+  'Đang yêu cầu quyền truy cập camera…': 'Requesting camera access…',
+  'Camera đã mở nhưng Chrome chưa hỗ trợ nhận diện QR. Hãy cập nhật Chrome.': 'The camera is open, but Chrome does not support QR detection. Update Chrome.',
+  'Đưa mã QR vào khung để quét': 'Place the QR code inside the frame to scan',
+  'Không thể mở camera: {0}': 'Unable to open camera: {0}',
+  'Chrome chưa được cấp quyền camera hoặc camera đang bị chặn.':
+      'Chrome does not have camera permission or camera access is blocked.',
+  'Camera đang được ứng dụng khác sử dụng.':
+      'The camera is in use by another application.',
+  'Không tìm thấy camera khả dụng trên máy.':
+      'No available camera found on this device.',
+  'Chrome không tạo được luồng hình ảnh. Hãy đóng ứng dụng đang dùng camera rồi thử lại.': 'Chrome could not start the video stream. Close other apps using the camera and try again.',
+  'HỦY': 'CANCEL',
   'Kho đồ': 'Inventory',
 };

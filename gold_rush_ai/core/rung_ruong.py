@@ -17,8 +17,9 @@ PHIEU_MO_RUONG = [
     ("hanChot", "uint256"),
 ]
 
-# 0..7999: vàng (80%), 8000..9499: giáp/giày hiếm (15%), còn lại: súng hiếm (5%).
-_VANG = ((4000, 150), (2400, 400), (800, 700), (400, 1000), (400, 50000))
+# 0..9799: vàng (98%), 9800..9949: giáp/giày hiếm (1,5%),
+# còn lại: súng hiếm (0,5%). Tổng tỷ lệ vật phẩm hiếm là 2%.
+_VANG = ((4900, 150), (2940, 400), (980, 700), (490, 1000), (490, 50000))
 _GIAP_GIAY_HIEM = (16, 17, 18, 25, 26, 27)
 _SUNG_HIEM = (7, 8, 9)
 
@@ -26,13 +27,13 @@ _SUNG_HIEM = (7, 8, 9)
 def quay_phan_thuong() -> dict:
     """Backend là nơi duy nhất chọn kết quả theo đúng tỷ lệ đã công bố."""
     moc = secrets.randbelow(10000)
-    if moc < 8000:
+    if moc < 9800:
         con_lai = moc
         for do_rong, so_vang in _VANG:
             if con_lai < do_rong:
                 return {"loai": "vang", "gia_tri": so_vang, "so_luong": 0, "token_id": 0}
             con_lai -= do_rong
-    if moc < 9500:
+    if moc < 9950:
         return {"loai": "vat_pham", "gia_tri": secrets.choice(_GIAP_GIAY_HIEM), "so_luong": 1, "token_id": 1}
     return {"loai": "vat_pham", "gia_tri": secrets.choice(_SUNG_HIEM), "so_luong": 1, "token_id": 1}
 

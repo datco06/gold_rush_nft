@@ -209,6 +209,24 @@ class KhoAnh:
                                (player_id, image_id)).fetchone()
         return self._doc_dong(row, image_id, self._bay_gio())
 
+    def xoa_cho_nguoi(self, player_id: str, image_id: str) -> bool:
+        """Xóa preview đúng thuộc về người chơi, không chạm kho nhân vật đã lưu."""
+        _ma_hop_le(player_id)
+        if not isinstance(image_id, str) or re.fullmatch(r"img_[0-9a-f]{32}", image_id) is None:
+            raise ValueError("ID ảnh không hợp lệ")
+        with self._ket_noi() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                """SELECT 1 FROM yeu_cau_anh
+                   WHERE player_id = ? AND image_id = ?""",
+                (player_id, image_id),
+            ).fetchone()
+            if row is None:
+                return False
+            conn.execute("DELETE FROM yeu_cau_anh WHERE player_id = ? AND image_id = ?", (player_id, image_id))
+            conn.execute("DELETE FROM anh_nhan_vat WHERE image_id = ?", (image_id,))
+            return True
+
     @staticmethod
     def _doc_dong(row, image_id: str, bay_gio: float) -> tuple[AnhNhanVat, bytes] | None:
         if row is None:

@@ -29,6 +29,10 @@ class CloudflareWorkersAnh:
     """Sinh ảnh bằng Cloudflare Workers AI REST API."""
 
     generation_source: Literal["image_model"] = "image_model"
+    # FLUX text-to-image không đảm bảo bố cục 4x4; backend sẽ đóng sheet từ
+    # một nhân vật đơn để giữ silhouette nhất quán.
+    supports_sprite_sheet = False
+    supports_single_frame = True
 
     def __init__(
         self,

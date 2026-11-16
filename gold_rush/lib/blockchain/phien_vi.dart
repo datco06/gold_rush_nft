@@ -26,21 +26,21 @@ class PhienVi extends ChangeNotifier {
     unawaited(napVangDaLuu());
   }
 
-  static const String _khoaVangChung = 'gold_rush_vang';
-
   String get _khoaVang => diaChi != null && diaChi!.isNotEmpty
       ? 'gold_rush_vang_${diaChi!.toLowerCase()}'
-      : _khoaVangChung;
+      : 'gold_rush_vang';
 
   /// Nạp số vàng đã lưu từ bộ nhớ máy.
   Future<void> napVangDaLuu() async {
     try {
-      final s =
-          await SharedPreferencesAsync().getString(_khoaVang) ??
-          await SharedPreferencesAsync().getString(_khoaVangChung);
+      // Chốt key trước khi await: lần nạp cache chung lúc khởi động không
+      // được phép ghi đè cache của ví sau khi địa chỉ đã được xác định.
+      final khoa = _khoaVang;
+      final s = await SharedPreferencesAsync().getString(khoa);
+      if (khoa != _khoaVang) return;
       if (s != null) {
         final v = BigInt.tryParse(s);
-        if (v != null && v > vang) {
+        if (v != null && v != vang) {
           vang = v;
           notifyListeners();
         }
@@ -53,7 +53,6 @@ class PhienVi extends ChangeNotifier {
     try {
       final s = vang.toString();
       await SharedPreferencesAsync().setString(_khoaVang, s);
-      await SharedPreferencesAsync().setString(_khoaVangChung, s);
     } catch (_) {}
   }
 
@@ -108,6 +107,7 @@ class PhienVi extends ChangeNotifier {
   String? thongBao;
   bool thongBaoLaLoi = false;
   bool dangXuLy = false;
+  Future<bool>? _ketNoiDangChay;
 
   bool get daKetNoi => diaChi != null && cuaHang != null;
 
@@ -175,63 +175,76 @@ class PhienVi extends ChangeNotifier {
   // ------------------------------------------------------------------
   // Kết nối
   // ------------------------------------------------------------------
-  Future<bool> ketNoi() => _lamViec('Đang kết nối ${vi.ten}…', () async {
-    if (!vi.coSan) {
-      throw const LoiVi(
-        'Chưa thấy MetaMask. Cài tiện ích MetaMask cho trình duyệt rồi tải lại trang.',
+  Future<bool> _ketNoiMotLan(Future<bool> Function() thaoTac) {
+    final dangChay = _ketNoiDangChay;
+    if (dangChay != null) return dangChay;
+    final future = thaoTac();
+    _ketNoiDangChay = future;
+    return future.whenComplete(() {
+      if (identical(_ketNoiDangChay, future)) _ketNoiDangChay = null;
+    });
+  }
+
+  Future<bool> ketNoi() => _ketNoiMotLan(
+    () => _lamViec('Đang kết nối ${vi.ten}…', () async {
+      if (!vi.coSan) {
+        throw const LoiVi(
+          'Chưa thấy MetaMask. Cài tiện ích MetaMask cho trình duyệt rồi tải lại trang.',
+        );
+      }
+      final ch = await mayChu.cauHinh();
+      final dc = await vi.ketNoi();
+      final bo = BoGiaoDich.choMang(
+        vi: vi,
+        chainId: ch.chainId,
+        hopDong: ch.hopDong,
       );
-    }
-    final ch = await mayChu.cauHinh();
-    final dc = await vi.ketNoi();
-    final bo = BoGiaoDich.choMang(
-      vi: vi,
-      chainId: ch.chainId,
-      hopDong: ch.hopDong,
-    );
-    await bo.damBaoMang();
-    await bo.kiemHopDong();
-    cauHinh = ch;
-    diaChi = dc;
-    await napVangDaLuu();
-    cuaHang = CuaHangChuoi(
-      vi: vi,
-      hopDong: ch.hopDong,
-      hopDongVatPham: ch.hopDongVatPham,
-      bo: bo,
-    );
-    if (_daDong) return;
-    _ngheVi ??= vi.suKien.listen(_khiViDoi);
-    await _taiLaiNoi(); // gồm cả xin phiếu cho các ván chơi lúc chưa kết nối
-  }, xong: 'Đã kết nối.');
+      await bo.damBaoMang();
+      await bo.kiemHopDong();
+      cauHinh = ch;
+      diaChi = dc;
+      await napVangDaLuu();
+      cuaHang = CuaHangChuoi(
+        vi: vi,
+        hopDong: ch.hopDong,
+        hopDongVatPham: ch.hopDongVatPham,
+        bo: bo,
+      );
+      if (_daDong) return;
+      _ngheVi ??= vi.suKien.listen(_khiViDoi);
+      await _taiLaiNoi(); // gồm cả xin phiếu cho các ván chơi lúc chưa kết nối
+    }, xong: 'Đã kết nối.'),
+  );
 
   /// Đồng bộ với ví đã được AuthGate kết nối, không gọi eth_requestAccounts
   /// và không mở thêm hộp thoại kết nối trong game.
-  Future<bool> ketNoiDaXacThuc(String diaChiAuth) =>
-      _lamViec('Đang đồng bộ ví đăng nhập…', () async {
-        final ds = await vi.taiKhoan();
-        if (ds.isEmpty || ds.first.toLowerCase() != diaChiAuth.toLowerCase()) {
-          throw const LoiVi('Ví đăng nhập không còn được cấp quyền cho trang.');
-        }
-        final ch = await mayChu.cauHinh();
-        final bo = BoGiaoDich.choMang(
-          vi: vi,
-          chainId: ch.chainId,
-          hopDong: ch.hopDong,
-        );
-        await bo.damBaoMang();
-        await bo.kiemHopDong();
-        cauHinh = ch;
-        diaChi = ds.first;
-        await napVangDaLuu();
-        cuaHang = CuaHangChuoi(
-          vi: vi,
-          hopDong: ch.hopDong,
-          hopDongVatPham: ch.hopDongVatPham,
-          bo: bo,
-        );
-        _ngheVi ??= vi.suKien.listen(_khiViDoi);
-        await _taiLaiNoi();
-      }, xong: 'Đã đồng bộ ví đăng nhập.');
+  Future<bool> ketNoiDaXacThuc(String diaChiAuth) => _ketNoiMotLan(
+    () => _lamViec('Đang đồng bộ ví đăng nhập…', () async {
+      final ds = await vi.taiKhoan();
+      if (ds.isEmpty || ds.first.toLowerCase() != diaChiAuth.toLowerCase()) {
+        throw const LoiVi('Ví đăng nhập không còn được cấp quyền cho trang.');
+      }
+      final ch = await mayChu.cauHinh();
+      final bo = BoGiaoDich.choMang(
+        vi: vi,
+        chainId: ch.chainId,
+        hopDong: ch.hopDong,
+      );
+      await bo.damBaoMang();
+      await bo.kiemHopDong();
+      cauHinh = ch;
+      diaChi = ds.first;
+      await napVangDaLuu();
+      cuaHang = CuaHangChuoi(
+        vi: vi,
+        hopDong: ch.hopDong,
+        hopDongVatPham: ch.hopDongVatPham,
+        bo: bo,
+      );
+      _ngheVi ??= vi.suKien.listen(_khiViDoi);
+      await _taiLaiNoi();
+    }, xong: 'Đã đồng bộ ví đăng nhập.'),
+  );
 
   /// Xin phiếu cho các ván còn treo. Chỉ bỏ ván khỏi danh sách khi xong hoặc bị từ chối DỨT KHOÁT
   /// (409 đã cấp ví khác, 422 không hợp lệ); lỗi mạng, 404 (nhật ký chưa tới), 429 → giữ lại, thử sau.
@@ -447,7 +460,6 @@ class PhienVi extends ChangeNotifier {
       if (!daKetNoi) {
         throw const LoiVi('Cần kết nối MetaMask để mở rương.');
       }
-      await _taiLaiNoi();
       final vangThuc = await cuaHang!.soVang(diaChi!);
       if (vangThuc < BigInt.from(100)) {
         throw LoiVi('Số dư không đủ: cần 100 vàng, có $vangThuc.');
@@ -455,12 +467,6 @@ class PhienVi extends ChangeNotifier {
       final kq = await mayChu.moRuong(vi: diaChi!);
       await cuaHang!.moRuong(diaChi: diaChi!, phieu: kq.phieu, baoTienDo: _bao);
       await _taiLaiNoi();
-      final vangSau = await cuaHang!.soVang(diaChi!);
-      if (vangSau != vang) {
-        vang = vangSau;
-        await _luuVang();
-        notifyListeners();
-      }
       return kq;
     },
     xong: 'Mở rương thành công.',

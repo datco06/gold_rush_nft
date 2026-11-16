@@ -99,6 +99,7 @@ class _MauDich {
 // Only controlled enum/catalog labels are translated inside interpolations.
 // Player names, wallet addresses, transaction hashes and AI prose stay verbatim.
 const _nhanCoThamSo = {
+  'Không thể mở camera: {0}',
   'Độ khó • {0}',
   'Độ khó đề xuất • {0}',
   'Nguồn sinh • {0}',

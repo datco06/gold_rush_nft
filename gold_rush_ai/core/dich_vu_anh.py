@@ -17,6 +17,7 @@ class DichVuAnh:
         provider: NhaCungCapAnh | None = None,
         quota: KhoQuotaAI | None = None,
         gioi_han_ngay: int = 5,
+        khoang_cach_giay: float = 20,
         cho_phep_fallback: bool = True,
     ):
         self.kho = kho
@@ -24,6 +25,10 @@ class DichVuAnh:
         self.provider = provider
         self.quota = quota
         self.gioi_han_ngay = kiem_tra_gioi_han(gioi_han_ngay)
+        if (isinstance(khoang_cach_giay, bool) or not isinstance(khoang_cach_giay, (int, float))
+                or khoang_cach_giay < 0 or khoang_cach_giay > 86400):
+            raise ValueError("Khoảng cách gọi AI không hợp lệ")
+        self.khoang_cach_giay = float(khoang_cach_giay)
         self.cho_phep_fallback = cho_phep_fallback
         if quota is not None and quota.duong_dan.resolve() == kho.duong_dan.resolve():
             raise ValueError("Quota cần database riêng với kho ảnh")
@@ -34,7 +39,9 @@ class DichVuAnh:
             return cu
         provider = self.provider
         if provider is not None and self.quota is not None:
-            provider = AnhCoQuota(provider, self.quota, player_id, self.gioi_han_ngay)
+            provider = AnhCoQuota(
+                provider, self.quota, player_id, self.gioi_han_ngay, self.khoang_cach_giay,
+            )
         return self.kho.tao_theo_yeu_cau(
             player_id,
             request_id,

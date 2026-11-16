@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
 import '../ngon_ngu/ngon_ngu.dart';
 
-import '../blockchain/nhan_vat.dart';
 import '../ai/may_chu_nhan_vat.dart';
+import '../blockchain/nhan_vat.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart' show AnhNhanVat;
@@ -170,13 +171,47 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
     final api = MayChuNhanVat();
     try {
       await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => ManHinhAnhNhanVat(
+        PageRouteBuilder<void>(
+          pageBuilder: (aiContext, _, _) => ManHinhAnhNhanVat(
             mayChu: api,
             authController: widget.game.auth,
             vi: widget.game.phienVi?.vi,
+            phienVi: widget.game.phienVi,
             tienTrinhController: widget.game.tienTrinh,
-            onRungRuong: widget.game.moRungRuong,
+            onPlayerTap: () {
+              Navigator.of(aiContext).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CharacterProfileScreen(game: widget.game),
+                ),
+              );
+            },
+            onSanhCho: () => Navigator.of(context).maybePop(),
+            onCuaHang: () {
+              Navigator.of(context).pop();
+              widget.game.moCuaHang();
+            },
+            onRungRuong: () {
+              Navigator.of(context).pop();
+              widget.game.moRungRuong();
+            },
+            onQuaTang: () {
+              Navigator.of(context).pop();
+              widget.game.moQuaTang();
+            },
+            onKhoDo: () {
+              Navigator.of(context).pop();
+              widget.game.moKhoDo();
+            },
+            onSettings: widget.game.moCaiDat,
+          ),
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
           ),
         ),
       );
@@ -203,7 +238,10 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
             builder: (context, constraints) {
               final w = constraints.maxWidth;
               final h = constraints.maxHeight;
-              final compact = w < 900 || h < 540;
+              // 16:9 mobile/tablet landscape views can be wide but still
+              // short. Use the compact geometry before the equipment panel
+              // and start button are pushed below the viewport.
+              final compact = w < 1100 || h < 640;
               final rightPanelWidth = compact
                   ? math.min(230.0, w * 0.42)
                   : math.min(286.0, math.max(230.0, w * 0.22));
@@ -224,7 +262,10 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                   // 2. Nhân vật chính nổi bật ở trung tâm trên bục đá
                   _CharacterShowcase(
                     tepAnh: g.nhanVatDangDung,
-                    tenNhanVat: nv.ten,
+                    tenNhanVat: g.nhanVatDangDung.startsWith('ai:')
+                        ? g.tenNhanVatDangDung
+                        : nv.ten,
+                    anhNhanVat: g.taiNguyen.anhNhanVat(g.nhanVatDangDung),
                     danhSachVatPham: g.danhSachVatPham.value,
                     idleAnimation: _idleController,
                     compact: compact,
@@ -279,32 +320,38 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                     ),
                                   ),
                                   Align(
-                                    alignment: const Alignment(0, 0.88),
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        maxWidth: compact ? 280 : 440,
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          _StartAdventureButton(
-                                            compact: compact,
-                                            loading: _startingAdventure,
-                                            onPressed: _onStartAdventure,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          const ChuGame(
-                                            'Nhấn ENTER để bắt đầu ván mới',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Color(0xFF7D90A0),
-                                              fontSize: 10,
-                                              letterSpacing: 1.1,
+                                    alignment: Alignment(
+                                      0,
+                                      compact ? 0.94 : 0.88,
+                                    ),
+                                    child: Transform.translate(
+                                      offset: Offset(0, compact ? 22 : 26),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth: compact ? 260 : 440,
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            _StartAdventureButton(
+                                              compact: compact,
+                                              loading: _startingAdventure,
+                                              onPressed: _onStartAdventure,
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(height: 8),
+                                            const ChuGame(
+                                              'Nhấn ENTER để bắt đầu ván mới',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: Color(0xFF7D90A0),
+                                                fontSize: 10,
+                                                letterSpacing: 1.1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -976,6 +1023,7 @@ class _HeaderIconButtonState extends State<_HeaderIconButton> {
 class _CharacterShowcase extends StatelessWidget {
   final String tepAnh;
   final String tenNhanVat;
+  final ui.Image? anhNhanVat;
   final List<VatPhamHienThi> danhSachVatPham;
   final Animation<double> idleAnimation;
   final bool compact;
@@ -983,6 +1031,7 @@ class _CharacterShowcase extends StatelessWidget {
   const _CharacterShowcase({
     required this.tepAnh,
     required this.tenNhanVat,
+    required this.anhNhanVat,
     required this.danhSachVatPham,
     required this.idleAnimation,
     required this.compact,
@@ -990,13 +1039,18 @@ class _CharacterShowcase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spriteSize = compact ? 132.0 : 184.0;
+    final spriteSize = compact ? 116.0 : 184.0;
     return IgnorePointer(
       child: LayoutBuilder(
         builder: (context, constraints) {
           final pedestalY = constraints.maxHeight * 0.65;
           final left = (constraints.maxWidth - spriteSize) * 0.5;
-          final top = math.max(0.0, pedestalY - spriteSize + 8.0);
+          // Keep the character's feet above the action button on short
+          // landscape viewports; the pedestal remains the visual baseline.
+          final top = math.max(
+            0.0,
+            pedestalY - spriteSize + (compact ? -10.0 : 8.0),
+          );
           return Stack(
             children: [
               Positioned(
@@ -1031,6 +1085,7 @@ class _CharacterShowcase extends StatelessWidget {
                         tepAnh: tepAnh,
                         kichThuoc: spriteSize,
                         danhSachVatPham: danhSachVatPham,
+                        anhNhanVat: anhNhanVat,
                       ),
                     ),
                   ),
@@ -1045,7 +1100,7 @@ class _CharacterShowcase extends StatelessWidget {
 }
 
 // ============================================================================
-// 4. PANEL TRANG BỊ HIỆN TẠI (BÊN PHẢI — LƯỚI 2×3)
+// 4. PANEL TRANG BỊ HIỆN TẠI (BÊN PHẢI — LƯỚI 2×2)
 // ============================================================================
 
 class _LobbyEquipSlot {
@@ -1102,32 +1157,18 @@ class _EquippedItemsPanel extends StatelessWidget {
         fallbackIcon: Icons.shield_outlined,
       ),
       _LobbyEquipSlot(
-        id: 'off_weapon',
-        label: 'Vũ khí phụ',
+        id: 'boots',
+        label: 'Giày',
         supported: true,
-        item: _findEquipped(OTrangBi.vuKhiPhu),
-        fallbackIcon: Icons.gps_fixed_rounded,
+        item: _findEquipped(OTrangBi.giay),
+        fallbackIcon: Icons.directions_run_rounded,
       ),
       const _LobbyEquipSlot(
-        id: 'acc_1',
-        label: 'Phụ kiện 1',
-        supported: false,
+        id: 'character',
+        label: 'Nhân vật',
+        supported: true,
         item: null,
-        fallbackIcon: Icons.circle_outlined,
-      ),
-      const _LobbyEquipSlot(
-        id: 'acc_2',
-        label: 'Phụ kiện 2',
-        supported: false,
-        item: null,
-        fallbackIcon: Icons.auto_awesome_outlined,
-      ),
-      const _LobbyEquipSlot(
-        id: 'companion',
-        label: 'Đồng hành',
-        supported: false,
-        item: null,
-        fallbackIcon: Icons.pets_rounded,
+        fallbackIcon: Icons.person_outline_rounded,
       ),
     ];
 
@@ -1189,7 +1230,9 @@ class _EquippedItemsPanel extends StatelessWidget {
               crossAxisCount: 2,
               crossAxisSpacing: compact ? 8 : 10,
               mainAxisSpacing: compact ? 8 : 10,
-              childAspectRatio: 1.08,
+              // Giảm chiều cao mỗi ô ở màn hình ngang thấp để toàn bộ
+              // panel 2×2 nằm gọn trong viewport.
+              childAspectRatio: compact ? 1.3 : 1.08,
             ),
             itemCount: slots.length,
             itemBuilder: (context, index) {
@@ -1425,7 +1468,7 @@ class _StartAdventureButtonState extends State<_StartAdventureButton> {
           duration: const Duration(milliseconds: 100),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            height: widget.compact ? 58 : 70,
+            height: widget.compact ? 46 : 70,
             padding: EdgeInsets.symmetric(horizontal: widget.compact ? 14 : 18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
@@ -1473,10 +1516,10 @@ class _StartAdventureButtonState extends State<_StartAdventureButton> {
                   )
                 else
                   CustomPaint(
-                    size: Size.square(widget.compact ? 26 : 32),
+                    size: Size.square(widget.compact ? 23 : 32),
                     painter: const _CrossedSwordsPainter(),
                   ),
-                SizedBox(width: widget.compact ? 10 : 14),
+                SizedBox(width: widget.compact ? 8 : 14),
                 Flexible(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1488,7 +1531,7 @@ class _StartAdventureButtonState extends State<_StartAdventureButton> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: const Color(0xFF231502),
-                          fontSize: widget.compact ? 17 : 21,
+                          fontSize: widget.compact ? 15 : 21,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.0,
                           height: 1.05,
@@ -1501,7 +1544,7 @@ class _StartAdventureButtonState extends State<_StartAdventureButton> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: const Color(0xFF3E2605),
-                          fontSize: widget.compact ? 10.5 : 11.5,
+                          fontSize: widget.compact ? 9.5 : 11.5,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

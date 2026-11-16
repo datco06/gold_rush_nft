@@ -10,8 +10,8 @@ enum TrangThaiMan { chuaMo, daMo, hoanThanh }
 
 /// Một ô màn chơi trên World Map:
 /// - Màn 1–6 (cốt lõi): Huy hiệu Hoàng Kim lớn kèm băng rôn tên địa danh & trạng thái.
-/// - Màn 7–20 (địa danh mở rộng): Thu gọn thành mốc la bàn thanh thoát khi nhìn toàn cảnh,
-///   và hiện đầy đủ tên địa danh khi phóng to.
+/// - Màn 7–20 (địa danh mở rộng): Hiện tên cùng mốc màn trên màn hình lớn;
+///   thu gọn trên thiết bị nhỏ để tránh chồng nhãn.
 class NutManChoi extends StatefulWidget {
   final ManChoi man;
   final TrangThaiMan trangThai;
@@ -230,7 +230,9 @@ class _HuyHieu extends CustomPainter {
       c,
       r,
       Paint()
-        ..color = gold.withValues(alpha: active ? 1.0 : (laManChinh ? 0.95 : 0.8))
+        ..color = gold.withValues(
+          alpha: active ? 1.0 : (laManChinh ? 0.95 : 0.8),
+        )
         ..style = PaintingStyle.stroke
         ..strokeWidth = active ? 2.4 : (laManChinh ? 2.0 : 1.4),
     );

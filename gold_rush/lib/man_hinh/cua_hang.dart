@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../ngon_ngu/ngon_ngu.dart';
 
+import '../ai/may_chu_nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
+import 'anh_nhan_vat.dart';
+import 'ho_so_nhan_vat.dart';
 
 /// Cửa hàng trang bị. Đây là một lớp phủ riêng của game nên không tạo
 /// Navigator mới và không làm thay đổi các màn hình đang có.
@@ -28,6 +31,68 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
 
   GoldRushGame get _game => widget.game;
   PhienVi? get _phienVi => _game.phienVi;
+
+  void _moHoSo() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CharacterProfileScreen(game: _game),
+      ),
+    );
+  }
+
+  Future<void> _moXuongAi() async {
+    _game.dongCuaHang();
+    final api = MayChuNhanVat();
+    try {
+      await Navigator.of(context).push<void>(
+        PageRouteBuilder<void>(
+          pageBuilder: (aiContext, _, _) => ManHinhAnhNhanVat(
+            mayChu: api,
+            authController: _game.auth,
+            vi: _game.phienVi?.vi,
+            phienVi: _game.phienVi,
+            tienTrinhController: _game.tienTrinh,
+            onPlayerTap: () {
+              Navigator.of(aiContext).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CharacterProfileScreen(game: _game),
+                ),
+              );
+            },
+            onSanhCho: () {
+              Navigator.of(aiContext).pop();
+              _game.veMenu();
+            },
+            onCuaHang: () => Navigator.of(aiContext).maybePop(),
+            onRungRuong: () {
+              Navigator.of(aiContext).pop();
+              _game.moRungRuong();
+            },
+            onQuaTang: () {
+              Navigator.of(aiContext).pop();
+              _game.moQuaTang();
+            },
+            onKhoDo: () {
+              Navigator.of(aiContext).pop();
+              _game.moKhoDo();
+            },
+            onSettings: _game.moCaiDat,
+          ),
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
+          ),
+        ),
+      );
+    } finally {
+      api.dong();
+    }
+  }
 
   @override
   void initState() {
@@ -73,7 +138,12 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                   children: [
                     const _StoreAtmosphere(),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+                      padding: EdgeInsets.fromLTRB(
+                        compact ? 10 : 20,
+                        compact ? 10 : 20,
+                        compact ? 10 : 20,
+                        compact ? 8 : 14,
+                      ),
                       child: Column(
                         children: [
                           GoldRushTopBar(
@@ -82,7 +152,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                                 ? '0'
                                 : (pv.dangXuLy ? '...' : pv.vangDinhDang),
                             playerName: _game.auth?.user?.username ?? 'datco6',
-                            onSanhCho: _game.dongCuaHang,
+                            onSanhCho: _game.veMenu,
                             onCuaHang: null,
                             onRungRuong: () {
                               _game.dongCuaHang();
@@ -96,14 +166,14 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                               _game.dongCuaHang();
                               _game.moKhoDo();
                             },
-                            onXuongAi: null,
-                            onPlayerTap: null,
+                            onXuongAi: _moXuongAi,
+                            onPlayerTap: _moHoSo,
                             onSettings: _game.moCaiDat,
-                            onClose: _game.dongCuaHang,
+                            onClose: _game.veMenu,
                           ),
-                          const SizedBox(height: 12),
-                          const _StoreHeading(),
-                          const SizedBox(height: 12),
+                          SizedBox(height: compact ? 6 : 12),
+                          _StoreHeading(compact: compact),
+                          SizedBox(height: compact ? 6 : 12),
                           Expanded(
                             child: compact
                                 ? _buildCompactContent(selected)
@@ -142,17 +212,71 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
   }
 
   Widget _buildCompactContent(VatPhamHienThi? selected) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Column(
-        children: [
-          _buildCatalog(),
-          if (selected != null) ...[
-            const SizedBox(height: 14),
-            _ItemDetail(item: selected, onBuy: () => _muaVatPham(selected)),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _CategoryTabs(
+          selected: _tab,
+          onSelected: (value) => setState(() {
+            _tab = value;
+            _idDangChon = null;
+          }),
+        ),
+        const SizedBox(height: 8),
+        _RarityFilters(
+          selected: _doHiem,
+          onSelected: (value) => setState(() => _doHiem = value),
+        ),
+        const SizedBox(height: 10),
+        Expanded(child: _buildCompactItemList()),
+        if (selected != null) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 150,
+            child: SingleChildScrollView(
+              child: _ItemDetail(
+                item: selected,
+                onBuy: () => _muaVatPham(selected),
+              ),
+            ),
+          ),
         ],
-      ),
+      ],
+    );
+  }
+
+  Widget _buildCompactItemList() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final items = _vatPhamHienThi;
+        final columns = ((constraints.maxWidth + 10) / 220)
+            .floor()
+            .clamp(1, 3)
+            .toInt();
+        if (items.isEmpty) return const _EmptyStore();
+
+        return GridView.builder(
+          padding: const EdgeInsets.only(bottom: 12),
+          itemCount: items.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.25,
+          ),
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return _StoreItemCard(
+              item: item,
+              price: _priceFor(item),
+              quantity: _quantityFor(item),
+              selected: item.id == _idDangChon,
+              onTap: () => setState(() => _idDangChon = item.id),
+              onBuy: () => _muaVatPham(item),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -329,17 +453,19 @@ class _StoreAtmosphere extends StatelessWidget {
 }
 
 class _StoreHeading extends StatelessWidget {
-  const _StoreHeading();
+  const _StoreHeading({required this.compact});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return const Align(
+    return Align(
       alignment: Alignment.centerLeft,
       child: ChuGame(
         'Cửa hàng',
         style: TextStyle(
           color: Color(0xFFEAF2F8),
-          fontSize: 34,
+          fontSize: compact ? 26 : 34,
           fontWeight: FontWeight.w800,
           height: 1,
         ),
