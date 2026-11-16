@@ -142,7 +142,7 @@ void main() {
     final pv = _PhienViKiemThu();
     addTearDown(pv.dispose);
 
-    pv.datNhanVatSoHuu({1, 2, 3});
+    pv.datNhanVatSoHuu(bangNhanVat.map((nv) => nv.id).toSet());
 
     await moDanhSach(tester, phienVi: pv, tepDangDung: georgeGoc.tepAnh);
 

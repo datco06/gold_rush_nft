@@ -54,4 +54,18 @@ const List<NhanVatBan> bangNhanVat = [
     giaGoiY: 60,
     tepAnh: 'george_hiep_si.png',
   ),
+  NhanVatBan(
+    id: 4,
+    ten: 'Thợ mỏ pixel',
+    moTa: 'Nhân vật pixel art bốn hướng, trang bị sẵn để chơi.',
+    giaGoiY: 400,
+    tepAnh: 'nhan_vat_tho_mo_ai.png',
+  ),
+  NhanVatBan(
+    id: 5,
+    ten: 'Mèo máy vàng',
+    moTa: 'Nhân vật pixel art bốn hướng với hoạt ảnh riêng.',
+    giaGoiY: 500,
+    tepAnh: 'nhan_vat_doraemon_ai.png',
+  ),
 ];

@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../ngon_ngu/ngon_ngu.dart';
 
 import '../ai/may_chu_nhan_vat.dart';
+import '../blockchain/nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
+import '../kho_do/danh_sach_nhan_vat.dart';
 import '../kho_do/danh_sach_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
 import 'anh_nhan_vat.dart';
@@ -26,8 +28,10 @@ class ManHinhCuaHang extends StatefulWidget {
 class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
   final List<VatPhamHienThi> _danhMuc = danhSachTrangBiCuaHang();
   DanhMucVatPham _tab = DanhMucVatPham.vuKhi;
+  bool _dangXemNhanVat = false;
   DoHiemVatPham? _doHiem;
   String? _idDangChon;
+  int? _nhanVatDangChon;
 
   GoldRushGame get _game => widget.game;
   PhienVi? get _phienVi => _game.phienVi;
@@ -108,6 +112,21 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
     }).toList();
   }
 
+  List<NhanVatBan> get _nhanVatHienThi {
+    final characters = bangNhanVat.where((nhanVat) => nhanVat.id >= 4).toList();
+    characters.sort((a, b) => a.giaGoiY.compareTo(b.giaGoiY));
+    return characters;
+  }
+
+  NhanVatBan? get _nhanVatDangChonHienThi {
+    final id = _nhanVatDangChon;
+    if (id == null) return null;
+    for (final nhanVat in _nhanVatHienThi) {
+      if (nhanVat.id == id) return nhanVat;
+    }
+    return null;
+  }
+
   VatPhamHienThi? get _vatPhamDangChon {
     final id = _idDangChon;
     if (id == null) return null;
@@ -176,8 +195,14 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                           SizedBox(height: compact ? 6 : 12),
                           Expanded(
                             child: compact
-                                ? _buildCompactContent(selected)
-                                : _buildWideContent(selected),
+                                ? _buildCompactContent(
+                                    selected,
+                                    _nhanVatDangChonHienThi,
+                                  )
+                                : _buildWideContent(
+                                    selected,
+                                    _nhanVatDangChonHienThi,
+                                  ),
                           ),
                         ],
                       ),
@@ -192,7 +217,31 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
     );
   }
 
-  Widget _buildWideContent(VatPhamHienThi? selected) {
+  Widget _buildWideContent(
+    VatPhamHienThi? selected,
+    NhanVatBan? selectedCharacter,
+  ) {
+    if (_dangXemNhanVat) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _buildCharacterCatalog()),
+          if (selectedCharacter != null) ...[
+            const SizedBox(width: 14),
+            SizedBox(
+              width: 344,
+              child: _CharacterDetail(
+                character: selectedCharacter,
+                price: _priceForCharacter(selectedCharacter),
+                owned: _isCharacterOwned(selectedCharacter),
+                onBuy: () => _muaNhanVat(selectedCharacter),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -211,17 +260,39 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
     );
   }
 
-  Widget _buildCompactContent(VatPhamHienThi? selected) {
+  Widget _buildCompactContent(
+    VatPhamHienThi? selected,
+    NhanVatBan? selectedCharacter,
+  ) {
+    if (_dangXemNhanVat) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildCategoryTabs(),
+          const SizedBox(height: 10),
+          Expanded(child: _buildCompactCharacterList()),
+          if (selectedCharacter != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 180,
+              child: SingleChildScrollView(
+                child: _CharacterDetail(
+                  character: selectedCharacter,
+                  price: _priceForCharacter(selectedCharacter),
+                  owned: _isCharacterOwned(selectedCharacter),
+                  onBuy: () => _muaNhanVat(selectedCharacter),
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _CategoryTabs(
-          selected: _tab,
-          onSelected: (value) => setState(() {
-            _tab = value;
-            _idDangChon = null;
-          }),
-        ),
+        _buildCategoryTabs(),
         const SizedBox(height: 8),
         _RarityFilters(
           selected: _doHiem,
@@ -280,6 +351,106 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
     );
   }
 
+  Widget _buildCategoryTabs() {
+    return _CategoryTabs(
+      selected: _tab,
+      selectedNhanVat: _dangXemNhanVat,
+      onSelected: (value) => setState(() {
+        _dangXemNhanVat = false;
+        _tab = value;
+        _idDangChon = null;
+        _nhanVatDangChon = null;
+      }),
+      onNhanVat: () => setState(() {
+        _dangXemNhanVat = true;
+        _idDangChon = null;
+        _nhanVatDangChon = null;
+      }),
+    );
+  }
+
+  Widget _buildCharacterCatalog() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = ((width + 14) / 310).floor().clamp(1, 3).toInt();
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildCategoryTabs(),
+              const SizedBox(height: 16),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _nhanVatHienThi.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.25,
+                ),
+                itemBuilder: (context, index) {
+                  final character = _nhanVatHienThi[index];
+                  return _CharacterCard(
+                    character: character,
+                    price: _priceForCharacter(character),
+                    owned: _isCharacterOwned(character),
+                    selected: character.id == _nhanVatDangChon,
+                    onTap: () =>
+                        setState(() => _nhanVatDangChon = character.id),
+                    onBuy: () => _muaNhanVat(character),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactCharacterList() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = ((constraints.maxWidth + 10) / 220)
+            .floor()
+            .clamp(1, 3)
+            .toInt();
+        return GridView.builder(
+          padding: const EdgeInsets.only(bottom: 12),
+          itemCount: _nhanVatHienThi.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.25,
+          ),
+          itemBuilder: (context, index) {
+            final character = _nhanVatHienThi[index];
+            return _CharacterCard(
+              character: character,
+              price: _priceForCharacter(character),
+              owned: _isCharacterOwned(character),
+              selected: character.id == _nhanVatDangChon,
+              onTap: () => setState(() => _nhanVatDangChon = character.id),
+              onBuy: () => _muaNhanVat(character),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  int _priceForCharacter(NhanVatBan character) {
+    final giaOnChain = _phienVi?.gia[character.id]?.toInt() ?? 0;
+    return giaOnChain > 0 ? giaOnChain : character.giaGoiY;
+  }
+
+  bool _isCharacterOwned(NhanVatBan character) =>
+      _phienVi?.daCo.contains(character.id) ?? false;
+
   Widget _buildCatalog() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -292,13 +463,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _CategoryTabs(
-                selected: _tab,
-                onSelected: (value) => setState(() {
-                  _tab = value;
-                  _idDangChon = null;
-                }),
-              ),
+              _buildCategoryTabs(),
               const SizedBox(height: 12),
               _RarityFilters(
                 selected: _doHiem,
@@ -398,6 +563,41 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
     _baoMua('Đã mua ${item.ten}; NFT đã được thêm vào Kho đồ.');
   }
 
+  Future<void> _muaNhanVat(NhanVatBan character) async {
+    final pv = _phienVi;
+    if (pv == null) {
+      _baoMua('Cần kết nối MetaMask để mua nhân vật.');
+      return;
+    }
+    if (_isCharacterOwned(character)) {
+      _baoMua('Bạn đã sở hữu nhân vật này.');
+      return;
+    }
+    if (!pv.daKetNoi) {
+      final diaChi = _game.auth?.walletAddress;
+      if (diaChi != null && diaChi.isNotEmpty) {
+        await pv.ketNoiDaXacThuc(diaChi);
+      }
+    }
+    if (!pv.daKetNoi) {
+      _baoMua(pv.thongBao ?? 'Cần kết nối MetaMask để mua nhân vật.');
+      return;
+    }
+
+    final thanhCong = await pv.mua(character);
+    if (!thanhCong) {
+      if (mounted && pv.thongBao != null && pv.thongBao!.isNotEmpty) {
+        _baoMua(pv.thongBao!);
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _nhanVatDangChon = character.id);
+    _baoMua(
+      'Đã mua ${character.ten}; nhân vật đã thêm vào Bộ sưu tập nhân vật.',
+    );
+  }
+
   void _baoMua(String message) {
     if (!mounted) return;
 
@@ -464,7 +664,7 @@ class _StoreHeading extends StatelessWidget {
       child: ChuGame(
         'Cửa hàng',
         style: TextStyle(
-          color: Color(0xFFEAF2F8),
+          color: const Color(0xFFEAF2F8),
           fontSize: compact ? 26 : 34,
           fontWeight: FontWeight.w800,
           height: 1,
@@ -475,10 +675,17 @@ class _StoreHeading extends StatelessWidget {
 }
 
 class _CategoryTabs extends StatelessWidget {
-  const _CategoryTabs({required this.selected, required this.onSelected});
+  const _CategoryTabs({
+    required this.selected,
+    required this.selectedNhanVat,
+    required this.onSelected,
+    required this.onNhanVat,
+  });
 
   final DanhMucVatPham selected;
+  final bool selectedNhanVat;
   final ValueChanged<DanhMucVatPham> onSelected;
+  final VoidCallback onNhanVat;
 
   @override
   Widget build(BuildContext context) {
@@ -503,10 +710,18 @@ class _CategoryTabs extends StatelessWidget {
               child: _SegmentButton(
                 label: tab.label,
                 icon: tab.icon,
-                selected: selected == tab.value,
+                selected: !selectedNhanVat && selected == tab.value,
                 onTap: () => onSelected(tab.value),
               ),
             ),
+          Expanded(
+            child: _SegmentButton(
+              label: 'Nhân vật',
+              icon: Icons.person_outline,
+              selected: selectedNhanVat,
+              onTap: onNhanVat,
+            ),
+          ),
         ],
       ),
     );
@@ -560,6 +775,249 @@ class _SegmentButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CharacterCard extends StatelessWidget {
+  const _CharacterCard({
+    required this.character,
+    required this.price,
+    required this.owned,
+    required this.selected,
+    required this.onTap,
+    required this.onBuy,
+  });
+
+  final NhanVatBan character;
+  final int price;
+  final bool owned;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.fromLTRB(11, 11, 11, 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF142B38), Color(0xFF0A1721)],
+            ),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFFFFC84D)
+                  : const Color(0x66F2B33D),
+              width: selected ? 1.7 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const _RarityTag(DoHiemVatPham.suThi),
+                  if (owned)
+                    const ChuGame(
+                      'ĐÃ SỞ HỮU',
+                      style: TextStyle(
+                        color: Color(0xFF35D6A0),
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0x13000000),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0x12FFFFFF)),
+                  ),
+                  child: Center(
+                    child: AnhNhanVat(tepAnh: character.tepAnh, kichThuoc: 96),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ChuGame(
+                character.ten,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFEAF2F8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const ChuGame(
+                'Ngoại hình · 4 hướng · 4 khung',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Color(0xFF9BB0C0),
+                  fontSize: 9,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              const SizedBox(height: 7),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.monetization_on_outlined,
+                    size: 14,
+                    color: Color(0xFFF2B33D),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: ChuGame(
+                      '$price vàng',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD67A),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (owned)
+                    const _OwnedButton(label: 'Đã mua')
+                  else
+                    _BuyButton(onPressed: onBuy),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CharacterDetail extends StatelessWidget {
+  const _CharacterDetail({
+    required this.character,
+    required this.price,
+    required this.owned,
+    required this.onBuy,
+  });
+
+  final NhanVatBan character;
+  final int price;
+  final bool owned;
+  final VoidCallback onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF142B38), Color(0xFF0A1721)],
+        ),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xB3F2B33D)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const ChuGame(
+            'THÔNG TIN NHÂN VẬT',
+            style: TextStyle(
+              color: Color(0xFFF2B33D),
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.7,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 132,
+            child: Center(
+              child: AnhNhanVat(tepAnh: character.tepAnh, kichThuoc: 118),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ChuGame(
+            character.ten,
+            style: const TextStyle(
+              color: Color(0xFFEAF2F8),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
+          ChuGame(
+            character.moTa,
+            style: const TextStyle(
+              color: Color(0xFF9BB0C0),
+              fontSize: 11,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 13),
+          Row(
+            children: [
+              const Icon(
+                Icons.monetization_on_outlined,
+                color: Color(0xFFF2B33D),
+                size: 16,
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: ChuGame(
+                  '$price vàng',
+                  style: const TextStyle(
+                    color: Color(0xFFFFD67A),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (owned)
+                const _OwnedButton(label: 'Đã mua')
+              else
+                FilledButton.icon(
+                  onPressed: onBuy,
+                  icon: const Icon(Icons.shopping_cart_outlined, size: 15),
+                  label: const ChuGame('Mua'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFC84D),
+                    foregroundColor: const Color(0xFF12202A),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

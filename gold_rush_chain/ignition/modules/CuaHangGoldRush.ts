@@ -7,7 +7,7 @@ const MAN_CHOI: { id: number; coc: number; thuong: number; so_xu: number }[] = J
   readFileSync(new URL("../../../gold_rush/assets/tiles/man_choi.json", import.meta.url), "utf8"),
 ).man;
 
-// Triển khai + đặt giá 3 nhân vật + mở các màn chơi trong một lần chạy.
+// Triển khai + đặt giá các nhân vật + mở các màn chơi trong một lần chạy.
 //   npx hardhat ignition deploy ./ignition/modules/CuaHangGoldRush.ts --network localhost
 //   Sepolia: thêm --parameters '{"CuaHangGoldRushModule":{"trongTai":"<địa chỉ khoá trọng tài MỚI>"}}'
 export default buildModule("CuaHangGoldRushModule", (m) => {
@@ -31,6 +31,8 @@ export default buildModule("CuaHangGoldRushModule", (m) => {
   m.call(cuaHang, "datGia", [1n, 10n], { id: "gia_tho_mo" });
   m.call(cuaHang, "datGia", [2n, 30n], { id: "gia_cao_boi" });
   m.call(cuaHang, "datGia", [3n, 60n], { id: "gia_hiep_si" });
+  m.call(cuaHang, "datGia", [4n, 400n], { id: "gia_tho_mo_pixel" });
+  m.call(cuaHang, "datGia", [5n, 500n], { id: "gia_meo_may_vang" });
 
   // 27 token ID khớp thứ tự danhSachTrangBiCuaHang(): 1–9 súng,
   // 10–18 giáp, 19–27 giày. Vật phẩm hiếm có giá 100.000 vàng.
