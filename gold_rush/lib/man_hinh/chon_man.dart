@@ -339,7 +339,7 @@ class _TheMan extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ChuGame(
-          'MÀN ${man.id.toString().padLeft(2, '0')} · ${vung.ten.toUpperCase()}',
+          'MÀN ${man.id.toString().padLeft(2, '0')} · ${PhamViNgonNgu.of(context).dich(vung.ten).toUpperCase()}',
           style: const TextStyle(
             color: Color(0xFFC7A76A),
             fontSize: 11,
@@ -367,7 +367,7 @@ class _TheMan extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Semantics(
-          label: 'Độ khó ${man.sao} trên 5',
+          label: PhamViNgonNgu.of(context).dich('Độ khó ${man.sao} trên 5'),
           child: ExcludeSemantics(
             child: ChuGame(
               '${'★' * man.sao}${'☆' * (5 - man.sao)}',
@@ -519,7 +519,9 @@ class _TheMan extends StatelessWidget {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: ChuGame('Vào màn ${man.id} · ${man.ten}?'),
+        title: ChuGame(
+          'Vào màn ${man.id} · ${PhamViNgonNgu.of(context).dich(man.ten)}?',
+        ),
         content: ChuGame(
           '${dungLai ? '• Dùng lại vé số ${p.ve.so} đã đặt cọc ${p.ve.coc} vàng — KHÔNG trừ thêm, không cần MetaMask.\n' : (p.daKetNoi ? '• Trừ ngay ${man.coc} vàng tiền cọc (một giao dịch MetaMask).\n' : '• Trừ ngay ${man.coc} vàng tiền cọc từ ví.\n')}'
           '${veCungManDaDung ? '• Vé số ${p.ve.so} của màn này đã dùng cho một ván không hoàn thành — cần vé mới.\n' : ''}'

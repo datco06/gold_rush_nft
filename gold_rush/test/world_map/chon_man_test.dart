@@ -6,6 +6,7 @@ import 'package:gold_rush/blockchain/phien_vi.dart';
 import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/man_choi.dart';
 import 'package:gold_rush/man_hinh/chon_man.dart';
+import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 import 'package:gold_rush/world_map/ban_do_the_gioi.dart';
 import 'package:gold_rush/world_map/canh_quan_world_map.dart';
 import 'package:gold_rush/world_map/tien_trinh_world_map.dart';
@@ -64,6 +65,7 @@ void main() {
   Future<void> moChonMan(
     WidgetTester tester, {
     TienTrinhWorldMap? tienTrinh,
+    NgonNgu? ngonNgu,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(2000, 1200);
@@ -71,12 +73,13 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: ManHinhChonMan(game: game, tienTrinh: tienTrinh),
-        ),
+    final app = MaterialApp(
+      home: Scaffold(
+        body: ManHinhChonMan(game: game, tienTrinh: tienTrinh),
       ),
+    );
+    await tester.pumpWidget(
+      ngonNgu == null ? app : PhamViNgonNgu(ngonNgu: ngonNgu, child: app),
     );
 
     await tester.pumpAndSettle();
@@ -96,6 +99,80 @@ void main() {
       ..setEntry(1, 3, dich.dy);
     await tester.pump();
   }
+
+  testWidgets('English translates all 20 map locations and selected details', (
+    tester,
+  ) async {
+    final allStages = ManChoi.docBoManChoi(
+      File('assets/tiles/man_choi.json').readAsStringSync(),
+      File('assets/tiles/man_mo_rong.json').readAsStringSync(),
+    );
+    game.danhSachMan = allStages;
+    final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+    await language.doi('en');
+    await moChonMan(tester, ngonNgu: language);
+
+    const englishNames = [
+      'Meadow',
+      'Woodland',
+      'Rocky Cave',
+      'Deep Forest',
+      'Bone Valley',
+      'Gold Mine',
+      "Blacksmith's House",
+      'Forest Inn',
+      'Watch Post',
+      "Hunters' Guild",
+      'Ancient Library',
+      'Streamside House',
+      'Crafting Workshop',
+      'Northern Outpost',
+      'Stone Manor',
+      'Riverside Inn',
+      'Wind Tower',
+      'Green Guildhall',
+      "Sage's House",
+      'Final Stronghold',
+    ];
+    for (var i = 0; i < allStages.length; i++) {
+      final stage = allStages[i];
+      if (i > 0) {
+        await tester.tap(find.byTooltip('Close stage details'));
+        await tester.pumpAndSettle();
+      }
+      await duaManVaoKhung(tester, stage.id);
+      final node = find.byKey(ValueKey('world-map-level-${stage.id}'));
+      expect(
+        find.descendant(of: node, matching: find.text(englishNames[i])),
+        findsOneWidget,
+      );
+      await tester.tap(node);
+      await tester.pumpAndSettle();
+      final panel = find.byKey(const ValueKey('bang-thong-tin-man'));
+      expect(
+        find.descendant(of: panel, matching: find.text(englishNames[i])),
+        findsOneWidget,
+      );
+      final vietnamese = RegExp(r'[À-ỹ]');
+      final panelText = tester
+          .widgetList<Text>(
+            find.descendant(of: panel, matching: find.byType(Text)),
+          )
+          .map((text) => text.data ?? text.textSpan!.toPlainText())
+          .join('\n');
+      expect(vietnamese.hasMatch(panelText), isFalse, reason: panelText);
+      expect(tester.takeException(), isNull);
+    }
+
+    expect(find.text('GOLD RUSH · TREASURE REGION'), findsOneWidget);
+    expect(find.text('STAGE 20 · TREASURE REGION'), findsOneWidget);
+    await language.doi('vi');
+    await tester.pump();
+    expect(find.text('Thành trì cuối'), findsAtLeastNWidgets(1));
+    expect(find.text('MÀN 20 · VÙNG KHO BÁU'), findsOneWidget);
+    expect(game.danhSachMan, same(allStages));
+    expect(game.cacManDuocYeuCauChoi, isEmpty);
+  });
 
   testWidgets('Chỉ mở bảng chi tiết sau khi người dùng chọn màn', (
     tester,

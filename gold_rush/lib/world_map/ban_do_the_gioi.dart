@@ -491,7 +491,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: ChuGame(
-        'GOLD RUSH · ${ten.toUpperCase()}',
+        'GOLD RUSH · ${PhamViNgonNgu.of(context).dich(ten).toUpperCase()}',
         style: const TextStyle(
           color: Color(0xFFE7D9B2),
           fontSize: 10,
