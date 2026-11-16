@@ -554,8 +554,6 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
 
   Widget _cacDiaDiem(Size size) {
     final manHinhNho = size.width < 700 || size.height < 360;
-    final scale = _boDieuKhien.value.getMaxScaleOnAxis();
-    final daPhongToSau = scale > _tiLeVuaKhung(size) * 1.35;
     final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6);
 
     final cacNhan = <({ManChoi man, Offset moc, Rect khung, bool gon})>[];
@@ -569,7 +567,9 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
       if (!(Offset.zero & size).inflate(30).contains(moc)) continue;
 
       final laManChinh = man.id <= 6;
-      final gonMan = manHinhNho || (!laManChinh && !daPhongToSau);
+      // Màn 7–20 vẫn hiện tên khi xem toàn bản đồ trên màn hình lớn;
+      // chỉ thu gọn trên thiết bị nhỏ để tránh chồng nhãn.
+      final gonMan = manHinhNho;
       final rong = gonMan
           ? (laManChinh ? 40.0 : 30.0)
           : (laManChinh ? 102.0 : 92.0);

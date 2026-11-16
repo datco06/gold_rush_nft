@@ -350,57 +350,56 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Phân cấp 6 màn chính và 14 địa danh phụ: gọn ở toàn cảnh, hiện chi tiết khi zoom gần',
-      (tester) async {
-        final bo20Man = ManChoi.docBoManChoi(
-          File('assets/tiles/man_choi.json').readAsStringSync(),
-          File('assets/tiles/man_mo_rong.json').readAsStringSync(),
-        );
+    testWidgets('Hiển thị tên đủ 20 màn trên World Map ở màn hình lớn', (
+      tester,
+    ) async {
+      final bo20Man = ManChoi.docBoManChoi(
+        File('assets/tiles/man_choi.json').readAsStringSync(),
+        File('assets/tiles/man_mo_rong.json').readAsStringSync(),
+      );
 
-        tester.view.devicePixelRatio = 1;
-        tester.view.physicalSize = const Size(1440, 900);
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1440, 900);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: BanDoTheGioi(
-                danhSachMan: bo20Man,
-                trangThaiCacMan: {
-                  for (final m in bo20Man)
-                    m.id: tienTrinhMau.trangThaiCuaMan(m.id),
-                },
-                manDangChon: 3,
-                khiChonMan: (_) {},
-              ),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: BanDoTheGioi(
+              danhSachMan: bo20Man,
+              trangThaiCacMan: {
+                for (final m in bo20Man)
+                  m.id: tienTrinhMau.trangThaiCuaMan(m.id),
+              },
+              manDangChon: 3,
+              khiChonMan: (_) {},
             ),
           ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Camera mở quanh George nên chỉ dựng các địa danh đang nằm trong viewport.
+      final cacNutQuanhGeorge = tester
+          .widgetList<NutManChoi>(find.byType(NutManChoi))
+          .toList();
+      expect(cacNutQuanhGeorge, isNotEmpty);
+      for (final nut in cacNutQuanhGeorge) {
+        expect(nut.gon, isFalse);
+      }
+
+      expect(BoCucWorldMap.viTriMan, hasLength(20));
+      expect(BoCucWorldMap.cacTuyenDuong, hasLength(19));
+      for (var id = 1; id < 20; id++) {
+        final doan = BoCucWorldMap.cacTuyenDuong[id - 1];
+        expect((doan.tuMan, doan.denMan), (id, id + 1));
+        expect(
+          BoCucWorldMap.viTriMan[id + 1]!.dy,
+          lessThan(BoCucWorldMap.viTriMan[id]!.dy),
+          reason: 'Màn ${id + 1} phải nằm cao hơn màn $id',
         );
-        await tester.pumpAndSettle();
-
-        // Camera mở quanh George nên chỉ dựng các địa danh đang nằm trong viewport.
-        final cacNutQuanhGeorge = tester
-            .widgetList<NutManChoi>(find.byType(NutManChoi))
-            .toList();
-        expect(cacNutQuanhGeorge, isNotEmpty);
-        for (final nut in cacNutQuanhGeorge) {
-          expect(nut.gon, nut.man.id > 6);
-        }
-
-        expect(BoCucWorldMap.viTriMan, hasLength(20));
-        expect(BoCucWorldMap.cacTuyenDuong, hasLength(19));
-        for (var id = 1; id < 20; id++) {
-          final doan = BoCucWorldMap.cacTuyenDuong[id - 1];
-          expect((doan.tuMan, doan.denMan), (id, id + 1));
-          expect(
-            BoCucWorldMap.viTriMan[id + 1]!.dy,
-            lessThan(BoCucWorldMap.viTriMan[id]!.dy),
-            reason: 'Màn ${id + 1} phải nằm cao hơn màn $id',
-          );
-        }
-      },
-    );
+      }
+    });
   });
 }
