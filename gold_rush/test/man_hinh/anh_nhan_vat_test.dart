@@ -250,8 +250,12 @@ void main() {
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
     );
-    cho.complete(http.Response('', 503));
+    await tester.runAsync(() async {
+      cho.complete(http.Response('', 503));
+      await Future<void>.delayed(Duration.zero);
+    });
     await tester.pumpAndSettle();
+    expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
   for (final status in [401, 403, 409, 422]) {
