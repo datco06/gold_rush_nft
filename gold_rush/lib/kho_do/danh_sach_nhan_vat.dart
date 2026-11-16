@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import '../blockchain/nhan_vat.dart';
@@ -301,9 +303,14 @@ class _DanhSachNhanVatState extends State<DanhSachNhanVat> {
 class AnhNhanVat extends StatelessWidget {
   final String tepAnh;
   final double kichThuoc;
+  final ui.Image? anhTrongBoNho;
 
-  const AnhNhanVat({super.key, required this.tepAnh, this.kichThuoc = 80})
-    : assert(kichThuoc > 0);
+  const AnhNhanVat({
+    super.key,
+    required this.tepAnh,
+    this.kichThuoc = 80,
+    this.anhTrongBoNho,
+  }) : assert(kichThuoc > 0);
 
   @override
   Widget build(BuildContext context) {
@@ -316,29 +323,38 @@ class AnhNhanVat extends StatelessWidget {
           maxWidth: kichThuoc * 4,
           minHeight: kichThuoc * 4,
           maxHeight: kichThuoc * 4,
-          child: Image.asset(
-            'assets/images/$tepAnh',
-            width: kichThuoc * 4,
-            height: kichThuoc * 4,
-            fit: BoxFit.fill,
-            alignment: Alignment.topLeft,
-            filterQuality: FilterQuality.none,
-            errorBuilder: (context, error, stackTrace) {
-              return Align(
-                alignment: Alignment.topLeft,
-                child: SizedBox.square(
-                  dimension: kichThuoc,
-                  child: const Tooltip(
-                    message: 'Không tải được ảnh nhân vật',
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      color: MauGame.chuPhu,
-                    ),
-                  ),
+          child: anhTrongBoNho != null
+              ? RawImage(
+                  image: anhTrongBoNho,
+                  width: kichThuoc * 4,
+                  height: kichThuoc * 4,
+                  fit: BoxFit.fill,
+                  alignment: Alignment.topLeft,
+                  filterQuality: FilterQuality.none,
+                )
+              : Image.asset(
+                  'assets/images/$tepAnh',
+                  width: kichThuoc * 4,
+                  height: kichThuoc * 4,
+                  fit: BoxFit.fill,
+                  alignment: Alignment.topLeft,
+                  filterQuality: FilterQuality.none,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: SizedBox.square(
+                        dimension: kichThuoc,
+                        child: const Tooltip(
+                          message: 'Không tải được ảnh nhân vật',
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: MauGame.chuPhu,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ),
     );

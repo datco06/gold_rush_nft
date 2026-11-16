@@ -12,14 +12,45 @@ class LoiAnhKhongHopLe(ValueError):
     pass
 
 
-def tao_sprite_sheet_4x4(data: bytes, *, kich_thuoc_o: int = 16) -> bytes:
-    """Tạo PNG sprite sheet 4x4 ổn định từ ảnh AI một khung hình.
+def _chuan_khung_nhan_vat(anh: Image.Image, kich_thuoc: int) -> Image.Image:
+    """Đưa nhân vật về cùng khung, đáy chạm đáy ô như sprite George."""
+    rgba = anh.convert("RGBA")
+    bbox = rgba.getchannel("A").getbbox()
+    khung = Image.new("RGBA", (kich_thuoc, kich_thuoc), (0, 0, 0, 0))
+    if bbox is None:
+        rgba.close()
+        return khung
+    crop = rgba.crop(bbox)
+    rgba.close()
+    gioi_han = max(1, kich_thuoc - 2)
+    ti_le = min(gioi_han / crop.width, gioi_han / crop.height)
+    kich_thuoc_moi = (
+        max(1, round(crop.width * ti_le)),
+        max(1, round(crop.height * ti_le)),
+    )
+    fitted = crop.resize(kich_thuoc_moi, Image.Resampling.NEAREST)
+    crop.close()
+    khung.paste(
+        fitted,
+        ((kich_thuoc - fitted.width) // 2, kich_thuoc - fitted.height),
+        fitted,
+    )
+    fitted.close()
+    return khung
 
-    Provider hiện trả ảnh toàn thân tĩnh, vì vậy MVP lặp khung hình đã pixel
-    hóa vào 16 ô. API giữ nguyên để có thể thay bằng bộ sinh animation sau.
+
+def tao_sprite_sheet_4x4(
+    data: bytes, *, kich_thuoc_o: int = 16, la_sprite_sheet: bool = False
+) -> bytes:
+    """Tạo PNG sprite sheet 4x4 từ ảnh đơn hoặc sheet AI.
+
+    Ảnh demo/ảnh cũ được lặp một khung hình. Ảnh model mới được prompt theo
+    layout george_hiep_si.png nên giữ nguyên 4 hàng × 4 frame.
     """
     if type(kich_thuoc_o) is not int or not 4 <= kich_thuoc_o <= 64:
         raise ValueError("Kích thước ô sprite không hợp lệ")
+    if type(la_sprite_sheet) is not bool:
+        raise ValueError("Cờ sprite sheet không hợp lệ")
     png = chuan_hoa_anh(data)
     with Image.open(BytesIO(png)) as source:
         rgba = source.convert("RGBA")
@@ -48,11 +79,29 @@ def tao_sprite_sheet_4x4(data: bytes, *, kich_thuoc_o: int = 16) -> bytes:
                     if max(abs(candidate[i] - base[i]) for i in range(3)) <= 24:
                         queue.append((nx, ny))
         quantized = rgba.quantize(colors=32, method=Image.Quantize.FASTOCTREE).convert("RGBA")
-        frame = quantized.resize((kich_thuoc_o, kich_thuoc_o), Image.Resampling.NEAREST)
         canvas = Image.new("RGBA", (kich_thuoc_o * 4, kich_thuoc_o * 4), (0, 0, 0, 0))
-        for row in range(4):
-            for col in range(4):
-                canvas.paste(frame, (col * kich_thuoc_o, row * kich_thuoc_o))
+        if la_sprite_sheet:
+            cell_width = quantized.width // 4
+            cell_height = quantized.height // 4
+            if cell_width < 1 or cell_height < 1 or cell_width != cell_height:
+                raise LoiAnhKhongHopLe("Sprite sheet AI phải là lưới vuông 4x4")
+            for row in range(4):
+                for col in range(4):
+                    with quantized.crop((
+                        col * cell_width,
+                        row * cell_height,
+                        (col + 1) * cell_width,
+                        (row + 1) * cell_height,
+                    )) as cell:
+                        frame = _chuan_khung_nhan_vat(cell, kich_thuoc_o)
+                        canvas.paste(frame, (col * kich_thuoc_o, row * kich_thuoc_o))
+                        frame.close()
+        else:
+            frame = _chuan_khung_nhan_vat(quantized, kich_thuoc_o)
+            for row in range(4):
+                for col in range(4):
+                    canvas.paste(frame, (col * kich_thuoc_o, row * kich_thuoc_o))
+            frame.close()
         with BytesIO() as output:
             canvas.save(output, format="PNG", optimize=True)
             return output.getvalue()

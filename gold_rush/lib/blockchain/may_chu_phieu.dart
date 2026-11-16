@@ -12,12 +12,14 @@ class CauHinhChuoi {
   final int chainId;
   final String hopDong;
   final String? hopDongVatPham;
+  final String? hopDongNhanVat;
   final String trongTai;
 
   const CauHinhChuoi({
     required this.chainId,
     required this.hopDong,
     this.hopDongVatPham,
+    this.hopDongNhanVat,
     required this.trongTai,
   });
 }
@@ -121,6 +123,7 @@ class MayChuPhieu {
       chainId: j['chain_id'] as int,
       hopDong: j['hop_dong'] as String,
       hopDongVatPham: j['hop_dong_vat_pham'] as String?,
+      hopDongNhanVat: j['hop_dong_nhan_vat'] as String?,
       trongTai: j['trong_tai'] as String,
     );
   }

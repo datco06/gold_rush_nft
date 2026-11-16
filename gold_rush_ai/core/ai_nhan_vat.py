@@ -12,9 +12,14 @@ from .xu_ly_anh import LoiAnhKhongHopLe, chuan_hoa_anh
 log = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
-    "Create one full-body pixel-art game character, front view, centered and fully visible. "
-    "Use a square composition, a single static image with transparent background, "
-    "crisp square pixels and a limited color palette. "
+    "Create a 64x64 pixel-art game character sprite sheet matching the imported "
+    "george_hiep_si.png layout: a transparent 4x4 grid of sixteen 16x16 frames. "
+    "Use four rows for down, left, right, and up directions, in that order; "
+    "each row contains four walking frames of the same full-body character. "
+    "Keep the character centered inside every cell, with consistent scale, "
+    "Return one static PNG sheet with crisp square pixels, a limited color palette, "
+    "and transparent background. "
+    "Do not create a poster, collage, text, border, or single large portrait. "
     "The user JSON contains the character description."
 )
 

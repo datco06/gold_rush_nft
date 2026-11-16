@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../blockchain/nhan_vat.dart';
 import '../ai/may_chu_nhan_vat.dart';
+import '../blockchain/nhan_vat.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart' show AnhNhanVat;
@@ -222,7 +223,10 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                   // 2. Nhân vật chính nổi bật ở trung tâm trên bục đá
                   _CharacterShowcase(
                     tepAnh: g.nhanVatDangDung,
-                    tenNhanVat: nv.ten,
+                    tenNhanVat: g.nhanVatDangDung.startsWith('ai:')
+                        ? g.tenNhanVatDangDung
+                        : nv.ten,
+                    anhNhanVat: g.taiNguyen.anhNhanVat(g.nhanVatDangDung),
                     danhSachVatPham: g.danhSachVatPham.value,
                     idleAnimation: _idleController,
                     compact: compact,
@@ -974,6 +978,7 @@ class _HeaderIconButtonState extends State<_HeaderIconButton> {
 class _CharacterShowcase extends StatelessWidget {
   final String tepAnh;
   final String tenNhanVat;
+  final ui.Image? anhNhanVat;
   final List<VatPhamHienThi> danhSachVatPham;
   final Animation<double> idleAnimation;
   final bool compact;
@@ -981,6 +986,7 @@ class _CharacterShowcase extends StatelessWidget {
   const _CharacterShowcase({
     required this.tepAnh,
     required this.tenNhanVat,
+    required this.anhNhanVat,
     required this.danhSachVatPham,
     required this.idleAnimation,
     required this.compact,
@@ -1029,6 +1035,7 @@ class _CharacterShowcase extends StatelessWidget {
                         tepAnh: tepAnh,
                         kichThuoc: spriteSize,
                         danhSachVatPham: danhSachVatPham,
+                        anhNhanVat: anhNhanVat,
                       ),
                     ),
                   ),

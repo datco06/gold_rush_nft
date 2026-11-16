@@ -342,7 +342,17 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       phienVi: game.phienVi,
       authController: game.auth,
       tepNhanVatDangDung: game.nhanVatDangDung,
+      anhNhanVatDangDung: game.taiNguyen.anhNhanVat(game.nhanVatDangDung),
+      tenNhanVatDangDung: game.tenNhanVatDangDung,
       khiChonNhanVat: _chonNhanVat,
+      khiTrangBiNhanVatAi: (nhanVat, spriteSheet) async {
+        await game.trangBiNhanVatAi(
+          characterId: nhanVat.characterId,
+          tenNhanVat: nhanVat.name,
+          spriteSheet: spriteSheet,
+        );
+        if (mounted) setState(() {});
+      },
       khiMoTaoNhanVat: _moXuongAi,
     );
   }

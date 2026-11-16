@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import 'danh_sach_nhan_vat.dart' show AnhNhanVat;
@@ -62,12 +64,14 @@ class NhanVatVoiTrangBi extends StatelessWidget {
   final String tepAnh;
   final double kichThuoc;
   final List<VatPhamHienThi> danhSachVatPham;
+  final ui.Image? anhNhanVat;
 
   const NhanVatVoiTrangBi({
     super.key,
     required this.tepAnh,
     required this.kichThuoc,
     this.danhSachVatPham = const [],
+    this.anhNhanVat,
   });
 
   VatPhamHienThi? _timTrangBi(OTrangBi o) {
@@ -135,7 +139,11 @@ class NhanVatVoiTrangBi extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           // 1. Sprite nhân vật gốc
-          AnhNhanVat(tepAnh: tepAnh, kichThuoc: kichThuoc),
+          AnhNhanVat(
+            tepAnh: tepAnh,
+            kichThuoc: kichThuoc,
+            anhTrongBoNho: anhNhanVat,
+          ),
 
           // 2. Giày (nếu có sprite sheet, offset (0, 2) như trong game)
           if (coAnhGiay)

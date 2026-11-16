@@ -1,9 +1,11 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../ai/may_chu_nhan_vat.dart';
+import '../ai/nhan_vat_ai_models.dart';
 import '../auth/auth_controller.dart';
 import '../blockchain/nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
@@ -47,6 +49,8 @@ class ManHinhKhoDo extends StatefulWidget {
   /// Tên sprite sheet, ví dụ george.png.
   /// Null nghĩa là chưa nhận được lựa chọn nhân vật.
   final String? tepNhanVatDangDung;
+  final ui.Image? anhNhanVatDangDung;
+  final String? tenNhanVatDangDung;
 
   /// Callback nhận ID dưới dạng chuỗi.
   /// Bên gọi kiểm tra, xác nhận và cập nhật lựa chọn thật.
@@ -60,6 +64,8 @@ class ManHinhKhoDo extends StatefulWidget {
   final AuthController? authController;
   final MayChuNhanVat? mayChuNhanVat;
   final Future<void> Function()? khiMoTaoNhanVat;
+  final Future<void> Function(ThongTinNhanVat nhanVat, Uint8List spriteSheet)?
+  khiTrangBiNhanVatAi;
   final GoldRushTopBar? thanhTren;
 
   const ManHinhKhoDo({
@@ -75,6 +81,8 @@ class ManHinhKhoDo extends StatefulWidget {
     this.khiLamMoiKhoDo,
     this.phienVi,
     this.tepNhanVatDangDung,
+    this.anhNhanVatDangDung,
+    this.tenNhanVatDangDung,
     this.khiChonNhanVat,
     this.loiTrangBi,
     this.loiNhanVat,
@@ -84,6 +92,7 @@ class ManHinhKhoDo extends StatefulWidget {
     this.authController,
     this.mayChuNhanVat,
     this.khiMoTaoNhanVat,
+    this.khiTrangBiNhanVatAi,
     this.thanhTren,
   });
 
@@ -1234,11 +1243,13 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
         children: [
           _XemTruocNhanVat(
             nhanVat: nv,
+            anhNhanVat: widget.anhNhanVatDangDung,
             danhSachVatPham: widget.danhSachVatPham,
           ),
           const SizedBox(height: 18),
           Text(
             nv?.ten ??
+                widget.tenNhanVatDangDung ??
                 (daTai
                     ? 'Chưa xác nhận được nhân vật đang dùng'
                     : 'Chưa có dữ liệu nhân vật'),
@@ -1346,6 +1357,8 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                   authController: widget.authController,
                   mayChu: widget.mayChuNhanVat,
                   khiMoTaoNhanVat: widget.khiMoTaoNhanVat,
+                  tepNhanVatDangDung: widget.tepNhanVatDangDung,
+                  khiTrangBi: widget.khiTrangBiNhanVatAi,
                 ),
               ],
             ),
@@ -2025,9 +2038,14 @@ class _KhungMuc extends StatelessWidget {
 
 class _XemTruocNhanVat extends StatelessWidget {
   final NhanVatBan? nhanVat;
+  final ui.Image? anhNhanVat;
   final List<VatPhamHienThi> danhSachVatPham;
 
-  const _XemTruocNhanVat({this.nhanVat, this.danhSachVatPham = const []});
+  const _XemTruocNhanVat({
+    this.nhanVat,
+    this.anhNhanVat,
+    this.danhSachVatPham = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2084,11 +2102,12 @@ class _XemTruocNhanVat extends StatelessWidget {
           Center(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 22),
-              child: nv != null
+              child: nv != null || anhNhanVat != null
                   ? NhanVatVoiTrangBi(
-                      tepAnh: nv.tepAnh,
+                      tepAnh: nv?.tepAnh ?? georgeGoc.tepAnh,
                       kichThuoc: 96,
                       danhSachVatPham: danhSachVatPham,
+                      anhNhanVat: anhNhanVat,
                     )
                   : Container(
                       width: 66,

@@ -276,6 +276,7 @@ class MayChuNhanVat {
       }
       final png = Uint8List.fromList(kq.bytes!);
       _kiemTraPng128(png);
+      if (kIsWeb) return KetQuaPngNhanVat(png: png, maHttp: kq.maHttp);
       final codec = await ui
           .instantiateImageCodec(png)
           .timeout(const Duration(seconds: 5));
@@ -313,20 +314,32 @@ class MayChuNhanVat {
     );
     if (kq.loi != null) return KetQuaPngNhanVat(loi: kq.loi, maHttp: kq.maHttp);
     try {
-      if (kq.contentType?.split(';').first.trim().toLowerCase() != 'image/png') {
+      if (kq.contentType?.split(';').first.trim().toLowerCase() !=
+          'image/png') {
         throw const FormatException('Sprite sheet cần image/png');
       }
-      final png = kq.bytes!;
-      final codec = await ui.instantiateImageCodec(png).timeout(const Duration(seconds: 5));
+      final png = Uint8List.fromList(kq.bytes!);
+      _kiemTraPng64(png);
+      if (kIsWeb) return KetQuaPngNhanVat(png: png, maHttp: kq.maHttp);
+      final codec = await ui
+          .instantiateImageCodec(png)
+          .timeout(const Duration(seconds: 5));
       try {
-        if (codec.frameCount != 1) throw const FormatException('Sprite sheet cần là ảnh tĩnh');
-        final frame = await codec.getNextFrame().timeout(const Duration(seconds: 5));
+        if (codec.frameCount != 1)
+          throw const FormatException('Sprite sheet cần là ảnh tĩnh');
+        final frame = await codec.getNextFrame().timeout(
+          const Duration(seconds: 5),
+        );
         try {
           if (frame.image.width != 64 || frame.image.height != 64) {
             throw const FormatException('Sprite sheet cần kích thước 64x64');
           }
-        } finally { frame.image.dispose(); }
-      } finally { codec.dispose(); }
+        } finally {
+          frame.image.dispose();
+        }
+      } finally {
+        codec.dispose();
+      }
       return KetQuaPngNhanVat(png: png, maHttp: kq.maHttp);
     } on Exception {
       return const KetQuaPngNhanVat(loi: LoiAnhNhanVat.phanHoiKhongHopLe);
@@ -514,6 +527,16 @@ class MayChuNhanVat {
     }
   }
 
+  /// Xóa preview tạm sau khi người dùng bấm Xóa; không xóa nhân vật đã lưu.
+  Future<bool> xoaAnhPreview(String imageId, {String? csrfToken}) async {
+    if (!RegExp(r'^img_[0-9a-f]{32}$').hasMatch(imageId)) return false;
+    final kq = await _api.delete(
+      '/api/ai/nhan-vat/anh/$imageId',
+      headers: {'X-CSRF-Token': ?csrfToken},
+    );
+    return kq.loi == null && (kq.maHttp == 204 || kq.maHttp == 200);
+  }
+
   /// Xin cấp EIP-712 Voucher từ Backend (`POST /api/ai/nhan-vat/{id}/ky-voucher`).
   Future<KetQuaKyVoucher> xinKyVoucher({
     required String characterId,
@@ -624,5 +647,18 @@ void _kiemTraPng128(Uint8List png) {
       header.getUint32(16) != 128 ||
       header.getUint32(20) != 128) {
     throw const FormatException('Header PNG nhân vật không hợp lệ');
+  }
+}
+
+void _kiemTraPng64(Uint8List png) {
+  if (png.length < 33) throw const FormatException('Thiếu header PNG sprite');
+  final header = ByteData.sublistView(png);
+  if (header.getUint32(0) != 0x89504e47 ||
+      header.getUint32(4) != 0x0d0a1a0a ||
+      header.getUint32(8) != 13 ||
+      header.getUint32(12) != 0x49484452 ||
+      header.getUint32(16) != 64 ||
+      header.getUint32(20) != 64) {
+    throw const FormatException('Header PNG sprite không hợp lệ');
   }
 }

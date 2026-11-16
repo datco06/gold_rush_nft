@@ -33,6 +33,7 @@ class ThongTinNhanVat {
   final String? spriteHash;
   final String? spriteSheetUrl;
   final String spriteFormat;
+  final bool playableReady;
 
   const ThongTinNhanVat({
     required this.characterId,
@@ -46,6 +47,7 @@ class ThongTinNhanVat {
     this.spriteHash,
     this.spriteSheetUrl,
     this.spriteFormat = 'static_png_128x128',
+    this.playableReady = true,
   });
 
   factory ThongTinNhanVat.tuJson(Map<String, dynamic> json) {
@@ -66,13 +68,15 @@ class ThongTinNhanVat {
 
     // 3. image_id (img_<32_hex>)
     final rawImgId = json['image_id'] ?? json['imageId'];
-    if (rawImgId is! String || !RegExp(r'^img_[0-9a-f]{32}$').hasMatch(rawImgId)) {
+    if (rawImgId is! String ||
+        !RegExp(r'^img_[0-9a-f]{32}$').hasMatch(rawImgId)) {
       throw FormatException('image_id không hợp lệ: $rawImgId');
     }
 
     // 4. character_hash (64 hex ký tự SHA-256)
     final rawHash = json['character_hash'] ?? json['characterHash'];
-    if (rawHash is! String || !RegExp(r'^(0x)?[0-9a-fA-F]{64}$').hasMatch(rawHash)) {
+    if (rawHash is! String ||
+        !RegExp(r'^(0x)?[0-9a-fA-F]{64}$').hasMatch(rawHash)) {
       throw FormatException('character_hash không hợp lệ: $rawHash');
     }
     final cleanHash = rawHash.startsWith('0x')
@@ -80,8 +84,10 @@ class ThongTinNhanVat {
         : rawHash.toLowerCase();
 
     // 5. verified_wallet_address (0x + 40 hex ký tự)
-    final rawWallet = json['verified_wallet_address'] ?? json['verifiedWalletAddress'];
-    if (rawWallet is! String || !RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(rawWallet)) {
+    final rawWallet =
+        json['verified_wallet_address'] ?? json['verifiedWalletAddress'];
+    if (rawWallet is! String ||
+        !RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(rawWallet)) {
       throw FormatException('verified_wallet_address không hợp lệ: $rawWallet');
     }
 
@@ -92,15 +98,23 @@ class ThongTinNhanVat {
       final str = rawCreatedAt.trim();
       final parsed = str.isNotEmpty ? DateTime.tryParse(str) : null;
       if (parsed == null) {
-        throw FormatException('created_at không đúng định dạng ISO-8601: $rawCreatedAt');
+        throw FormatException(
+          'created_at không đúng định dạng ISO-8601: $rawCreatedAt',
+        );
       }
       if (RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(str)) {
         final parts = str.split(RegExp(r'[-T]'));
         if (parts.length >= 3) {
           final m = int.tryParse(parts[1]) ?? 0;
-          final d = int.tryParse(parts[2].length >= 2 ? parts[2].substring(0, 2) : parts[2]) ?? 0;
+          final d =
+              int.tryParse(
+                parts[2].length >= 2 ? parts[2].substring(0, 2) : parts[2],
+              ) ??
+              0;
           if (m < 1 || m > 12 || d < 1 || d > 31) {
-            throw FormatException('created_at có tháng hoặc ngày không hợp lệ: $rawCreatedAt');
+            throw FormatException(
+              'created_at có tháng hoặc ngày không hợp lệ: $rawCreatedAt',
+            );
           }
         }
       }
@@ -109,9 +123,14 @@ class ThongTinNhanVat {
       // Hỗ trợ timestamp Unix (giây hoặc mili-giây)
       createdAt = rawCreatedAt > 1000000000000
           ? DateTime.fromMillisecondsSinceEpoch(rawCreatedAt, isUtc: true)
-          : DateTime.fromMillisecondsSinceEpoch(rawCreatedAt * 1000, isUtc: true);
+          : DateTime.fromMillisecondsSinceEpoch(
+              rawCreatedAt * 1000,
+              isUtc: true,
+            );
     } else {
-      throw FormatException('Thiếu trường created_at hoặc sai kiểu dữ liệu: $rawCreatedAt');
+      throw FormatException(
+        'Thiếu trường created_at hoặc sai kiểu dữ liệu: $rawCreatedAt',
+      );
     }
 
     // 7. onchain_status
@@ -142,12 +161,15 @@ class ThongTinNhanVat {
       spriteHash: json['sprite_hash'] as String?,
       spriteSheetUrl: json['sprite_sheet_url'] as String?,
       spriteFormat: (json['sprite_format'] as String?) ?? 'static_png_128x128',
+      playableReady: json['playable_ready'] as bool? ?? true,
     );
   }
 
   /// Hash rút gọn 10 ký tự đầu và 6 ký tự cuối để hiển thị gọn trên UI.
   String get hashRutGon {
-    final clean = characterHash.startsWith('0x') ? characterHash : '0x$characterHash';
+    final clean = characterHash.startsWith('0x')
+        ? characterHash
+        : '0x$characterHash';
     if (clean.length <= 16) return clean;
     return '${clean.substring(0, 10)}…${clean.substring(clean.length - 6)}';
   }
@@ -227,20 +249,26 @@ class PhanHoiKyVoucherModel {
     // 1. Voucher message
     final rawMsg = json['message'] ?? json['voucher'];
     if (rawMsg is! Map<String, dynamic>) {
-      throw const FormatException('Phản hồi ký voucher thiếu trường message hoặc sai cấu trúc');
+      throw const FormatException(
+        'Phản hồi ký voucher thiếu trường message hoặc sai cấu trúc',
+      );
     }
     final voucher = CharacterVoucher.tuJson(rawMsg);
 
     // 2. Signature (0x + 130 hex ký tự)
     final sig = json['signature'];
     if (sig is! String || !RegExp(r'^0x[0-9a-fA-F]{130}$').hasMatch(sig)) {
-      throw const FormatException('Chữ ký EIP-712 không hợp lệ (cần 0x kèm 130 ký tự hex)');
+      throw const FormatException(
+        'Chữ ký EIP-712 không hợp lệ (cần 0x kèm 130 ký tự hex)',
+      );
     }
 
     // 3. Contract Address (0x + 40 hex ký tự)
     final cAddr = json['contractAddress'] ?? json['contract_address'];
     if (cAddr is! String || !RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(cAddr)) {
-      throw const FormatException('Địa chỉ hợp đồng contractAddress không hợp lệ');
+      throw const FormatException(
+        'Địa chỉ hợp đồng contractAddress không hợp lệ',
+      );
     }
 
     // 4. Chain ID

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -183,6 +184,21 @@ class GoldRushGame extends FlameGame
 
   /// Ngoại hình dùng khi dựng ván tiếp theo.
   String nhanVatDangDung = georgeGoc.tepAnh;
+  String tenNhanVatDangDung = georgeGoc.ten;
+
+  static String khoaNhanVatAi(String characterId) => 'ai:$characterId';
+
+  /// Tải sprite-sheet của nhân vật AI đã lưu và chọn làm ngoại hình cho ván sau.
+  Future<void> trangBiNhanVatAi({
+    required String characterId,
+    required String tenNhanVat,
+    required Uint8List spriteSheet,
+  }) async {
+    final khoa = khoaNhanVatAi(characterId);
+    await taiNguyen.napNhanVatAi(khoa, spriteSheet);
+    nhanVatDangDung = khoa;
+    tenNhanVatDangDung = tenNhanVat;
+  }
 
   /// Danh sách vật phẩm & trang bị đồng bộ giữa Main Lobby và Kho đồ.
   final ValueNotifier<List<VatPhamHienThi>> danhSachVatPham = ValueNotifier([]);

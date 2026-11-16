@@ -599,6 +599,11 @@ class KhoNhanVat:
             transaction_hash=row["transaction_hash"],
             name=row["name"],
             sprite_format="sprite_sheet_4x4_64x64",
-            sprite_hash=tinh_character_hash(tao_sprite_sheet_4x4(row["image_blob"])),
+            sprite_hash=tinh_character_hash(
+                tao_sprite_sheet_4x4(
+                    row["image_blob"],
+                    la_sprite_sheet=row["generation_source"] == "image_model",
+                )
+            ),
             sprite_sheet_url=f"/api/ai/nhan-vat/{char_id}/sprite-sheet",
         )

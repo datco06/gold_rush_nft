@@ -51,8 +51,9 @@ from auth.router import create_auth_router
 from auth.service import AuthService
 from api.auth_adapter import tich_hop_auth_vao_app
 
-from config import (BAN_DO_DIR, CHAIN_ID, CORS_ORIGINS, ENABLED, HOP_DONG_CUA_HANG, HOP_DONG_VAT_PHAM, KB_DIR, MAN_CHOI,
-                    MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU, SO_VE, TRONG_TAI_KHOA)
+from config import (BAN_DO_DIR, CHAIN_ID, CORS_ORIGINS, ENABLED, HOP_DONG_CUA_HANG, HOP_DONG_DANG_KY_NHAN_VAT,
+                    HOP_DONG_VAT_PHAM, KB_DIR, MAN_CHOI, MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU,
+                    SO_VE, TRONG_TAI_KHOA)
 from api.auth_guard import kiem_tra_csrf_va_origin, lay_nguoi_choi_hien_tai, NguoiChoiXacThuc
 from core import do_kho, man_choi, nhat_ky, rung_ruong, sinh_ban_do, trong_tai
 from core.csdl import khoi_tao_csdl, lay_csdl
@@ -515,6 +516,7 @@ def cau_hinh_vang():
         "chain_id": CHAIN_ID,
         "hop_dong": HOP_DONG_CUA_HANG,
         "hop_dong_vat_pham": HOP_DONG_VAT_PHAM or None,
+        "hop_dong_nhan_vat": HOP_DONG_DANG_KY_NHAN_VAT or None,
         "trong_tai": dia_chi_tu_khoa(khoa),
     }
 

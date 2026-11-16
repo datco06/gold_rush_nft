@@ -106,6 +106,11 @@ class MayChuAi {
     Map<String, String> headers = const {},
   }) => _goi('GET', duongDan, headers: headers, gioiHanByte: 1024 * 1024);
 
+  Future<KetQuaApiAi> delete(
+    String duongDan, {
+    Map<String, String> headers = const {},
+  }) => _goi('DELETE', duongDan, headers: headers, gioiHanByte: 65536);
+
   Future<KetQuaApiAi> getJson(
     String duongDan, {
     Map<String, String> headers = const {},
@@ -151,7 +156,11 @@ class MayChuAi {
           if (decoded is Map<String, dynamic>) jsonLoi = decoded;
         } catch (_) {}
       }
-      return KetQuaApiAiList._(loi: kq.loi, maHttp: kq.maHttp, duLieuLoi: jsonLoi);
+      return KetQuaApiAiList._(
+        loi: kq.loi,
+        maHttp: kq.maHttp,
+        duLieuLoi: jsonLoi,
+      );
     }
     try {
       final json = jsonDecode(utf8.decode(kq.bytes!));

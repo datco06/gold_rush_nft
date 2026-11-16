@@ -8,18 +8,20 @@ from .llm import NhaCungCapLLM
 
 
 class AnhCoQuota:
-    def __init__(self, provider: NhaCungCapAnh, quota: KhoQuotaAI, player_id: str, gioi_han: int):
+    def __init__(self, provider: NhaCungCapAnh, quota: KhoQuotaAI, player_id: str, gioi_han: int,
+                 khoang_cach_giay: float = 0):
         self.provider = provider
         self.quota = quota
         self.player_id = player_id
         self.gioi_han = gioi_han
+        self.khoang_cach_giay = khoang_cach_giay
 
     @property
     def generation_source(self) -> Literal["demo", "image_model"]:
         return self.provider.generation_source
 
     def sinh(self, *, system_prompt: str, user_prompt: str) -> bytes:
-        self.quota.tieu_thu(self.player_id, "image", self.gioi_han)
+        self.quota.tieu_thu(self.player_id, "image", self.gioi_han, self.khoang_cach_giay)
         return self.provider.sinh(system_prompt=system_prompt, user_prompt=user_prompt)
 
 

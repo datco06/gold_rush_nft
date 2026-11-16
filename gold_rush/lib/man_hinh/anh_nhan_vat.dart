@@ -60,6 +60,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
   bool _dangLuu = false;
   bool _dangKetNoiAuth = false;
   bool _dangDangKyOnchain = false;
+  bool _dangXoa = false;
   int _phienTai = 0;
   Timer? _boDemTaoAnh;
 
@@ -618,6 +619,11 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
     if (kq.thanhCong) {
       setState(() => _nhanVatVuaLuu = kq.nhanVat);
+      // Preview chỉ là cache tạm; bản nhân vật chính thức đã nằm trong kho ví.
+      await widget.mayChu.xoaAnhPreview(
+        anh.maAnh,
+        csrfToken: _nguoiDung?.csrfToken,
+      );
       _thongBao(
         tuDong
             ? 'Ảnh đã tạo xong và được tự động lưu vào tài khoản!'
@@ -630,6 +636,30 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
             'Lưu nhân vật thất bại (${kq.maHttp ?? 'Lỗi kết nối'}).',
         loi: true,
       );
+    }
+  }
+
+  Future<void> _xoaAnhPreview() async {
+    final anh = _anh;
+    if (anh == null || _dangXoa || _dangLuu) return;
+    setState(() => _dangXoa = true);
+    final daXoa = await widget.mayChu.xoaAnhPreview(
+      anh.maAnh,
+      csrfToken: _nguoiDung?.csrfToken,
+    );
+    if (!mounted) return;
+    if (daXoa) {
+      setState(() {
+        _ketQua = null;
+        _anh = null;
+        _maYeuCau = null;
+        _moTaDaGui = null;
+        _dangXoa = false;
+      });
+      _thongBao('Đã xóa ảnh preview khỏi kho tạm.');
+    } else {
+      setState(() => _dangXoa = false);
+      _thongBao('Không thể xóa ảnh preview. Hãy thử lại.', loi: true);
     }
   }
 
@@ -846,8 +876,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                     children: [
                                       Text(
                                         anh.nguonSinh == 'demo'
-                                            ? 'Ảnh mẫu demo'
-                                            : 'Ảnh từ mô hình AI',
+                                            ? 'NHÂN VẬT MẪU'
+                                            : 'NHÂN VẬT AI PIXEL-ART',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -884,7 +914,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                         ),
                                       ),
                                       const SizedBox(height: 12),
-                                      const Text('Ảnh tĩnh để xem trước.'),
+                                      const Text(
+                                        'Nhân vật sẵn sàng để lưu vào ví.',
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -1208,7 +1240,6 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Cảnh báo quan trọng: ảnh preview chưa phải sprite sheet chơi được trong Flame
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -1216,7 +1247,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text(
-                'LƯU Ý: Ảnh preview 128×128 pixel-art là ảnh tĩnh minh hoạ, CHƯA PHẢI sprite sheet điều khiển được trong game Flame.',
+                'Ảnh sẽ được backend chuẩn hóa thành sprite-sheet 4×4 để trang bị và chơi như George.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
@@ -1273,9 +1304,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Nhân vật đã nằm trong Kho đồ > Nhân vật AI. '
-                      'Ảnh hiện là PNG tĩnh 128×128; chưa phải sprite sheet '
-                      '4×4 để điều khiển trong gameplay.',
+                      'Nhân vật đã nằm trong Kho đồ > Nhân vật AI và có thể trang bị ở đó. '
+                      'Sprite-sheet 4×4 sẽ được tải khi bắt đầu trang bị.',
                       style: TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                     const SizedBox(height: 10),
@@ -1306,32 +1336,58 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: (_dangLuu || _nguoiDung == null)
-                          ? null
-                          : _luuNhanVat,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber.shade700,
-                        foregroundColor: Colors.black,
-                      ),
-                      icon: _dangLuu
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.black,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: (_dangXoa || _dangLuu)
+                                ? null
+                                : _xoaAnhPreview,
+                            icon: _dangXoa
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.delete_outline),
+                            label: const Text('XÓA ẢNH'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: (_dangLuu || _nguoiDung == null)
+                                ? null
+                                : _luuNhanVat,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber.shade700,
+                              foregroundColor: Colors.black,
+                            ),
+                            icon: _dangLuu
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.black,
+                                    ),
+                                  )
+                                : const Icon(Icons.save),
+                            label: Text(
+                              _nguoiDung == null
+                                  ? 'CẦN ĐĂNG NHẬP ĐỂ LƯU'
+                                  : (_dangLuu
+                                        ? 'Đang lưu…'
+                                        : 'LƯU NHÂN VẬT VÀO TÀI KHOẢN'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                            )
-                          : const Icon(Icons.save),
-                      label: Text(
-                        _nguoiDung == null
-                            ? 'CẦN ĐĂNG NHẬP ĐỂ LƯU'
-                            : (_dangLuu
-                                  ? 'Đang lưu…'
-                                  : 'LƯU NHÂN VẬT VÀO TÀI KHOẢN'),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

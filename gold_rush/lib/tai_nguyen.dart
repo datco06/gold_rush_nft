@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
@@ -20,6 +21,7 @@ class TaiNguyen {
   /// Hoạt ảnh của George theo tên tệp sprite — George gốc + các nhân vật mua trong cửa
   /// hàng (lib/blockchain/nhan_vat.dart). Thiếu tệp nào thì bỏ qua tệp đó.
   final Map<String, Map<HuongDi, SpriteAnimation>> georgeTheoTep = {};
+  final Map<String, ui.Image> anhNhanVatTheoKhoa = {};
   final Map<String, Map<HuongDi, SpriteAnimation>> trangBiTheoTep = {};
   late final Map<HuongDi, SpriteAnimation> zombie;
   late final Map<HuongDi, SpriteAnimation> skeleton;
@@ -106,6 +108,35 @@ class TaiNguyen {
     joystickNen = Sprite(await Flame.images.load('joystick_nen.png'));
     joystickNum = Sprite(await Flame.images.load('joystick_num.png'));
   }
+
+  /// Nạp sprite-sheet AI 4x4 từ bytes backend. Mỗi ô 16x16, giống sprite
+  /// George nên gameplay dùng cùng component/điều khiển hiện có.
+  Future<void> napNhanVatAi(String khoa, Uint8List png) async {
+    final codec = await ui
+        .instantiateImageCodec(Uint8List.fromList(png))
+        .timeout(const Duration(seconds: 8));
+    try {
+      if (codec.frameCount != 1) {
+        throw const FormatException('Sprite nhân vật AI phải là ảnh tĩnh');
+      }
+      final frame = await codec.getNextFrame().timeout(
+        const Duration(seconds: 8),
+      );
+      final image = frame.image;
+      if (image.width != 64 || image.height != 64) {
+        image.dispose();
+        throw const FormatException(
+          'Sprite nhân vật AI phải có kích thước 64x64',
+        );
+      }
+      anhNhanVatTheoKhoa[khoa] = image;
+      georgeTheoTep[khoa] = _bonHuong(image, 0.12, frameSize: 16);
+    } finally {
+      codec.dispose();
+    }
+  }
+
+  ui.Image? anhNhanVat(String khoa) => anhNhanVatTheoKhoa[khoa];
 
   /// Khởi tạo hoạt ảnh giả từ một `ui.Image` trong bộ nhớ để chạy kiểm thử nhanh.
   void napTuAnhGia(ui.Image anh) {

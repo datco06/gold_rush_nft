@@ -173,6 +173,16 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                   phienVi: g.phienVi,
                   authController: g.auth,
                   tepNhanVatDangDung: g.nhanVatDangDung,
+                  anhNhanVatDangDung: g.taiNguyen.anhNhanVat(g.nhanVatDangDung),
+                  tenNhanVatDangDung: g.tenNhanVatDangDung,
+                  khiTrangBiNhanVatAi: (nhanVat, spriteSheet) async {
+                    await g.trangBiNhanVatAi(
+                      characterId: nhanVat.characterId,
+                      tenNhanVat: nhanVat.name,
+                      spriteSheet: spriteSheet,
+                    );
+                    setModalState(() {});
+                  },
                   khiMoTaoNhanVat: () async {
                     final api = MayChuNhanVat();
                     try {
@@ -2078,6 +2088,14 @@ class _TabNhanVat extends StatelessWidget {
           const SizedBox(height: 14),
           NhanVatAiGallery(
             authController: game.auth,
+            tepNhanVatDangDung: game.nhanVatDangDung,
+            khiTrangBi: (nv, spriteSheet) async {
+              await game.trangBiNhanVatAi(
+                characterId: nv.characterId,
+                tenNhanVat: nv.name,
+                spriteSheet: spriteSheet,
+              );
+            },
             khiMoTaoNhanVat: () async {
               final api = MayChuNhanVat();
               try {

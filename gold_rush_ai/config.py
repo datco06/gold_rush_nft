@@ -38,6 +38,7 @@ AI_CHARACTER_DB = Path(os.environ.get("AI_CHARACTER_DB", DATA_DIR / "nhan_vat" /
 AI_MAX_CHARACTERS_PER_USER = int(os.environ.get("AI_MAX_CHARACTERS_PER_USER", "20"))
 AI_MAX_CHARACTERS_TOTAL = int(os.environ.get("AI_MAX_CHARACTERS_TOTAL", "10000"))
 HOP_DONG_DANG_KY_NHAN_VAT = os.environ.get("HOP_DONG_DANG_KY_NHAN_VAT", "")
+AI_IMAGE_MIN_INTERVAL_SECONDS = float(os.environ.get("AI_IMAGE_MIN_INTERVAL_SECONDS", "20"))
 
 # Blockchain RPC & Character Registry Verifier (AI-001)
 AI_BLOCKCHAIN_RPC_URL = os.environ.get("AI_BLOCKCHAIN_RPC_URL", "")

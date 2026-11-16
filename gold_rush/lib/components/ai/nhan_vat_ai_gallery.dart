@@ -13,12 +13,17 @@ class NhanVatAiGallery extends StatefulWidget {
   final AuthController? authController;
   final MayChuNhanVat? mayChu;
   final Future<void> Function()? khiMoTaoNhanVat;
+  final String? tepNhanVatDangDung;
+  final Future<void> Function(ThongTinNhanVat nhanVat, Uint8List spriteSheet)?
+  khiTrangBi;
 
   const NhanVatAiGallery({
     super.key,
     this.authController,
     this.mayChu,
     this.khiMoTaoNhanVat,
+    this.tepNhanVatDangDung,
+    this.khiTrangBi,
   });
 
   @override
@@ -33,6 +38,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
   final Set<String> _anhLoi = {};
   bool _dangTai = false;
   String? _loi;
+  String? _dangTrangBi;
   int _phien = 0;
 
   bool get _daDangNhap {
@@ -136,7 +142,9 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
   Future<void> _taiAnh(ThongTinNhanVat nv, int phien) async {
     try {
       final kq = await _api
-          .taiAnhDaLuu(nv.characterId)
+          // Dùng sprite 4x4 đã chuẩn hóa để card chỉ hiển thị một frame,
+          // đồng nhất với nhân vật George mặc định.
+          .taiSpriteSheetDaLuu(nv.characterId)
           // Ảnh đã lưu nằm trong SQLite nên phải phản hồi nhanh; tránh spinner
           // kéo dài khi phiên Auth/backend bị treo.
           .timeout(const Duration(seconds: 8));
@@ -229,13 +237,21 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: _dangTai ? null : _tai,
-            icon: const Icon(Icons.refresh_rounded, size: 17),
-            label: const Text('Làm mới'),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (widget.khiMoTaoNhanVat != null)
+              TextButton.icon(
+                onPressed: _moTaoNhanVat,
+                icon: const Icon(Icons.add_rounded, size: 17),
+                label: const Text('Thêm nhân vật'),
+              ),
+            TextButton.icon(
+              onPressed: _dangTai ? null : _tai,
+              icon: const Icon(Icons.refresh_rounded, size: 17),
+              label: const Text('Làm mới'),
+            ),
+          ],
         ),
         Wrap(
           spacing: 10,
@@ -249,6 +265,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
   Widget _theNhanVat(ThongTinNhanVat nv) {
     final png = _anh[nv.characterId];
     final anhLoi = _anhLoi.contains(nv.characterId);
+    final dangDung = widget.tepNhanVatDangDung == 'ai:${nv.characterId}';
     return Container(
       width: 126,
       padding: const EdgeInsets.all(8),
@@ -271,15 +288,10 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
                     ? const Center(
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Image.memory(
-                        png,
+                    : _KhungNhanVatAi(
+                        png: png,
                         key: ValueKey('ai-image-${nv.characterId}'),
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.none,
                         semanticLabel: 'Ảnh nhân vật AI ${nv.name}',
-                        errorBuilder: (_, _, _) => const Center(
-                          child: Icon(Icons.broken_image_outlined),
-                        ),
                       ),
               ),
             ),
@@ -293,7 +305,7 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
           ),
           const SizedBox(height: 3),
           const Text(
-            'Đã lưu · PNG tĩnh',
+            'Đã lưu · sprite 4×4',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white54, fontSize: 9),
           ),
@@ -307,9 +319,57 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
             ),
             child: const Text('Xem chi tiết', style: TextStyle(fontSize: 10)),
           ),
+          if (widget.khiTrangBi != null)
+            FilledButton.icon(
+              onPressed: png == null || _dangTrangBi != null
+                  ? null
+                  : () => _trangBi(nv),
+              icon: _dangTrangBi == nv.characterId
+                  ? const SizedBox(
+                      width: 13,
+                      height: 13,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(dangDung ? Icons.check : Icons.play_arrow, size: 14),
+              label: Text(dangDung ? 'Đang dùng' : 'Trang bị'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 7),
+                minimumSize: const Size(0, 28),
+                textStyle: const TextStyle(fontSize: 10),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _trangBi(ThongTinNhanVat nv) async {
+    final callback = widget.khiTrangBi;
+    if (callback == null || _dangTrangBi != null) return;
+    setState(() => _dangTrangBi = nv.characterId);
+    try {
+      final kq = await _api
+          .taiSpriteSheetDaLuu(nv.characterId)
+          .timeout(const Duration(seconds: 12));
+      if (kq.png == null)
+        throw StateError('Không tải được sprite nhân vật AI.');
+      await callback(nv, kq.png!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã trang bị ${nv.name}. Sẽ dùng ở ván tiếp theo.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể trang bị nhân vật AI: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _dangTrangBi = null);
+    }
   }
 
   Future<void> _moChiTiet(ThongTinNhanVat nv, Uint8List? png) =>
@@ -324,19 +384,21 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
               children: [
                 if (png != null)
                   Center(
-                    child: Image.memory(
-                      png,
+                    child: SizedBox(
                       width: 128,
                       height: 128,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.none,
-                      semanticLabel: 'Ảnh chi tiết nhân vật AI ${nv.name}',
+                      child: _KhungNhanVatAi(
+                        png: png,
+                        semanticLabel: 'Ảnh chi tiết nhân vật AI ${nv.name}',
+                      ),
                     ),
                   ),
                 const SizedBox(height: 12),
                 const Text('Trạng thái: Đã lưu trong Backend'),
-                const Text('Loại tài sản: Nhân vật AI, không phải NFT'),
-                const Text('Gameplay: Chưa có sprite sheet 4×4 để trang bị'),
+                const Text('Loại tài sản: Nhân vật AI gắn với ví hiện tại'),
+                const Text(
+                  'Gameplay: Sprite sheet 4×4, có thể trang bị ở ván tiếp theo',
+                ),
                 Text('Mã: ${nv.idRutGon}'),
                 Text('Ngày tạo: ${nv.createdAt.toLocal()}'),
               ],
@@ -350,4 +412,42 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
           ],
         ),
       );
+}
+
+class _KhungNhanVatAi extends StatelessWidget {
+  final Uint8List png;
+  final String semanticLabel;
+
+  const _KhungNhanVatAi({
+    super.key,
+    required this.png,
+    required this.semanticLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: 440,
+          maxWidth: 440,
+          minHeight: 440,
+          maxHeight: 440,
+          child: Image.memory(
+            png,
+            width: 440,
+            height: 440,
+            fit: BoxFit.fill,
+            alignment: Alignment.topLeft,
+            filterQuality: FilterQuality.none,
+            semanticLabel: semanticLabel,
+            errorBuilder: (_, _, _) => const Center(
+              child: Icon(Icons.broken_image_outlined),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
