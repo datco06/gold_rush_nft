@@ -312,6 +312,13 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                           child: _EquippedItemsPanel(
                                             compact: compact,
                                             items: g.danhSachVatPham.value,
+                                            tepNhanVatDangDung: g.nhanVatDangDung,
+                                            anhNhanVatDangDung: g.taiNguyen
+                                                .anhNhanVat(g.nhanVatDangDung),
+                                            tenNhanVatDangDung:
+                                                g.nhanVatDangDung.startsWith('ai:')
+                                                    ? g.tenNhanVatDangDung
+                                                    : nv.ten,
                                             selectedSlotId: _selectedSlotId,
                                             onSlotTap: _onSlotTap,
                                           ),
@@ -1109,6 +1116,9 @@ class _LobbyEquipSlot {
   final bool supported;
   final VatPhamHienThi? item;
   final IconData fallbackIcon;
+  final String? characterAsset;
+  final ui.Image? characterImage;
+  final String? characterName;
 
   const _LobbyEquipSlot({
     required this.id,
@@ -1116,18 +1126,27 @@ class _LobbyEquipSlot {
     required this.supported,
     required this.item,
     required this.fallbackIcon,
+    this.characterAsset,
+    this.characterImage,
+    this.characterName,
   });
 }
 
 class _EquippedItemsPanel extends StatelessWidget {
   final bool compact;
   final List<VatPhamHienThi> items;
+  final String tepNhanVatDangDung;
+  final ui.Image? anhNhanVatDangDung;
+  final String tenNhanVatDangDung;
   final String? selectedSlotId;
   final ValueChanged<_LobbyEquipSlot> onSlotTap;
 
   const _EquippedItemsPanel({
     required this.compact,
     required this.items,
+    required this.tepNhanVatDangDung,
+    required this.anhNhanVatDangDung,
+    required this.tenNhanVatDangDung,
     required this.selectedSlotId,
     required this.onSlotTap,
   });
@@ -1163,12 +1182,15 @@ class _EquippedItemsPanel extends StatelessWidget {
         item: _findEquipped(OTrangBi.giay),
         fallbackIcon: Icons.directions_run_rounded,
       ),
-      const _LobbyEquipSlot(
+      _LobbyEquipSlot(
         id: 'character',
         label: 'Nhân vật',
         supported: true,
         item: null,
         fallbackIcon: Icons.person_outline_rounded,
+        characterAsset: tepNhanVatDangDung,
+        characterImage: anhNhanVatDangDung,
+        characterName: tenNhanVatDangDung,
       ),
     ];
 
@@ -1287,16 +1309,23 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
   @override
   Widget build(BuildContext context) {
     final item = widget.slot.item;
+    final isCharacter = widget.slot.characterAsset != null;
     final supported = widget.slot.supported;
+    final characterName = widget.slot.characterName ?? widget.slot.label;
+    final displayName = isCharacter
+        ? characterName
+        : item?.ten ?? (supported ? widget.slot.label : 'Chưa hỗ trợ');
     final borderColor = !supported
         ? const Color(0xFF283A52)
         : (widget.selected || _hovered
               ? LobbyColors.highlightGold
-              : (item != null
+              : (isCharacter
+                    ? LobbyColors.highlightGold
+                    : item != null
                     ? _rarityColor(item.doHiem)
                     : const Color(0xFF445D7B)));
 
-    final badgeValue = item != null && item.thuocTinh.isNotEmpty
+    final badgeValue = !isCharacter && item != null && item.thuocTinh.isNotEmpty
         ? item.thuocTinh.values.first
         : null;
 
@@ -1305,8 +1334,8 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Tooltip(
-        message: PhamViNgonNgu.of(context).dich(item != null
-            ? '${widget.slot.label}: ${item.ten}'
+        message: PhamViNgonNgu.of(context).dich(isCharacter || item != null
+            ? '${widget.slot.label}: $displayName'
             : (supported
                   ? '${widget.slot.label} (Trống — bấm để mở Kho đồ)'
                   : '${widget.slot.label} (Chưa hỗ trợ)')),
@@ -1337,7 +1366,13 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (item?.duongDanAnh != null)
+                      if (isCharacter)
+                        AnhNhanVat(
+                          tepAnh: widget.slot.characterAsset!,
+                          kichThuoc: 34,
+                          anhTrongBoNho: widget.slot.characterImage,
+                        )
+                      else if (item?.duongDanAnh != null)
                         HinhTrangBiFrame(
                           asset: item!.duongDanAnh!,
                           kichThuoc: 34,
@@ -1365,17 +1400,16 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: ChuGame(
-                          item?.ten ??
-                              (supported ? widget.slot.label : 'Chưa hỗ trợ'),
+                          displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: item != null
+                            color: isCharacter || item != null
                                 ? LobbyColors.textPrimary
                                 : const Color(0xFF6B7F99),
                             fontSize: 9.5,
-                            fontWeight: item != null
+                            fontWeight: isCharacter || item != null
                                 ? FontWeight.w700
                                 : FontWeight.w500,
                           ),

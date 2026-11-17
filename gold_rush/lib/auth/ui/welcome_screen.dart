@@ -678,22 +678,6 @@ class _HeroCopy extends StatelessWidget {
               desc: 'Đào sâu qua từng tầng hang',
             ),
           ),
-          SizedBox(width: 16),
-          const Expanded(
-            child: _Feature(
-              icon: Icons.auto_awesome_outlined,
-              title: 'Nhân vật AI',
-              desc: 'Tạo và lưu nhân vật độc bản',
-            ),
-          ),
-          SizedBox(width: 16),
-          const Expanded(
-            child: _Feature(
-              icon: Icons.diamond_outlined,
-              title: 'Kho báu on-chain',
-              desc: 'Tài sản gắn với ví của bạn',
-            ),
-          ),
         ],
       ),
     ],

@@ -864,17 +864,6 @@ class _CharacterCard extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 4),
-              const ChuGame(
-                'Ngoại hình · 4 hướng · 4 khung',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Color(0xFF9BB0C0),
-                  fontSize: 9,
-                  fontFamily: 'monospace',
-                ),
-              ),
               const SizedBox(height: 7),
               Row(
                 children: [

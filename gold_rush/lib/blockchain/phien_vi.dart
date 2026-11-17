@@ -243,7 +243,7 @@ class PhienVi extends ChangeNotifier {
       );
       _ngheVi ??= vi.suKien.listen(_khiViDoi);
       await _taiLaiNoi();
-    }, xong: 'Đã đồng bộ ví đăng nhập.'),
+    }),
   );
 
   /// Xin phiếu cho các ván còn treo. Chỉ bỏ ván khỏi danh sách khi xong hoặc bị từ chối DỨT KHOÁT
