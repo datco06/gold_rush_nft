@@ -126,6 +126,7 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
             _LandscapeGate(child: child ?? const SizedBox.shrink()),
         home: AuthGate(
           controller: _auth,
+          recheckOnResume: false,
           retainGameDuringSessionCheck: true,
           authenticatedBuilder: (_) =>
               ManHinhGame(auth: _auth, wallet: _wallet),
