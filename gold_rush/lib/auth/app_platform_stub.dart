@@ -2,9 +2,18 @@
 library;
 
 import '../blockchain/vi.dart';
-import 'metamask_siwe_stub.dart';
+import '../blockchain/vi_appkit.dart' as transactions;
 
-export 'metamask_siwe_stub.dart' show MetamaskSiweWeb;
+import 'package:flutter/widgets.dart';
+
+import 'metamask_siwe_native.dart';
+
+export 'metamask_siwe_native.dart' show MetamaskSiweWeb;
+
+MetamaskSiweWeb createWallet({
+  required BuildContext context,
+  required String projectId,
+}) => MetamaskSiweWeb(context: context, projectId: projectId);
 
 ({Vi vi, void Function() dispose}) createGameWallet(MetamaskSiweWeb wallet) =>
-    throw UnsupportedError('Đăng nhập MetaMask yêu cầu trình duyệt Web.');
+    transactions.taoViTuAppKit(wallet);

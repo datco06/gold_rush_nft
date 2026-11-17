@@ -438,14 +438,26 @@ class AuthApiClient {
           !{'', '/'}.contains(uri.path) ||
           uri.port < 1 ||
           uri.port > 65535 ||
-          (uri.scheme == 'http' &&
-              !{'localhost', '127.0.0.1', '::1'}.contains(uri.host))) {
+          (uri.scheme == 'http' && !_httpDevelopmentHost(uri.host))) {
         throw const AuthApiException(AuthApiErrorKind.invalidConfiguration);
       }
       return uri.replace(path: '');
     } catch (_) {
       throw const AuthApiException(AuthApiErrorKind.invalidConfiguration);
     }
+  }
+
+  static bool _httpDevelopmentHost(String host) {
+    if ({'localhost', '127.0.0.1', '::1', '10.0.2.2'}.contains(host))
+      return true;
+    final parts = host.split('.');
+    if (parts.length != 4 || parts.any((part) => int.tryParse(part) == null)) {
+      return false;
+    }
+    final octets = [for (final part in parts) int.parse(part)];
+    return octets[0] == 10 ||
+        (octets[0] == 192 && octets[1] == 168) ||
+        (octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31);
   }
 
   Future<AuthChallengeResponse> createChallenge({

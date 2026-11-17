@@ -16,6 +16,7 @@ import 'dart:async';
 /// Stable codes retained from the existing Web adapter, including transport
 /// failures. Implementations must translate raw provider errors into safe data.
 enum MetamaskSiweErrorCode {
+  notConfigured,
   notInstalled,
   wrongProvider,
   ambiguousProvider,
@@ -43,6 +44,8 @@ class MetamaskSiweException implements Exception {
   final int? rpcCode;
 
   String get message => switch (code) {
+    MetamaskSiweErrorCode.notConfigured =>
+      'Ứng dụng chưa được cấu hình Reown Project ID cho kết nối ví Android.',
     MetamaskSiweErrorCode.notInstalled =>
       'Chưa thấy MetaMask. Hãy cài tiện ích rồi tải lại trang.',
     MetamaskSiweErrorCode.wrongProvider =>

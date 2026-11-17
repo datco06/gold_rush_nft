@@ -21,6 +21,7 @@ dependencies:
   # Đối chiếu pub.dev ngày 09/10/2026: bản mới nhất 1.6.0.
   http: ^1.6.0
   shared_preferences: ^2.5.6
+  reown_appkit: ^1.9.0
 
 dev_dependencies:
   flutter_test:

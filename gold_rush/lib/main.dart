@@ -87,7 +87,10 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
     super.initState();
     _ngonNgu = widget.ngonNgu ?? NgonNgu.chung;
     unawaited(_ngonNgu.nap());
-    _wallet = platform.MetamaskSiweWeb();
+    _wallet = platform.createWallet(
+      context: context,
+      projectId: const String.fromEnvironment('REOWN_PROJECT_ID'),
+    );
     _auth = AuthController.web(
       wallet: _wallet,
       api: AuthApiClient(
