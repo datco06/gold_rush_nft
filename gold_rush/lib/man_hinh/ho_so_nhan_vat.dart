@@ -11,7 +11,6 @@ import '../blockchain/sbt/sbt_model.dart';
 import '../cau_hinh.dart';
 import '../gold_rush_game.dart';
 import '../kho_do/danh_sach_nhan_vat.dart' show AnhNhanVat;
-import '../components/ai/nhan_vat_ai_gallery.dart';
 import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
 import 'anh_nhan_vat.dart';
@@ -2089,85 +2088,6 @@ class _TabNhanVat extends StatelessWidget {
                   compact: compact,
                 ),
             ],
-          ),
-          const SizedBox(height: 20),
-          // Link to AI character image
-          _ActionLink(
-            icon: Icons.image_outlined,
-            label: 'Tạo ảnh nhân vật AI',
-            onTap: () {
-              const demo = String.fromEnvironment(
-                'GOLD_RUSH_IMAGE_DEMO_PLAYER',
-              );
-              try {
-                final api = MayChuNhanVat(
-                  maNguoiChoiDemo: demo.isEmpty ? null : demo,
-                );
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => ManHinhAnhNhanVat(
-                      mayChu: api,
-                      authController: game.auth,
-                      vi: game.phienVi?.vi,
-                      phienVi: game.phienVi,
-                      tienTrinhController: game.tienTrinh,
-                      onPlayerTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => CharacterProfileScreen(game: game),
-                          ),
-                        );
-                      },
-                      onSettings: game.moCaiDat,
-                    ),
-                  ),
-                );
-              } on ArgumentError {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: ChuGame('Cấu hình API ảnh nhân vật không hợp lệ.'),
-                  ),
-                );
-              }
-            },
-          ),
-          const SizedBox(height: 14),
-          NhanVatAiGallery(
-            authController: game.auth,
-            tepNhanVatDangDung: game.nhanVatDangDung,
-            khiTrangBi: (nv, spriteSheet) async {
-              await game.trangBiNhanVatAi(
-                characterId: nv.characterId,
-                tenNhanVat: nv.name,
-                spriteSheet: spriteSheet,
-              );
-            },
-            khiMoTaoNhanVat: () async {
-              final api = MayChuNhanVat();
-              try {
-                await Navigator.of(context).push<bool>(
-                  MaterialPageRoute<bool>(
-                    builder: (_) => ManHinhAnhNhanVat(
-                      mayChu: api,
-                      authController: game.auth,
-                      vi: game.phienVi?.vi,
-                      phienVi: game.phienVi,
-                      tienTrinhController: game.tienTrinh,
-                      onPlayerTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => CharacterProfileScreen(game: game),
-                          ),
-                        );
-                      },
-                      onSettings: game.moCaiDat,
-                    ),
-                  ),
-                );
-              } finally {
-                api.dong();
-              }
-            },
           ),
         ],
       ),
