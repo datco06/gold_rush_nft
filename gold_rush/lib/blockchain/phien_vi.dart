@@ -267,7 +267,9 @@ class PhienVi extends ChangeNotifier {
         final lan = (_soLanHong[maVan] ?? 0) + 1;
         _soLanHong[maVan] = lan;
         // Lỗi mạng (ma == null) không tính vào 3 lần: máy chủ tạm sập không được làm mất vàng.
-        if (e.ma == 409 || e.ma == 422 || (e.ma != null && lan >= 3)) {
+        if (e.ma == 409 ||
+            e.ma == 422 ||
+            (e.ma != null && e.ma != 404 && e.ma != 429 && lan >= 3)) {
           _vanChuaXinPhieu.remove(maVan);
           _soLanHong.remove(maVan);
         }
@@ -339,14 +341,23 @@ class PhienVi extends ChangeNotifier {
     await ch.bo.damBaoMang(); // đọc sai mạng thì mọi con số đều về 0 — xin chuyển mạng trước
     await _xinCacPhieuCon(dc);
     final vangOnChain = await ch.soVang(dc);
-    // Số dư ERC-1155 trên hợp đồng là nguồn sự thật; không giữ lại số cache
-    // cũ khi ví đã bị trừ vàng hoặc vừa chuyển sang hợp đồng mới.
+    final veMoi = await ch.veCua(dc);
+    final phieuDangCho = phieuCho;
+    final phieuMoi = await ch.locPhieuDungDuoc(dc, [
+      ...phieuDangCho,
+      ...await mayChu.phieuChoNhan(dc),
+    ], veMoi);
+
+    // Topbar chỉ hiển thị số dư ERC-1155 đã ghi thật trên hợp đồng. Phiếu
+    // thưởng vẫn được giữ riêng để giao dịch nhận vàng/mua vật phẩm có thể
+    // gộp vào cùng một transaction, nhưng không được cộng tạm vào topbar.
+    ve = veMoi;
+    phieuCho = phieuMoi;
     if (vangOnChain != vang) {
       vang = vangOnChain;
       await _luuVang();
       notifyListeners();
     }
-    ve = await ch.veCua(dc);
     for (final nv in bangNhanVat) {
       gia[nv.id] = await ch.gia(nv.id);
       if (await ch.coNhanVat(dc, nv.id)) {
@@ -355,7 +366,6 @@ class PhienVi extends ChangeNotifier {
         daCo.remove(nv.id);
       }
     }
-    phieuCho = await ch.locPhieuDungDuoc(dc, await mayChu.phieuChoNhan(dc), ve);
     notifyListeners();
   }
 
@@ -410,8 +420,25 @@ class PhienVi extends ChangeNotifier {
   // ------------------------------------------------------------------
   // Giao dịch
   // ------------------------------------------------------------------
+  Future<void> _capEthTestNeuCan() async {
+    // Hardhat local mô phỏng Paymaster: giao dịch mua/nhận đều có thể cần gas
+    // ngay cả khi không còn phiếu chờ (ví dụ mua bằng vàng đã có on-chain).
+    // Không phụ thuộc vào phieuCho vì danh sách này có thể đang được đồng bộ
+    // lại ở thời điểm nút mua được bấm.
+    final dc = diaChi;
+    if (dc == null) return;
+
+    // Cấu hình có thể đã được nạp từ trước khi backend bật faucet (hoặc sau
+    // hot-reload). Đọc lại ngay trước mutation để không bỏ qua bước cấp ETH.
+    final ch = await mayChu.cauHinh();
+    cauHinh = ch;
+    if (!ch.localFaucet) return;
+    await mayChu.nhanEthTest(vi: dc);
+  }
+
   Future<bool> nhanTatCa() => _lamViec('Chuẩn bị nhận vàng…', () async {
     await _taiLaiNoi(); // phiếu mới ký lại, hạn mới
+    await _capEthTestNeuCan(); // giả lập Paymaster trên Hardhat local
     await cuaHang!.thucHien(diaChi: diaChi!, phieu: phieuCho, baoTienDo: _bao);
     await _taiLaiNoi();
   }, xong: 'Đã nhận vàng.');
@@ -419,6 +446,7 @@ class PhienVi extends ChangeNotifier {
   Future<bool> mua(NhanVatBan nv) =>
       _lamViec('Chuẩn bị mua ${nv.ten}…', () async {
         await _taiLaiNoi();
+        await _capEthTestNeuCan(); // Hardhat local: mô phỏng Paymaster trước giao dịch gộp.
         await cuaHang!.thucHien(
           diaChi: diaChi!,
           phieu: phieuCho,

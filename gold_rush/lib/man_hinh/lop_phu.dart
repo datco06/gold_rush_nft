@@ -371,18 +371,18 @@ class ManHinhKetThuc extends StatelessWidget {
     final String phuDe;
 
     if (thang) {
-      phuDe = m.mienPhi
+      phuDe = m.chiChoiLocal
           ? 'George đã gom hết vàng và thoát ra an toàn.'
           : 'HOÀN THÀNH màn ${m.id}! '
-                'Nhận lại ${m.coc} cọc + '
+                'Nhận ${m.coc} cọc + '
                 '${m.soXu} xu + ${m.thuong} thưởng.';
     } else {
       final vi = hetGio ? 'Hết giờ!' : 'George đã gục ngã giữa đường tìm vàng.';
 
-      phuDe = m.mienPhi
+      phuDe = m.chiChoiLocal
           ? vi
           : '$vi Không hoàn thành màn ${m.id} '
-                '— mất ${m.coc} vàng cọc.';
+                '— không nhận vàng${m.coc > 0 ? ' và mất ${m.coc} vàng cọc' : ''}.';
     }
 
     return _Khung(
@@ -403,11 +403,13 @@ class ManHinhKetThuc extends StatelessWidget {
               _Dong('Điểm ván này', '$diem'),
               const SizedBox(height: 6),
               _Dong('Xu đã nhặt', '${game.soXuDaNhat} / ${game.tongSoXu}'),
-              if (!m.mienPhi) ...[
+              if (!m.chiChoiLocal) ...[
                 const SizedBox(height: 6),
                 _Dong(
                   'Vàng',
-                  thang ? '+${m.nhanVeKhiHoanThanh}' : '−${m.coc} (cọc)',
+                  thang
+                      ? '+${m.nhanVeKhiHoanThanh}'
+                      : (m.coc > 0 ? '−${m.coc} (cọc)' : '0'),
                 ),
               ],
               const SizedBox(height: 6),

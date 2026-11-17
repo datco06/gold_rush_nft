@@ -14,6 +14,7 @@ class CauHinhChuoi {
   final String? hopDongVatPham;
   final String? hopDongNhanVat;
   final String trongTai;
+  final bool localFaucet;
 
   const CauHinhChuoi({
     required this.chainId,
@@ -21,6 +22,7 @@ class CauHinhChuoi {
     this.hopDongVatPham,
     this.hopDongNhanVat,
     required this.trongTai,
+    this.localFaucet = false,
   });
 }
 
@@ -125,7 +127,25 @@ class MayChuPhieu {
       hopDongVatPham: j['hop_dong_vat_pham'] as String?,
       hopDongNhanVat: j['hop_dong_nhan_vat'] as String?,
       trongTai: j['trong_tai'] as String,
+      localFaucet: j['local_faucet'] == true,
     );
+  }
+
+  /// Cấp ETH Hardhat giả cho đúng ví đăng nhập; chỉ dùng để test local.
+  Future<BigInt> nhanEthTest({required String vi}) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/test/faucet'),
+        headers: _headers(),
+        body: jsonEncode({'vi': vi}),
+      ),
+    );
+    try {
+      final raw = j['balance_wei'];
+      return raw is int ? BigInt.from(raw) : BigInt.parse('$raw');
+    } catch (_) {
+      throw const LoiVi('Faucet trả dữ liệu không đúng dạng.');
+    }
   }
 
   Future<KetQuaDoiQuaTang> doiMaQuaTang(String ma) async {

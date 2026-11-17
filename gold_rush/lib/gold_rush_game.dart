@@ -1389,14 +1389,17 @@ class GoldRushGame extends FlameGame
       xu: nhatKy.soXu,
       thongKe: thongKe,
     );
-    final coPhieu =
-        !man.chiChoiLocal && (man.mienPhi ? nhatKy.soXu > 0 : thang);
+    // Màn 1 không đặt cọc nhưng vẫn là ván chính thức: chỉ ván thắng hợp lệ
+    // mới được xin phiếu vàng. Ván thua vẫn gửi nhật ký để giữ dữ liệu AI,
+    // nhưng tuyệt đối không phát thưởng.
+    final coPhieu = !man.chiChoiLocal && thang;
+    final guiNhatKy = !man.chiChoiLocal;
     if (coPhieu) {
       kq = kq.voiPhieu('Đang gửi ván lên máy chủ trọng tài…');
     }
     ketQuaVan.value = kq;
 
-    if (thang || coPhieu) {
+    if (thang || guiNhatKy) {
       if (!_daGuiVaXinPhieu) {
         _daGuiVaXinPhieu = true;
         unawaited(_guiVaXinPhieu(nk, maVan, kq, coPhieu));
@@ -1451,34 +1454,52 @@ class GoldRushGame extends FlameGame
       if (pv.daKetNoi) {
         soVang = await pv.xinPhieuChoVan(maVan);
       } else {
-        await pv.xinPhieuChoVan(maVan);
+        // ketNoiDaXacThuc có thể hoàn tất kết nối ngay trong nhánh trên.
+        // Khi đó phải xin lại phiếu và giữ kết quả để luồng claim/faucet chạy;
+        // trước đây kết quả bị bỏ nên màn thắng báo thiếu phiếu dù máy chủ đã cấp.
+        final phieu = await pv.xinPhieuChoVan(maVan);
+        if (pv.daKetNoi) soVang = phieu;
       }
     }
 
     final soVangCong = soVang != null
         ? (soVang + (kq.man.mienPhi ? BigInt.zero : BigInt.from(kq.man.coc)))
-        : (kq.thang
+        : (kq.thang && !kq.man.chiChoiLocal
               ? BigInt.from(
                   kq.xu + (kq.man.mienPhi ? 0 : (kq.man.coc + kq.man.thuong)),
                 )
-              : (kq.man.mienPhi && kq.xu > 0
-                    ? BigInt.from(kq.xu)
-                    : BigInt.zero));
+              : BigInt.zero);
 
-    if (pv != null && soVangCong > BigInt.zero) {
-      await pv.congVang(soVangCong);
+    // Phiếu chỉ là bằng chứng thưởng đã ký, chưa phải số dư ví. Khi đã có ví
+    // kết nối, claim ngay bằng giao dịch nhanVang; PhienVi chỉ cập nhật topbar
+    // sau khi đọc lại số dư on-chain thành công. Nếu thiếu ETH/từ chối giao
+    // dịch, phiếu vẫn chờ nhận và tuyệt đối không cộng vàng local.
+    var daGhiOnChain = false;
+    if (soVang != null && pv != null && pv.daKetNoi) {
+      daGhiOnChain = await pv.nhanTatCa();
     }
 
-    if (soVang != null) {
+    if (daGhiOnChain) {
       datTrangThai(
-        'Đã nhận +$soVang vàng vào ví'
+        'Đã ghi +$soVang vàng lên blockchain'
         '${kq.man.mienPhi ? '' : ' (+${kq.man.coc} cọc hoàn lại)'}.',
       );
-    } else if (soVangCong > BigInt.zero) {
+    } else if (soVang != null) {
+      final lyDo = pv?.thongBao;
       datTrangThai(
-        kq.man.mienPhi
-            ? 'Đã cộng +$soVangCong vàng vào ví.'
-            : 'Đã nhận +$soVangCong vàng vào ví (+${kq.man.coc} cọc hoàn lại).',
+        lyDo == null || lyDo.isEmpty
+            ? 'Phiếu +$soVang vàng đang chờ nhận on-chain.'
+            : 'Phiếu +$soVang vàng chưa ghi on-chain: $lyDo',
+      );
+    } else if (soVangCong > BigInt.zero) {
+      // Xin phiếu có thể bị trọng tài từ chối (ví dụ đã chạm hạn mức vàng
+      // trong ngày). Không che mất lý do thật bằng thông báo "chưa có phiếu",
+      // vì người chơi không thể tự biết cần chờ hay sửa cấu hình nào.
+      final lyDo = pv?.thongBao;
+      datTrangThai(
+        lyDo == null || lyDo.isEmpty
+            ? 'Đủ điều kiện nhưng chưa có phiếu blockchain; chưa cộng vàng vào topbar.'
+            : 'Chưa cấp phiếu blockchain: $lyDo',
       );
     } else if (!daGui && coPhieu) {
       datTrangThai(
@@ -1597,7 +1618,7 @@ class GoldRushGame extends FlameGame
     return true;
   }
 
-  void batDauVanMoi({String? maVan}) {
+  Future<void> batDauVanMoi({String? maVan}) async {
     if (!tienTrinhWorldMap.duocChoi(manHienTai.id)) {
       moChonMan();
       return;
@@ -1605,6 +1626,40 @@ class GoldRushGame extends FlameGame
     if (!manHienTai.mienPhi && maVan == null) {
       moChonMan();
       return;
+    }
+
+    // Nút "Chơi lại" từ màn thắng đi thẳng vào đây, không qua màn chọn màn.
+    // Đăng ký ticket trước khi dựng ván để một chiến thắng mới luôn đủ điều
+    // kiện xin phiếu vàng như luồng "Chơi" ở màn chọn màn.
+    if (!manHienTai.chiChoiLocal && maVan == null) {
+      final pv = phienVi;
+      final authController = auth;
+      if (pv == null ||
+          authController == null ||
+          !authController.canEnterGame ||
+          authController.walletAddress == null) {
+        pv?.baoLoi('Cần đăng nhập và xác thực ví để nhận vàng từ ván chơi.');
+        return;
+      }
+      if (!pv.daKetNoi) {
+        final daKetNoi = await pv.ketNoiDaXacThuc(
+          authController.walletAddress!,
+        );
+        if (!daKetNoi) return;
+      }
+      final maVanMoi = nhatKy.sinhMaVan();
+      try {
+        await pv.mayChu.batDauMan(
+          maVan: maVanMoi,
+          vi: pv.diaChi!,
+          man: manHienTai.id,
+          ve: 0,
+        );
+        maVan = maVanMoi;
+      } catch (e) {
+        pv.baoLoi('Không đăng ký được màn chơi với máy chủ: $e');
+        return;
+      }
     }
 
     ketQuaVan.value = null;

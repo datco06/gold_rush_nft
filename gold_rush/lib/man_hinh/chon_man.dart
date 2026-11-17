@@ -360,9 +360,7 @@ class _TheMan extends StatelessWidget {
         ChuGame(
           man.chiChoiLocal
               ? 'Màn phiêu lưu local · ${vung.diaDanh}'
-              : man.mienPhi
-              ? 'Màn luyện tập · ${vung.diaDanh}'
-              : 'Màn có đặt cọc · ${vung.diaDanh}',
+              : 'Màn chính thức · ${vung.diaDanh}',
           style: const TextStyle(color: Color(0xFFB5BE9A), fontSize: 12),
         ),
         const SizedBox(height: 12),
@@ -398,7 +396,7 @@ class _TheMan extends StatelessWidget {
         _DongThongSoMan(
           bieuTuong: Icons.account_balance_wallet_outlined,
           nhan: 'Đặt cọc',
-          giaTri: man.mienPhi ? 'Miễn phí' : '${man.coc} vàng',
+          giaTri: man.mienPhi ? 'Không đặt cọc' : '${man.coc} vàng',
         ),
         if (!man.mienPhi)
           _DongThongSoMan(
@@ -450,6 +448,22 @@ class _TheMan extends StatelessWidget {
 
     String? maVan;
     DateTime? luc;
+    if (!man.chiChoiLocal &&
+        (game.auth?.canEnterGame != true || game.auth?.walletAddress == null)) {
+      p?.baoLoi('Cần đăng nhập và xác thực ví để nhận vàng từ ván chơi.');
+      return;
+    }
+    // Luôn đồng bộ phiên ví trước khi đăng ký màn miễn phí. Trước đây nếu
+    // AuthGate vừa xác thực xong nhưng PhienVi chưa kịp tải cửa hàng, app vẫn
+    // cho vào chơi local và mã ván không có ticket SoVe để trọng tài ký vàng.
+    final auth = game.auth;
+    if (p != null &&
+        auth?.canEnterGame == true &&
+        auth?.walletAddress != null &&
+        !p.daKetNoi) {
+      final daKetNoi = await p.ketNoiDaXacThuc(auth!.walletAddress!);
+      if (!daKetNoi) return;
+    }
     if (p != null && p.daKetNoi && p.diaChi != null) {
       maVan = game.nhatKy.sinhMaVan();
       luc = DateTime.now();

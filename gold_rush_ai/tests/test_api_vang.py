@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 import uuid
+from unittest.mock import patch
 
 try:
     from fastapi import Request
@@ -87,18 +88,29 @@ class TestApiVang(unittest.TestCase):
         self.assertEqual(ds[1]["thuong_toi_da"], ds[1]["so_xu"] + ds[1]["thuong"])
 
     def test_luyen_tap_xin_lai_thi_ky_lai_cung_noi_dung(self):
-        ma = self._gui_van(van_that(self.b1, 5))
+        so_xu = len(self.b1.cac_diem("coin"))
+        ma = self._gui_van(van_that(self.b1, so_xu, ket_qua="thang"))
         r = self._phieu(ma)
         self.assertEqual(r.status_code, 200, r.text)
         p = r.json()["phieu"]
-        self.assertEqual((p["man"], p["ve"], p["soVang"]), (1, 0, 5))
+        self.assertEqual((p["man"], p["ve"], p["soVang"]), (1, 0, so_xu))
         time.sleep(1.1)
         r2 = self._phieu(ma)                                  # app mất phiếu / phiếu hết hạn → xin lại
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.json()["phieu"]["maVan"], p["maVan"])
-        self.assertEqual(r2.json()["phieu"]["soVang"], 5)
+        self.assertEqual(r2.json()["phieu"]["soVang"], p["soVang"])
         self.assertGreater(r2.json()["phieu"]["hanChot"], p["hanChot"])
         self.assertEqual(self._phieu(ma, "0x" + "1" * 40).status_code, 409)   # ví khác: không
+
+    def test_khong_gioi_han_vang_local_van_cap_phieu(self):
+        so_xu = len(self.b1.cac_diem("coin"))
+        ma = self._gui_van(van_that(self.b1, so_xu, ket_qua="thang"))
+        with patch.object(trong_tai, "VANG_TOI_DA_MOI_NGAY", 0), patch.object(
+            trong_tai.SoPhieu, "vang_hom_nay", return_value=10000
+        ):
+            r = self._phieu(ma)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["phieu"]["soVang"], so_xu)
 
     def test_man_co_coc_tron_luong(self):
         ma = str(uuid.uuid4())
@@ -144,12 +156,12 @@ class TestApiVang(unittest.TestCase):
         self.assertEqual(self._phieu(ma2).status_code, 422)           # bản đồ không khớp màn
 
     def test_gui_lai_nhat_ky_khong_luu_trung(self):
-        nk = van_that(self.b1, 3)
+        nk = van_that(self.b1, len(self.b1.cac_diem("coin")), ket_qua="thang")
         ma = self._gui_van(nk)
         self._gui_van({**nk, "diem": 9999}, ma=ma)          # lần gửi lại KHÔNG ghi đè bản đầu
         r = self._phieu(ma)
         self.assertEqual(r.status_code, 200, r.text)
-        self.assertEqual(r.json()["phieu"]["soVang"], 3)
+        self.assertEqual(r.json()["phieu"]["soVang"], len(self.b1.cac_diem("coin")))
 
     def test_van_gian_bi_tu_choi(self):
         nk = van_that(self.b1, 6)

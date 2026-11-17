@@ -113,7 +113,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
   }
 
   List<NhanVatBan> get _nhanVatHienThi {
-    final characters = bangNhanVat.where((nhanVat) => nhanVat.id >= 4).toList();
+    final characters = bangNhanVat.where((nhanVat) => nhanVat.id > 0).toList();
     characters.sort((a, b) => a.giaGoiY.compareTo(b.giaGoiY));
     return characters;
   }

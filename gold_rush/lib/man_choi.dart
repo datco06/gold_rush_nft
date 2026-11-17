@@ -21,7 +21,7 @@ class ManChoi {
   /// Nhân vào tốc độ zombie/skeleton (sau hệ số của AI độ khó).
   final double heSoKeDich;
 
-  /// Vàng đặt cọc khi vào màn. 0 = màn luyện tập.
+  /// Vàng đặt cọc khi vào màn. 0 = không đặt cọc (vẫn có thể là màn chính thức).
   final int coc;
 
   /// Vàng thưởng thêm khi hoàn thành (ngoài số xu).
@@ -69,11 +69,11 @@ class ManChoi {
     chiChoiLocal: j['chi_choi_local'] == true,
   );
 
-  /// Màn mặc định khi chưa nạp được tệp JSON: bản đồ gốc, luyện tập — game vẫn chơi được.
+  /// Màn mặc định khi chưa nạp được tệp JSON: bản đồ gốc không đặt cọc.
   static const ManChoi macDinh = ManChoi(
     id: 1,
     ten: 'Đồng cỏ',
-    moTa: 'Màn luyện tập.',
+    moTa: 'Màn chính thức không đặt cọc.',
     tep: 'gold_rush.tmx',
     gioiHanGiay: 0,
     heSoKeDich: 1,

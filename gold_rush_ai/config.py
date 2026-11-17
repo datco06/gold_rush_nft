@@ -26,6 +26,11 @@ HOP_DONG_CUA_HANG = os.environ.get("HOP_DONG_CUA_HANG", "")         # địa ch�
 HOP_DONG_VAT_PHAM = os.environ.get("HOP_DONG_VAT_PHAM", "")         # ERC-1155 vật phẩm transferable
 BLOCKCHAIN_RPC_URL = os.environ.get("BLOCKCHAIN_RPC_URL", os.environ.get("AI_BLOCKCHAIN_RPC_URL", ""))
 RPC_TIMEOUT_SECONDS = float(os.environ.get("RPC_TIMEOUT_SECONDS", "5.0"))
+# Chỉ phục vụ Hardhat local. Không bật trên Sepolia/mainnet.
+LOCAL_FAUCET_ENABLED = os.environ.get("LOCAL_FAUCET_ENABLED", "false").lower() in ("true", "1")
+LOCAL_FAUCET_AMOUNT_WEI = int(os.environ.get("LOCAL_FAUCET_AMOUNT_WEI", "1000000000000000000"))
+# Phí gas quy đổi cố định bằng vàng trong môi trường test. 0 = không trừ phí.
+GAS_FEE_GOLD = int(os.environ.get("GAS_FEE_GOLD", "0"))
 BAN_DO_DIR = Path(os.environ.get("BAN_DO_DIR", APP_FLUTTER / "assets" / "tiles"))
 SO_PHIEU = Path(os.environ.get("SO_PHIEU", DATA_DIR / "phieu" / "da_cap.jsonl"))
 SO_VE = Path(os.environ.get("SO_VE", DATA_DIR / "phieu" / "ve_da_bat_dau.jsonl"))

@@ -18,6 +18,7 @@ Chạy:  uvicorn api.main:app --reload --port 8000      (tài liệu tương tá
 | POST   | /api/man/bat-dau       | đăng ký bắt đầu màn có cọc: (ví, số vé) → mã ván, MỘT lần    |
 | GET    | /api/man/ve            | vé (ví, số vé) đã dùng để bắt đầu ván nào chưa                |
 | GET    | /api/vang/cau-hinh     | chainId, địa chỉ hợp đồng, địa chỉ trọng tài (app hiển thị)   |
+| POST   | /api/test/faucet        | cấp ETH giả cho đúng ví đăng nhập — chỉ Hardhat local       |
 | POST   | /api/vang/phieu        | kiểm định ván → ký PHIẾU VÀNG EIP-712 (xin lại = ký lại)     |
 | GET    | /api/vang/cho-nhan     | mọi phiếu đã cấp cho một ví trong 7 ngày (ký lại hạn mới)    |
 """
@@ -51,9 +52,10 @@ from auth.router import create_auth_router
 from auth.service import AuthService
 from api.auth_adapter import tich_hop_auth_vao_app
 
-from config import (BAN_DO_DIR, CHAIN_ID, CORS_ORIGINS, ENABLED, HOP_DONG_CUA_HANG, HOP_DONG_DANG_KY_NHAN_VAT,
+from config import (BAN_DO_DIR, BLOCKCHAIN_RPC_URL, CHAIN_ID, CORS_ORIGINS, ENABLED, GAS_FEE_GOLD,
+                    HOP_DONG_CUA_HANG, HOP_DONG_DANG_KY_NHAN_VAT,
                     HOP_DONG_VAT_PHAM, KB_DIR, MAN_CHOI, MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU,
-                    SO_VE, TRONG_TAI_KHOA)
+                    SO_VE, TRONG_TAI_KHOA, LOCAL_FAUCET_AMOUNT_WEI, LOCAL_FAUCET_ENABLED)
 from api.auth_guard import kiem_tra_csrf_va_origin, lay_nguoi_choi_hien_tai, NguoiChoiXacThuc
 from core import do_kho, man_choi, nhat_ky, rung_ruong, sinh_ban_do, trong_tai
 from core.csdl import khoi_tao_csdl, lay_csdl
@@ -72,7 +74,7 @@ from core.xac_minh_ve_onchain import (
 from api.ban_do_moi import router as ban_do_router
 from api.kho_do import router as kho_do_router
 from api.nhiem_vu import router as nhiem_vu_router
-from api.qua_tang import router as qua_tang_router
+from api.qua_tang import goi_rpc, router as qua_tang_router
 from api.tien_trinh import router as tien_trinh_router
 from api.thanh_tuu import router as thanh_tuu_router
 
@@ -518,6 +520,7 @@ def cau_hinh_vang():
         "hop_dong_vat_pham": HOP_DONG_VAT_PHAM or None,
         "hop_dong_nhan_vat": HOP_DONG_DANG_KY_NHAN_VAT or None,
         "trong_tai": dia_chi_tu_khoa(khoa),
+        "local_faucet": bool(LOCAL_FAUCET_ENABLED and CHAIN_ID == 31337),
     }
 
 
@@ -527,6 +530,49 @@ DIA_CHI = r"^0x[0-9a-fA-F]{40}$"
 
 class YeuCauMoRuong(BaseModel):
     vi: str | None = Field(default=None, min_length=42, max_length=42, pattern=DIA_CHI)
+
+
+class YeuCauFaucet(BaseModel):
+    vi: str = Field(min_length=42, max_length=42, pattern=DIA_CHI)
+
+
+@app.post("/api/test/faucet")
+async def faucet_eth_test(
+    yc: YeuCauFaucet,
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """Cấp thêm ETH giả cho ví đăng nhập trong Hardhat local.
+
+    Đây là lớp giả lập Paymaster để test local: không chuyển tiền thật và không
+    được bật trên Sepolia/mainnet. Số dư được tăng bằng RPC của Hardhat/Anvil.
+    """
+    if CHAIN_ID != 31337 or not LOCAL_FAUCET_ENABLED:
+        raise HTTPException(404, "Faucet chỉ bật cho Hardhat local.")
+    kiem_tra_csrf_va_origin(request, player)
+    if yc.vi.lower() != player.wallet_address.lower():
+        raise HTTPException(403, "Địa chỉ ví yêu cầu không khớp với phiên đăng nhập SIWE")
+    if not BLOCKCHAIN_RPC_URL:
+        raise HTTPException(503, "Chưa cấu hình RPC Hardhat local.")
+    try:
+        raw = goi_rpc("eth_getBalance", [player.wallet_address, "latest"])
+        hien_tai = int(raw, 16)
+        moi = hien_tai + LOCAL_FAUCET_AMOUNT_WEI
+        try:
+            goi_rpc("hardhat_setBalance", [player.wallet_address, hex(moi)])
+        except RuntimeError:
+            goi_rpc("anvil_setBalance", [player.wallet_address, hex(moi)])
+        return {
+            "chain_id": CHAIN_ID,
+            "vi": player.wallet_address,
+            "amount_wei": LOCAL_FAUCET_AMOUNT_WEI,
+            "balance_wei": moi,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        log.warning("Faucet Hardhat không cấp được ETH cho %s", player.wallet_address)
+        raise HTTPException(503, "Faucet Hardhat chưa sẵn sàng.") from None
 
 
 @app.post("/api/rung-ruong/ket-qua")
@@ -635,8 +681,13 @@ class YeuCauPhieu(BaseModel):
 
 
 def _ky(khoa: bytes, ban_ghi: dict) -> dict:
-    return trong_tai.ky_phieu(ban_ghi["vi"], ban_ghi.get("man", 1), ban_ghi.get("ve", 0),
-                              ban_ghi["so_vang"], ban_ghi["ma_van"], khoa, CHAIN_ID, HOP_DONG_CUA_HANG)
+    ket_qua = trong_tai.ky_phieu(ban_ghi["vi"], ban_ghi.get("man", 1), ban_ghi.get("ve", 0),
+                                 ban_ghi["so_vang"], ban_ghi["ma_van"], khoa, CHAIN_ID, HOP_DONG_CUA_HANG)
+    if "so_vang_goc" in ban_ghi:
+        ket_qua["so_vang_goc"] = ban_ghi["so_vang_goc"]
+        ket_qua["phi_gas_vang"] = ban_ghi.get("phi_gas_vang", 0)
+        ket_qua["so_vang_thuc_nhan"] = ban_ghi["so_vang"]
+    return ket_qua
 
 
 @app.post("/api/vang/phieu")
@@ -727,9 +778,26 @@ async def cap_phieu(
     if ly_do:
         log.warning("từ chối phiếu %s: %s", yc.ma_van, ly_do)
         raise HTTPException(422, {"ly_do": ly_do})
-    if so.vang_hom_nay(vi_xac_thuc) + kq.so_vang > trong_tai.VANG_TOI_DA_MOI_NGAY:
+    phi_gas_vang = GAS_FEE_GOLD if LOCAL_FAUCET_ENABLED and CHAIN_ID == 31337 else 0
+    so_vang_goc = kq.so_vang
+    so_vang_thuc_nhan = so_vang_goc - phi_gas_vang
+    if so_vang_thuc_nhan <= 0:
+        raise HTTPException(422, f"Phần thưởng {so_vang_goc} vàng không đủ trừ phí gas {phi_gas_vang} vàng")
+    if (
+        trong_tai.VANG_TOI_DA_MOI_NGAY > 0
+        and so.vang_hom_nay(vi_xac_thuc) + so_vang_goc
+        > trong_tai.VANG_TOI_DA_MOI_NGAY
+    ):
         raise HTTPException(429, f"Ví đã nhận đủ {trong_tai.VANG_TOI_DA_MOI_NGAY} vàng hôm nay")
-    so.ghi(yc.ma_van, vi_xac_thuc, kq.so_vang, m.id, ve)
+    so.ghi(
+        yc.ma_van,
+        vi_xac_thuc,
+        so_vang_thuc_nhan,
+        m.id,
+        ve,
+        so_vang_goc=so_vang_goc,
+        phi_gas_vang=phi_gas_vang,
+    )
 
     # 1. Cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực qua SIWE và SoVe
     try:
@@ -758,7 +826,13 @@ async def cap_phieu(
                         stage_id=m.id,
                         completion_status="completed",
                         verification_source="referee_validation",
-                        completion_evidence={"ma_van": yc.ma_van, "so_vang": kq.so_vang, "ve": ve},
+                        completion_evidence={
+                            "ma_van": yc.ma_van,
+                            "so_vang": so_vang_goc,
+                            "so_vang_thuc_nhan": so_vang_thuc_nhan,
+                            "phi_gas_vang": phi_gas_vang,
+                            "ve": ve,
+                        },
                         replay_key=f"referee:{yc.ma_van}",
                     )
         except Exception as e:
