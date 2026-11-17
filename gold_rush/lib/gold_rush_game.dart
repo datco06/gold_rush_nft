@@ -663,6 +663,7 @@ class GoldRushGame extends FlameGame
 
   TrangThaiChoi trangThai = TrangThaiChoi.tamDung;
   bool _daGuiVaXinPhieu = false;
+  Future<void>? _dangNhanThuong;
 
   int tongSoXu = 0;
   int soXuDaNhat = 0;
@@ -1390,7 +1391,9 @@ class GoldRushGame extends FlameGame
     if (thang || guiNhatKy) {
       if (!_daGuiVaXinPhieu) {
         _daGuiVaXinPhieu = true;
-        unawaited(_guiVaXinPhieu(nk, maVan, kq, coPhieu));
+        final dangNhan = _guiVaXinPhieu(nk, maVan, kq, coPhieu);
+        _dangNhanThuong = dangNhan;
+        unawaited(dangNhan);
       }
     }
   }
@@ -1402,7 +1405,9 @@ class GoldRushGame extends FlameGame
     bool coPhieu,
   ) async {
     final pv = phienVi;
-    final daGui = GuiNhatKy.daCauHinh ? await GuiNhatKy.gui(nk) : false;
+    final daGui = GuiNhatKy.daCauHinh
+        ? await GuiNhatKy.gui(nk, csrfToken: auth?.csrfToken)
+        : false;
 
     if (daGui && kq.thang && auth != null && maVan.isNotEmpty) {
       final mayChuHuyHieu = MayChuHuyHieu();
@@ -1706,7 +1711,21 @@ class GoldRushGame extends FlameGame
     pauseEngine();
   }
 
-  void moCuaHang() => overlays.add(LopPhu.cuaHang);
+  void moCuaHang() {
+    final dangNhan = _dangNhanThuong;
+    if (dangNhan == null) {
+      overlays.add(LopPhu.cuaHang);
+      return;
+    }
+
+    // Không mở cửa hàng khi phiếu của ván vừa thắng vẫn đang được xin/claim.
+    // Nếu mở quá sớm, số dư on-chain vẫn là 0 và giao dịch mua sẽ bị revert.
+    unawaited(
+      dangNhan.whenComplete(() {
+        if (!_daDong) overlays.add(LopPhu.cuaHang);
+      }),
+    );
+  }
 
   void moRungRuong() {
     // Đợi hết lượt xử lý pointer/layout hiện tại rồi mới đổi overlay, tránh

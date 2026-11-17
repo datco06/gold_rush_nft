@@ -408,7 +408,7 @@ class ManHinhKetThuc extends StatelessWidget {
                 _Dong(
                   'Vàng',
                   thang
-                      ? '+${m.nhanVeKhiHoanThanh}'
+                      ? _hienThiVang(kq)
                       : (m.coc > 0 ? '−${m.coc} (cọc)' : '0'),
                 ),
               ],
@@ -457,6 +457,20 @@ class ManHinhKetThuc extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _hienThiVang(KetQuaVan? kq) {
+    final trangThai = kq?.phieu ?? '';
+    if (trangThai.startsWith('Đã ghi +')) {
+      return '+${kq!.man.nhanVeKhiHoanThanh}';
+    }
+    if (trangThai.contains('đang chờ') ||
+        trangThai.contains('chưa ghi') ||
+        trangThai.contains('Đang gửi') ||
+        trangThai.contains('chưa có phiếu')) {
+      return 'Đang xử lý…';
+    }
+    return 'Chưa nhận';
   }
 }
 
