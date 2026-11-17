@@ -173,6 +173,26 @@ class TestApiVang(unittest.TestCase):
         self.assertEqual(self._phieu("khong-co-van").status_code, 404)
         self.assertEqual(self._phieu("abcdefgh", "0x12").status_code, 422)
 
+    def test_faucet_eth_cap_10000_eth(self):
+        rpc_calls = []
+
+        def mock_goi_rpc(method, params):
+            rpc_calls.append((method, params))
+            if method == "eth_getBalance":
+                return "0x0"
+            return "0x0"
+
+        with patch("api.main.LOCAL_FAUCET_ENABLED", True), \
+             patch("api.main.BLOCKCHAIN_RPC_URL", "http://127.0.0.1:8545"), \
+             patch("api.main.goi_rpc", side_effect=mock_goi_rpc):
+            r = self.c.post("/api/test/faucet", json={"vi": VI})
+            self.assertEqual(r.status_code, 200, r.text)
+            data = r.json()
+            muoi_nghin_eth = 10000 * (10 ** 18)
+            self.assertEqual(data["amount_wei"], muoi_nghin_eth)
+            self.assertEqual(data["balance_wei"], muoi_nghin_eth)
+            self.assertEqual(data["vi"].lower(), VI.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -28,7 +28,7 @@ BLOCKCHAIN_RPC_URL = os.environ.get("BLOCKCHAIN_RPC_URL", os.environ.get("AI_BLO
 RPC_TIMEOUT_SECONDS = float(os.environ.get("RPC_TIMEOUT_SECONDS", "5.0"))
 # Chỉ phục vụ Hardhat local. Không bật trên Sepolia/mainnet.
 LOCAL_FAUCET_ENABLED = os.environ.get("LOCAL_FAUCET_ENABLED", "false").lower() in ("true", "1")
-LOCAL_FAUCET_AMOUNT_WEI = int(os.environ.get("LOCAL_FAUCET_AMOUNT_WEI", "1000000000000000000"))
+LOCAL_FAUCET_AMOUNT_WEI = int(os.environ.get("LOCAL_FAUCET_AMOUNT_WEI", "10000000000000000000000"))
 # Phí gas quy đổi cố định bằng vàng trong môi trường test. 0 = không trừ phí.
 GAS_FEE_GOLD = int(os.environ.get("GAS_FEE_GOLD", "0"))
 BAN_DO_DIR = Path(os.environ.get("BAN_DO_DIR", APP_FLUTTER / "assets" / "tiles"))
