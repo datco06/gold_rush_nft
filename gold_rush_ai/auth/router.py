@@ -6,9 +6,11 @@ mount it under another /api/auth prefix. No integration with api/main.py here.
 Factory creates the existing guards/Service against the supplied Engine-backed
 fresh-Session factory; service owns commit/rollback/close, never HTTP cookies.
 
-Cookies are host-only, HttpOnly, SameSite=Lax, Path=/api; Secure comes from
-validated AuthConfig. Same-site local HTTP/production HTTPS only; CORS with
-explicit origins and credentials must be configured by the composition root.
+Cookies are host-only, HttpOnly, Path=/api; Secure comes from validated
+AuthConfig. Local HTTP uses SameSite=Lax. Cross-site production deployments
+(for example Firebase Web calling a Render API) use SameSite=None together
+with Secure, while CORS with explicit origins and credentials must be
+configured by the composition root.
 Browser binding is reused across challenges/tabs. Flow cookie expiry follows
 the latest challenge. Session/grant cookie expiry never exceeds DB expiry;
 all successful Set-Cookie operations happen AFTER committed service results.
@@ -173,6 +175,11 @@ def create_auth_router(
     guards = make_auth_dependencies(config, session_factory, clock=clock)
     router = APIRouter(prefix="/api", tags=["Auth"], route_class=_AuthRoute)
     current_time = clock if clock is not None else lambda: datetime.now(UTC)
+    # Firebase Hosting and Render are different sites. A browser will not
+    # send the HttpOnly auth cookies on credentialed cross-site fetches when
+    # SameSite=Lax, so HTTPS deployments must opt into SameSite=None.
+    # Local HTTP keeps Lax because SameSite=None requires Secure.
+    cookie_samesite = "none" if config.cookie_secure else "lax"
 
     def set_cookie(response: Response, name: str, token: str, expires_at: datetime) -> None:
         now = current_time()
@@ -183,7 +190,7 @@ def create_auth_router(
             _http(401, "SESSION_EXPIRED", "Quyền xác thực đã hết hạn; hãy bắt đầu lại.")
         response.set_cookie(
             name, token, max_age=seconds, expires=expires_at.astimezone(UTC), path=_COOKIE_PATH,
-            secure=config.cookie_secure, httponly=True, samesite="lax",
+            secure=config.cookie_secure, httponly=True, samesite=cookie_samesite,
         )
 
     def session_cookie(response: Response, issue: SessionIssue) -> None:
@@ -243,7 +250,7 @@ def create_auth_router(
         response = Response(status_code=204, headers={"Cache-Control": "no-store"})
         for name in ("gr_session", "gr_auth_flow"):
             response.delete_cookie(
-                name, path=_COOKIE_PATH, secure=config.cookie_secure, httponly=True, samesite="lax",
+                name, path=_COOKIE_PATH, secure=config.cookie_secure, httponly=True, samesite=cookie_samesite,
             )
         return response
 
