@@ -690,7 +690,8 @@ def test_cookie_attributes_and_db_lifetime_for_all_authorities(h, wallet, secure
     ):
         cookie = _cookie(response, name)
         assert cookie["httponly"] and bool(cookie["secure"]) is secure
-        assert cookie["samesite"] == "lax" and cookie["path"] == "/api" and not cookie["domain"]
+        expected_samesite = "none" if secure else "lax"
+        assert cookie["samesite"] == expected_samesite and cookie["path"] == "/api" and not cookie["domain"]
         assert int(cookie["max-age"]) == lifetime
         expires = datetime.fromisoformat(response.json()["expires_at"])
         assert parsedate_to_datetime(cookie["expires"]) <= expires
@@ -700,7 +701,9 @@ def test_cookie_attributes_and_db_lifetime_for_all_authorities(h, wallet, secure
         "Origin": config.siwe_uri, "X-CSRF-Token": registered.json()["csrf_token"],
     })
     assert logout.status_code == 204
-    assert bool(_cookie(logout, "gr_session")["secure"]) is secure
+    cleared = _cookie(logout, "gr_session")
+    assert bool(cleared["secure"]) is secure
+    assert cleared["samesite"] == ("none" if secure else "lax")
 
 
 @pytest.mark.parametrize("step", ["challenge", "verify", "register", "logout"])
