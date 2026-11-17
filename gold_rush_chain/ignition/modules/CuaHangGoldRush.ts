@@ -28,11 +28,11 @@ export default buildModule("CuaHangGoldRushModule", (m) => {
   m.call(vatPham, "setStore", [cuaHang], { id: "cau_hinh_cua_hang_mint" });
 
   // id → giá (vàng). Khớp bangNhanVat trong lib/blockchain/nhan_vat.dart của app.
-  m.call(cuaHang, "datGia", [1n, 1n], { id: "gia_tho_mo" });
-  m.call(cuaHang, "datGia", [2n, 600n], { id: "gia_cao_boi" });
-  m.call(cuaHang, "datGia", [3n, 600n], { id: "gia_hiep_si" });
-  m.call(cuaHang, "datGia", [4n, 600n], { id: "gia_tho_mo_pixel" });
-  m.call(cuaHang, "datGia", [5n, 600n], { id: "gia_meo_may_vang" });
+  m.call(cuaHang, "datGia", [1n, 10n], { id: "gia_tho_mo" });
+  m.call(cuaHang, "datGia", [2n, 30n], { id: "gia_cao_boi" });
+  m.call(cuaHang, "datGia", [3n, 60n], { id: "gia_hiep_si" });
+  m.call(cuaHang, "datGia", [4n, 400n], { id: "gia_tho_mo_pixel" });
+  m.call(cuaHang, "datGia", [5n, 500n], { id: "gia_meo_may_vang" });
   m.call(cuaHang, "datGia", [6n, 600n], { id: "gia_nha_tham_hiem_nu" });
   m.call(cuaHang, "datGia", [7n, 600n], { id: "gia_nha_tham_hiem_dao_vang" });
   m.call(cuaHang, "datGia", [8n, 600n], { id: "gia_nha_tham_hiem_con_sot_vang" });
@@ -41,9 +41,9 @@ export default buildModule("CuaHangGoldRushModule", (m) => {
   // 27 token ID khớp thứ tự danhSachTrangBiCuaHang(): 1–9 súng,
   // 10–18 giáp, 19–27 giày. Vật phẩm hiếm có giá 100.000 vàng.
   const giaVatPham = [
-    1n, 1n, 1n, 1n, 1n, 1n, 100000n, 100000n, 100000n,
-    1n, 1n, 1n, 1n, 1n, 1n, 100000n, 100000n, 100000n,
-    1n, 1n, 1n, 1n, 1n, 1n, 100000n, 100000n, 100000n,
+    0n, 50n, 120n, 260n, 480n, 420n, 100000n, 100000n, 100000n,
+    80n, 80n, 80n, 220n, 220n, 220n, 100000n, 100000n, 100000n,
+    80n, 80n, 80n, 220n, 220n, 220n, 100000n, 100000n, 100000n,
   ];
   for (let i = 0; i < giaVatPham.length; i++) {
     const tokenId = BigInt(i + 1);

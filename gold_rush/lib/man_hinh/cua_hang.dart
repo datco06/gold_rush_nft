@@ -1534,7 +1534,28 @@ class _ItemDetail extends StatelessWidget {
 
 int _priceForItem(VatPhamHienThi item) {
   if (item.doHiem == DoHiemVatPham.hiem) return 100000;
-  return 1;
+
+  const prices = <String, int>{
+    'sung_cap_1': 0,
+    'sung_cap_2': 50,
+    'sung_cap_3': 120,
+    'sung_manh_1': 260,
+    'sung_manh_2': 480,
+    'sung_manh_3': 420,
+  };
+  if (prices.containsKey(item.id)) return prices[item.id]!;
+  switch (item.doHiem) {
+    case DoHiemVatPham.thuong:
+      return 80;
+    case DoHiemVatPham.khongPhoBien:
+      return 220;
+    case DoHiemVatPham.hiem:
+      return 560;
+    case DoHiemVatPham.suThi:
+      return 900;
+    case DoHiemVatPham.huyenThoai:
+      return 1400;
+  }
 }
 
 String _shortStats(VatPhamHienThi item) {
