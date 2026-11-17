@@ -165,7 +165,6 @@ class GoldRushGame extends FlameGame
   final Random _ngauNhienSinhQuai = Random();
   double _demSinhQuai = 0;
   bool _congTraiTren = true;
-  int _soQuaiBoSung = 0;
   int _soQuaiThuongBoSung = 0;
   int _soQuaiKhongLo = 0;
   int _soQuaiGiap = 0;
@@ -924,7 +923,6 @@ class GoldRushGame extends FlameGame
     _soQuaiBanDau = 0;
     _loaiQuaiGoc.clear();
     _chiSoQuaiTaiSinh = 0;
-    _soQuaiBoSung = 0;
     _soQuaiThuongBoSung = 0;
     _soQuaiKhongLo = 0;
     _soQuaiGiap = 0;
@@ -1044,19 +1042,9 @@ class GoldRushGame extends FlameGame
   int get _soQuaiDangSong =>
       theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length;
 
-  double get _chuKySinhQuai =>
-      _giaiDoanSinhQuai == 1 ? 30 : (_giaiDoanSinhQuai == 4 ? 18 : 20);
-
-  int get _soBoSungToiDa => switch (manHienTai.id) {
-    4 || 5 => 2,
-    6 || 7 => 3,
-    8 || 9 => 3,
-    10 || 11 || 12 => 4,
-    13 || 14 || 15 => 5,
-    16 || 17 || 18 => 5,
-    19 || 20 => 6,
-    _ => 0,
-  };
+  /// Chu kỳ sinh bổ sung cố định cho toàn bộ màn 1–20.
+  /// Mỗi lần đến chu kỳ, hệ thống sinh tối đa một quái theo logic hiện có.
+  double get _chuKySinhQuai => 2;
 
   int get _soThuongToiDa => switch (manHienTai.id) {
     4 || 5 => 2,
@@ -1113,11 +1101,9 @@ class GoldRushGame extends FlameGame
       return;
     }
 
-    if (_soQuaiBoSung >= _soBoSungToiDa) return;
     final loai = _chonQuaiBoSung(tienTrinh);
     if (loai == 'khong_lo') _soQuaiKhongLo++;
     if (loai == 'thuong') _soQuaiThuongBoSung++;
-    _soQuaiBoSung++;
     _sinhQuai(loai, viTriNguoiChoi, heSoTocDo);
   }
 
