@@ -192,6 +192,14 @@ def create_auth_router(
             name, token, max_age=seconds, expires=expires_at.astimezone(UTC), path=_COOKIE_PATH,
             secure=config.cookie_secure, httponly=True, samesite=cookie_samesite,
         )
+        if config.cookie_secure:
+            # SameSite=None permits Firebase -> Render requests. Partitioned
+            # keeps the cookie available when the browser blocks unpartitioned
+            # third-party cookies. Starlette emits this flag only on Python
+            # 3.14+, so append it for the Python 3.12 Render runtime.
+            key, value = response.raw_headers[-1]
+            if key == b"set-cookie" and b"; Partitioned" not in value:
+                response.raw_headers[-1] = (key, value + b"; Partitioned")
 
     def session_cookie(response: Response, issue: SessionIssue) -> None:
         # Service has already committed its transaction before returning issue.
@@ -252,6 +260,10 @@ def create_auth_router(
             response.delete_cookie(
                 name, path=_COOKIE_PATH, secure=config.cookie_secure, httponly=True, samesite=cookie_samesite,
             )
+            if config.cookie_secure:
+                key, value = response.raw_headers[-1]
+                if key == b"set-cookie" and b"; Partitioned" not in value:
+                    response.raw_headers[-1] = (key, value + b"; Partitioned")
         return response
 
     return router
