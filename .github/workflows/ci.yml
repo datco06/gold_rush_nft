@@ -1,0 +1,99 @@
+name: Continuous Integration (CI)
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1. Kiểm tra & Kiểm thử Smart Contracts
+  test-contracts:
+    name: Smart Contracts (Hardhat)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gold_rush_chain
+    steps:
+      - name: Checkout mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài đặt Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: gold_rush_chain/package-lock.json
+
+      - name: Cài đặt thư viện npm
+        run: npm ci
+
+      - name: Biên dịch Smart Contracts
+        run: npx hardhat compile
+
+      - name: Chạy Unit Tests Smart Contracts
+        run: npx hardhat test
+
+  # 2. Kiểm tra & Kiểm thử Backend FastAPI
+  test-backend:
+    name: Backend & AI (FastAPI / Pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gold_rush_ai
+    steps:
+      - name: Checkout mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài đặt Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Cài đặt thư viện Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio sqlalchemy alembic eth-account Pillow psycopg2-binary httpx
+
+      - name: Chạy Unit Tests Backend
+        run: |
+          pytest tests/test_auth_config.py tests/test_auth_api.py -v
+
+  # 3. Kiểm tra mã nguồn Flutter
+  test-flutter:
+    name: Flutter Lint & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gold_rush
+    steps:
+      - name: Checkout mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài đặt Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cài đặt Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Cài đặt dependencies
+        run: flutter pub get
+
+      - name: Phân tích mã nguồn (Flutter Analyze)
+        run: flutter analyze
+
+      - name: Chạy Unit Tests Flutter
+        run: flutter test
