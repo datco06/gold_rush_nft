@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../ngon_ngu/ngon_ngu.dart';
+
 import 'package:flutter/services.dart';
 
 import '../ai/may_chu_nhan_vat.dart';
@@ -905,7 +906,8 @@ class _MiniSlot extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = compact ? 44.0 : 56.0;
     return Tooltip(
-      message: PhamViNgonNgu.of(context).dich(item != null ? '$label: ${item!.ten}' : '$label (Trống)'),
+      message: PhamViNgonNgu.of(context)
+          .dich(item != null ? '$label: ${item!.ten}' : '$label (Trống)'),
       child: Container(
         width: size,
         height: size,
@@ -1222,8 +1224,9 @@ class _EquippedItemsList extends StatelessWidget {
       builder: (context, items, _) {
         final equipped = items.where((v) => v.oDangTrangBi != null).toList();
         if (equipped.isEmpty) {
-          return  _EmptyState(
-            message: PhamViNgonNgu.of(context).dich('Chưa có trang bị nào được sử dụng.'),
+          return _EmptyState(
+            message: PhamViNgonNgu.of(context)
+                .dich('Chưa có trang bị nào được sử dụng.'),
           );
         }
         return Wrap(
@@ -1489,7 +1492,10 @@ class _DisplayedBadges extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayed = _getDisplayed();
     if (displayed.isEmpty) {
-      return  _EmptyState(message: PhamViNgonNgu.of(context).dich('Bạn chưa trưng bày huy hiệu nào.'));
+      return _EmptyState(
+        message: PhamViNgonNgu.of(context)
+            .dich('Bạn chưa trưng bày huy hiệu nào.'),
+      );
     }
     return Wrap(
       spacing: 8,
@@ -1533,10 +1539,11 @@ class _TabHuyHieu extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (badges.isEmpty)
-             _EmptyState(
-              message:
-                  PhamViNgonNgu.of(context).dich('Chưa có dữ liệu huy hiệu.\n'
-                  'Kết nối ví và hoàn thành thành tựu để nhận huy hiệu SBT.'),
+            _EmptyState(
+              message: PhamViNgonNgu.of(context).dich(
+                'Chưa có dữ liệu huy hiệu.\n'
+                'Kết nối ví và hoàn thành thành tựu để nhận huy hiệu SBT.',
+              ),
             )
           else
             Wrap(
@@ -1595,7 +1602,7 @@ class _BadgeTile extends StatelessWidget {
                   width: compact ? 42 : 54,
                   height: compact ? 42 : 54,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Icon(
+                  errorBuilder: (_, _, _) => Icon(
                     Icons.military_tech_rounded,
                     color: color,
                     size: compact ? 28 : 34,
@@ -1683,7 +1690,7 @@ class _BadgeChip extends StatelessWidget {
                       width: compact ? 34 : 42,
                       height: compact ? 34 : 42,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Icon(
+                      errorBuilder: (_, _, _) => Icon(
                         Icons.military_tech_rounded,
                         color: isOwned
                             ? ProfileColors.gold
@@ -1768,7 +1775,10 @@ class _TabVuKhiState extends State<_TabVuKhi> {
               ),
               const SizedBox(height: 14),
               if (weapons.isEmpty)
-                 _EmptyState(message: PhamViNgonNgu.of(context).dich('Bạn chưa sở hữu vũ khí nào.'))
+                _EmptyState(
+                  message: PhamViNgonNgu.of(context)
+                      .dich('Bạn chưa sở hữu vũ khí nào.'),
+                )
               else ...[
                 Wrap(
                   spacing: 8,

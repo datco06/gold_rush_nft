@@ -448,8 +448,9 @@ class AuthApiClient {
   }
 
   static bool _httpDevelopmentHost(String host) {
-    if ({'localhost', '127.0.0.1', '::1', '10.0.2.2'}.contains(host))
+    if ({'localhost', '127.0.0.1', '::1', '10.0.2.2'}.contains(host)) {
       return true;
+    }
     final parts = host.split('.');
     if (parts.length != 4 || parts.any((part) => int.tryParse(part) == null)) {
       return false;

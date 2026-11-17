@@ -68,19 +68,19 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     return ReownAppKitModal(
       context: context,
       projectId: projectId,
-      metadata: PairingMetadata(
+      metadata: const PairingMetadata(
         name: 'Gold Rush',
         description: 'Gold Rush blockchain game',
-        url: const String.fromEnvironment(
+        url: String.fromEnvironment(
           'GOLD_RUSH_DAPP_URL',
           defaultValue: 'https://goldrush.example',
         ),
         redirect: Redirect(
-          native: const String.fromEnvironment(
+          native: String.fromEnvironment(
             'GOLD_RUSH_NATIVE_REDIRECT',
             defaultValue: 'goldrush://wc',
           ),
-          universal: const String.fromEnvironment(
+          universal: String.fromEnvironment(
             'GOLD_RUSH_APP_LINK',
             defaultValue: 'https://goldrush.example/wc',
           ),
@@ -166,8 +166,9 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     }
 
     void onError(ModalError? event) {
-      if (event == null || rejected.isCompleted || connected.isCompleted)
+      if (event == null || rejected.isCompleted || connected.isCompleted) {
         return;
+      }
       rejected.complete(_mapModalError(event));
     }
 

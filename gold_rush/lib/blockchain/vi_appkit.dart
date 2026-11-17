@@ -114,8 +114,9 @@ class ViAppKit implements Vi {
       <String, Object?>{'to': toi, 'data': duLieu, if (tu != null) 'from': tu},
       'latest',
     ]);
-    if (result is! String)
+    if (result is! String) {
       throw const LoiVi('Ví trả kết quả eth_call không hợp lệ.');
+    }
     return result;
   }
 

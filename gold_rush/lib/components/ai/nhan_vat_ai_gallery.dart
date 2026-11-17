@@ -293,14 +293,16 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
                     : _KhungNhanVatAi(
                         png: png,
                         key: ValueKey('ai-image-${nv.characterId}'),
-                        semanticLabel: PhamViNgonNgu.of(context).dich('Ảnh nhân vật AI ${nv.name}'),
+                        semanticLabel: PhamViNgonNgu.of(context)
+                            .dich('Ảnh nhân vật AI ${nv.name}'),
                       ),
               ),
             ),
           ),
           const SizedBox(height: 7),
           ChuGame(
-            nv.name, dichNoiDung: false,
+            nv.name,
+            dichNoiDung: false,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
@@ -319,7 +321,10 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
               padding: const EdgeInsets.symmetric(horizontal: 6),
               minimumSize: const Size(0, 28),
             ),
-            child: const ChuGame('Xem chi tiết', style: TextStyle(fontSize: 10)),
+            child: const ChuGame(
+              'Xem chi tiết',
+              style: TextStyle(fontSize: 10),
+            ),
           ),
           if (widget.khiTrangBi != null)
             FilledButton.icon(
@@ -353,13 +358,16 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
       final kq = await _api
           .taiSpriteSheetDaLuu(nv.characterId)
           .timeout(const Duration(seconds: 12));
-      if (kq.png == null)
+      if (kq.png == null) {
         throw StateError('Không tải được sprite nhân vật AI.');
+      }
       await callback(nv, kq.png!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: ChuGame('Đã trang bị ${nv.name}. Sẽ dùng ở ván tiếp theo.'),
+            content: ChuGame(
+              'Đã trang bị ${nv.name}. Sẽ dùng ở ván tiếp theo.',
+            ),
           ),
         );
       }
@@ -391,7 +399,8 @@ class _NhanVatAiGalleryState extends State<NhanVatAiGallery> {
                       height: 128,
                       child: _KhungNhanVatAi(
                         png: png,
-                        semanticLabel: PhamViNgonNgu.of(context).dich('Ảnh chi tiết nhân vật AI ${nv.name}'),
+                        semanticLabel: PhamViNgonNgu.of(context)
+                            .dich('Ảnh chi tiết nhân vật AI ${nv.name}'),
                       ),
                     ),
                   ),
@@ -444,9 +453,8 @@ class _KhungNhanVatAi extends StatelessWidget {
             alignment: Alignment.topLeft,
             filterQuality: FilterQuality.none,
             semanticLabel: PhamViNgonNgu.of(context).dich(semanticLabel),
-            errorBuilder: (_, _, _) => const Center(
-              child: Icon(Icons.broken_image_outlined),
-            ),
+            errorBuilder: (_, _, _) =>
+                const Center(child: Icon(Icons.broken_image_outlined)),
           ),
         ),
       ),

@@ -91,8 +91,9 @@ class CuaHangChuoi {
       if (q.hanChot < BigInt.from(han)) continue;
       if (!daThay.add(q.maVan.toLowerCase())) continue; // trùng phiếu
       if (p.coCoc &&
-          (q.ve != BigInt.from(ve.so) || q.man != BigInt.from(ve.man)))
+          (q.ve != BigInt.from(ve.so) || q.man != BigInt.from(ve.man))) {
         continue;
+      }
       if (await daDoi(q.maVan)) continue;
       ra.add(p);
     }
@@ -125,8 +126,9 @@ class CuaHangChuoi {
     if (muaNhanVat != null) {
       final g = await gia(muaNhanVat);
       if (g == BigInt.zero) throw const LoiVi('Nhân vật này chưa được bán.');
-      if (await coNhanVat(diaChi, muaNhanVat))
+      if (await coNhanVat(diaChi, muaNhanVat)) {
         throw const LoiVi('Bạn đã có nhân vật này.');
+      }
       if (vangSau < g) throw LoiVi('Chưa đủ vàng: cần $g, có $vangSau.');
     }
     if (vaoMan != null) {
@@ -137,8 +139,9 @@ class CuaHangChuoi {
         );
       }
       if (coc == BigInt.zero) throw const LoiVi('Màn luyện tập không cần vé.');
-      if (vangSau < coc)
+      if (vangSau < coc) {
         throw LoiVi('Chưa đủ vàng để đặt cọc: cần $coc, có $vangSau.');
+      }
     }
 
     final lenh = [
@@ -146,8 +149,9 @@ class CuaHangChuoi {
       if (vaoMan != null) maHoaVaoMan(vaoMan),
       if (muaNhanVat != null) maHoaMua(muaNhanVat),
     ];
-    if (lenh.isEmpty)
+    if (lenh.isEmpty) {
       return KetQuaGui.daXongTuTruoc; // mọi phiếu đã được nhận từ trước
+    }
 
     final moTa = [
       if (hopLe.isNotEmpty) 'nhận ${hopLe.length} phiếu vàng',
@@ -165,8 +169,9 @@ class CuaHangChuoi {
         final v = await veCua(diaChi);
         if (!(v.dangMo && v.man == vaoMan && v.so != ve.so)) return false;
       }
-      if (muaNhanVat != null && !await coNhanVat(diaChi, muaNhanVat))
+      if (muaNhanVat != null && !await coNhanVat(diaChi, muaNhanVat)) {
         return false;
+      }
       return true;
     }
 

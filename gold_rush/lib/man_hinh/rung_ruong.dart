@@ -56,6 +56,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
   late final AnimationController _rungController;
   late final ScrollController _phanThuongScrollController;
   bool _dangMo = false;
+  String? _loiMoRuong;
 
   GoldRushGame get _game => widget.game;
 
@@ -140,10 +141,18 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
 
   Future<void> _moRuong() async {
     if (_dangMo) return;
-    setState(() => _dangMo = true);
+    setState(() {
+      _dangMo = true;
+      _loiMoRuong = null;
+    });
     final pv = _game.phienVi;
     if (pv == null) {
-      if (mounted) setState(() => _dangMo = false);
+      if (mounted) {
+        setState(() {
+          _dangMo = false;
+          _loiMoRuong = 'Chưa kết nối ví để mở rương.';
+        });
+      }
       return;
     }
 
@@ -166,8 +175,13 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
     final kq = pv.daKetNoi ? await pv.moRuong() : null;
     if (!mounted) return;
     if (kq == null) {
-      setState(() => _dangMo = false);
       final loi = pv.thongBao;
+      setState(() {
+        _dangMo = false;
+        _loiMoRuong = loi == null || loi.isEmpty
+            ? 'Chưa lấy được kết quả mở rương. Hãy thử lại.'
+            : loi;
+      });
       if (loi != null && loi.isNotEmpty) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: ChuGame(loi)));
@@ -177,7 +191,10 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
     await _rungController.forward(from: 0);
     await _game.dongBoNFTKhoDo();
     if (!mounted) return;
-    setState(() => _dangMo = false);
+    setState(() {
+      _dangMo = false;
+      _loiMoRuong = null;
+    });
     await _hienPopupChucMung(kq);
   }
 
@@ -274,7 +291,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                     SizedBox(height: size.height < 600 ? 10 : 18),
                     ChuGame(
                       kq.laVang ? 'PHẦN THƯỞNG VÀNG' : 'VẬT PHẨM HIẾM',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Color(0xFFDDA9F3),
                         fontWeight: FontWeight.w900,
                         letterSpacing: 2,
@@ -286,7 +303,10 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                           ? 'Bạn nhận được ${kq.giaTri} vàng.'
                           : 'Bạn nhận được ${vatPham?.ten ?? 'vật phẩm'} ×${kq.soLuong}.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFFB9C7D5), fontSize: 15),
+                      style: const TextStyle(
+                        color: Color(0xFFB9C7D5),
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 22),
                     SizedBox(
@@ -391,7 +411,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                   ChuGame(
                     '✦ TREASURE UNLOCK ✦',
                     style: TextStyle(
-                      color: Color(0xFFE6AE43),
+                      color: const Color(0xFFE6AE43),
                       fontSize: compact ? 10 : 12,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 4,
@@ -402,7 +422,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                     'RƯƠNG MAY MẮN',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Color(0xFFFFDA8A),
+                      color: const Color(0xFFFFDA8A),
                       fontSize: compact ? 28 : 38,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
@@ -412,7 +432,7 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                   ChuGame(
                     'Chạm vào nút để đánh thức kho báu',
                     style: TextStyle(
-                      color: Color(0xFFAFC0D1),
+                      color: const Color(0xFFAFC0D1),
                       fontSize: compact ? 12 : 16,
                     ),
                   ),
@@ -711,28 +731,28 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
             children: [
               Icon(
                 Icons.monetization_on_outlined,
-                color: Color(0xFFF2B33D),
+                color: const Color(0xFFF2B33D),
                 size: compact ? 16 : 18,
               ),
-              SizedBox(width: 9),
+              const SizedBox(width: 9),
               ChuGame(
                 '100 vàng',
                 style: TextStyle(
-                  color: Color(0xFFFFD67A),
+                  color: const Color(0xFFFFD67A),
                   fontSize: compact ? 14 : 17,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              SizedBox(width: 10),
-              SizedBox(
+              const SizedBox(width: 10),
+              const SizedBox(
                 height: 16,
                 child: VerticalDivider(width: 1, color: Color(0x66F2B33D)),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               ChuGame(
                 'mỗi lượt mở',
                 style: TextStyle(
-                  color: Color(0xFFD9BC8C),
+                  color: const Color(0xFFD9BC8C),
                   fontSize: compact ? 10 : 12,
                 ),
               ),
@@ -765,6 +785,23 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
             ),
           ),
         ),
+        if (_loiMoRuong != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0x332F1820),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0x99D98B79)),
+            ),
+            child: ChuGame(
+              _loiMoRuong!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFFFFC8BA), fontSize: 12),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -346,9 +346,10 @@ class AnhNhanVat extends StatelessWidget {
                       alignment: Alignment.topLeft,
                       child: SizedBox.square(
                         dimension: kichThuoc,
-                        child:  Tooltip(
-                          message: PhamViNgonNgu.of(context).dich('Không tải được ảnh nhân vật'),
-                          child: Icon(
+                        child: Tooltip(
+                          message: PhamViNgonNgu.of(context)
+                              .dich('Không tải được ảnh nhân vật'),
+                          child: const Icon(
                             Icons.broken_image_outlined,
                             color: MauGame.chuPhu,
                           ),

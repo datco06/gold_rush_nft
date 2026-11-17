@@ -276,6 +276,7 @@ class _ManHinhGameState extends State<ManHinhGame> {
                 game: game,
                 tienTrinh: game.tienTrinhWorldMap.tienTrinh,
                 loiLuuTienTrinh: game.tienTrinhWorldMap.loi,
+                dangTaiTienTrinh: !game.tienTrinhWorldMap.daTai,
               ),
             ),
             LopPhu.khoDo: (_, game) =>

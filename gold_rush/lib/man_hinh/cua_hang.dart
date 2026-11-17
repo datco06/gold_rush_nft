@@ -29,6 +29,8 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
   final List<VatPhamHienThi> _danhMuc = danhSachTrangBiCuaHang();
   DanhMucVatPham _tab = DanhMucVatPham.vuKhi;
   bool _dangXemNhanVat = false;
+  bool _dangDongBoNFT = false;
+  String? _loiDongBoNFT;
   DoHiemVatPham? _doHiem;
   String? _idDangChon;
   int? _nhanVatDangChon;
@@ -192,6 +194,14 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                           ),
                           SizedBox(height: compact ? 6 : 12),
                           _StoreHeading(compact: compact),
+                          if (_dangDongBoNFT || _loiDongBoNFT != null) ...[
+                            const SizedBox(height: 8),
+                            _TrangThaiDongBoKho(
+                              dangTai: _dangDongBoNFT,
+                              loi: _loiDongBoNFT,
+                              khiThuLai: _dongBoNFT,
+                            ),
+                          ],
                           SizedBox(height: compact ? 6 : 12),
                           Expanded(
                             child: compact
@@ -519,15 +529,27 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
     final cuaHang = pv?.cuaHang;
     if (pv == null || !pv.daKetNoi || diaChi == null || cuaHang == null) return;
 
-    for (final item in _danhMuc) {
-      try {
+    if (mounted) {
+      setState(() {
+        _dangDongBoNFT = true;
+        _loiDongBoNFT = null;
+      });
+    }
+    try {
+      for (final item in _danhMuc) {
         final soLuong = await cuaHang.soLuongVatPham(diaChi, _tokenIdFor(item));
         if (soLuong > BigInt.zero && mounted) {
           _game.dongBoSoLuongVatPham(item, soLuong.toInt());
         }
-      } on LoiVi {
-        return;
       }
+    } on Object {
+      if (mounted) {
+        setState(
+          () => _loiDongBoNFT = 'Chưa đồng bộ được số lượng NFT. Hãy thử lại.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _dangDongBoNFT = false);
     }
   }
 
@@ -993,8 +1015,8 @@ class _CharacterDetail extends StatelessWidget {
                       horizontal: 13,
                       vertical: 10,
                     ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    minimumSize: const Size(48, 48),
+                    tapTargetSize: MaterialTapTargetSize.padded,
                     textStyle: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -1241,8 +1263,8 @@ class _BuyButton extends StatelessWidget {
         backgroundColor: const Color(0xFFFFC84D),
         foregroundColor: const Color(0xFF12202A),
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(48, 48),
+        tapTargetSize: MaterialTapTargetSize.padded,
         textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       ),
@@ -1262,8 +1284,8 @@ class _OwnedButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: const Color(0xFF7D90A0),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(48, 48),
+        tapTargetSize: MaterialTapTargetSize.padded,
         textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       ),
@@ -1502,8 +1524,8 @@ class _ItemDetail extends StatelessWidget {
                     horizontal: 13,
                     vertical: 10,
                   ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(48, 48),
+                  tapTargetSize: MaterialTapTargetSize.padded,
                   textStyle: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -1573,6 +1595,53 @@ class _EmptyStore extends StatelessWidget {
         'Chưa có vật phẩm trong danh mục này.',
         textAlign: TextAlign.center,
         style: TextStyle(color: Color(0xFF9BB0C0)),
+      ),
+    );
+  }
+}
+
+class _TrangThaiDongBoKho extends StatelessWidget {
+  final bool dangTai;
+  final String? loi;
+  final VoidCallback khiThuLai;
+
+  const _TrangThaiDongBoKho({
+    required this.dangTai,
+    required this.loi,
+    required this.khiThuLai,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0x331B3448),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0x557D90A0)),
+      ),
+      child: Row(
+        children: [
+          if (dangTai)
+            const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            const Icon(Icons.info_outline, color: Color(0xFFFFD166), size: 20),
+          const SizedBox(width: 9),
+          Expanded(
+            child: ChuGame(
+              dangTai
+                  ? 'ĐANG ĐỒNG BỘ KHO NFT…'
+                  : (loi ?? 'Chưa có dữ liệu đồng bộ.'),
+              style: const TextStyle(color: Color(0xFFD9E2EC), fontSize: 12),
+            ),
+          ),
+          if (!dangTai && loi != null)
+            TextButton(onPressed: khiThuLai, child: const ChuGame('Thử lại')),
+        ],
       ),
     );
   }

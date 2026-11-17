@@ -1,3 +1,7 @@
+// The test uses the platform interface to install an in-memory preferences
+// backend; keep it test-only without adding a production dependency.
+// ignore_for_file: depend_on_referenced_packages
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/blockchain/may_chu_phieu.dart';

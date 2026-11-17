@@ -347,8 +347,9 @@ class MayChuPhieu {
       );
     }
     final than = utf8.decode(r.bodyBytes, allowMalformed: true);
-    if (r.statusCode == thanhCong)
+    if (r.statusCode == thanhCong) {
       return _doc(() => jsonDecode(than) as Map<String, dynamic>);
+    }
     final chiTiet = switch (r.statusCode) {
       404 => 'Máy chủ chưa có nhật ký ván này — chơi xong một ván khi đã cấu hình máy chủ.',
       410 => 'Mã quà tặng đã hết hạn.',
@@ -373,8 +374,9 @@ String lyDoTu(String than) {
       return '${(d['ly_do'] as List).first}';
     }
     if (d is String) return d;
-    if (d is List && d.isNotEmpty)
+    if (d is List && d.isNotEmpty) {
       return '${(d.first as Map?)?['msg'] ?? d.first}';
+    }
   } catch (_) {
     // không phải JSON
   }

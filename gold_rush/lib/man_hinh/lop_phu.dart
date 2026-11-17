@@ -512,7 +512,7 @@ class ManHinhHuyHieu extends StatelessWidget {
                       child: Image.asset(
                         badge['image'] as String,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
+                        errorBuilder: (_, _, _) => const Icon(
                           Icons.military_tech,
                           color: Color(0xFFFFB300),
                           size: 120,

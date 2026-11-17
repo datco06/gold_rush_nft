@@ -371,7 +371,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                                 '✦ KHO BÁU DÀNH CHO BẠN ✦',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Color(0xFFE6AE43),
+                                  color: const Color(0xFFE6AE43),
                                   fontSize: compact ? 10 : 13,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 4,
@@ -382,7 +382,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                                 'TRUNG TÂM\nQUÀ TẶNG',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Color(0xFFFFD889),
+                                  color: const Color(0xFFFFD889),
                                   fontFamily: 'serif',
                                   fontSize: compact ? 28 : 42,
                                   height: .96,
@@ -395,7 +395,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                                 'Khám phá những mã quà đặc biệt\nvà nhận phần thưởng vào ví Gold Rush.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Color(0xFFAFC0D1),
+                                  color: const Color(0xFFAFC0D1),
                                   fontSize: compact ? 11 : 17,
                                   height: compact ? 1.25 : 1.5,
                                 ),
@@ -404,9 +404,9 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                               compact
                                   ? SizedBox(
                                       height: giftSize,
-                                      child: FittedBox(
+                                      child: const FittedBox(
                                         fit: BoxFit.contain,
-                                        child: const SizedBox(
+                                        child: SizedBox(
                                           width: 289,
                                           height: 190,
                                           child: _GiftShowcase(),
@@ -444,7 +444,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                                 '✧ Quét mã QR hợp lệ để nhận quà ✧',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Color(0xFFAFC0D1),
+                                  color: const Color(0xFFAFC0D1),
                                   fontSize: compact ? 11 : 15,
                                 ),
                               ),
@@ -458,6 +458,16 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                                         ? const Color(0xFFFFD889)
                                         : const Color(0xFFFFB4A8),
                                     fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ] else if (!_dangXuLy) ...[
+                                SizedBox(height: compact ? 6 : 12),
+                                const ChuGame(
+                                  'Chưa có mã quà nào đang xử lý.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Color(0xFF8FA4B7),
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
@@ -613,13 +623,10 @@ class _HopQuaPixelArt extends StatelessWidget {
             bottom: 19,
             child: Container(
               width: 22,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD9282F),
+              decoration: const BoxDecoration(
+                color: Color(0xFFD9282F),
                 border: Border.symmetric(
-                  vertical: BorderSide(
-                    color: const Color(0xFF9A1822),
-                    width: 3,
-                  ),
+                  vertical: BorderSide(color: Color(0xFF9A1822), width: 3),
                 ),
               ),
             ),
@@ -637,7 +644,7 @@ class _HopQuaPixelArt extends StatelessWidget {
               children: [
                 Transform.rotate(
                   angle: -.42,
-                  child: _NoQua(size: const Size(55, 34)),
+                  child: const _NoQua(size: Size(55, 34)),
                 ),
                 Container(
                   width: 27,
@@ -653,7 +660,7 @@ class _HopQuaPixelArt extends StatelessWidget {
                 ),
                 Transform.rotate(
                   angle: .42,
-                  child: _NoQua(size: const Size(55, 34)),
+                  child: const _NoQua(size: Size(55, 34)),
                 ),
               ],
             ),

@@ -94,10 +94,12 @@ String? dichLoiHopDong({Object? duLieu, String? thongDiep}) {
     final chon = hex.substring(0, 10).toLowerCase();
     final than = hex.substring(10);
     final ten = boChonLoi[chon];
-    if (ten != null)
+    if (ten != null) {
       return _cauChoLoi(ten, docCacUint256(than, than.length ~/ 64));
-    if (chon == _chonErrorString)
+    }
+    if (chon == _chonErrorString) {
       return 'Hợp đồng từ chối: ${_docChuoiAbi(than) ?? 'không rõ lý do'}.';
+    }
     if (chon == _chonPanic) return 'Hợp đồng gặp lỗi tính toán (Panic).';
   }
   final ten = _tenTrongThongDiep(thongDiep);

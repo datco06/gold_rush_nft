@@ -35,12 +35,93 @@ George đi tìm vàng. Nhặt hết đồng xu trên bản đồ trước khi h�
 
 ## 2. Chạy
 
+### 2.1. Chuẩn bị môi trường phát triển
+
+Yêu cầu tối thiểu:
+
+* Flutter 3.47 hoặc mới hơn và Dart SDK theo `pubspec.yaml`.
+* Android Studio/Android SDK nếu chạy APK hoặc thiết bị Android.
+* Chrome nếu chạy bản Web.
+* Node.js và npm nếu cần chạy mạng Hardhat trong `../gold_rush_chain/`.
+
+Kiểm tra môi trường trước khi chạy:
+
+```bash
+flutter doctor
+flutter devices
+```
+
+Lần đầu checkout hoặc sau khi thay đổi `pubspec.yaml`:
+
 ```bash
 cd gold_rush
-flutter create .        # sinh android/ ios/ web/ windows/ cho máy của bạn
 flutter pub get
-flutter run
 ```
+
+Chỉ chạy `flutter create .` khi checkout bị thiếu thư mục nền tảng
+(`android/`, `web/`, `windows/`...). Lệnh này **không ghi đè** `lib/`,
+`assets/` và `pubspec.yaml`.
+
+### 2.2. Chạy bản Web
+
+```bash
+flutter run -d chrome --web-port 5174 \
+  --dart-define=GOLD_RUSH_API=http://127.0.0.1:8000
+```
+
+Web dùng MetaMask Extension qua EIP-1193/EIP-6963. Nếu chỉ muốn chạy giao
+diện offline, có thể bỏ `GOLD_RUSH_API`.
+
+### 2.3. Chạy bản Android
+
+Android dùng Reown AppKit/WalletConnect để mở MetaMask Mobile. Không đưa
+private key vào APK; project ID chỉ là mã nhận diện ứng dụng, không phải khóa
+ví.
+
+```bash
+# Android Emulator: backend trên máy phát triển
+flutter run -d emulator-5554 \
+  --dart-define=GOLD_RUSH_API=http://10.0.2.2:8000 \
+  --dart-define=REOWN_PROJECT_ID=<project-id>
+
+# Android thật: thay <ip-lan> bằng địa chỉ LAN của máy chạy backend
+flutter run -d <device-id> \
+  --dart-define=GOLD_RUSH_API=http://<ip-lan>:8000 \
+  --dart-define=REOWN_PROJECT_ID=<project-id>
+```
+
+Ứng dụng Android đã đăng ký deep link `goldrush://wc` để quay lại Gold Rush
+sau khi xác nhận trong MetaMask. Khi phát hành thật, thay bằng redirect/app
+link HTTPS của dự án qua `GOLD_RUSH_NATIVE_REDIRECT` và `GOLD_RUSH_APP_LINK`.
+`GOLD_RUSH_NATIVE_ORIGIN` phải là Origin đã được cho phép trong backend; không
+dùng URL RPC hoặc URL API làm Origin.
+
+### 2.4. Backend và mạng Blockchain phát triển
+
+Chạy backend từ thư mục `gold_rush_ai/` theo README của backend, sau đó truyền
+địa chỉ backend bằng `GOLD_RUSH_API`. Các địa chỉ thường dùng:
+
+| Môi trường | Backend nhìn từ app | Chain ID |
+|---|---|---:|
+| Web trên cùng máy | `http://127.0.0.1:8000` | 31337 |
+| Android Emulator | `http://10.0.2.2:8000` | 31337 |
+| Android thật | `http://<ip-lan>:8000` | 31337 |
+| Phát hành thử nghiệm | URL HTTPS của backend | 11155111 |
+
+Hardhat Local dùng chain ID `31337`. Sepolia dùng chain ID `11155111` và chỉ
+dùng khi đã có địa chỉ hợp đồng, RPC và cấu hình backend tương ứng. Xem thêm
+[`../gold_rush_chain/README.md`](../gold_rush_chain/README.md).
+
+### 2.5. Kiểm tra mã nguồn
+
+```bash
+flutter analyze
+flutter test
+```
+
+`flutter analyze` phải không có `error`. Hiện source vẫn còn một số `info`
+về style và một cảnh báo phần tử chưa dùng; đây không phải lỗi biên dịch,
+nhưng cần xử lý nếu yêu cầu analyzer hoàn toàn sạch.
 
 > **Máy bị đơ khi `flutter run` cho Android?** Lệnh `flutter create .` cho
 > Gradle dùng tới **8 GB RAM** (`org.gradle.jvmargs=-Xmx8G` trong
@@ -56,14 +137,6 @@ flutter run
 > nằm trong `KHAC-PHUC-DO-MAY.md` của dự án Quán Ngon.
 
 
-Lệnh `flutter create .` **không ghi đè** `lib/`, `assets/` và `pubspec.yaml`.
-
-Chạy trên trình duyệt:
-
-```bash
-flutter run -d chrome
-```
-
 Chạy trên Windows:
 
 ```bash
@@ -76,10 +149,10 @@ Chạy bộ kiểm thử:
 flutter test
 ```
 
-87 phép kiểm tra: 19 cho va chạm và đường ngắm (`test/luoi_va_cham_test.dart`),
-24 cho phần AI (`test/ai/`), 3 cho danh sách màn (`test/man_choi_test.dart`), 41 cho phần
-blockchain (`test/blockchain/` — ABI, dịch lỗi revert, bộ giao dịch MetaMask, cửa hàng, máy chủ). Chúng chạy trong vài giây vì không cần dựng giao
-diện — xem mục 3 để hiểu vì sao làm được như vậy.
+Số lượng test thay đổi theo từng phiên bản source. Có các nhóm test cho gameplay,
+AI, giao diện, xác thực, Blockchain, cửa hàng, kho đồ và kết nối backend. Một
+số test tích hợp cần backend hoặc Hardhat đang chạy; xem README của từng phần
+trước khi kết luận toàn bộ hệ thống đã đạt.
 
 > **Nếu màn hình đen hoặc hiện lỗi đỏ:** gần như luôn là do phần `assets`
 > trong `pubspec.yaml` chưa khai đủ ba thư mục `images/`, `tiles/`, `audio/`,
@@ -229,7 +302,7 @@ chơi với độ khó cố định. Gửi nhật ký về máy chủ chỉ khi 
 
 Hướng dẫn từng bước: tài liệu *Hướng dẫn xây dựng Gold Rush và phát triển AI*.
 
-### 7.1. Cửa hàng nhân vật trên blockchain (phiên bản 1.2 — đề xuất, mạng thử nghiệm)
+### 7.1. Cửa hàng nhân vật trên blockchain (mạng phát triển và mạng thử nghiệm)
 
 ```
 lib/blockchain/        abi.dart · vi.dart (+ vi_web.dart MetaMask) · cua_hang.dart · may_chu_phieu.dart · nhan_vat.dart
@@ -243,7 +316,8 @@ Xu nhặt trong ván → máy chủ kiểm định nhật ký → ký **phiếu 
 phiếu qua MetaMask → hợp đồng đúc **vàng** → đốt vàng để mua **nhân vật** (chỉ đổi ngoại
 hình). Vàng và nhân vật **không chuyển nhượng được**, chỉ chạy trên mạng thử nghiệm —
 xem tài liệu *Đề xuất cửa hàng nhân vật Gold Rush trên blockchain* (pháp lý: Nghị định
-147/2024/NĐ-CP Điều 57). Chỉ bản web (`flutter run -d chrome`) kết nối được MetaMask.
+147/2024/NĐ-CP Điều 57). Bản Web dùng MetaMask Extension; bản Android dùng
+MetaMask Mobile qua Reown AppKit/WalletConnect và deep link.
 
 ### 7.2. Nhiều màn chơi, cọc vào màn, giao dịch chống lỗi (phiên bản 1.3)
 
@@ -263,23 +337,53 @@ lib/blockchain/phien_vi.dart    một phiên ví dùng chung cho chọn màn, c�
 * Phiếu đang chờ được **gộp** vào giao dịch tiếp theo (`multicall`): nhận vàng + vào màn, hoặc
   nhận vàng + mua nhân vật, đều chỉ MỘT lần bấm Xác nhận.
 
-## 8. Điều cần biết trước khi dùng làm bài mẫu
+## 8. Trạng thái hiện tại và giới hạn
 
 * Bộ kiểm thử phủ phần va chạm (`test/luoi_va_cham_test.dart`) và phần AI
   thuần (`test/ai/`). Chưa có kiểm thử cho vòng đời ván chơi trong
   `GoldRushGame` — đó là bài tập tốt để làm tiếp.
 * Mô hình độ khó trong `assets/models/` được huấn luyện trên **dữ liệu mô
   phỏng**; thay bằng dữ liệu thật trước khi kết luận gì về người chơi.
-* **Chưa chạy `flutter analyze` trên máy biên soạn** vì môi trường dựng tài
-  liệu không cài được Dart SDK. Mã nguồn được viết theo tài liệu API chính
-  thức của Flame 1.38 và đã rà soát thủ công, nhưng hãy chạy
-  `flutter pub get && flutter analyze` trước khi phát cho sinh viên.
+* `flutter analyze` đã được chạy trên source hiện tại: không có lỗi biên dịch,
+  nhưng còn các cảnh báo/ghi chú style cần dọn nếu muốn báo cáo analyzer sạch.
+* Các test tích hợp Blockchain cần đúng chain, hợp đồng và backend; không tự
+  reset Blockchain trong quy trình kiểm thử.
 * Trò chơi không lưu tiến trình. Đóng ứng dụng là mất điểm.
-* Bản đồ chỉ có một màn.
 * Trên máy yếu, nếu thấy giật thì giảm `CauHinh.soONhinThayNgang` — vẽ ít ô
   hơn thì nhẹ hơn.
 
-## 9. Nguồn tham khảo
+## 9. Triển khai
+
+Phần cài đặt phát triển ở mục 2 chỉ dành cho chạy local. Khi triển khai thật,
+cần tách riêng ba thành phần:
+
+1. **Backend:** triển khai FastAPI và database lên máy chủ/Render hoặc nền
+   tảng tương đương; cấu hình CORS, HTTPS, cookie/CSRF và biến môi trường.
+2. **Blockchain:** triển khai hợp đồng lên Sepolia `11155111`, cập nhật địa
+   chỉ hợp đồng vào backend và cấu hình app; không dùng private key thật trong
+   Flutter hoặc Git.
+3. **Flutter:**
+
+   ```bash
+   flutter build web --release \
+     --dart-define=GOLD_RUSH_API=https://<backend-domain>
+
+   flutter build apk --release \
+     --dart-define=GOLD_RUSH_API=https://<backend-domain> \
+     --dart-define=REOWN_PROJECT_ID=<project-id> \
+     --dart-define=GOLD_RUSH_SEPOLIA_RPC_URL=<sepolia-rpc> \
+     --dart-define=GOLD_RUSH_NATIVE_ORIGIN=https://<app-domain> \
+     --dart-define=GOLD_RUSH_NATIVE_REDIRECT=goldrush://wc \
+     --dart-define=GOLD_RUSH_APP_LINK=https://<app-domain>/wc
+   ```
+
+APK phát hành phải ký bằng keystore riêng, thay cấu hình redirect bằng domain
+thật và kiểm thử quay lại ứng dụng sau khi MetaMask Mobile xác nhận. Không dùng
+debug signing cho bản phát hành. Trước khi phát hành Sepolia, phải cập nhật
+backend và AppKit với chain `eip155:11155111`, địa chỉ hợp đồng và RPC thật;
+không dùng địa chỉ hợp đồng Hardhat `31337` cho APK release.
+
+## 10. Nguồn tham khảo
 
 | Địa chỉ | Nội dung |
 |---|---|

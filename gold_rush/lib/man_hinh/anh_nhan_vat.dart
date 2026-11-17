@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../ngon_ngu/ngon_ngu.dart';
+
 import 'package:flutter/services.dart';
 
 import '../ai/anh_nhan_vat.dart';
@@ -852,10 +853,12 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                               minLines: 3,
                               maxLines: 5,
                               keyboardType: TextInputType.multiline,
-                              decoration:  InputDecoration(
-                                labelText: PhamViNgonNgu.of(context).dich('Mô tả nhân vật'),
-                                helperText: PhamViNgonNgu.of(context).dich('Tối đa 500 ký tự.'),
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: PhamViNgonNgu.of(context)
+                                    .dich('Mô tả nhân vật'),
+                                helperText: PhamViNgonNgu.of(context)
+                                    .dich('Tối đa 500 ký tự.'),
+                                border: const OutlineInputBorder(),
                               ),
                               validator: (value) {
                                 final text = (value ?? '').trim();
@@ -871,7 +874,10 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                             ),
                             const SizedBox(height: 20),
                             if (_dangTai) ...[
-                              LinearProgressIndicator(semanticsLabel: PhamViNgonNgu.of(context).dich(nhanCho)),
+                              LinearProgressIndicator(
+                                semanticsLabel: PhamViNgonNgu.of(context)
+                                    .dich(nhanCho),
+                              ),
                               const SizedBox(height: 12),
                               ChuGame(nhanCho, textAlign: TextAlign.center),
                               const SizedBox(height: 16),
@@ -910,8 +916,9 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                                             png,
                                             filterQuality: FilterQuality.none,
                                             fit: BoxFit.contain,
-                                            semanticLabel:
-                                                PhamViNgonNgu.of(context).dich('Ảnh xem trước nhân vật'),
+                                            semanticLabel: PhamViNgonNgu.of(
+                                              context,
+                                            ).dich('Ảnh xem trước nhân vật'),
                                             errorBuilder: (_, _, _) =>
                                                 const Center(
                                                   child: ChuGame(
@@ -1322,7 +1329,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.copy, size: 14),
-                          tooltip: PhamViNgonNgu.of(context).dich('Sao chép SHA-256'),
+                          tooltip: PhamViNgonNgu.of(context)
+                              .dich('Sao chép SHA-256'),
                           onPressed: () => _saoChepHash(daLuu.characterHash),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -1355,10 +1363,12 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     TextField(
                       controller: _tenNhanVat,
                       enabled: !_dangLuu,
-                      decoration:  InputDecoration(
-                        labelText: PhamViNgonNgu.of(context).dich('Tên nhân vật'),
-                        helperText: PhamViNgonNgu.of(context).dich('Tối đa 32 ký tự để lưu vào CSDL Backend.'),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: PhamViNgonNgu.of(context)
+                            .dich('Tên nhân vật'),
+                        helperText: PhamViNgonNgu.of(context)
+                            .dich('Tối đa 32 ký tự để lưu vào CSDL Backend.'),
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -1542,7 +1552,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                   children: [
                     Expanded(
                       child: ChuGame(
-                        nv.name, dichNoiDung: false,
+                        nv.name,
+                        dichNoiDung: false,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -1573,7 +1584,8 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.copy, size: 13),
-                      tooltip: PhamViNgonNgu.of(context).dich('Sao chép SHA-256'),
+                      tooltip: PhamViNgonNgu.of(context)
+                          .dich('Sao chép SHA-256'),
                       onPressed: () => _saoChepHash(nv.characterHash),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),

@@ -250,7 +250,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Align(alignment: Alignment.centerRight, child: ChonNgonNgu()),
+                              const Align(
+                                alignment: Alignment.centerRight,
+                                child: ChonNgonNgu(),
+                              ),
                               const SizedBox(height: 12),
                               _GameTitle(narrow: narrow),
                               const SizedBox(height: 26),
@@ -596,7 +599,7 @@ class _GameTitle extends StatelessWidget {
       const ChuGame(
         'LỜI MỜI TỪ VÙNG ĐẤT VÀNG',
         textAlign: TextAlign.left,
-        style: const TextStyle(
+        style: TextStyle(
           color: _Palette.gold,
           fontSize: 10,
           letterSpacing: 2.5,
@@ -631,7 +634,7 @@ class _GameTitle extends StatelessWidget {
       ChuGame(
         'AI ADVENTURE & BLOCKCHAIN',
         textAlign: align,
-        style: TextStyle(
+        style: const TextStyle(
           color: _Palette.parchment,
           fontSize: 11,
           letterSpacing: 2.7,
@@ -659,7 +662,7 @@ class _HeroCopy extends StatelessWidget {
           'Một thế giới mỏ vàng pixel, nơi mỗi chuyến đào là một ván chơi '
           'và mỗi nhân vật là một câu chuyện do AI vẽ nên.',
           style: TextStyle(
-            color: Color(0xFF9BB0C0),
+            color: const Color(0xFF9BB0C0),
             fontSize: compact ? 11.5 : 13.5,
             height: compact ? 1.4 : 1.65,
           ),
@@ -910,6 +913,7 @@ class _SecurityNote extends StatelessWidget {
 /// A fixed virtual landscape scales uniformly and crops instead of stretching.
 /// Pixel blocks are painted without anti-aliasing. It does not load a map or
 /// instantiate Flame; all drawing is deterministic and cached by its boundary.
+// ignore: unused_element
 class _LandscapePainter extends CustomPainter {
   const _LandscapePainter();
 

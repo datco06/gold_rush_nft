@@ -390,8 +390,9 @@ class PhienVi extends ChangeNotifier {
       return p.phieu.soVang;
     } on LoiVi catch (e) {
       // Lỗi tạm thời → nhớ lại, "Làm mới" hoặc lần đọc chuỗi sau sẽ xin tiếp.
-      if (e.ma != 409 && e.ma != 422 && !_vanChuaXinPhieu.contains(maVan))
+      if (e.ma != 409 && e.ma != 422 && !_vanChuaXinPhieu.contains(maVan)) {
         _vanChuaXinPhieu.add(maVan);
+      }
       _bao(e.thongBao, loi: true);
       return null;
     } catch (e) {
@@ -406,8 +407,9 @@ class PhienVi extends ChangeNotifier {
 
   /// Có vé cùng màn đang mở mà máy chủ chưa ghi nhận ván nào → vào lại màn KHÔNG trừ thêm cọc.
   Future<bool> coTheDungLaiVe(ManChoi m) async {
-    if (diaChi == null || !ve.dangMo || ve.man != m.id || veDangMoDaCoPhieu)
+    if (diaChi == null || !ve.dangMo || ve.man != m.id || veDangMoDaCoPhieu) {
       return false;
+    }
     try {
       return !await mayChu.veDaDung(vi: diaChi!, ve: ve.so);
     } catch (_) {
@@ -434,7 +436,9 @@ class PhienVi extends ChangeNotifier {
     cauHinh = ch;
     if (!ch.localFaucet) return;
     await mayChu.nhanEthTest(vi: dc);
-    final nguong = BigInt.from(1000000000000000); // 0.001 ETH, lớn hơn phí gas (~0.0001 ETH)
+    final nguong = BigInt.from(
+      1000000000000000,
+    ); // 0.001 ETH, lớn hơn phí gas (~0.0001 ETH)
     for (var i = 0; i < 30 && !_daDong; i++) {
       try {
         if (await vi.soDu(dc) >= nguong) return;

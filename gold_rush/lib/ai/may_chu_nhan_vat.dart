@@ -328,8 +328,9 @@ class MayChuNhanVat {
           .instantiateImageCodec(png)
           .timeout(const Duration(seconds: 5));
       try {
-        if (codec.frameCount != 1)
+        if (codec.frameCount != 1) {
           throw const FormatException('Sprite sheet cần là ảnh tĩnh');
+        }
         final frame = await codec.getNextFrame().timeout(
           const Duration(seconds: 5),
         );

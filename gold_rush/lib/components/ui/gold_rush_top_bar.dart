@@ -221,14 +221,14 @@ class _GoldRushBrand extends StatelessWidget {
           child: Icon(
             Icons.monetization_on_rounded,
             size: compact ? 15 : 17,
-            color: Color(0xFF12202A),
+            color: const Color(0xFF12202A),
           ),
         ),
         SizedBox(width: compact ? 7 : 10),
         ChuGame(
           'GOLD RUSH',
           style: TextStyle(
-            color: Color(0xFFEAF2F8),
+            color: const Color(0xFFEAF2F8),
             fontSize: compact ? 14 : 16,
             fontWeight: FontWeight.w800,
             letterSpacing: .6,
@@ -508,17 +508,19 @@ class _PlayerChip extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ChuGame(
-                name, dichNoiDung: false,
+                name,
+                dichNoiDung: false,
                 style: TextStyle(
-                  color: Color(0xFFEAF2F8),
+                  color: const Color(0xFFEAF2F8),
                   fontSize: compact ? 9 : 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               ChuGame(
-                address, dichNoiDung: false,
+                address,
+                dichNoiDung: false,
                 style: TextStyle(
-                  color: Color(0xFF7D90A0),
+                  color: const Color(0xFF7D90A0),
                   fontSize: compact ? 7 : 8,
                   fontFamily: 'monospace',
                 ),
@@ -529,7 +531,7 @@ class _PlayerChip extends StatelessWidget {
           Icon(
             Icons.keyboard_arrow_down_rounded,
             size: compact ? 11 : 13,
-            color: Color(0xFF7D90A0),
+            color: const Color(0xFF7D90A0),
           ),
         ],
       ),
@@ -549,7 +551,8 @@ class _IconButton extends StatelessWidget {
       onPressed: onTap,
       icon: Icon(icon, size: 16),
       color: const Color(0xFF9BB0C0),
-      tooltip: PhamViNgonNgu.of(context).dich(icon == Icons.close_rounded ? 'Đóng' : 'Cài đặt'),
+      tooltip: PhamViNgonNgu.of(context)
+          .dich(icon == Icons.close_rounded ? 'Đóng' : 'Cài đặt'),
       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
       padding: EdgeInsets.zero,
       style: IconButton.styleFrom(

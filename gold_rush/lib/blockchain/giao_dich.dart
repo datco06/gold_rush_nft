@@ -198,8 +198,9 @@ class BoGiaoDich {
       }
       if (daXong != null && i.isOdd) {
         try {
-          if (await daXong())
+          if (await daXong()) {
             return KetQuaGui.thanhCong; // giao dịch "tăng tốc" đã vào khối
+          }
         } on LoiVi {
           // bỏ qua, nhịp sau kiểm lại
         }

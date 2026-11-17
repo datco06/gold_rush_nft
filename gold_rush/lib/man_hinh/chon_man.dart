@@ -19,12 +19,14 @@ class ManHinhChonMan extends StatefulWidget {
   final GoldRushGame game;
   final TienTrinhWorldMap? tienTrinh;
   final String? loiLuuTienTrinh;
+  final bool dangTaiTienTrinh;
 
   const ManHinhChonMan({
     super.key,
     required this.game,
     this.tienTrinh,
     this.loiLuuTienTrinh,
+    this.dangTaiTienTrinh = false,
   });
 
   @override
@@ -46,7 +48,7 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFFBFA16B),
             foregroundColor: const Color(0xFF242B20),
-            minimumSize: const Size.fromHeight(44),
+            minimumSize: const Size.fromHeight(48),
             textStyle: TextStyle(
               fontFamily: Theme.of(context).textTheme.labelLarge?.fontFamily,
               fontWeight: FontWeight.w800,
@@ -101,15 +103,10 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
     final tienTrinh = widget.tienTrinh;
 
     if (danhSach.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(16),
-          child: ChuGame(
-            'Chưa có dữ liệu màn chơi. '
-            'Hãy quay lại Menu và thử lại.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: MauGame.chu),
-          ),
+          padding: const EdgeInsets.all(16),
+          child: _TrangThaiDanhSachMan(dangTai: widget.dangTaiTienTrinh),
         ),
       );
     }
@@ -270,6 +267,30 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TrangThaiDanhSachMan extends StatelessWidget {
+  final bool dangTai;
+
+  const _TrangThaiDanhSachMan({required this.dangTai});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.map_outlined, color: MauGame.chuPhu, size: 32),
+        const SizedBox(height: 10),
+        ChuGame(
+          dangTai
+              ? 'ĐANG TẢI DỮ LIỆU MÀN CHƠI…'
+              : 'Chưa có dữ liệu màn chơi. Hãy quay lại Menu và thử lại.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: MauGame.chu),
+        ),
+      ],
     );
   }
 }
