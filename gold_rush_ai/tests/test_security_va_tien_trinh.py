@@ -443,18 +443,18 @@ class TestSecurityVaTienTrinhRound2(unittest.TestCase):
         self.assertEqual(res.status_code, 403)
 
     def test_17_stage_id_ngoai_pham_vi_bi_tu_choi_422(self):
-        """17. stage_id < 1 hoặc > 6 bị FastAPI validation từ chối 422."""
+        """17. stage_id < 1 hoặc > 20 bị FastAPI validation từ chối 422."""
         res_0 = self.client.post(
             "/api/progress/complete-stage",
             json={"stage_id": 0, "evidence_id": "van-some-valid-id"},
         )
         self.assertEqual(res_0.status_code, 422)
 
-        res_7 = self.client.post(
+        res_21 = self.client.post(
             "/api/progress/complete-stage",
-            json={"stage_id": 7, "evidence_id": "van-some-valid-id"},
+            json={"stage_id": 21, "evidence_id": "van-some-valid-id"},
         )
-        self.assertEqual(res_7.status_code, 422)
+        self.assertEqual(res_21.status_code, 422)
 
     # =========================================================================
     # NHÓM 3: CONCURRENCY & RACE CONDITIONS

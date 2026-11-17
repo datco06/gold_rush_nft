@@ -96,8 +96,8 @@ class CauHinh {
   static const double tiLeRoiBinhMau = 0.2;
   static const double thoiGianTonTaiVatPham = 10;
 
-  /// Bật Boss để thử: flutter run -d chrome --dart-define=GOLD_RUSH_BOSS=true
-  static const bool batBoss = bool.fromEnvironment('GOLD_RUSH_BOSS');
+  /// Boss luôn bật từ màn 7 trở đi; màn 1–6 giữ nguyên luật gốc.
+  static const bool batBoss = true;
 
   // ---------- Màu sắc giao diện ----------
   static const Color mauChinh = Color(0xFFE3A008);

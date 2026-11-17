@@ -96,21 +96,16 @@ class ManChoi {
     return ds;
   }
 
-  /// Giữ nguyên danh mục dùng chung backend; bổ sung 7–20 từ tệp local riêng.
+  /// Ghép manifest cũ với tệp mở rộng khi cần tương thích dữ liệu cũ.
+  /// Luồng chính hiện dùng trực tiếp `man_choi.json` đầy đủ 1–20 màn.
   static List<ManChoi> docBoManChoi(String goc, String moRong) {
     final base = docDanhSach(goc);
     final extra = docDanhSach(moRong);
-    if (extra.any(
-      (m) => m.id <= 6 || !m.chiChoiLocal || m.coc != 0 || m.thuong != 0,
-    )) {
-      throw const FormatException(
-        'Màn mở rộng phải là màn local không cọc/thưởng blockchain.',
-      );
+    final byId = <int, ManChoi>{for (final m in base) m.id: m};
+    for (final m in extra) {
+      if (m.id > 6) byId[m.id] = m;
     }
-    final all = [...base, ...extra]..sort((a, b) => a.id.compareTo(b.id));
-    if (all.map((m) => m.id).toSet().length != all.length) {
-      throw const FormatException('Trùng ID màn chơi.');
-    }
+    final all = byId.values.toList()..sort((a, b) => a.id.compareTo(b.id));
     return List.unmodifiable(all);
   }
 }

@@ -83,7 +83,7 @@ void main() {
   ) async {
     await moBanDo(tester, khiChon: (_) {});
 
-    expect(danhSachMan, hasLength(6));
+    expect(danhSachMan, hasLength(20));
     expect(find.byType(NutManChoi), findsWidgets);
     expect(find.text('Màn 3'), findsOneWidget);
 

@@ -208,12 +208,12 @@ def test_kho_tien_trinh_crud_va_ben_vung(tmp_path):
     assert kho2.lay_cac_man_hoan_thanh("user_a") == frozenset({1})
     assert kho2.lay_cac_man_hoan_thanh("user_b") == frozenset({1})
 
-    # 4. Kiểm tra ràng buộc stage_id hợp lệ (1-6)
+    # 4. Kiểm tra ràng buộc stage_id hợp lệ (1-20)
     with pytest.raises(ValueError):
         kho2.ghi_nhan_hoan_thanh(
             owner_user_id="user_a",
             verified_wallet_address="0x1111111111111111111111111111111111111111",
-            stage_id=7,  # Vượt quá màn 6
+            stage_id=21,  # Vượt quá màn 20
             verification_source="referee_validation",
             completion_evidence={},
             replay_key="referee:van-007",

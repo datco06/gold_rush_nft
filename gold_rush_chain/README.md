@@ -12,7 +12,7 @@ npx hardhat test                        # 19 phép kiểm thử, gồm đối ch
 
 # Terminal 1
 npx hardhat node                        # http://127.0.0.1:8545, chainId 31337
-# Terminal 2 — triển khai, đặt giá nhân vật, mở 6 màn (đọc ../gold_rush/assets/tiles/man_choi.json)
+# Terminal 2 — triển khai, đặt giá nhân vật, mở 20 màn (đọc ../gold_rush/assets/tiles/man_choi.json)
 npx hardhat ignition deploy ./ignition/modules/CuaHangGoldRush.ts --network localhost
 #   → CuaHangGoldRushModule#CuaHangGoldRush - 0x5FbDB2315678afecb367f032d93F642f64180aa3
 ```

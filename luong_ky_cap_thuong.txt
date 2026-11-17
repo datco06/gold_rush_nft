@@ -1,0 +1,4044 @@
+
+========== gold_rush/lib/gold_rush_game.dart ==========
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:flame/components.dart';
+import 'package:flame/game.dart';
+import 'package:flame/input.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'ai/dieu_chinh_do_kho.dart';
+import 'ai/gui_nhat_ky.dart';
+import 'ai/may_chu_tien_trinh.dart';
+import 'ai/may_chu_huy_hieu.dart';
+import 'ai/mo_hinh_do_kho.dart';
+import 'ai/nhat_ky_choi.dart';
+import 'ai/tien_trinh_controller.dart';
+import 'ai/tim_duong.dart';
+import 'am_thanh/am_thanh.dart';
+import 'auth/auth_controller.dart';
+import 'blockchain/may_chu_phieu.dart';
+import 'blockchain/cua_hang.dart';
+import 'blockchain/nhan_vat.dart';
+import 'blockchain/phien_vi.dart';
+import 'blockchain/vi.dart';
+import 'blockchain/vat_pham/nft_model.dart';
+import 'blockchain/vat_pham/nft_service.dart';
+import 'cau_hinh.dart';
+import 'components/ban_do.dart';
+import 'components/boss.dart';
+import 'components/dan_ban.dart';
+import 'components/dong_xu.dart';
+import 'components/george.dart';
+import 'components/hieu_ung.dart';
+import 'components/hud.dart';
+import 'components/ke_dich.dart';
+import 'components/vat_pham_roi.dart' hide LoaiVatPham;
+import 'dieu_khien/nut_tam_dung.dart';
+import 'kho_do/vat_pham_hien_thi.dart';
+import 'kho_do/danh_sach_trang_bi.dart';
+import 'man_choi.dart';
+import 'tai_nguyen.dart';
+import 'the_gioi.dart';
+import 'world_map/luu_tien_trinh.dart';
+
+/// Tên các lớp phủ giao diện.
+class LopPhu {
+  LopPhu._();
+
+  static const menu = 'menu';
+  static const caiDat = 'caiDat';
+  static const tamDung = 'tamDung';
+  static const ketThuc = 'ketThuc';
+  static const huyHieu = 'huyHieu';
+  static const cuaHang = 'cuaHang';
+  static const chonMan = 'chonMan';
+  static const khoDo = 'khoDo';
+  static const rungRuong = 'rungRuong';
+  static const quaTang = 'quaTang';
+  static const nutBan = 'nutBan';
+}
+
+/// Kết quả ván vừa xong.
+class KetQuaVan {
+  final ManChoi man;
+  final String maVan;
+  final bool thang;
+  final int xu;
+
+  /// Thống kê chiến đấu chuẩn hóa cho Progress/Backend (`stage_id`, `won`, `boss_defeated`, v.v.).
+  final Map<String, Object> thongKe;
+
+  /// Trạng thái phiếu vàng của ván (đang xin / đã có / không có) — cập nhật khi máy chủ trả lời.
+  final String? phieu;
+  final Map<String, dynamic>? huyHieuMoi;
+
+  const KetQuaVan({
+    required this.man,
+    required this.thang,
+    required this.xu,
+    this.maVan = '',
+    this.thongKe = const {},
+    this.phieu,
+    this.huyHieuMoi,
+  });
+
+  int get stageId => man.id;
+
+  bool get matCoc => !man.mienPhi && !thang;
+
+  KetQuaVan voiPhieu(String p) => KetQuaVan(
+    man: man,
+    maVan: maVan,
+    thang: thang,
+    xu: xu,
+    thongKe: thongKe,
+    phieu: p,
+    huyHieuMoi: huyHieuMoi,
+  );
+
+  KetQuaVan voiHuyHieu(Map<String, dynamic> badge) => KetQuaVan(
+    man: man,
+    maVan: maVan,
+    thang: thang,
+    xu: xu,
+    thongKe: thongKe,
+    phieu: phieu,
+    huyHieuMoi: badge,
+  );
+}
+
+class GoldRushGame extends FlameGame
+    with HasCollisionDetection, HasKeyboardHandlerComponents {
+  GoldRushGame._(
+    this.theGioi,
+    this._vi, [
+    this.auth,
+    TienTrinhController? tienTrinh,
+    bool? batBoss,
+  ]) : _tienTrinhController = tienTrinh,
+       coBoss = batBoss ?? CauHinh.batBoss,
+       super(world: theGioi);
+
+  factory GoldRushGame({
+    Vi? vi,
+    AuthController? auth,
+    TienTrinhController? tienTrinh,
+    bool? batBoss,
+  }) => GoldRushGame._(TheGioi(), vi, auth, tienTrinh, batBoss);
+
+  final Vi? _vi;
+  final AuthController? auth;
+  final TienTrinhController? _tienTrinhController;
+
+  late final TienTrinhController tienTrinh =
+      _tienTrinhController ??
+      TienTrinhController(
+        mayChu: MayChuTienTrinh(mayChu: GuiNhatKy.mayChu),
+        authController: auth,
+      );
+
+  final TheGioi theGioi;
+
+  /// Cho phép bật/tắt Boss cho phiên chơi hoặc kiểm thử (mặc định theo `CauHinh.batBoss`).
+  bool coBoss;
+  final TaiNguyen taiNguyen = TaiNguyen();
+  final BoTienTrinhWorldMap tienTrinhWorldMap = BoTienTrinhWorldMap();
+
+  late BanDo banDo;
+
+  List<ManChoi> danhSachMan = const [ManChoi.macDinh];
+  ManChoi manHienTai = ManChoi.macDinh;
+
+  int veDangChoi = 0;
+  double? giayConLai;
+  DateTime? batDauThat;
+
+  final List<Component> _thanhPhanVan = [];
+  final Map<String, BanDo> _boNhoBanDo = {};
+  int _soQuaiBanDau = 0;
+  final List<String> _loaiQuaiGoc = [];
+  int _chiSoQuaiTaiSinh = 0;
+  final Random _ngauNhienSinhQuai = Random();
+  double _demSinhQuai = 0;
+  bool _congTraiTren = true;
+  int _soQuaiBoSung = 0;
+  int _soQuaiThuongBoSung = 0;
+  int _soQuaiKhongLo = 0;
+  int _soQuaiGiap = 0;
+
+  static const String phienBanApp = '1.3.0';
+
+  static const String tepMoHinhDoKho = 'assets/models/do_kho_v1.json';
+  static const String _khoaTrangBi = 'gold_rush.equipment.v1';
+
+  late TimDuong timDuong;
+
+  final DieuChinhDoKho doKho = DieuChinhDoKho();
+  final NhatKyChoi nhatKy = NhatKyChoi();
+
+  /// AI thích ứng chỉ áp dụng cho màn luyện tập đầu tiên.
+  bool get _aiDoKhoDuocPhep => manHienTai.id == 1;
+
+  double _heSoTocDoKeDich() =>
+      (_aiDoKhoDuocPhep ? doKho.heSoTocDo : 1.0) * manHienTai.heSoKeDich;
+
+  bool _vanDangDienRa = false;
+
+  /// Ngoại hình dùng khi dựng ván tiếp theo.
+  String nhanVatDangDung = georgeGoc.tepAnh;
+  String tenNhanVatDangDung = georgeGoc.ten;
+
+  static String khoaNhanVatAi(String characterId) => 'ai:$characterId';
+
+  /// Tải sprite-sheet của nhân vật AI đã lưu và chọn làm ngoại hình cho ván sau.
+  Future<void> trangBiNhanVatAi({
+    required String characterId,
+    required String tenNhanVat,
+    required Uint8List spriteSheet,
+  }) async {
+    final khoa = khoaNhanVatAi(characterId);
+    await taiNguyen.napNhanVatAi(khoa, spriteSheet);
+    nhanVatDangDung = khoa;
+    tenNhanVatDangDung = tenNhanVat;
+  }
+
+  /// Danh sách vật phẩm & trang bị đồng bộ giữa Main Lobby và Kho đồ.
+  final ValueNotifier<List<VatPhamHienThi>> danhSachVatPham = ValueNotifier([]);
+
+  /// Đồng bộ vật phẩm vừa mua thành công vào Kho đồ trong phiên hiện tại.
+  /// Số dư on-chain/NFT vẫn là nguồn sự thật; notifier này chỉ cập nhật UI ngay.
+  void themVatPhamVaoKho(VatPhamHienThi vatPham, {int soLuong = 1}) {
+    if (soLuong < 1) return;
+    final ds = danhSachVatPham.value;
+    final index = ds.indexWhere((item) => item.id == vatPham.id);
+    if (index < 0) {
+      danhSachVatPham.value = [...ds, vatPham.voiSoLuong(soLuong)];
+      return;
+    }
+    final hienTai = ds[index];
+    final capNhat = hienTai.voiSoLuong(hienTai.soLuong + soLuong);
+    danhSachVatPham.value = [
+      for (var i = 0; i < ds.length; i++) i == index ? capNhat : ds[i],
+    ];
+  }
+
+  /// Đồng bộ số lượng NFT đã đọc trên chuỗi, không cộng lặp khi mở lại Store.
+  void dongBoSoLuongVatPham(VatPhamHienThi vatPham, int soLuong) {
+    if (soLuong < 1) return;
+    final ds = danhSachVatPham.value;
+    final index = ds.indexWhere((item) => item.id == vatPham.id);
+    if (index < 0) {
+      danhSachVatPham.value = [...ds, vatPham.voiSoLuong(soLuong)];
+      return;
+    }
+    if (ds[index].soLuong >= soLuong) return;
+    danhSachVatPham.value = [
+      for (var i = 0; i < ds.length; i++)
+        i == index ? ds[i].voiSoLuong(soLuong) : ds[i],
+    ];
+  }
+
+  int? tokenIdVatPham(String itemId) {
+    final index = danhSachTrangBiCuaHang().indexWhere(
+      (item) => item.id == itemId,
+    );
+    return index < 0 ? null : index + 1;
+  }
+
+  VatPhamNFT _metadataNFT(
+    VatPhamHienThi vatPham,
+    int tokenId,
+    String hopDong,
+    int chainId,
+  ) => VatPhamNFT(
+    tokenId: BigInt.from(tokenId),
+    name: vatPham.ten,
+    description: vatPham.moTa,
+    category: vatPham.loai == LoaiVatPham.vuKhi
+        ? LoaiVatPhamNFT.vuKhi
+        : LoaiVatPhamNFT.giap,
+    imageUrl: vatPham.duongDanAnh,
+    contractAddress: hopDong,
+    chainId: chainId,
+  );
+
+  VatPhamHienThi _danhDauNFT(
+    VatPhamHienThi vatPham,
+    int tokenId,
+    String hopDong,
+    int chainId,
+    int soLuong,
+  ) => VatPhamHienThi(
+    id: vatPham.id,
+    ten: vatPham.ten,
+    moTa: vatPham.moTa,
+    loai: vatPham.loai,
+    doHiem: vatPham.doHiem,
+    nguon: NguonVatPham.nft,
+    bieuTuong: vatPham.bieuTuong,
+    danhMuc: vatPham.danhMuc,
+    soLuong: soLuong,
+    duongDanAnh: vatPham.duongDanAnh,
+    thuocTinh: vatPham.thuocTinh,
+    satThuong: vatPham.satThuong,
+    tamBan: vatPham.tamBan,
+    hpCongThem: vatPham.hpCongThem,
+    giamSatThuong: vatPham.giamSatThuong,
+    tocDoCongThem: vatPham.tocDoCongThem,
+    xuyenPha: vatPham.xuyenPha,
+    oDangTrangBi: vatPham.oDangTrangBi,
+    chainId: chainId,
+    diaChiHopDong: hopDong,
+    tokenId: '$tokenId',
+  );
+
+  Future<void> dongBoNFTKhoDo() async {
+    final pv = phienVi;
+    final cauHinh = pv?.cauHinh;
+    final hopDong = cauHinh?.hopDongVatPham;
+    if (pv == null ||
+        !pv.daKetNoi ||
+        cauHinh == null ||
+        hopDong == null ||
+        hopDong.isEmpty) {
+      return;
+    }
+
+    final catalog = danhSachTrangBiCuaHang();
+    final dichVu = DichVuNFT(
+      phienVi: pv,
+      cauHinh: CauHinhNFT(chainId: cauHinh.chainId, hopDong: hopDong),
+    );
+    try {
+      final metadata = [
+        for (var i = 0; i < catalog.length; i++)
+          _metadataNFT(catalog[i], i + 1, hopDong, cauHinh.chainId),
+      ];
+      final nftDaDoc = await dichVu.taiDanhSach(metadata);
+      var danhSachMoi = List<VatPhamHienThi>.of(danhSachVatPham.value);
+      var coThayDoi = false;
+
+      for (var i = 0; i < catalog.length; i++) {
+        final item = catalog[i];
+        final soLuong = nftDaDoc[i].balance?.toInt() ?? 0;
+        final index = danhSachMoi.indexWhere((owned) => owned.id == item.id);
+        if (soLuong <= 0) {
+          if (index >= 0 && danhSachMoi[index].nguon == NguonVatPham.nft) {
+            danhSachMoi.removeAt(index);
+            coThayDoi = true;
+          }
+          continue;
+        }
+
+        final nftItem = _danhDauNFT(
+          index >= 0 ? danhSachMoi[index] : item,
+          i + 1,
+          hopDong,
+          cauHinh.chainId,
+          soLuong,
+        );
+        if (index < 0) {
+          danhSachMoi.add(nftItem);
+          coThayDoi = true;
+        } else if (danhSachMoi[index].soLuong != soLuong ||
+            danhSachMoi[index].nguon != NguonVatPham.nft) {
+          danhSachMoi[index] = nftItem;
+          coThayDoi = true;
+        }
+      }
+
+      try {
+        await pv.mayChu.dongBoKhoNFT(
+          vatPham: [
+            for (var i = 0; i < catalog.length; i++)
+              {
+                'item_id': catalog[i].id,
+                'item_type': switch (catalog[i].loai) {
+                  LoaiVatPham.vuKhi => 'weapon',
+                  LoaiVatPham.giap => 'armor',
+                  LoaiVatPham.giay => 'shoes',
+                  LoaiVatPham.vatPham => 'item',
+                },
+                'token_id': i + 1,
+                'metadata': {
+                  'name': catalog[i].ten,
+                  'description': catalog[i].moTa,
+                  'image_url': catalog[i].duongDanAnh,
+                },
+              },
+          ],
+        );
+      } on LoiVi {
+        // Blockchain vẫn là nguồn hiển thị chính; Backend sẽ thử lại ở lượt sau.
+      }
+
+      if (coThayDoi) {
+        danhSachVatPham.value = danhSachMoi;
+        _apDungTrangBiChoGeorge();
+        await _luuTrangBi();
+      }
+    } finally {
+      dichVu.dispose();
+    }
+  }
+
+  Future<void> chuyenVatPhamNFT(
+    VatPhamHienThi vatPham,
+    String nguoiNhan,
+    int soLuong,
+  ) async {
+    final pv = phienVi;
+    final cauHinh = pv?.cauHinh;
+    final hopDong = cauHinh?.hopDongVatPham;
+    final tokenId = tokenIdVatPham(vatPham.id);
+    if (pv == null || cauHinh == null || hopDong == null || hopDong.isEmpty) {
+      throw const LoiVi('Chưa cấu hình hợp đồng NFT vật phẩm.');
+    }
+    if (tokenId == null) {
+      throw const LoiVi('Không xác định được tokenId của vật phẩm.');
+    }
+
+    final dichVu = DichVuNFT(
+      phienVi: pv,
+      cauHinh: CauHinhNFT(chainId: cauHinh.chainId, hopDong: hopDong),
+    );
+    try {
+      final metadata = _metadataNFT(vatPham, tokenId, hopDong, cauHinh.chainId);
+      final ketQua = await dichVu.chuyenVatPham(
+        tokenId: BigInt.from(tokenId),
+        nguoiNhan: nguoiNhan,
+        amount: BigInt.from(soLuong),
+        metadata: metadata,
+      );
+      await capNhatSauKhiChuyenNFT(vatPham.id, ketQua.vatPham.balance);
+      await dongBoNFTKhoDo();
+    } finally {
+      dichVu.dispose();
+    }
+  }
+
+  /// Nộp các phiếu vàng quà tặng do Backend ký trong một giao dịch hiện có.
+  Future<String> nhanQuaTangVang(List<PhieuCho> vouchers) async {
+    final pv = phienVi;
+    if (pv == null || !pv.daKetNoi || vouchers.isEmpty) {
+      throw const LoiVi('Chưa kết nối ví hoặc voucher vàng không hợp lệ.');
+    }
+    await pv.lamMoi();
+    await pv.cuaHang!.thucHien(diaChi: pv.diaChi!, phieu: vouchers);
+    final hash = pv.cuaHang!.bo.maGiaoDichCuoi;
+    await pv.lamMoi();
+    if (hash == null || hash.isEmpty) {
+      throw const LoiVi('Không lấy được mã giao dịch nhận vàng.');
+    }
+    return hash;
+  }
+
+  /// Claim NFT quà tặng bằng cơ chế claimItem hiện có của VatPhamGoldRush.
+  Future<String> nhanQuaTangNFT(PhieuVatPhamQuaTang voucher) async {
+    final pv = phienVi;
+    final cauHinh = pv?.cauHinh;
+    final hopDong = cauHinh?.hopDongVatPham;
+    final tokenId = voucher.tokenId;
+    final catalog = danhSachTrangBiCuaHang();
+    if (pv == null ||
+        !pv.daKetNoi ||
+        cauHinh == null ||
+        hopDong == null ||
+        hopDong.isEmpty) {
+      throw const LoiVi('Chưa cấu hình hợp đồng NFT vật phẩm.');
+    }
+    if (voucher.chainId != cauHinh.chainId ||
+        voucher.contractAddress.toLowerCase() != hopDong.toLowerCase() ||
+        tokenId < 1 ||
+        tokenId > catalog.length) {
+      throw const LoiVi('Voucher NFT không thuộc mạng hoặc danh mục hiện tại.');
+    }
+    final item = catalog[tokenId - 1];
+    final dichVu = DichVuNFT(
+      phienVi: pv,
+      cauHinh: CauHinhNFT(chainId: cauHinh.chainId, hopDong: hopDong),
+    );
+    try {
+      final ketQua = await dichVu.nhanVatPham(
+        _metadataNFT(item, tokenId, hopDong, cauHinh.chainId),
+        phieu: PhieuVatPhamDaKy(
+          phieu: PhieuVatPham(
+            player: voucher.player,
+            tokenId: BigInt.from(tokenId),
+            amount: BigInt.from(voucher.amount),
+            nonce: voucher.nonce,
+            deadline: BigInt.from(voucher.deadline),
+          ),
+          chuKy: voucher.signature,
+          cauHinh: CauHinhNFT(
+            chainId: voucher.chainId,
+            hopDong: voucher.contractAddress,
+          ),
+        ),
+      );
+      await dongBoNFTKhoDo();
+      return ketQua.transactionHash;
+    } finally {
+      dichVu.dispose();
+    }
+  }
+
+  Future<void> capNhatSauKhiChuyenNFT(
+    String itemId,
+    BigInt? soLuongConLai,
+  ) async {
+    final ds = danhSachVatPham.value;
+    final index = ds.indexWhere((item) => item.id == itemId);
+    if (index < 0) return;
+
+    final hienTai = ds[index];
+    final conLai = soLuongConLai?.toInt() ?? 0;
+    if (conLai <= 0) {
+      danhSachVatPham.value = [
+        for (var i = 0; i < ds.length; i++)
+          if (i != index) ds[i],
+      ];
+      _apDungTrangBiChoGeorge();
+      await _luuTrangBi();
+      return;
+    }
+
+    danhSachVatPham.value = [
+      for (var i = 0; i < ds.length; i++)
+        i == index ? hienTai.voiSoLuong(conLai) : ds[i],
+    ];
+  }
+
+  Future<void> trangBiVatPham(String itemId) async {
+    final ds = danhSachVatPham.value;
+    final idx = ds.indexWhere((vp) => vp.id == itemId);
+    if (idx < 0) return;
+    final vp = ds[idx];
+    if (vp.nguon == NguonVatPham.nft && vp.tokenId == null) return;
+    if (vp.loai != LoaiVatPham.vuKhi &&
+        vp.loai != LoaiVatPham.giap &&
+        vp.loai != LoaiVatPham.giay) {
+      return;
+    }
+
+    final OTrangBi o;
+    if (vp.loai == LoaiVatPham.giap) {
+      o = OTrangBi.giap;
+    } else if (vp.loai == LoaiVatPham.giay) {
+      o = OTrangBi.giay;
+    } else if (vp.bieuTuong == BieuTuongVatPham.cung) {
+      o = OTrangBi.vuKhiPhu;
+    } else {
+      o = OTrangBi.vuKhiChinh;
+    }
+
+    danhSachVatPham.value = [
+      for (final item in ds)
+        if (item.id == itemId)
+          item.voiTrangBi(o)
+        else if (item.oDangTrangBi == o)
+          item.voiTrangBi(null)
+        else
+          item,
+    ];
+    _apDungTrangBiChoGeorge();
+    await _luuTrangBi();
+  }
+
+  Future<void> thaoVatPham(String itemId) async {
+    final ds = danhSachVatPham.value;
+    danhSachVatPham.value = [
+      for (final item in ds)
+        if (item.id == itemId) item.voiTrangBi(null) else item,
+    ];
+    _apDungTrangBiChoGeorge();
+    await _luuTrangBi();
+  }
+
+  Future<void> _luuTrangBi() async {
+    final dangMac = <String, String>{};
+    for (final vp in danhSachVatPham.value) {
+      final o = vp.oDangTrangBi;
+      if (o != null) dangMac[o.name] = vp.id;
+    }
+    await SharedPreferencesAsync().setString(_khoaTrangBi, jsonEncode(dangMac));
+  }
+
+  Future<void> _napTrangBiDaLuu() async {
+    try {
+      final raw = await SharedPreferencesAsync().getString(_khoaTrangBi);
+      if (raw == null) return;
+      final data = jsonDecode(raw);
+      if (data is! Map) return;
+      var ds = [
+        for (final item in danhSachVatPham.value) item.voiTrangBi(null),
+      ];
+      for (final entry in data.entries) {
+        if (entry.key is! String || entry.value is! String) continue;
+        OTrangBi? slot;
+        for (final value in OTrangBi.values) {
+          if (value.name == entry.key) slot = value;
+        }
+        if (slot == null) continue;
+        ds = [
+          for (final item in ds)
+            if (item.id == entry.value)
+              item.voiTrangBi(slot)
+            else if (item.oDangTrangBi == slot)
+              item.voiTrangBi(null)
+            else
+              item,
+        ];
+      }
+      danhSachVatPham.value = ds;
+    } catch (_) {
+      // Dữ liệu lưu cũ/hỏng không được chặn việc vào game.
+    }
+  }
+
+  void _apDungTrangBiChoGeorge() {
+    final g = george;
+    if (g == null) return;
+
+    VatPhamHienThi? tim(OTrangBi o) {
+      for (final vp in danhSachVatPham.value) {
+        if (vp.oDangTrangBi == o) return vp;
+      }
+      return null;
+    }
+
+    final sung = tim(OTrangBi.vuKhiChinh) ?? tim(OTrangBi.vuKhiPhu);
+    final giap = tim(OTrangBi.giap);
+    final giay = tim(OTrangBi.giay);
+    Map<HuongDi, SpriteAnimation> hoatAnh(VatPhamHienThi? vp) {
+      final tep = vp?.duongDanAnh?.split('/').last;
+      return tep == null ? const {} : taiNguyen.trangBiTheoTep[tep] ?? const {};
+    }
+
+    g.datChiSoTrangBi(
+      satThuong: sung?.satThuong ?? 0,
+      tamBan: sung?.tamBan ?? 0,
+      hpCongThem: giap?.hpCongThem ?? 0,
+      giamSatThuong: giap?.giamSatThuong ?? 0,
+      tocDoCongThem: giay?.tocDoCongThem ?? 0,
+      xuyenPha: sung?.xuyenPha ?? false,
+    );
+    g.capNhatTrangBiHienThi(
+      vuKhi: hoatAnh(sung),
+      giap: hoatAnh(giap),
+      giay: hoatAnh(giay),
+    );
+  }
+
+  /// Phiên ví dùng chung, không tạo riêng cho từng màn hình.
+  late final PhienVi? phienVi = PhienVi(
+    vi: _vi ?? taoViMacDinh(),
+    mayChu: MayChuPhieu(
+      mayChu: GuiNhatKy.mayChu,
+      layCsrfToken: () => auth?.csrfToken,
+    ),
+  );
+
+  final ValueNotifier<KetQuaVan?> ketQuaVan = ValueNotifier(null);
+
+  /// Huy hiệu đã được backend xác nhận trong phiên hiện tại.
+  final ValueNotifier<Set<int>> huyHieuDaNhan = ValueNotifier(<int>{});
+
+  int _mauTruoc = CauHinh.mauToiDa;
+  int _diemTruoc = 0;
+
+  George? george;
+  JoystickComponent? joystick;
+  Hud? hud;
+
+  /// Boss của ván hiện tại. null = không có Boss (mặc định; chỉ bật bằng
+  /// `--dart-define=GOLD_RUSH_BOSS=true`).
+  Boss? _boss;
+
+  TrangThaiChoi trangThai = TrangThaiChoi.tamDung;
+  bool _daGuiVaXinPhieu = false;
+
+  int tongSoXu = 0;
+  int soXuDaNhat = 0;
+
+  /// Điểm cao nhất trong phiên hiện tại.
+  int diemCaoNhat = 0;
+
+  @override
+  Color backgroundColor() => CauHinh.mauNen;
+
+  // ------------------------------------------------------------------
+  // Nạp tài nguyên
+  // ------------------------------------------------------------------
+
+  @override
+  Future<void> onLoad() async {
+    await taiNguyen.nap();
+    await AmThanh.napTruoc();
+    await _napTrangBiDaLuu();
+    unawaited(phienVi?.napVangDaLuu());
+
+    await _napDanhSachMan();
+    await tienTrinhWorldMap.nap(danhSachMan);
+
+    banDo = await _layBanDo(manHienTai.tep);
+    theGioi.add(banDo.thanhPhan);
+
+    timDuong = _dungTimDuong();
+
+    await _napMoHinhDoKho();
+    unawaited(napHuyHieu());
+    if (auth?.canEnterGame == true && auth?.walletAddress != null) {
+      final pv = phienVi;
+      pv?.diaChi ??= auth!.walletAddress!;
+      if (pv != null) {
+        unawaited(
+          pv.ketNoiDaXacThuc(auth!.walletAddress!).then((daKetNoi) async {
+            if (daKetNoi) await dongBoNFTKhoDo();
+          }),
+        );
+      }
+    }
+
+    theGioi.khiChamVaoBanDo = (viTri) {
+      george?.viTriDich = viTri;
+    };
+
+    _capNhatZoom();
+
+    hud = Hud(
+      layMau: () => george?.mau ?? 0,
+      layDiem: () => george?.diem ?? 0,
+      layXuConLai: () => tongSoXu - soXuDaNhat,
+      layGiayConLai: () => giayConLai,
+    );
+
+    camera.viewport.add(hud!);
+
+    joystick = JoystickComponent(
+      knob: SpriteComponent(
+        sprite: taiNguyen.joystickNum,
+        size: Vector2.all(30),
+      ),
+      background: SpriteComponent(
+        sprite: taiNguyen.joystickNen,
+        size: Vector2.all(72),
+      ),
+      margin: const EdgeInsets.only(left: 26, bottom: 26),
+      priority: 100,
+    );
+
+    camera.viewport.add(joystick!);
+    camera.viewport.add(NutTamDung(khiBam: tamDung));
+
+    // Dựng cảnh phía sau Menu.
+    _dungVan();
+    _anTatCaLopPhu();
+    overlays.add(LopPhu.menu);
+
+    trangThai = TrangThaiChoi.tamDung;
+    _datDieuKhien(false);
+  }
+
+  TimDuong _dungTimDuong() => TimDuong(
+    soCot: banDo.soCot,
+    soHang: banDo.soHang,
+    biChan: banDo.luoi.biChanO,
+  );
+
+  Future<void> napHuyHieu() async {
+    if (auth == null) return;
+    final client = MayChuHuyHieu();
+    final data = await client.taiDanhSach();
+    client.dong();
+    final badges = data?['badges'];
+    if (badges is! List) return;
+    final ids = <int>{};
+    for (final item in badges) {
+      if (item is Map && item['eligible'] == true && item['badge_id'] is int) {
+        ids.add(item['badge_id'] as int);
+      }
+    }
+    if (ids.isNotEmpty) huyHieuDaNhan.value = ids;
+  }
+
+  /// Khởi tạo bộ nhớ bản đồ và trạng thái ván cho kiểm thử đơn vị mà không cần nạp `.tmx` hay âm thanh.
+  @visibleForTesting
+  void khoiTaoChoKiemThu({
+    required BanDo banDoDau,
+    Map<String, BanDo>? cacBanDoKhac,
+    List<ManChoi>? danhSachMan,
+  }) {
+    for (final ten in [
+      LopPhu.menu,
+      LopPhu.caiDat,
+      LopPhu.tamDung,
+      LopPhu.ketThuc,
+      LopPhu.huyHieu,
+      LopPhu.cuaHang,
+      LopPhu.chonMan,
+      LopPhu.rungRuong,
+      LopPhu.quaTang,
+      LopPhu.nutBan,
+    ]) {
+      overlays.addEntry(ten, (_, _) => const SizedBox.shrink());
+    }
+    _boNhoBanDo.clear();
+    _boNhoBanDo[banDoDau.tep] = banDoDau;
+    if (cacBanDoKhac != null) _boNhoBanDo.addAll(cacBanDoKhac);
+    if (danhSachMan != null && danhSachMan.isNotEmpty) {
+      this.danhSachMan = danhSachMan;
+      manHienTai = danhSachMan.first;
+    }
+    banDo = banDoDau;
+    theGioi.add(banDo.thanhPhan);
+    timDuong = _dungTimDuong();
+    final ids = (danhSachMan != null && danhSachMan.isNotEmpty)
+        ? danhSachMan.map((m) => m.id).toList()
+        : [1, 2, 3, 4, 5, 6];
+    // ignore: invalid_use_of_visible_for_testing_member
+    tienTrinhWorldMap.khoiTaoChoKiemThu(ids);
+  }
+
+  @visibleForTesting
+  bool get daGuiVaXinPhieu => _daGuiVaXinPhieu;
+
+  @visibleForTesting
+  Future<void> guiVaXinPhieuChoKiemThu({
+    required Map<String, Object> nk,
+    required String maVan,
+    required KetQuaVan kq,
+    required bool coPhieu,
+  }) async {
+    _daGuiVaXinPhieu = true;
+    await _guiVaXinPhieu(nk, maVan, kq, coPhieu);
+  }
+
+  Future<void> _napDanhSachMan() async {
+    try {
+      danhSachMan = ManChoi.docBoManChoi(
+        await rootBundle.loadString('assets/tiles/man_choi.json'),
+        await rootBundle.loadString('assets/tiles/man_mo_rong.json'),
+      );
+      manHienTai = danhSachMan.first;
+    } catch (e) {
+      debugPrint(
+        'Không nạp được man_choi.json ($e) '
+        '— chỉ có màn mặc định.',
+      );
+    }
+  }
+
+  Future<BanDo> _layBanDo(String tep) async =>
+      _boNhoBanDo[tep] ??= await BanDo.nap(tep);
+
+  /// Kiểm tra bản đồ trước khi đặt cọc.
+  Future<bool> napTruocBanDo(ManChoi m) async {
+    try {
+      await _layBanDo(m.tep);
+      return true;
+    } catch (e) {
+      debugPrint('Không nạp được ${m.tep}: $e');
+      return false;
+    }
+  }
+
+  Future<void> _doiBanDo(ManChoi m) async {
+    if (banDo.tep == m.tep) return;
+
+    final moi = await _layBanDo(m.tep);
+
+    banDo.thanhPhan.removeFromParent();
+    banDo = moi;
+
+    theGioi.add(banDo.thanhPhan);
+    timDuong = _dungTimDuong();
+  }
+
+  Future<void> _napMoHinhDoKho() async {
+    try {
+      final chuoi = await rootBundle.loadString(tepMoHinhDoKho);
+      doKho.moHinh = MoHinhDoKho.tuJson(
+        jsonDecode(chuoi) as Map<String, dynamic>,
+      );
+      debugPrint('Đã nạp mô hình độ khó ${doKho.moHinh!.phienBan}');
+    } catch (e) {
+      debugPrint(
+        'Không nạp được mô hình độ khó ($e) '
+        '— dùng độ khó cố định.',
+      );
+    }
+  }
+
+  @override
+  void onMount() {
+    super.onMount();
+    pauseEngine();
+  }
+
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    if (isLoaded) _capNhatZoom();
+  }
+
+  void _capNhatZoom() {
+    if (size.x <= 0) return;
+
+    final z = size.x / (CauHinh.soONhinThayNgang * CauHinh.kichThuocO);
+    camera.viewfinder.zoom = z
+        .clamp(CauHinh.zoomToiThieu, CauHinh.zoomToiDa)
+        .toDouble();
+  }
+
+  // ==================================================================
+  // Dựng ván chơi
+  // ==================================================================
+  Boss? get boss => _boss;
+
+  void _dungVan({String? maVan}) {
+    for (final c in _thanhPhanVan) {
+      c.removeFromParent();
+    }
+    _thanhPhanVan.clear();
+    // Dọn dẹp mọi đạn, vật phẩm rơi hoặc hiệu ứng nổ động còn sót trong theGioi từ ván trước.
+    for (final c in theGioi.children.toList()) {
+      if (c is DanBan ||
+          c is VatPhamRoi ||
+          c is HieuUngNoKeDich ||
+          c is HieuUngNhatXu) {
+        c.removeFromParent();
+      }
+    }
+    _boss = null;
+    _demSinhQuai = 0;
+    _congTraiTren = true;
+    _soQuaiBanDau = 0;
+    _loaiQuaiGoc.clear();
+    _chiSoQuaiTaiSinh = 0;
+    _soQuaiBoSung = 0;
+    _soQuaiThuongBoSung = 0;
+    _soQuaiKhongLo = 0;
+    _soQuaiGiap = 0;
+
+    soXuDaNhat = 0;
+    tongSoXu = 0;
+
+    final diemGeorge = banDo.diemXuatHien.firstWhere(
+      (d) => d.ten == 'george',
+      orElse: () => DiemXuatHien('george', banDo.kichThuoc / 2),
+    );
+
+    VatPhamHienThi? timTrangBi(OTrangBi o) {
+      for (final vp in danhSachVatPham.value) {
+        if (vp.oDangTrangBi == o) return vp;
+      }
+      return null;
+    }
+
+    String? tenTep(VatPhamHienThi? vp) => vp?.duongDanAnh?.split('/').last;
+    Map<HuongDi, SpriteAnimation> hoatAnhTrangBi(VatPhamHienThi? vp) {
+      final tep = tenTep(vp);
+      return tep == null ? const {} : taiNguyen.trangBiTheoTep[tep] ?? const {};
+    }
+
+    final sung =
+        timTrangBi(OTrangBi.vuKhiChinh) ?? timTrangBi(OTrangBi.vuKhiPhu);
+    final giap = timTrangBi(OTrangBi.giap);
+    final giay = timTrangBi(OTrangBi.giay);
+
+    george = George(
+      banDo: banDo,
+      hoatAnh: taiNguyen.georgeTheoTep[nhanVatDangDung] ?? taiNguyen.george,
+      viTri: diemGeorge.viTri.clone(),
+      khiChiSoDoi: _khiChiSoDoi,
+      khiChet: _khiGeorgeChet,
+      trangBiVuKhi: hoatAnhTrangBi(sung),
+      trangBiGiap: hoatAnhTrangBi(giap),
+      trangBiGiay: hoatAnhTrangBi(giay),
+    );
+    _apDungTrangBiChoGeorge();
+
+    _them(george!);
+
+    // Đếm số mục tiêu George hạ được (quái và Boss) cho thống kê chiến đấu.
+    george!.khiHaMucTieu = (_) => nhatKy.ghiHaKeDich();
+
+    Vector2 viTriNguoiChoi() => george?.position ?? Vector2.zero();
+
+    for (final d in banDo.diemXuatHien) {
+      switch (d.ten) {
+        case 'coin':
+          tongSoXu++;
+          _them(DongXu(hoatAnh: taiNguyen.dongXu, viTri: d.viTri.clone()));
+          break;
+
+        case 'zombie':
+        case 'skeleton':
+        case 'thuong':
+        case 'giap':
+        case 'khong_lo':
+          _soQuaiBanDau++;
+          _loaiQuaiGoc.add(d.ten);
+          _sinhQuai(
+            d.ten,
+            viTriNguoiChoi,
+            _heSoTocDoKeDich,
+            viTri: d.viTri.clone(),
+          );
+          break;
+      }
+    }
+
+    // Boss xuất hiện khi bật `coBoss` (mặc định theo --dart-define=GOLD_RUSH_BOSS=true),
+    // nên sáu màn gốc không thay đổi. Chưa có điểm 'boss' trong .tmx thì
+    // dùng tạm điểm skeleton đầu tiên (chắc chắn đi được), hoặc tâm bản đồ.
+    if (coBoss) {
+      final diemBoss = banDo.diemXuatHien.firstWhere(
+        (d) => d.ten == 'boss',
+        orElse: () => banDo.diemXuatHien.firstWhere(
+          (d) => d.ten == 'skeleton',
+          orElse: () => DiemXuatHien('boss', banDo.kichThuoc / 2),
+        ),
+      );
+      _boss = Boss(
+        banDo: banDo,
+        hoatAnh: taiNguyen.skeleton,
+        viTri: diemBoss.viTri.clone(),
+        viTriNguoiChoi: viTriNguoiChoi,
+        gayDame: (l) => george?.nhanSatThuong(l),
+        khiChet: _khiBossChet,
+      );
+      _them(_boss!);
+    }
+
+    camera.follow(george!, snap: true);
+    _ghimCameraTrongBanDo();
+
+    nhatKy.batDau(tongSoXu, maVanCoSan: maVan);
+    giayConLai = manHienTai.gioiHanGiay > 0
+        ? manHienTai.gioiHanGiay.toDouble()
+        : null;
+    doKho.datLai();
+    _mauTruoc = george!.mau;
+    _diemTruoc = 0;
+  }
+
+  void _them(Component c) {
+    _thanhPhanVan.add(c);
+    theGioi.add(c);
+  }
+
+  int get _giaiDoanSinhQuai => manHienTai.id <= 3
+      ? 1
+      : (manHienTai.id <= 7 ? 2 : (manHienTai.id <= 15 ? 3 : 4));
+
+  int get _soQuaiDangSong =>
+      theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length;
+
+  double get _chuKySinhQuai =>
+      _giaiDoanSinhQuai == 1 ? 30 : (_giaiDoanSinhQuai == 4 ? 18 : 20);
+
+  int get _soBoSungToiDa => switch (manHienTai.id) {
+    4 || 5 => 2,
+    6 || 7 => 3,
+    8 || 9 => 3,
+    10 || 11 || 12 => 4,
+    13 || 14 || 15 => 5,
+    16 || 17 || 18 => 5,
+    19 || 20 => 6,
+    _ => 0,
+  };
+
+  int get _soThuongToiDa => switch (manHienTai.id) {
+    4 || 5 => 2,
+    6 || 7 => 3,
+    8 || 9 => 3,
+    10 || 11 => 3,
+    12 => 4,
+    13 || 14 || 15 => 5,
+    16 || 17 || 18 => 5,
+    19 || 20 => 6,
+    _ => 0,
+  };
+
+  int get _soGiapBatBuoc => switch (manHienTai.id) {
+    16 => 1,
+    17 => 2,
+    18 || 19 => 3,
+    20 => 4,
+    _ => 0,
+  };
+
+  void _capNhatSinhQuai(
+    double dt,
+    Vector2 Function() viTriNguoiChoi,
+    double Function() heSoTocDo,
+  ) {
+    _demSinhQuai += dt;
+    if (_demSinhQuai < _chuKySinhQuai) return;
+    _demSinhQuai = 0;
+
+    // Nếu số quái sống hiện tại < số quái ban đầu, sinh bù theo thời gian cố định.
+    // Nếu đã đủ (>= _soQuaiBanDau) thì không sinh quái gốc nữa.
+    if (_soQuaiDangSong < _soQuaiBanDau && _loaiQuaiGoc.isNotEmpty) {
+      final loai = _loaiQuaiGoc[_chiSoQuaiTaiSinh % _loaiQuaiGoc.length];
+      _chiSoQuaiTaiSinh++;
+      _sinhQuai(loai, viTriNguoiChoi, heSoTocDo);
+      return;
+    }
+
+    final tienTrinh = manHienTai.gioiHanGiay <= 0
+        ? 1.0
+        : (nhatKy.giay / manHienTai.gioiHanGiay).clamp(0.0, 1.0);
+
+    if (_giaiDoanSinhQuai == 4 &&
+        tienTrinh >= 0.7 &&
+        _soQuaiGiap < _soGiapBatBuoc &&
+        theGioi.children
+                .whereType<KeDich>()
+                .where((q) => q.maxHp == 100)
+                .length <
+            2) {
+      _soQuaiGiap++;
+      _sinhQuai('giap', viTriNguoiChoi, heSoTocDo);
+      return;
+    }
+
+    if (_soQuaiBoSung >= _soBoSungToiDa) return;
+    final loai = _chonQuaiBoSung(tienTrinh);
+    if (loai == 'khong_lo') _soQuaiKhongLo++;
+    if (loai == 'thuong') _soQuaiThuongBoSung++;
+    _soQuaiBoSung++;
+    _sinhQuai(loai, viTriNguoiChoi, heSoTocDo);
+  }
+
+  String _chonQuaiBoSung(double tienTrinh) {
+    final loai = _chonQuaiBoSungTheoTyLe(tienTrinh);
+    if (loai == 'khong_lo' && manHienTai.id == 9 && coBoss) {
+      return 'thuong';
+    }
+    if (loai == 'thuong' && _soQuaiThuongBoSung >= _soThuongToiDa) {
+      return 'zombie';
+    }
+    return loai;
+  }
+
+  String _chonQuaiBoSungTheoTyLe(double tienTrinh) {
+    final r = _ngauNhienSinhQuai.nextDouble();
+    if (_giaiDoanSinhQuai == 1) return 'zombie';
+
+    if (_giaiDoanSinhQuai == 2) {
+      final tiLeThuong = switch (manHienTai.id) {
+        4 => 0.20,
+        5 => 0.25,
+        6 => 0.30,
+        _ => 0.35,
+      };
+      return r < tiLeThuong ? 'thuong' : 'zombie';
+    }
+
+    if (_giaiDoanSinhQuai == 3) {
+      if (tienTrinh < 0.5) return r < 0.55 ? 'zombie' : 'thuong';
+      final tiLeKhongLo = switch (manHienTai.id) {
+        8 || 9 => 0.05,
+        10 || 11 => 0.08,
+        12 => 0.10,
+        13 => 0.10,
+        14 => 0.13,
+        _ => 0.15,
+      };
+      if (r < tiLeKhongLo && _soQuaiKhongLo == 0) return 'khong_lo';
+      return r < tiLeKhongLo + 0.5 ? 'thuong' : 'zombie';
+    }
+
+    final tiLeKhongLo = switch (manHienTai.id) {
+      16 => 0.10,
+      17 => 0.12,
+      18 => 0.15,
+      _ => 0.20,
+    };
+    if (r < tiLeKhongLo && _soQuaiKhongLo == 0) return 'khong_lo';
+    return r < tiLeKhongLo + 0.6 ? 'thuong' : 'zombie';
+  }
+
+  Vector2 _viTriCongSinh() {
+    final le = CauHinh.kichThuocO;
+    final traiTren = _congTraiTren;
+    final diemGoc = traiTren
+        ? Vector2(le, le)
+        : Vector2(banDo.kichThuoc.x - le, banDo.kichThuoc.y - le);
+    _congTraiTren = !_congTraiTren;
+    if (banDo.diDuoc(diemGoc, Vector2.all(2))) return diemGoc;
+
+    // Nếu đúng ô góc là tường, tìm ô đi được gần cổng nhất trên đường chéo.
+    for (var i = 1; i < 12; i++) {
+      final diem = traiTren
+          ? Vector2(le * (i + 1), le * (i + 1))
+          : Vector2(
+              banDo.kichThuoc.x - le * (i + 1),
+              banDo.kichThuoc.y - le * (i + 1),
+            );
+      if (banDo.diDuoc(diem, Vector2.all(2))) return diem;
+    }
+    return banDo.kichThuoc / 2;
+  }
+
+  void _sinhQuai(
+    String loai,
+    Vector2 Function() viTriNguoiChoi,
+    double Function() heSoTocDo, {
+    Vector2? viTri,
+  }) {
+    final viTriSinh = viTri ?? _viTriCongSinh();
+    final tim = timDuong;
+    final component = switch (loai) {
+      'skeleton' => KeDich.skeleton(
+        banDo: banDo,
+        hoatAnh: taiNguyen.skeleton,
+        viTri: viTriSinh,
+        viTriNguoiChoi: viTriNguoiChoi,
+        timDuong: tim,
+        heSoTocDo: heSoTocDo,
+      ),
+      'thuong' => KeDich.thuong(
+        banDo: banDo,
+        hoatAnh: taiNguyen.quaiThuong,
+        viTri: viTriSinh,
+        viTriNguoiChoi: viTriNguoiChoi,
+        timDuong: tim,
+        heSoTocDo: heSoTocDo,
+      ),
+      'giap' => KeDich.giap(
+        banDo: banDo,
+        hoatAnh: taiNguyen.quaiGiap,
+        viTri: viTriSinh,
+        viTriNguoiChoi: viTriNguoiChoi,
+        timDuong: tim,
+        heSoTocDo: heSoTocDo,
+      ),
+      'khong_lo' => KeDich.khongLo(
+        banDo: banDo,
+        hoatAnh: taiNguyen.quaiKhongLo,
+        viTri: viTriSinh,
+        viTriNguoiChoi: viTriNguoiChoi,
+        timDuong: tim,
+        heSoTocDo: heSoTocDo,
+      ),
+      _ => KeDich.zombie(
+        banDo: banDo,
+        hoatAnh: taiNguyen.zombie,
+        viTri: viTriSinh,
+        viTriNguoiChoi: viTriNguoiChoi,
+        timDuong: tim,
+        heSoTocDo: heSoTocDo,
+      ),
+    };
+    _them(component);
+  }
+
+  void _khiChiSoDoi() {
+    final g = george;
+    if (g == null) return;
+
+    // Ghi nhật ký: điểm tăng = vừa nhặt xu, máu giảm = vừa trúng đòn.
+    if (g.diem > _diemTruoc) nhatKy.ghiNhatXu(g.position.x, g.position.y);
+    if (g.mau < _mauTruoc) {
+      nhatKy.ghiTrungDon(g.position.x, g.position.y);
+      nhatKy.satThuongNhan += _mauTruoc - g.mau;
+    }
+    _diemTruoc = g.diem;
+    _mauTruoc = g.mau;
+
+    final nhat = g.diem ~/ CauHinh.diemMoiDongXu;
+
+    if (nhat != soXuDaNhat) {
+      soXuDaNhat = nhat;
+      _kiemTraThang();
+    }
+  }
+
+  bool get _bossConSong => _boss != null && _boss!.sucKhoe.conSong;
+
+  /// Thắng khi đủ xu VÀ không còn Boss. Không có Boss thì y hệt luồng cũ.
+  void _kiemTraThang() {
+    if (trangThai != TrangThaiChoi.dangChoi) return;
+    final daSinhDuQuai = _soQuaiGiap >= _soGiapBatBuoc;
+    if (tongSoXu > 0 &&
+        soXuDaNhat >= tongSoXu &&
+        !_bossConSong &&
+        daSinhDuQuai) {
+      _khiThangCuoc();
+    }
+  }
+
+  void _khiBossChet(Boss b) {
+    nhatKy.bossDaHa = true;
+    _kiemTraThang();
+  }
+
+  void _khiGeorgeChet() {
+    trangThai = TrangThaiChoi.thua;
+    _ketThucVan();
+  }
+
+  void _khiThangCuoc() {
+    if (_vanDangDienRa) {
+      unawaited(tienTrinhWorldMap.ghiNhanThang(manHienTai.id));
+    }
+    trangThai = TrangThaiChoi.thang;
+    _ketThucVan();
+  }
+
+  void _khiHetGio() {
+    giayConLai = 0;
+    trangThai = TrangThaiChoi.thua;
+    _ketThucVan();
+  }
+
+  void _ketThucVan() {
+    _guiNhatKy(trangThai == TrangThaiChoi.thang ? 'thang' : 'thua');
+
+    diemCaoNhat = max(diemCaoNhat, george?.diem ?? 0);
+
+    _datDieuKhien(false);
+    AmThanh.dungNhacNen();
+    overlays.add(LopPhu.ketThuc);
+    pauseEngine();
+  }
+
+  // ------------------------------------------------------------------
+  // Vòng lặp
+  // ------------------------------------------------------------------
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    if (trangThai != TrangThaiChoi.dangChoi) return;
+
+    _docJoystick();
+    _ghimCameraTrongBanDo();
+
+    final con = giayConLai;
+
+    if (con != null) {
+      giayConLai = con - dt;
+
+      if (giayConLai! <= 0) {
+        _khiHetGio();
+        return;
+      }
+    }
+
+    final g = george;
+
+    if (g != null) {
+      Vector2 viTriNguoiChoi() => g.position;
+      _capNhatSinhQuai(dt, viTriNguoiChoi, _heSoTocDoKeDich);
+      _kiemTraThang();
+    }
+
+    if (g != null && nhatKy.troiThoiGian(dt)) {
+      final dacTrung = nhatKy.chup(g.mau, CauHinh.mauToiDa);
+      if (_aiDoKhoDuocPhep) doKho.capNhat(dacTrung);
+    }
+  }
+
+  void _guiNhatKy(String ketQua) {
+    if (!_vanDangDienRa) return;
+
+    _vanDangDienRa = false;
+
+    final g = george;
+    if (g != null) nhatKy.chup(g.mau, CauHinh.mauToiDa);
+
+    // Thống kê chiến đấu: chỉ ghi log cục bộ, CHƯA gửi lên máy chủ
+    if (g != null) nhatKy.trangBi = g.trangBi.idDangTrang;
+    final thangVan = ketQua == 'thang';
+    final thongKe = nhatKy.thongKeChienDau(
+      stageId: manHienTai.id,
+      won: thangVan,
+    );
+    debugPrint('Chiến đấu: $thongKe');
+
+    final nk = nhatKy.thanhJson(
+      ketQua: ketQua,
+      diem: g?.diem ?? 0,
+      phienBanApp: phienBanApp,
+      doKhoThichUng:
+          _aiDoKhoDuocPhep && doKho.batThichUng && doKho.moHinh != null,
+      banDo: banDo.tep,
+      man: manHienTai.id,
+    );
+    debugPrint(
+      'Ván ${nk['ma_van']}: $ketQua, ${nk['giay']} giây, '
+      '${nhatKy.anhChup.length} ảnh chụp, ${nhatKy.suKien.length} sự kiện',
+    );
+    final maVan = nhatKy.maVan;
+    final man = manHienTai;
+    final thang = ketQua == 'thang';
+    var kq = KetQuaVan(
+      man: man,
+      maVan: maVan,
+      thang: thang,
+      xu: nhatKy.soXu,
+      thongKe: thongKe,
+    );
+    // Màn 1 không đặt cọc nhưng vẫn là ván chính thức: chỉ ván thắng hợp lệ
+    // mới được xin phiếu vàng. Ván thua vẫn gửi nhật ký để giữ dữ liệu AI,
+    // nhưng tuyệt đối không phát thưởng.
+    final coPhieu = !man.chiChoiLocal && thang;
+    final guiNhatKy = !man.chiChoiLocal;
+    if (coPhieu) {
+      kq = kq.voiPhieu('Đang gửi ván lên máy chủ trọng tài…');
+    }
+    ketQuaVan.value = kq;
+
+    if (thang || guiNhatKy) {
+      if (!_daGuiVaXinPhieu) {
+        _daGuiVaXinPhieu = true;
+        unawaited(_guiVaXinPhieu(nk, maVan, kq, coPhieu));
+      }
+    }
+  }
+
+  Future<void> _guiVaXinPhieu(
+    Map<String, Object> nk,
+    String maVan,
+    KetQuaVan kq,
+    bool coPhieu,
+  ) async {
+    final pv = phienVi;
+    final daGui = GuiNhatKy.daCauHinh ? await GuiNhatKy.gui(nk) : false;
+
+    if (daGui && kq.thang && auth != null && maVan.isNotEmpty) {
+      final mayChuHuyHieu = MayChuHuyHieu();
+      final badge = await mayChuHuyHieu.danhGia(
+        maVan: maVan,
+        csrfToken: auth?.csrfToken,
+      );
+      mayChuHuyHieu.dong();
+      final moi = (badge?['new_badges'] as List?)
+          ?.whereType<Map<String, dynamic>>()
+          .toList();
+      if (moi != null && moi.isNotEmpty && identical(ketQuaVan.value, kq)) {
+        final badgeId = moi.first['badge_id'];
+        if (badgeId is int) {
+          huyHieuDaNhan.value = {...huyHieuDaNhan.value, badgeId};
+        }
+        kq = kq.voiHuyHieu(moi.first);
+        ketQuaVan.value = kq;
+        overlays.remove(LopPhu.ketThuc);
+        overlays.add(LopPhu.huyHieu);
+      }
+    }
+
+    void datTrangThai(String p) {
+      if (!identical(ketQuaVan.value, kq)) return;
+      kq = kq.voiPhieu(p);
+      ketQuaVan.value = kq;
+    }
+
+    BigInt? soVang;
+    if (pv != null && coPhieu && daGui) {
+      if (!pv.daKetNoi) {
+        if (auth?.canEnterGame == true && auth?.walletAddress != null) {
+          await pv.ketNoiDaXacThuc(auth!.walletAddress!);
+        }
+      }
+      if (pv.daKetNoi) {
+        soVang = await pv.xinPhieuChoVan(maVan);
+      } else {
+        // ketNoiDaXacThuc có thể hoàn tất kết nối ngay trong nhánh trên.
+        // Khi đó phải xin lại phiếu và giữ kết quả để luồng claim/faucet chạy;
+        // trước đây kết quả bị bỏ nên màn thắng báo thiếu phiếu dù máy chủ đã cấp.
+        final phieu = await pv.xinPhieuChoVan(maVan);
+        if (pv.daKetNoi) soVang = phieu;
+      }
+    }
+
+    final soVangCong = soVang != null
+        ? (soVang + (kq.man.mienPhi ? BigInt.zero : BigInt.from(kq.man.coc)))
+        : (kq.thang && !kq.man.chiChoiLocal
+              ? BigInt.from(
+                  kq.xu + (kq.man.mienPhi ? 0 : (kq.man.coc + kq.man.thuong)),
+                )
+              : BigInt.zero);
+
+    // Phiếu chỉ là bằng chứng thưởng đã ký, chưa phải số dư ví. Khi đã có ví
+    // kết nối, claim ngay bằng giao dịch nhanVang; PhienVi chỉ cập nhật topbar
+    // sau khi đọc lại số dư on-chain thành công. Nếu thiếu ETH/từ chối giao
+    // dịch, phiếu vẫn chờ nhận và tuyệt đối không cộng vàng local.
+    var daGhiOnChain = false;
+    if (soVang != null && pv != null && pv.daKetNoi) {
+      daGhiOnChain = await pv.nhanTatCa();
+    }
+
+    if (daGhiOnChain) {
+      datTrangThai(
+        'Đã ghi +$soVang vàng lên blockchain'
+        '${kq.man.mienPhi ? '' : ' (+${kq.man.coc} cọc hoàn lại)'}.',
+      );
+    } else if (soVang != null) {
+      final lyDo = pv?.thongBao;
+      datTrangThai(
+        lyDo == null || lyDo.isEmpty
+            ? 'Phiếu +$soVang vàng đang chờ nhận on-chain.'
+            : 'Phiếu +$soVang vàng chưa ghi on-chain: $lyDo',
+      );
+    } else if (soVangCong > BigInt.zero) {
+      // Xin phiếu có thể bị trọng tài từ chối (ví dụ đã chạm hạn mức vàng
+      // trong ngày). Không che mất lý do thật bằng thông báo "chưa có phiếu",
+      // vì người chơi không thể tự biết cần chờ hay sửa cấu hình nào.
+      final lyDo = pv?.thongBao;
+      datTrangThai(
+        lyDo == null || lyDo.isEmpty
+            ? 'Đủ điều kiện nhưng chưa có phiếu blockchain; chưa cộng vàng vào topbar.'
+            : 'Chưa cấp phiếu blockchain: $lyDo',
+      );
+    } else if (!daGui && coPhieu) {
+      datTrangThai(
+        'Không gửi được ván lên máy chủ '
+        '— ván này không đổi được thành vàng.',
+      );
+    } else if (pv != null && !pv.daKetNoi && coPhieu) {
+      datTrangThai(
+        'Kết nối MetaMask (Cửa hàng) '
+        'để nhận vàng của ván này.',
+      );
+    }
+
+    // Ghi nhận tiến trình khi thắng màn:
+    if (kq.thang && kq.man.id >= 1 && kq.man.id <= 6) {
+      unawaited(
+        tienTrinh
+            .xacNhanHoanThanhMan(
+              stageId: kq.man.id,
+              evidenceType: 'referee_log',
+              evidence: maVan,
+            )
+            .catchError((Object e, StackTrace s) {
+              debugPrint('Lỗi đồng bộ tiến trình màn ${kq.man.id}: $e');
+              return false;
+            }),
+      );
+    }
+  }
+
+  void _docJoystick() {
+    final j = joystick;
+    final g = george;
+
+    if (j == null || g == null) return;
+
+    if (j.direction == JoystickDirection.idle) {
+      g.huongJoystick.setZero();
+    } else {
+      g.huongJoystick.setFrom(j.relativeDelta);
+    }
+  }
+
+  void _ghimCameraTrongBanDo() {
+    if (!hasLayout) return;
+    final zoom = camera.viewfinder.zoom;
+    if (zoom <= 0) return;
+
+    final nuaW = size.x / (2 * zoom);
+    final nuaH = size.y / (2 * zoom);
+    final bd = banDo.kichThuoc;
+    final vf = camera.viewfinder;
+
+    if (bd.x <= nuaW * 2) {
+      vf.position.x = bd.x / 2;
+    } else {
+      vf.position.x = vf.position.x.clamp(nuaW, bd.x - nuaW);
+    }
+
+    if (bd.y <= nuaH * 2) {
+      vf.position.y = bd.y / 2;
+    } else {
+      vf.position.y = vf.position.y.clamp(nuaH, max(nuaH, bd.y - nuaH));
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Điều hướng
+  // ------------------------------------------------------------------
+
+  void _datDieuKhien(bool bat) {
+    theGioi.nhanCham = bat;
+    george?.dieuKhienDuoc = bat;
+
+    if (!bat) george?.viTriDich = null;
+  }
+
+  void _anTatCaLopPhu() {
+    overlays.remove(LopPhu.menu);
+    overlays.remove(LopPhu.caiDat);
+    overlays.remove(LopPhu.tamDung);
+    overlays.remove(LopPhu.ketThuc);
+    overlays.remove(LopPhu.huyHieu);
+    overlays.remove(LopPhu.cuaHang);
+    overlays.remove(LopPhu.chonMan);
+    overlays.remove(LopPhu.khoDo);
+    overlays.remove(LopPhu.rungRuong);
+    overlays.remove(LopPhu.quaTang);
+    overlays.remove(LopPhu.nutBan);
+  }
+
+  /// Chơi màn [m]. Màn có cọc: [maVan] và [ve] đã đăng ký với máy chủ (PhienVi.chuanBiMan).
+  /// false = không nạp được bản đồ hoặc màn chưa được mở khóa (màn đang chơi giữ nguyên).
+  Future<bool> choiMan(
+    ManChoi m, {
+    String? maVan,
+    int ve = 0,
+    DateTime? batDauThat,
+  }) async {
+    if (!tienTrinhWorldMap.duocChoi(m.id)) return false;
+    try {
+      await _doiBanDo(
+        m,
+      ); // đổi bản đồ TRƯỚC, rồi mới đổi màn — hai thứ luôn khớp nhau
+    } catch (e) {
+      debugPrint('Không đổi được bản đồ ${m.tep}: $e');
+      return false;
+    }
+
+    manHienTai = m;
+    veDangChoi = ve;
+
+    this.batDauThat = maVan == null ? null : (batDauThat ?? DateTime.now());
+
+    batDauVanMoi(maVan: maVan);
+    return true;
+  }
+
+  Future<void> batDauVanMoi({String? maVan}) async {
+    if (!tienTrinhWorldMap.duocChoi(manHienTai.id)) {
+      moChonMan();
+      return;
+    }
+    if (!manHienTai.mienPhi && maVan == null) {
+      moChonMan();
+      return;
+    }
+
+    // Nút "Chơi lại" từ màn thắng đi thẳng vào đây, không qua màn chọn màn.
+    // Đăng ký ticket trước khi dựng ván để một chiến thắng mới luôn đủ điều
+    // kiện xin phiếu vàng như luồng "Chơi" ở màn chọn màn.
+    if (!manHienTai.chiChoiLocal && maVan == null) {
+      final pv = phienVi;
+      final authController = auth;
+      if (pv == null ||
+          authController == null ||
+          !authController.canEnterGame ||
+          authController.walletAddress == null) {
+        pv?.baoLoi('Cần đăng nhập và xác thực ví để nhận vàng từ ván chơi.');
+        return;
+      }
+      if (!pv.daKetNoi) {
+        final daKetNoi = await pv.ketNoiDaXacThuc(
+          authController.walletAddress!,
+        );
+        if (!daKetNoi) return;
+      }
+      final maVanMoi = nhatKy.sinhMaVan();
+      try {
+        await pv.mayChu.batDauMan(
+          maVan: maVanMoi,
+          vi: pv.diaChi!,
+          man: manHienTai.id,
+          ve: 0,
+        );
+        maVan = maVanMoi;
+      } catch (e) {
+        pv.baoLoi('Không đăng ký được màn chơi với máy chủ: $e');
+        return;
+      }
+    }
+
+    ketQuaVan.value = null;
+    _daGuiVaXinPhieu = false;
+
+    _dungVan(maVan: maVan);
+    _vanDangDienRa = true;
+
+    _anTatCaLopPhu();
+    overlays.add(LopPhu.nutBan);
+
+    trangThai = TrangThaiChoi.dangChoi;
+    _datDieuKhien(true);
+
+    resumeEngine();
+    AmThanh.batNhacNen();
+  }
+
+  void tamDung() {
+    if (trangThai != TrangThaiChoi.dangChoi) return;
+
+    trangThai = TrangThaiChoi.tamDung;
+    _datDieuKhien(false);
+
+    george?.huongJoystick.setZero();
+
+    AmThanh.tamDungNhac();
+    overlays.remove(LopPhu.nutBan);
+    overlays.add(LopPhu.tamDung);
+    pauseEngine();
+  }
+
+  void tiepTuc() {
+    if (trangThai != TrangThaiChoi.tamDung) return;
+
+    overlays.remove(LopPhu.tamDung);
+    overlays.add(LopPhu.nutBan);
+    trangThai = TrangThaiChoi.dangChoi;
+
+    _datDieuKhien(true);
+    AmThanh.tiepTucNhac();
+    resumeEngine();
+  }
+
+  void veMenu() {
+    _guiNhatKy('bo');
+
+    _anTatCaLopPhu();
+    overlays.add(LopPhu.menu);
+
+    trangThai = TrangThaiChoi.tamDung;
+    _datDieuKhien(false);
+
+    AmThanh.dungNhacNen();
+    _dungVan();
+    pauseEngine();
+  }
+
+  void moCuaHang() => overlays.add(LopPhu.cuaHang);
+
+  void moRungRuong() {
+    // Đợi hết lượt xử lý pointer/layout hiện tại rồi mới đổi overlay, tránh
+    // assertion của Flutter khi vừa xóa overlay cũ vừa thêm overlay mới.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final menuDangMo = overlays.isActive(LopPhu.menu);
+      _anTatCaLopPhu();
+      if (menuDangMo) overlays.add(LopPhu.menu);
+      if (!overlays.isActive(LopPhu.rungRuong)) {
+        overlays.add(LopPhu.rungRuong);
+      }
+    });
+  }
+
+  void moQuaTang() => overlays.add(LopPhu.quaTang);
+
+  void dongHuyHieu() {
+    overlays.remove(LopPhu.huyHieu);
+    overlays.add(LopPhu.ketThuc);
+  }
+
+  void dongCuaHang() => overlays.remove(LopPhu.cuaHang);
+
+  void dongRungRuong() => overlays.remove(LopPhu.rungRuong);
+
+  void dongQuaTang() => overlays.remove(LopPhu.quaTang);
+
+  void moChonMan() => overlays.add(LopPhu.chonMan);
+
+  void dongChonMan() => overlays.remove(LopPhu.chonMan);
+
+  void moCaiDat() => overlays.add(LopPhu.caiDat);
+
+  void dongCaiDat() => overlays.remove(LopPhu.caiDat);
+
+  /// Kho đồ chỉ mở từ Menu, không mở giữa ván.
+  void moKhoDo() {
+    if (trangThai != TrangThaiChoi.tamDung) return;
+    if (!overlays.isActive(LopPhu.menu)) overlays.add(LopPhu.menu);
+
+    overlays.add(LopPhu.khoDo);
+  }
+
+  /// Menu ở bên dưới nên đóng Kho đồ sẽ trở lại Menu.
+  void dongKhoDo() {
+    overlays.remove(LopPhu.khoDo);
+  }
+}
+
+========== gold_rush/lib/blockchain/phien_vi.dart ==========
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../man_choi.dart';
+import 'abi.dart';
+import 'cua_hang.dart';
+import 'giao_dich.dart';
+import 'may_chu_phieu.dart';
+import 'nhan_vat.dart';
+import 'vi.dart';
+
+/// PHIÊN VÍ — một trạng thái duy nhất cho cả màn hình chọn màn, cửa hàng và màn hình kết thúc.
+///
+/// Trước bản 1.3 mỗi màn hình tự kết nối ví → hai màn hình có thể giữ hai trạng thái khác nhau,
+/// và đóng cửa hàng là mất kết nối. Gom về đây thì:
+///   * kết nối một lần, mọi lớp phủ cùng thấy (ListenableBuilder);
+///   * mọi thao tác chạy qua [_lam]: khoá nút, hiện tiến độ, đổi lỗi thành câu tiếng Việt;
+///   * phiếu chờ nhận luôn được đồng bộ từ máy chủ → tải lại trang không mất vàng đã kiếm.
+class PhienVi extends ChangeNotifier {
+  final Vi vi;
+  final MayChuPhieu mayChu;
+
+  PhienVi({required this.vi, required this.mayChu}) {
+    unawaited(napVangDaLuu());
+  }
+
+  String get _khoaVang => diaChi != null && diaChi!.isNotEmpty
+      ? 'gold_rush_vang_${diaChi!.toLowerCase()}'
+      : 'gold_rush_vang';
+
+  /// Nạp số vàng đã lưu từ bộ nhớ máy.
+  Future<void> napVangDaLuu() async {
+    try {
+      // Chốt key trước khi await: lần nạp cache chung lúc khởi động không
+      // được phép ghi đè cache của ví sau khi địa chỉ đã được xác định.
+      final khoa = _khoaVang;
+      final s = await SharedPreferencesAsync().getString(khoa);
+      if (khoa != _khoaVang) return;
+      if (s != null) {
+        final v = BigInt.tryParse(s);
+        if (v != null && v != vang) {
+          vang = v;
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Lưu số vàng hiện tại vào bộ nhớ máy.
+  Future<void> _luuVang() async {
+    try {
+      final s = vang.toString();
+      await SharedPreferencesAsync().setString(_khoaVang, s);
+    } catch (_) {}
+  }
+
+  /// Cộng vàng vào ví sau trận đấu, lưu lại và cập nhật toàn bộ giao diện (TopBar).
+  Future<void> congVang(BigInt soVangMoi) async {
+    if (soVangMoi <= BigInt.zero) return;
+    vang += soVangMoi;
+    notifyListeners();
+    await _luuVang();
+  }
+
+  /// Trừ vàng trong ví (ví dụ khi đặt cọc vào màn), lưu lại và thông báo cập nhật TopBar.
+  Future<bool> truVang(BigInt soVangTru) async {
+    if (soVangTru <= BigInt.zero) return true;
+    if (vang < soVangTru) return false;
+    vang -= soVangTru;
+    notifyListeners();
+    await _luuVang();
+    return true;
+  }
+
+  /// Chuỗi hiển thị số vàng có phân cách hàng nghìn.
+  String get vangDinhDang {
+    final s = vang.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) {
+        buf.write('.');
+      }
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
+  CauHinhChuoi? cauHinh;
+  String? diaChi;
+  CuaHangChuoi? cuaHang;
+  StreamSubscription<SuKienVi>? _ngheVi;
+  bool _daDong = false;
+
+  BigInt vang = BigInt.zero;
+  VeVaoMan ve = VeVaoMan.khong;
+  final Map<int, BigInt> gia = {};
+  final Set<int> daCo = {};
+
+  /// Phiếu đã ký, chưa nộp (đã lọc: còn dùng được).
+  List<PhieuCho> phieuCho = const [];
+
+  /// Ván đã chơi xong lúc CHƯA kết nối ví — kết nối xong sẽ xin phiếu.
+  final List<String> _vanChuaXinPhieu = [];
+
+  String? thongBao;
+  bool thongBaoLaLoi = false;
+  bool dangXuLy = false;
+  Future<bool>? _ketNoiDangChay;
+
+  bool get daKetNoi => diaChi != null && cuaHang != null;
+
+  BigInt get vangChoNhan {
+    var t = BigInt.zero;
+    for (final p in phieuCho) {
+      t += p.phieu.soVang + (p.coCoc ? ve.coc : BigInt.zero);
+    }
+    return t;
+  }
+
+  /// Phiếu HOÀN THÀNH của đúng vé đang mở → vé đó đã "xong", vào màn mới không mất cọc.
+  bool get veDangMoDaCoPhieu =>
+      ve.dangMo &&
+      phieuCho.any((p) => p.coCoc && p.phieu.ve == BigInt.from(ve.so));
+
+  void _bao(String s, {bool loi = false}) {
+    if (_daDong) return;
+    thongBao = s;
+    thongBaoLaLoi = loi;
+    notifyListeners();
+  }
+
+  /// Chạy một thao tác: khoá nút, hiện tiến độ, đổi mọi lỗi thành dòng thông báo. null = lỗi.
+  Future<T?> _lam<T extends Object>(
+    String dangLam,
+    Future<T> Function() viec, {
+    String? xong,
+  }) async {
+    if (dangXuLy) {
+      _bao('Đang xử lý việc trước — đợi một chút.');
+      return null;
+    }
+    dangXuLy = true;
+    _bao(dangLam);
+    try {
+      final kq = await viec();
+      dangXuLy = false;
+      _bao(xong ?? '');
+      return kq;
+    } on LoiVi catch (e) {
+      dangXuLy = false;
+      _bao(e.thongBao, loi: !e.nguoiDungTuChoi);
+      if (e.loai == LoaiLoiVi.doiTaiKhoan) _ngatKetNoi();
+      return null;
+    } catch (e) {
+      dangXuLy = false;
+      _bao('Lỗi không mong đợi: $e', loi: true);
+      return null;
+    }
+  }
+
+  /// Như [_lam] cho việc không trả giá trị. true = xong.
+  Future<bool> _lamViec(
+    String dangLam,
+    Future<void> Function() viec, {
+    String? xong,
+  }) async =>
+      await _lam<bool>(dangLam, () async {
+        await viec();
+        return true;
+      }, xong: xong) ??
+      false;
+
+  // ------------------------------------------------------------------
+  // Kết nối
+  // ------------------------------------------------------------------
+  Future<bool> _ketNoiMotLan(Future<bool> Function() thaoTac) {
+    final dangChay = _ketNoiDangChay;
+    if (dangChay != null) return dangChay;
+    final future = thaoTac();
+    _ketNoiDangChay = future;
+    return future.whenComplete(() {
+      if (identical(_ketNoiDangChay, future)) _ketNoiDangChay = null;
+    });
+  }
+
+  Future<bool> ketNoi() => _ketNoiMotLan(
+    () => _lamViec('Đang kết nối ${vi.ten}…', () async {
+      if (!vi.coSan) {
+        throw const LoiVi(
+          'Chưa thấy MetaMask. Cài tiện ích MetaMask cho trình duyệt rồi tải lại trang.',
+        );
+      }
+      final ch = await mayChu.cauHinh();
+      final dc = await vi.ketNoi();
+      final bo = BoGiaoDich.choMang(
+        vi: vi,
+        chainId: ch.chainId,
+        hopDong: ch.hopDong,
+      );
+      await bo.damBaoMang();
+      await bo.kiemHopDong();
+      cauHinh = ch;
+      diaChi = dc;
+      await napVangDaLuu();
+      cuaHang = CuaHangChuoi(
+        vi: vi,
+        hopDong: ch.hopDong,
+        hopDongVatPham: ch.hopDongVatPham,
+        bo: bo,
+      );
+      if (_daDong) return;
+      _ngheVi ??= vi.suKien.listen(_khiViDoi);
+      await _taiLaiNoi(); // gồm cả xin phiếu cho các ván chơi lúc chưa kết nối
+    }, xong: 'Đã kết nối.'),
+  );
+
+  /// Đồng bộ với ví đã được AuthGate kết nối, không gọi eth_requestAccounts
+  /// và không mở thêm hộp thoại kết nối trong game.
+  Future<bool> ketNoiDaXacThuc(String diaChiAuth) => _ketNoiMotLan(
+    () => _lamViec('Đang đồng bộ ví đăng nhập…', () async {
+      final ds = await vi.taiKhoan();
+      if (ds.isEmpty || ds.first.toLowerCase() != diaChiAuth.toLowerCase()) {
+        throw const LoiVi('Ví đăng nhập không còn được cấp quyền cho trang.');
+      }
+      final ch = await mayChu.cauHinh();
+      final bo = BoGiaoDich.choMang(
+        vi: vi,
+        chainId: ch.chainId,
+        hopDong: ch.hopDong,
+      );
+      await bo.damBaoMang();
+      await bo.kiemHopDong();
+      cauHinh = ch;
+      diaChi = ds.first;
+      await napVangDaLuu();
+      cuaHang = CuaHangChuoi(
+        vi: vi,
+        hopDong: ch.hopDong,
+        hopDongVatPham: ch.hopDongVatPham,
+        bo: bo,
+      );
+      _ngheVi ??= vi.suKien.listen(_khiViDoi);
+      await _taiLaiNoi();
+    }, xong: 'Đã đồng bộ ví đăng nhập.'),
+  );
+
+  /// Xin phiếu cho các ván còn treo. Chỉ bỏ ván khỏi danh sách khi xong hoặc bị từ chối DỨT KHOÁT
+  /// (409 đã cấp ví khác, 422 không hợp lệ); lỗi mạng, 404 (nhật ký chưa tới), 429 → giữ lại, thử sau.
+  /// Thử lại thưa (≥ 30 s một lần) và bỏ ván sau 3 lần máy chủ trả lỗi để máy chủ mất kết nối không làm
+  /// mọi thao tác chậm theo.
+  Future<void> _xinCacPhieuCon(String dc) async {
+    final bayGio = DateTime.now();
+    if (_vanChuaXinPhieu.isEmpty ||
+        (_lanThuCuoi != null &&
+            bayGio.difference(_lanThuCuoi!) < const Duration(seconds: 30))) {
+      return;
+    }
+    _lanThuCuoi = bayGio;
+    for (final maVan in List.of(_vanChuaXinPhieu)) {
+      try {
+        await mayChu.xinPhieu(maVan: maVan, vi: dc);
+        _vanChuaXinPhieu.remove(maVan);
+        _soLanHong.remove(maVan);
+      } on LoiVi catch (e) {
+        final lan = (_soLanHong[maVan] ?? 0) + 1;
+        _soLanHong[maVan] = lan;
+        // Lỗi mạng (ma == null) không tính vào 3 lần: máy chủ tạm sập không được làm mất vàng.
+        if (e.ma == 409 ||
+            e.ma == 422 ||
+            (e.ma != null && e.ma != 404 && e.ma != 429 && lan >= 3)) {
+          _vanChuaXinPhieu.remove(maVan);
+          _soLanHong.remove(maVan);
+        }
+      }
+    }
+  }
+
+  DateTime? _lanThuCuoi;
+  final Map<String, int> _soLanHong = {};
+
+  /// Khoá ngắn trong lúc màn hình chọn màn kiểm tra trước và hỏi xác nhận — chặn bấm hai lần
+  /// mở hai hộp thoại (lần thứ hai sẽ đốt cọc của ván đang chơi). true = giữ được khoá.
+  bool dangHoi = false;
+
+  bool giuCho() {
+    if (dangXuLy || dangHoi) return false;
+    dangHoi = true;
+    notifyListeners();
+    return true;
+  }
+
+  void thaCho() {
+    dangHoi = false;
+    notifyListeners();
+  }
+
+  void _khiViDoi(SuKienVi s) {
+    switch (s) {
+      case DoiTaiKhoan(:final taiKhoan):
+        if (diaChi != null &&
+            (taiKhoan.isEmpty ||
+                taiKhoan.first.toLowerCase() != diaChi!.toLowerCase())) {
+          _ngatKetNoi();
+          _bao(
+            'Tài khoản trong ví đã đổi — bấm "Kết nối MetaMask" để tải ví mới.',
+          );
+        }
+      case DoiMang(:final chainId):
+        if (cauHinh != null && chainId != cauHinh!.chainId) {
+          _bao(
+            'Ví vừa chuyển sang mạng $chainId. Game sẽ xin chuyển lại mạng ${cauHinh!.chainId} '
+            'ở giao dịch tiếp theo.',
+            loi: true,
+          );
+        } else if (daKetNoi && !dangXuLy) {
+          unawaited(lamMoi());
+        }
+    }
+  }
+
+  /// Yêu cầu các màn hình đang nghe vẽ lại (ví dụ sau khi đổi nhân vật đang dùng).
+  void veLai() => notifyListeners();
+
+  void _ngatKetNoi() {
+    diaChi = null;
+    cuaHang = null;
+    phieuCho = const [];
+    ve = VeVaoMan.khong;
+    vang = BigInt.zero;
+    daCo.clear();
+    notifyListeners();
+  }
+
+  Future<bool> lamMoi() => _lamViec('Đang đọc dữ liệu trên chuỗi…', _taiLaiNoi);
+
+  Future<void> _taiLaiNoi() async {
+    final ch = cuaHang!;
+    final dc = diaChi!;
+    await ch.bo.damBaoMang(); // đọc sai mạng thì mọi con số đều về 0 — xin chuyển mạng trước
+    await _xinCacPhieuCon(dc);
+    final vangOnChain = await ch.soVang(dc);
+    final veMoi = await ch.veCua(dc);
+    final phieuDangCho = phieuCho;
+    final phieuMoi = await ch.locPhieuDungDuoc(dc, [
+      ...phieuDangCho,
+      ...await mayChu.phieuChoNhan(dc),
+    ], veMoi);
+
+    // Topbar chỉ hiển thị số dư ERC-1155 đã ghi thật trên hợp đồng. Phiếu
+    // thưởng vẫn được giữ riêng để giao dịch nhận vàng/mua vật phẩm có thể
+    // gộp vào cùng một transaction, nhưng không được cộng tạm vào topbar.
+    ve = veMoi;
+    phieuCho = phieuMoi;
+    if (vangOnChain != vang) {
+      vang = vangOnChain;
+      await _luuVang();
+      notifyListeners();
+    }
+    for (final nv in bangNhanVat) {
+      gia[nv.id] = await ch.gia(nv.id);
+      if (await ch.coNhanVat(dc, nv.id)) {
+        daCo.add(nv.id);
+      } else {
+        daCo.remove(nv.id);
+      }
+    }
+    notifyListeners();
+  }
+
+  // ------------------------------------------------------------------
+  // Sau mỗi ván
+  // ------------------------------------------------------------------
+  /// Game gọi khi nhật ký ván đã lên máy chủ. Trả về số vàng của phiếu (null = chưa có phiếu).
+  Future<BigInt?> xinPhieuChoVan(String maVan) async {
+    final dc = diaChi;
+    if (dc == null) {
+      if (!_vanChuaXinPhieu.contains(maVan)) _vanChuaXinPhieu.add(maVan);
+      notifyListeners();
+      return null;
+    }
+    try {
+      final p = await mayChu.xinPhieu(maVan: maVan, vi: dc);
+      if (cuaHang != null) {
+        // Phiếu MỚI đứng trước: bộ lọc giữ bản đầu tiên của mỗi mã ván → giữ bản hạn mới nhất.
+        phieuCho = await cuaHang!.locPhieuDungDuoc(dc, [p, ...phieuCho], ve);
+      }
+      notifyListeners();
+      return p.phieu.soVang;
+    } on LoiVi catch (e) {
+      // Lỗi tạm thời → nhớ lại, "Làm mới" hoặc lần đọc chuỗi sau sẽ xin tiếp.
+      if (e.ma != 409 && e.ma != 422 && !_vanChuaXinPhieu.contains(maVan))
+        _vanChuaXinPhieu.add(maVan);
+      _bao(e.thongBao, loi: true);
+      return null;
+    } catch (e) {
+      if (!_vanChuaXinPhieu.contains(maVan)) _vanChuaXinPhieu.add(maVan);
+      _bao('Lỗi khi xin phiếu: $e', loi: true);
+      return null;
+    }
+  }
+
+  /// Hiện một dòng lỗi từ bên ngoài (ví dụ không nạp được bản đồ).
+  void baoLoi(String s) => _bao(s, loi: true);
+
+  /// Có vé cùng màn đang mở mà máy chủ chưa ghi nhận ván nào → vào lại màn KHÔNG trừ thêm cọc.
+  Future<bool> coTheDungLaiVe(ManChoi m) async {
+    if (diaChi == null || !ve.dangMo || ve.man != m.id || veDangMoDaCoPhieu)
+      return false;
+    try {
+      return !await mayChu.veDaDung(vi: diaChi!, ve: ve.so);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  int get soVanChuaXinPhieu => _vanChuaXinPhieu.length;
+
+  // ------------------------------------------------------------------
+  // Giao dịch
+  // ------------------------------------------------------------------
+  Future<void> _capEthTestNeuCan() async {
+    // Hardhat local mô phỏng Paymaster: giao dịch mua/nhận đều có thể cần gas
+    // ngay cả khi không còn phiếu chờ (ví dụ mua bằng vàng đã có on-chain).
+    // Không phụ thuộc vào phieuCho vì danh sách này có thể đang được đồng bộ
+    // lại ở thời điểm nút mua được bấm.
+    final dc = diaChi;
+    if (dc == null) return;
+
+    // Cấu hình có thể đã được nạp từ trước khi backend bật faucet (hoặc sau
+    // hot-reload). Đọc lại ngay trước mutation để không bỏ qua bước cấp ETH.
+    final ch = await mayChu.cauHinh();
+    cauHinh = ch;
+    if (!ch.localFaucet) return;
+    await mayChu.nhanEthTest(vi: dc);
+  }
+
+  Future<bool> nhanTatCa() => _lamViec('Chuẩn bị nhận vàng…', () async {
+    await _taiLaiNoi(); // phiếu mới ký lại, hạn mới
+    await _capEthTestNeuCan(); // giả lập Paymaster trên Hardhat local
+    await cuaHang!.thucHien(diaChi: diaChi!, phieu: phieuCho, baoTienDo: _bao);
+    await _taiLaiNoi();
+  }, xong: 'Đã nhận vàng.');
+
+  Future<bool> mua(NhanVatBan nv) =>
+      _lamViec('Chuẩn bị mua ${nv.ten}…', () async {
+        await _taiLaiNoi();
+        await _capEthTestNeuCan(); // Hardhat local: mô phỏng Paymaster trước giao dịch gộp.
+        await cuaHang!.thucHien(
+          diaChi: diaChi!,
+          phieu: phieuCho,
+          muaNhanVat: nv.id,
+          baoTienDo: _bao,
+        );
+        await _taiLaiNoi();
+      }, xong: 'Đã mua ${nv.ten}.');
+
+  /// Mua vật phẩm nhiều lần được; mỗi lần thành công NFT ERC-1155 tăng số lượng.
+  Future<bool> muaVatPham({
+    required int tokenId,
+    required String ten,
+    int soLuong = 1,
+  }) => _lamViec('Chuẩn bị mua $ten ×$soLuong…', () async {
+    if (!daKetNoi) {
+      throw const LoiVi('Cần kết nối MetaMask để mua vật phẩm.');
+    }
+    await _taiLaiNoi();
+    await cuaHang!.muaVatPham(
+      diaChi: diaChi!,
+      tokenId: tokenId,
+      soLuong: soLuong,
+      phieu: phieuCho,
+      baoTienDo: _bao,
+    );
+    await _taiLaiNoi();
+    final vangThuc = await cuaHang!.soVang(diaChi!);
+    if (vangThuc != vang) {
+      vang = vangThuc;
+      await _luuVang();
+      notifyListeners();
+    }
+  }, xong: 'Đã mua $ten ×$soLuong.');
+
+  Future<KetQuaMoRuong?> moRuong() => _lam<KetQuaMoRuong>(
+    'Đang chuẩn bị mở rương…',
+    () async {
+      if (!daKetNoi) {
+        throw const LoiVi('Cần kết nối MetaMask để mở rương.');
+      }
+      final vangThuc = await cuaHang!.soVang(diaChi!);
+      if (vangThuc < BigInt.from(100)) {
+        throw LoiVi('Số dư không đủ: cần 100 vàng, có $vangThuc.');
+      }
+      final kq = await mayChu.moRuong(vi: diaChi!);
+      await cuaHang!.moRuong(diaChi: diaChi!, phieu: kq.phieu, baoTienDo: _bao);
+      await _taiLaiNoi();
+      return kq;
+    },
+    xong: 'Mở rương thành công.',
+  );
+
+  /// Chuẩn bị một màn có cọc: có vé dùng được thì dùng lại, không thì (nhận phiếu chờ +) mua vé
+  /// trong MỘT giao dịch, rồi đăng ký bắt đầu với máy chủ. Trả về số vé và giờ THẬT ngay trước khi
+  /// đăng ký (máy chủ tính hạn nộp từ lúc nhận yêu cầu); null = chưa vào được.
+  Future<({int ve, DateTime luc})?> chuanBiMan(ManChoi m, String maVan) =>
+      _lam<({int ve, DateTime luc})>('Chuẩn bị màn ${m.ten}…', () async {
+        if (!daKetNoi) {
+          final coc = BigInt.from(m.coc);
+          if (vang < coc) {
+            throw const LoiVi('Chưa đủ vàng để đặt cọc.');
+          }
+          await truVang(coc);
+          final luc = DateTime.now();
+          final dc = diaChi;
+          if (dc != null) {
+            try {
+              await mayChu.batDauMan(maVan: maVan, vi: dc, man: m.id, ve: 0);
+            } catch (_) {}
+          }
+          return (ve: 0, luc: luc);
+        }
+        await _taiLaiNoi();
+        final dc = diaChi!;
+        if (ve.dangMo && ve.man == m.id && !veDangMoDaCoPhieu) {
+          // Vé cùng màn còn mở (ví dụ lần trước mua xong nhưng mất mạng trước khi vào chơi)
+          try {
+            final luc = DateTime.now();
+            await mayChu.batDauMan(maVan: maVan, vi: dc, man: m.id, ve: ve.so);
+            return (ve: ve.so, luc: luc);
+          } on LoiVi catch (e) {
+            if (e.ma != 409) {
+              rethrow; // 409: vé đã dùng cho một ván → mua vé mới
+            }
+          }
+        }
+        await cuaHang!.thucHien(
+          diaChi: dc,
+          phieu: phieuCho,
+          vaoMan: m.id,
+          baoTienDo: _bao,
+        );
+        await _taiLaiNoi();
+        if (!(ve.dangMo && ve.man == m.id)) {
+          throw const LoiVi(
+            'Chưa thấy vé màn trên chuỗi — bấm "Làm mới" rồi thử lại.',
+          );
+        }
+        _bao('Đăng ký bắt đầu với máy chủ…');
+        final luc = DateTime.now();
+        await mayChu.batDauMan(maVan: maVan, vi: dc, man: m.id, ve: ve.so);
+        return (ve: ve.so, luc: luc);
+      });
+
+  @override
+  void dispose() {
+    if (_daDong) return;
+    _daDong = true;
+    _ngheVi?.cancel();
+    super.dispose();
+  }
+}
+
+========== gold_rush/lib/blockchain/may_chu_phieu.dart ==========
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../ai/http_client_boundary.dart';
+import 'abi.dart';
+import 'cua_hang.dart';
+import 'vi.dart';
+
+/// Cấu hình chuỗi do máy chủ công bố: mạng nào, hợp đồng nào.
+class CauHinhChuoi {
+  final int chainId;
+  final String hopDong;
+  final String? hopDongVatPham;
+  final String? hopDongNhanVat;
+  final String trongTai;
+  final bool localFaucet;
+
+  const CauHinhChuoi({
+    required this.chainId,
+    required this.hopDong,
+    this.hopDongVatPham,
+    this.hopDongNhanVat,
+    required this.trongTai,
+    this.localFaucet = false,
+  });
+}
+
+class KetQuaMoRuong {
+  final PhieuMoRuong phieu;
+  final String loai;
+  final int giaTri;
+  final int soLuong;
+
+  const KetQuaMoRuong({
+    required this.phieu,
+    required this.loai,
+    required this.giaTri,
+    required this.soLuong,
+  });
+
+  bool get laVang => loai == 'vang';
+}
+
+class PhieuVatPhamQuaTang {
+  final String player;
+  final int tokenId;
+  final int amount;
+  final String nonce;
+  final int deadline;
+  final String signature;
+  final int chainId;
+  final String contractAddress;
+
+  const PhieuVatPhamQuaTang({
+    required this.player,
+    required this.tokenId,
+    required this.amount,
+    required this.nonce,
+    required this.deadline,
+    required this.signature,
+    required this.chainId,
+    required this.contractAddress,
+  });
+}
+
+class KetQuaDoiQuaTang {
+  final String claimId;
+  final String rewardType;
+  final int tokenId;
+  final int amount;
+  final String name;
+  final String imageUrl;
+  final String rarity;
+  final String status;
+  final List<PhieuCho> vouchers;
+  final PhieuVatPhamQuaTang? voucher;
+  final String? transactionHash;
+  final int? goldBalance;
+
+  const KetQuaDoiQuaTang({
+    required this.claimId,
+    required this.rewardType,
+    required this.tokenId,
+    required this.amount,
+    required this.name,
+    required this.imageUrl,
+    required this.rarity,
+    required this.status,
+    this.vouchers = const [],
+    this.voucher,
+    this.transactionHash,
+    this.goldBalance,
+  });
+
+  bool get laVang => rewardType == 'gold';
+}
+
+/// Gọi máy chủ trọng tài `gold_rush_ai`: cấu hình, bắt đầu màn có cọc, xin phiếu, phiếu chờ nhận.
+///
+/// Địa chỉ máy chủ dùng chung `--dart-define=GOLD_RUSH_API` với phần gửi nhật ký.
+class MayChuPhieu {
+  final String mayChu;
+  final http.Client _client;
+  final String? Function()? layCsrfToken;
+  static const Duration _hetGio = Duration(seconds: 10);
+
+  MayChuPhieu({required this.mayChu, http.Client? client, this.layCsrfToken})
+    : _client = client ?? taoHttpClientTrinhDuyet();
+
+  Map<String, String> _headers() {
+    final h = <String, String>{'Content-Type': 'application/json'};
+    final csrf = layCsrfToken?.call();
+    if (csrf != null && csrf.isNotEmpty) {
+      h['X-CSRF-Token'] = csrf;
+    }
+    return h;
+  }
+
+  Future<CauHinhChuoi> cauHinh() async {
+    final j = await _json(
+      () => _client.get(Uri.parse('$mayChu/api/vang/cau-hinh')),
+    );
+    return CauHinhChuoi(
+      chainId: j['chain_id'] as int,
+      hopDong: j['hop_dong'] as String,
+      hopDongVatPham: j['hop_dong_vat_pham'] as String?,
+      hopDongNhanVat: j['hop_dong_nhan_vat'] as String?,
+      trongTai: j['trong_tai'] as String,
+      localFaucet: j['local_faucet'] == true,
+    );
+  }
+
+  /// Cấp ETH Hardhat giả cho đúng ví đăng nhập; chỉ dùng để test local.
+  Future<BigInt> nhanEthTest({required String vi}) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/test/faucet'),
+        headers: _headers(),
+        body: jsonEncode({'vi': vi}),
+      ),
+    );
+    try {
+      final raw = j['balance_wei'];
+      return raw is int ? BigInt.from(raw) : BigInt.parse('$raw');
+    } catch (_) {
+      throw const LoiVi('Faucet trả dữ liệu không đúng dạng.');
+    }
+  }
+
+  Future<KetQuaDoiQuaTang> doiMaQuaTang(String ma) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/qua-tang/claim'),
+        headers: _headers(),
+        body: jsonEncode({'ma': ma}),
+      ),
+      khi409: 'Mã quà tặng đã được dùng hoặc đạt giới hạn.',
+    );
+    return _doc(() => _quaTangTu(j));
+  }
+
+  Future<KetQuaDoiQuaTang> xacNhanQuaTang({
+    required String claimId,
+    required String transactionHash,
+  }) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/qua-tang/confirm'),
+        headers: _headers(),
+        body: jsonEncode({
+          'claim_id': claimId,
+          'transaction_hash': transactionHash,
+        }),
+      ),
+      khi409: 'Lượt cấp thưởng này đã kết thúc.',
+    );
+    return _doc(() => _quaTangTu(j));
+  }
+
+  Future<KetQuaDoiQuaTang> trangThaiQuaTang(String claimId) async {
+    final j = await _json(
+      () => _client.get(Uri.parse('$mayChu/api/qua-tang/status/$claimId')),
+    );
+    return _doc(() => _quaTangTu(j));
+  }
+
+  KetQuaDoiQuaTang _quaTangTu(Map<String, dynamic> j) {
+    int so(Object? value) => value is int ? value : int.parse('$value');
+    final danhSach = <PhieuCho>[];
+    for (final raw in (j['vouchers'] as List<dynamic>? ?? const [])) {
+      final p = raw as Map<String, dynamic>;
+      final phieu = p['phieu'] as Map<String, dynamic>;
+      danhSach.add(_phieuTu(p, phieu['maVan'] as String));
+    }
+    final rawVoucher = j['voucher'] as Map<String, dynamic>?;
+    final cauHinh = rawVoucher == null
+        ? null
+        : PhieuVatPhamQuaTang(
+            player: rawVoucher['player'] as String,
+            tokenId: so(rawVoucher['tokenId']),
+            amount: so(rawVoucher['amount']),
+            nonce: rawVoucher['nonce'] as String,
+            deadline: so(rawVoucher['deadline']),
+            signature: j['signature'] as String,
+            chainId: so(j['chainId']),
+            contractAddress: j['contractAddress'] as String,
+          );
+    return KetQuaDoiQuaTang(
+      claimId: j['claimId'] as String,
+      rewardType: j['rewardType'] as String,
+      tokenId: so(j['tokenId']),
+      amount: so(j['amount']),
+      name: j['name'] as String,
+      imageUrl: (j['imageUrl'] as String?) ?? '',
+      rarity: (j['rarity'] as String?) ?? '',
+      status: j['status'] as String,
+      vouchers: danhSach,
+      voucher: cauHinh,
+      transactionHash: j['transactionHash'] as String?,
+      goldBalance: j['goldBalance'] == null ? null : so(j['goldBalance']),
+    );
+  }
+
+  /// Đồng bộ bản ghi kho đồ NFT theo số dư on-chain mà máy chủ tự xác minh.
+  /// Payload chỉ mang metadata hiển thị; số lượng không được tin từ client.
+  Future<void> dongBoKhoNFT({
+    required List<Map<String, dynamic>> vatPham,
+  }) async {
+    await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/inventory/sync-nft'),
+        headers: _headers(),
+        body: jsonEncode({'vat_pham': vatPham}),
+      ),
+      khi409: 'Không thể đồng bộ quyền sở hữu NFT lúc này.',
+    );
+  }
+
+  Future<KetQuaMoRuong> moRuong({required String vi}) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/rung-ruong/ket-qua'),
+        headers: _headers(),
+        body: jsonEncode({'vi': vi}),
+      ),
+      khi409: 'Rương này đã được xử lý.',
+    );
+    final p = j['phieu'] as Map<String, dynamic>;
+    final thuong = j['phan_thuong'] as Map<String, dynamic>;
+    return KetQuaMoRuong(
+      phieu: PhieuMoRuong(
+        nguoiChoi: p['nguoiChoi'] as String,
+        loai: p['loai'] as int,
+        giaTri: p['giaTri'] as int,
+        soLuong: p['soLuong'] as int,
+        maRuong: p['maRuong'] as String,
+        hanChot: p['hanChot'] as int,
+        chuKy: j['chu_ky'] as String,
+      ),
+      loai: thuong['loai'] as String,
+      giaTri: thuong['gia_tri'] as int,
+      soLuong: thuong['so_luong'] as int,
+    );
+  }
+
+  /// Đăng ký bắt đầu màn có cọc NGAY TRƯỚC khi chơi. Mỗi vé chỉ đăng ký được MỘT lần (409 nếu đã dùng).
+  Future<void> batDauMan({
+    required String maVan,
+    required String vi,
+    required int man,
+    required int ve,
+  }) async {
+    await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/man/bat-dau'),
+        headers: _headers(),
+        body: jsonEncode({'ma_van': maVan, 'vi': vi, 'man': man, 've': ve}),
+      ),
+      thanhCong: 201,
+      khi409: 'Vé này đã dùng cho một ván — cần vào màn bằng vé mới.',
+    );
+  }
+
+  /// Vé (ví, số vé) đã được dùng để bắt đầu một ván chưa.
+  Future<bool> veDaDung({required String vi, required int ve}) async {
+    final j = await _json(
+      () => _client.get(Uri.parse('$mayChu/api/man/ve?vi=$vi&ve=$ve')),
+    );
+    return j['da_dung'] == true;
+  }
+
+  /// Xin phiếu cho một ván. Xin lại cùng ván = máy chủ ký lại đúng nội dung với hạn mới.
+  Future<PhieuCho> xinPhieu({required String maVan, required String vi}) async {
+    final j = await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/vang/phieu'),
+        headers: _headers(),
+        body: jsonEncode({'ma_van': maVan, 'vi': vi}),
+      ),
+      khi409: 'Ván này đã cấp phiếu cho một ví khác.',
+    );
+    return _doc(() => _phieuTu(j, maVan));
+  }
+
+  /// Mọi phiếu đã cấp cho ví trong 7 ngày (đã ký lại hạn mới) — app tự lọc phiếu đã nhận.
+  Future<List<PhieuCho>> phieuChoNhan(String vi) async {
+    final j = await _json(
+      () => _client.get(Uri.parse('$mayChu/api/vang/cho-nhan?vi=$vi')),
+    );
+    return _doc(
+      () => [
+        for (final p in j['phieu'] as List<dynamic>)
+          _phieuTu(p as Map<String, dynamic>, p['ma_van'] as String),
+      ],
+    );
+  }
+
+  /// Dữ liệu máy chủ sai dạng (khác phiên bản?) → LoiVi, không để TypeError lọt ra ngoài.
+  T _doc<T>(T Function() f) {
+    try {
+      return f();
+    } catch (_) {
+      throw const LoiVi(
+        'Máy chủ trả dữ liệu không đúng dạng — app và máy chủ có cùng phiên bản không?',
+      );
+    }
+  }
+
+  PhieuCho _phieuTu(Map<String, dynamic> j, String maVan) => PhieuCho(
+    phieu: PhieuVang.tuJson(j['phieu'] as Map<String, dynamic>),
+    chuKy: j['chu_ky'] as String,
+    maVan: maVan,
+  );
+
+  Future<Map<String, dynamic>> _json(
+    Future<http.Response> Function() goi, {
+    int thanhCong = 200,
+    String khi409 = 'Xung đột dữ liệu trên máy chủ.',
+  }) async {
+    final http.Response r;
+    try {
+      r = await goi().timeout(_hetGio);
+    } catch (_) {
+      throw LoiVi(
+        'Không liên lạc được máy chủ trọng tài ($mayChu). Kiểm tra uvicorn đang chạy.',
+      );
+    }
+    final than = utf8.decode(r.bodyBytes, allowMalformed: true);
+    if (r.statusCode == thanhCong)
+      return _doc(() => jsonDecode(than) as Map<String, dynamic>);
+    final chiTiet = switch (r.statusCode) {
+      404 => 'Máy chủ chưa có nhật ký ván này — chơi xong một ván khi đã cấu hình máy chủ.',
+      410 => 'Mã quà tặng đã hết hạn.',
+      409 => khi409,
+      422 => 'Máy chủ không công nhận ván này: ${lyDoTu(than)}',
+      429 => 'Ví đã nhận đủ vàng hôm nay.',
+      503 => 'Máy chủ chưa bật cửa hàng (thiếu khoá trọng tài, địa chỉ hợp đồng hoặc man_choi.json).',
+      _ => 'Máy chủ trả về lỗi ${r.statusCode}.',
+    };
+    throw LoiVi(
+      chiTiet,
+      ma: r.statusCode,
+    ); // ma = mã HTTP (409: vé/ván đã dùng)
+  }
+}
+
+/// `{"detail": {"ly_do": ["…", …]}}` hoặc `{"detail": "…"}` → câu đầu tiên đọc được.
+String lyDoTu(String than) {
+  try {
+    final d = (jsonDecode(than) as Map<String, dynamic>)['detail'];
+    if (d is Map && d['ly_do'] is List && (d['ly_do'] as List).isNotEmpty) {
+      return '${(d['ly_do'] as List).first}';
+    }
+    if (d is String) return d;
+    if (d is List && d.isNotEmpty)
+      return '${(d.first as Map?)?['msg'] ?? d.first}';
+  } catch (_) {
+    // không phải JSON
+  }
+  return than.length > 160 ? '${than.substring(0, 160)}…' : than;
+}
+
+========== gold_rush/lib/man_choi.dart ==========
+import 'dart:convert';
+
+/// Một màn chơi — đọc từ `assets/tiles/man_choi.json`.
+///
+/// Tệp JSON đó là MỘT nguồn sự thật dùng chung cho ba bên:
+///   * app (tệp này) dựng màn hình chọn màn, nạp đúng bản đồ, đặt đồng hồ và tốc độ kẻ địch;
+///   * máy chủ trọng tài (`gold_rush_ai/core/man_choi.py`) biết giới hạn thời gian, cọc, thưởng;
+///   * Ignition (`gold_rush_chain`) gọi `datMan(id, coc, soXu + thuong)` lúc triển khai hợp đồng.
+/// Sinh lại bằng `python gold_rush_ai/scripts/sinh_man_choi.py`.
+class ManChoi {
+  final int id;
+  final String ten;
+  final String moTa;
+
+  /// Tên tệp .tmx trong `assets/tiles/`.
+  final String tep;
+
+  /// 0 = không giới hạn thời gian.
+  final int gioiHanGiay;
+
+  /// Nhân vào tốc độ zombie/skeleton (sau hệ số của AI độ khó).
+  final double heSoKeDich;
+
+  /// Vàng đặt cọc khi vào màn. 0 = không đặt cọc (vẫn có thể là màn chính thức).
+  final int coc;
+
+  /// Vàng thưởng thêm khi hoàn thành (ngoài số xu).
+  final int thuong;
+  final int soXu;
+  final int sao;
+
+  /// Màn mở rộng offline: không gửi telemetry/phiếu hoặc tạo giao dịch.
+  final bool chiChoiLocal;
+
+  const ManChoi({
+    required this.id,
+    required this.ten,
+    required this.moTa,
+    required this.tep,
+    required this.gioiHanGiay,
+    required this.heSoKeDich,
+    required this.coc,
+    required this.thuong,
+    required this.soXu,
+    required this.sao,
+    this.chiChoiLocal = false,
+  });
+
+  bool get mienPhi => coc == 0;
+
+  /// Máy chủ chỉ nhận nhật ký màn có cọc tới trong ngần này giờ THẬT kể từ lúc bắt đầu (kể cả tạm dừng).
+  /// PHẢI khớp `HE_SO_TAM_DUNG * gioi_han_giay + 60` trong gold_rush_ai/core/trong_tai.py.
+  Duration get hanNopNhatKy => Duration(seconds: 2 * gioiHanGiay + 60);
+
+  /// Hoàn thành màn có cọc thì nhận về bấy nhiêu vàng (cọc + xu + thưởng).
+  int get nhanVeKhiHoanThanh => coc + soXu + thuong;
+
+  factory ManChoi.tuJson(Map<String, dynamic> j) => ManChoi(
+    id: j['id'] as int,
+    ten: j['ten'] as String,
+    moTa: j['mo_ta'] as String,
+    tep: j['tep'] as String,
+    gioiHanGiay: j['gioi_han_giay'] as int,
+    heSoKeDich: (j['he_so_ke_dich'] as num).toDouble(),
+    coc: j['coc'] as int,
+    thuong: j['thuong'] as int,
+    soXu: j['so_xu'] as int,
+    sao: j['sao'] as int,
+    chiChoiLocal: j['chi_choi_local'] == true,
+  );
+
+  /// Màn mặc định khi chưa nạp được tệp JSON: bản đồ gốc không đặt cọc.
+  static const ManChoi macDinh = ManChoi(
+    id: 1,
+    ten: 'Đồng cỏ',
+    moTa: 'Màn chính thức không đặt cọc.',
+    tep: 'gold_rush.tmx',
+    gioiHanGiay: 0,
+    heSoKeDich: 1,
+    coc: 0,
+    thuong: 0,
+    soXu: 24,
+    sao: 1,
+  );
+
+  /// Đọc nội dung tệp `man_choi.json`, sắp theo id.
+  static List<ManChoi> docDanhSach(String noiDung) {
+    final j = jsonDecode(noiDung) as Map<String, dynamic>;
+    final ds = [
+      for (final m in j['man'] as List<dynamic>)
+        ManChoi.tuJson(m as Map<String, dynamic>),
+    ]..sort((a, b) => a.id.compareTo(b.id));
+    if (ds.isEmpty) {
+      throw const FormatException('man_choi.json không có màn nào');
+    }
+    return ds;
+  }
+
+  /// Giữ nguyên danh mục dùng chung backend; bổ sung 7–20 từ tệp local riêng.
+  static List<ManChoi> docBoManChoi(String goc, String moRong) {
+    final base = docDanhSach(goc);
+    final extra = docDanhSach(moRong);
+    if (extra.any(
+      (m) => m.id <= 6 || !m.chiChoiLocal || m.coc != 0 || m.thuong != 0,
+    )) {
+      throw const FormatException(
+        'Màn mở rộng phải là màn local không cọc/thưởng blockchain.',
+      );
+    }
+    final all = [...base, ...extra]..sort((a, b) => a.id.compareTo(b.id));
+    if (all.map((m) => m.id).toSet().length != all.length) {
+      throw const FormatException('Trùng ID màn chơi.');
+    }
+    return List.unmodifiable(all);
+  }
+}
+
+/// "1:05" — đồng hồ trên HUD và màn hình chọn màn.
+String dinhDangGiay(num giay) {
+  final s = giay.ceil().clamp(0, 99 * 60);
+  return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+}
+
+========== gold_rush_ai/api/main.py ==========
+"""FastAPI backend cho Gold Rush — cùng khuôn với `api/main.py` của notebook AI Web Apps.
+
+Chạy:  uvicorn api.main:app --reload --port 8000      (tài liệu tương tác: /docs)
+
+| Method | Endpoint               | Việc                                                       |
+|--------|------------------------|------------------------------------------------------------|
+| GET    | /api/health            | trạng thái, thành phần nào đã nạp                           |
+| POST   | /api/nhat-ky           | app gửi nhật ký một ván (telemetry)                        |
+| GET    | /api/bang-xep-hang     | top điểm cao                                               |
+| GET    | /api/thong-ke          | số liệu tổng quan, tách theo bật/tắt độ khó thích ứng       |
+| GET    | /api/su-kien           | sự kiện (vd. trúng đòn) kèm toạ độ — vẽ bản đồ nhiệt       |
+| POST   | /api/do-kho/du-doan    | dự đoán xác suất thua từ 5 đặc trưng (kiểm tra chéo với app)|
+| GET    | /api/mo-hinh/do-kho    | tải tệp mô hình hiện hành (app cập nhật mô hình không cần phát hành lại) |
+| GET    | /api/ban-do/sinh       | sinh bản đồ .tmx mới theo seed                             |
+| POST   | /api/tro-ly            | trợ lý gợi ý cách chơi (RAG rút gọn)                        |
+| POST   | /api/ai/nhiem-vu/tao   | tạo nhiệm vụ, lưu lịch sử và xử lý retry                    |
+| GET    | /api/man               | danh sách màn chơi (man_choi.json)                          |
+| POST   | /api/man/bat-dau       | đăng ký bắt đầu màn có cọc: (ví, số vé) → mã ván, MỘT lần    |
+| GET    | /api/man/ve            | vé (ví, số vé) đã dùng để bắt đầu ván nào chưa                |
+| GET    | /api/vang/cau-hinh     | chainId, địa chỉ hợp đồng, địa chỉ trọng tài (app hiển thị)   |
+| POST   | /api/test/faucet        | cấp ETH giả cho đúng ví đăng nhập — chỉ Hardhat local       |
+| POST   | /api/vang/phieu        | kiểm định ván → ký PHIẾU VÀNG EIP-712 (xin lại = ký lại)     |
+| GET    | /api/vang/cho-nhan     | mọi phiếu đã cấp cho một ví trong 7 ngày (ký lại hạn mới)    |
+"""
+import json
+import logging
+import os
+import sys
+import time
+import uuid
+from contextlib import asynccontextmanager
+from ipaddress import ip_address
+from pathlib import Path
+from urllib.parse import urlsplit
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # import được config, core khi chạy uvicorn
+
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, Response
+from pydantic import BaseModel, Field
+from alembic.config import Config as AlembicConfig
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import inspect, select
+from starlette.responses import JSONResponse
+
+from auth.config import AuthConfigError, load_auth_config
+from auth.database import create_auth_engine, create_session_factory
+from auth.models import Base
+from auth.router import create_auth_router
+from auth.service import AuthService
+from api.auth_adapter import tich_hop_auth_vao_app
+
+from config import (BAN_DO_DIR, BLOCKCHAIN_RPC_URL, CHAIN_ID, CORS_ORIGINS, ENABLED, GAS_FEE_GOLD,
+                    HOP_DONG_CUA_HANG, HOP_DONG_DANG_KY_NHAN_VAT,
+                    HOP_DONG_VAT_PHAM, KB_DIR, MAN_CHOI, MAX_NHAT_KY_KB, MO_HINH_DO_KHO, NHAT_KY_DIR, SO_PHIEU,
+                    SO_VE, TRONG_TAI_KHOA, LOCAL_FAUCET_AMOUNT_WEI, LOCAL_FAUCET_ENABLED)
+from api.auth_guard import kiem_tra_csrf_va_origin, lay_nguoi_choi_hien_tai, NguoiChoiXacThuc
+from core import do_kho, man_choi, nhat_ky, rung_ruong, sinh_ban_do, trong_tai
+from core.csdl import khoi_tao_csdl, lay_csdl
+from core.eth_ky import dia_chi_tu_khoa
+from core.luoi import doc_tmx
+from core.quan_ly_nhiem_vu import cap_nhat_tien_do
+from core.tro_ly import TroLy
+from core.xac_minh_ve_onchain import (
+    XacMinhVeOnchain,
+    LoiCauHinhVe,
+    LoiKetNoiRPC,
+    LoiVeKhongHopLe,
+    LoiXacMinhVe,
+)
+
+from api.ban_do_moi import router as ban_do_router
+from api.kho_do import router as kho_do_router
+from api.nhiem_vu import router as nhiem_vu_router
+from api.qua_tang import goi_rpc, router as qua_tang_router
+from api.tien_trinh import router as tien_trinh_router
+from api.thanh_tuu import router as thanh_tuu_router
+
+from api.ai_nhiem_vu import khoi_dong_nhiem_vu, nhiem_vu_da_nap, router as router_nhiem_vu
+from api.de_xuat_do_kho import (de_xuat_do_kho_da_nap, khoi_dong_de_xuat_do_kho,
+                                 router as router_de_xuat_do_kho)
+from api.nhan_vat_ai import khoi_dong_nhan_vat_ai, nhan_vat_ai_da_nap, router as router_nhan_vat_ai
+from api.ai_tien_trinh import khoi_dong_tien_trinh, tien_trinh_da_nap, router as router_tien_trinh
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+log = logging.getLogger("api")
+STATE: dict = {}
+_BACKEND_DIRECTORY = Path(__file__).resolve().parents[1]
+
+
+def _is_loopback(host: str) -> bool:
+    if host == "localhost":
+        return True
+    try:
+        return ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _cho_phep_private_network(config=None) -> bool:
+    """Xác định có cho phép CORS Private Network Access hay không.
+
+    Quy định bảo mật:
+    - CHỈ cho phép trong môi trường phát triển cục bộ (local development).
+    - TUYỆT ĐỐI KHÔNG tự động bật trong môi trường production/live hoặc khi dùng cookie_secure=True (HTTPS).
+    - Nếu biến môi trường CORS_ALLOW_PRIVATE_NETWORK được đặt rõ:
+        - "true" / "1": cho phép (chỉ khi không ở production).
+        - "false" / "0": từ chối hoàn toàn.
+    - Mặc định local dev: cho phép nếu không có cờ production, cookie không yêu cầu secure,
+      và tất cả origin trong allowlist đều thuộc localhost/loopback.
+    """
+    env = os.environ.get("ENVIRONMENT", "").strip().lower()
+    app_env = os.environ.get("APP_ENV", "").strip().lower()
+    node_env = os.environ.get("NODE_ENV", "").strip().lower()
+    if any(p in (env, app_env, node_env) for p in ("prod", "production", "live")):
+        return False
+
+    explicit = os.environ.get("CORS_ALLOW_PRIVATE_NETWORK", "").strip().lower()
+    if explicit in ("false", "0"):
+        return False
+    if explicit in ("true", "1"):
+        return True
+
+    if config is not None:
+        if getattr(config, "cookie_secure", False):
+            return False
+        for origin in getattr(config, "cors_origins", ()):
+            parsed = urlsplit(origin)
+            host = parsed.hostname or ""
+            if parsed.scheme != "http" or not _is_loopback(host):
+                return False
+        return True
+
+    for origin in CORS_ORIGINS:
+        try:
+            parsed = urlsplit(origin.strip())
+            host = parsed.hostname or ""
+            if parsed.scheme != "http" or not _is_loopback(host):
+                return False
+        except Exception:
+            return False
+    return True
+
+
+class _LifespanCORSMiddleware:
+    """Use the validated startup snapshot, without loading secrets on import.
+
+    Starlette constructs middleware before entering lifespan. Delegate HTTP to
+    its standard CORSMiddleware once AuthConfig is available; refresh the cache
+    for a later lifespan. No requests are served without a successful startup.
+    """
+
+    def __init__(self, app):
+        self.app = app
+        self._config = None
+        self._cors = None
+        self._allow_pn = None
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        config = getattr(scope["app"].state, "auth_config", None)
+        allow_pn = _cho_phep_private_network(config)
+        if config is None:
+            if "auth" in ENABLED or "AUTH_CSRF_SECRET" in os.environ:
+                response = JSONResponse(
+                    status_code=503,
+                    content={"detail": {"code": "AUTH_UNAVAILABLE", "message": "Auth chưa khởi tạo thành công."}},
+                    headers={"Cache-Control": "no-store"},
+                )
+                await response(scope, receive, send)
+                return
+            if self._cors is None or self._allow_pn != allow_pn:
+                self._cors = CORSMiddleware(
+                    self.app,
+                    allow_origins=CORS_ORIGINS,
+                    allow_methods=["*"],
+                    allow_headers=["*"],
+                    allow_private_network=allow_pn,
+                )
+                self._allow_pn = allow_pn
+            await self._cors(scope, receive, send)
+            return
+        if config is not self._config or self._allow_pn != allow_pn:
+            self._cors = CORSMiddleware(
+                self.app,
+                allow_origins=list(config.cors_origins),
+                allow_credentials=True,
+                allow_methods=["GET", "POST", "OPTIONS"],
+                allow_headers=[
+                    "Content-Type",
+                    "X-CSRF-Token",
+                    "X-Gold-Rush-Auth",
+                    "Idempotency-Key",
+                    "X-Demo-Player",
+                ],
+                allow_private_network=allow_pn,
+            )
+            self._config = config
+            self._allow_pn = allow_pn
+        await self._cors(scope, receive, send)
+
+
+def _check_auth_database(engine):
+    """Read schema/revision only; never create a DB, tables or run migrations."""
+    try:
+        if engine.dialect.name == "sqlite":
+            database = engine.url.database
+            if database in (None, "", ":memory:") or not Path(database).is_file():
+                raise ValueError("Auth requires an existing migrated database.")
+        expected = set(ScriptDirectory.from_config(
+            AlembicConfig(str(_BACKEND_DIRECTORY / "alembic.ini")),
+        ).get_heads())
+        with engine.connect() as connection:
+            tables = set(inspect(connection).get_table_names())
+            if not expected or not (set(Base.metadata.tables) | {"alembic_version"}) <= tables:
+                raise ValueError("Auth schema is missing.")
+            if set(MigrationContext.configure(connection).get_current_heads()) != expected:
+                raise ValueError("Auth schema revision is not current.")
+            # Also detect missing columns without reading any account data.
+            for table in Base.metadata.sorted_tables:
+                connection.execute(select(table).limit(0)).close()
+    except Exception:
+        # Driver/SQL exceptions can include connection strings or credentials.
+        raise RuntimeError(
+            "AUTH_DATABASE_NOT_READY: kiểm tra AUTH_DATABASE_URL, driver, quyền truy cập "
+            "và schema; chạy Alembic upgrade head riêng trước khi khởi động."
+        ) from None
+
+
+@asynccontextmanager
+async def _game_lifespan(app: FastAPI):
+    # Khởi tạo CSDL SQLite nếu chưa có
+    try:
+        khoi_tao_csdl()
+        log.info("CSDL SQLite đã được khởi tạo/sẵn sàng")
+    except Exception as e:
+        log.error("Không khởi tạo được CSDL SQLite: %s", e)
+
+    # Nạp MỘT LẦN lúc khởi động; một thành phần lỗi không làm sập cả server
+    khoi_dong_nhiem_vu(app)
+    khoi_dong_de_xuat_do_kho(app)
+    khoi_dong_nhan_vat_ai(app)
+    khoi_dong_tien_trinh(app)
+    if "do_kho" in ENABLED:
+        try:
+            STATE["do_kho"] = json.loads(MO_HINH_DO_KHO.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            log.error("không nạp được mô hình độ khó %s: %s", MO_HINH_DO_KHO, e)
+    if "vang" in ENABLED:
+        try:
+            STATE["man_choi"] = man_choi.doc(MAN_CHOI)
+            for loi in man_choi.kiem_tra_khop_ban_do(STATE["man_choi"], BAN_DO_DIR):
+                log.error("man_choi.json: %s", loi)
+        except (OSError, ValueError, TypeError) as e:
+            log.error("không nạp được danh sách màn %s: %s", MAN_CHOI, e)
+    if "tro_ly" in ENABLED:
+        try:
+            STATE["tro_ly"] = TroLy(KB_DIR)
+        except (OSError, ValueError) as e:
+            log.error("không nạp được kho tri thức %s: %s", KB_DIR, e)
+    try:
+        yield
+    finally:
+        STATE.clear()
+        app.state.nhiem_vu = None
+        app.state.de_xuat_do_kho = None
+        app.state.nhan_vat_ai = None
+        app.state.kho_tien_trinh = None
+        app.state.dich_vu_tien_trinh = None
+        app.state.ai_player_source = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    auth_enabled = (
+        "auth" in ENABLED
+        or "AUTH_CSRF_SECRET" in os.environ
+        or "AUTH_DATABASE_URL" in os.environ
+    )
+    if not auth_enabled:
+        async with _game_lifespan(app):
+            yield
+        return
+
+    try:
+        auth_cfg = load_auth_config()
+    except AuthConfigError as error:
+        raise RuntimeError(f"AUTH_CONFIG_INVALID: {error}") from None
+
+    try:
+        options = {"base_directory": _BACKEND_DIRECTORY} if auth_cfg.database_url.startswith("sqlite") else {}
+        engine = create_auth_engine(auth_cfg, **options)
+    except Exception:
+        raise RuntimeError("AUTH_DATABASE_NOT_READY: kiểm tra AUTH_DATABASE_URL và driver đồng bộ đã cài.") from None
+
+    mounted = []
+    try:
+        _check_auth_database(engine)
+        factory = create_session_factory(engine)
+        router = create_auth_router(auth_cfg, factory)
+        auth_service = AuthService(auth_cfg, factory)
+        tich_hop_auth_vao_app(app, auth_service, auth_cfg)
+        previous = {id(route) for route in app.router.routes}
+        app.include_router(router)
+        mounted = [route for route in app.router.routes if id(route) not in previous]
+        app.openapi_schema = None
+        app.state.auth_engine = engine
+        app.state.auth_session_factory = factory
+        app.state.auth_config = auth_cfg
+        app.state.auth_service = auth_service
+        async with _game_lifespan(app):
+            yield
+    finally:
+        mounted_ids = {id(route) for route in mounted}
+        app.router.routes[:] = [route for route in app.router.routes if id(route) not in mounted_ids]
+        app.openapi_schema = None
+        for name in ("auth_config", "auth_session_factory", "auth_engine", "auth_service", "ai_auth_source"):
+            if hasattr(app.state, name):
+                delattr(app.state, name)
+        try:
+            engine.dispose()
+        except Exception:
+            raise RuntimeError("AUTH_DATABASE_SHUTDOWN_FAILED: không đóng được Engine Auth.") from None
+
+
+app = FastAPI(title="Gold Rush AI API", version="1.0.0", lifespan=lifespan)
+app.add_middleware(_LifespanCORSMiddleware)
+
+# Đăng ký các router mở rộng (Tiến trình, Kho đồ, Nhiệm vụ, Bản đồ)
+app.include_router(tien_trinh_router)
+app.include_router(thanh_tuu_router)
+app.include_router(kho_do_router)
+app.include_router(nhiem_vu_router)
+app.include_router(qua_tang_router)
+app.include_router(ban_do_router)
+
+# Đăng ký các router AI
+app.include_router(router_nhiem_vu)
+app.include_router(router_de_xuat_do_kho)
+app.include_router(router_nhan_vat_ai)
+app.include_router(router_tien_trinh)
+
+
+@app.middleware("http")
+async def do_thoi_gian(request: Request, call_next):
+    t0 = time.perf_counter()
+    response = await call_next(request)
+    response.headers["X-Process-Time-ms"] = f"{(time.perf_counter() - t0) * 1000:.1f}"
+    return response
+
+
+def _can(ten: str):
+    if ten not in ENABLED:
+        raise HTTPException(404, f"Thành phần '{ten}' đang tắt (biến ENABLED)")
+    if ten in ("do_kho", "tro_ly") and ten not in STATE:
+        raise HTTPException(503, f"'{ten}' chưa nạp được — xem log và /api/health")
+
+
+@app.get("/api/health")
+def health(request: Request):
+    return {"status": "ok", "bat": sorted(ENABLED),
+            "da_nap": {"do_kho": "do_kho" in STATE, "tro_ly": "tro_ly" in STATE,
+                       "nhiem_vu": nhiem_vu_da_nap(request.app),
+                       "de_xuat_do_kho": de_xuat_do_kho_da_nap(request.app),
+                       "nhan_vat_ai": nhan_vat_ai_da_nap(request.app),
+                       "tien_trinh": tien_trinh_da_nap(request.app)},
+            "phien_ban_mo_hinh": STATE.get("do_kho", {}).get("phien_ban")}
+
+
+# ---------- Nhật ký & bảng xếp hạng ----------
+@app.post("/api/nhat-ky", status_code=201)
+async def nhan_nhat_ky(request: Request):
+    _can("nhat_ky")
+    than = await request.body()
+    if len(than) > MAX_NHAT_KY_KB * 1024:
+        raise HTTPException(413, f"Nhật ký vượt quá {MAX_NHAT_KY_KB} KB")
+    try:
+        nk = nhat_ky.NhatKyVan.model_validate_json(than)
+    except ValueError as e:
+        raise HTTPException(422, f"Nhật ký không hợp lệ: {e}")
+    # Idempotent: app gửi lại khi mạng chập chờn → không lưu trùng, không ghi đè bản đầu
+    if any(v["ma_van"] == nk.ma_van for v in nhat_ky.doc_tat_ca(NHAT_KY_DIR)):
+        return {"da_luu": True, "ma_van": nk.ma_van, "trung": True}
+    nhat_ky.luu(nk, NHAT_KY_DIR)
+
+    # Lưu dữ liệu trận đấu vào CSDL phục vụ đối soát trọng tài và thống kê
+    # Telemetry KHÔNG tự động cấp EXP, mở khóa màn hay ghi nhận nhiệm vụ nếu chưa qua xác thực SIWE
+    try:
+        with lay_csdl() as conn:
+            so_xu_nhat = len([e for e in nk.su_kien if e.loai == "nhat_xu"])
+            so_trung_don = len([e for e in nk.su_kien if e.loai == "trung_don"])
+
+            # Kiểm tra hợp lệ bằng trọng tài nếu có màn và bản đồ
+            hop_le = 0
+            ly_do = ""
+            tep_tmx = BAN_DO_DIR / Path(nk.ban_do).name
+            if tep_tmx.exists():
+                try:
+                    m_info = _cac_man().get(nk.man) if "vang" in ENABLED and "man_choi" in STATE else None
+                    kd = trong_tai.kiem_dinh(nk.model_dump(), doc_tmx(tep_tmx), m_info)
+                    hop_le = 1 if kd.hop_le else 0
+                    ly_do = "; ".join(kd.ly_do)
+                except Exception as e_kd:
+                    ly_do = f"Lỗi kiểm định: {e_kd}"
+
+            player_id_ghi = nk.player_id or "anonymous"
+            conn.execute(
+                """INSERT INTO match_results
+                   (ma_van, player_id, man, seed, ket_qua, so_xu, giay, hop_le, ly_do_tu_choi, is_verified, verified_by, verified_wallet, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'telemetry_unverified', '', datetime('now'))
+                   ON CONFLICT(ma_van) DO UPDATE SET
+                       man = excluded.man,
+                       ket_qua = excluded.ket_qua,
+                       so_xu = excluded.so_xu,
+                       giay = excluded.giay,
+                       hop_le = excluded.hop_le,
+                       ly_do_tu_choi = excluded.ly_do_tu_choi
+                   WHERE match_results.is_verified = 0""",
+                (nk.ma_van, player_id_ghi, nk.man, None, nk.ket_qua, so_xu_nhat, nk.giay, hop_le, ly_do),
+            )
+    except Exception as e:
+        log.warning("Lỗi ghi nhận kết quả ván %s: %s", nk.ma_van, e)
+
+    return {"da_luu": True, "ma_van": nk.ma_van}
+
+
+@app.get("/api/bang-xep-hang")
+def xep_hang(top: int = Query(10, ge=1, le=100)):
+    _can("nhat_ky")
+    return {"bang": nhat_ky.bang_xep_hang(nhat_ky.doc_tat_ca(NHAT_KY_DIR), top)}
+
+
+@app.get("/api/thong-ke")
+def thong_ke():
+    _can("nhat_ky")
+    return nhat_ky.thong_ke(nhat_ky.doc_tat_ca(NHAT_KY_DIR))
+
+
+@app.get("/api/su-kien")
+def su_kien(loai: str = Query("trung_don", pattern="^(nhat_xu|trung_don|ket_thuc)$"),
+            ban_do: str = Query("gold_rush.tmx", max_length=60)):
+    _can("nhat_ky")
+    return {"su_kien": nhat_ky.loc_su_kien(nhat_ky.doc_tat_ca(NHAT_KY_DIR), loai, ban_do)}
+
+
+# ---------- Mô hình độ khó ----------
+class YeuCauDoKho(BaseModel):
+    dac_trung: list[float] = Field(min_length=len(do_kho.DAC_TRUNG), max_length=len(do_kho.DAC_TRUNG))
+
+
+@app.post("/api/do-kho/du-doan")
+def du_doan_do_kho(yc: YeuCauDoKho):
+    _can("do_kho")
+    mh = STATE["do_kho"]
+    p = do_kho.du_doan(mh, yc.dac_trung)
+    return {"p_thua": round(p, 6), "he_so_toc_do": round(do_kho.he_so_toc_do(p), 4),
+            "phien_ban": mh["phien_ban"], "dac_trung": mh["dac_trung"]}
+
+
+@app.get("/api/mo-hinh/do-kho")
+def tai_mo_hinh():
+    _can("do_kho")
+    return FileResponse(MO_HINH_DO_KHO, media_type="application/json", filename=MO_HINH_DO_KHO.name)
+
+
+# ---------- Sinh bản đồ ----------
+@app.get("/api/ban-do/sinh")
+def sinh_ban_do_moi(seed: int = Query(0, ge=0, le=10**9), mat_do: float = Query(0.42, ge=0.30, le=0.48)):
+    _can("ban_do")
+    try:
+        kq = sinh_ban_do.sinh(seed=seed, mat_do=mat_do)
+    except ValueError as e:                      # bản đồ quá chật để đặt kẻ địch
+        raise HTTPException(422, str(e))
+    return Response(sinh_ban_do.thanh_tmx(kq), media_type="application/xml",
+                    headers={"X-Chi-So": json.dumps(kq["chi_so"]),
+                             "Content-Disposition": f'attachment; filename="gold_rush_{seed}.tmx"'})
+
+
+# ---------- Trợ lý ----------
+class CauHoi(BaseModel):
+    cau_hoi: str = Field(min_length=1, max_length=300)
+
+
+@app.post("/api/tro-ly")
+def tro_ly(yc: CauHoi):
+    _can("tro_ly")
+    return STATE["tro_ly"].hoi(yc.cau_hoi)
+
+
+# ---------- Màn chơi + vàng → phiếu ký cho hợp đồng CuaHangGoldRush ----------
+def _cac_man() -> dict:
+    _can("vang")
+    if "man_choi" not in STATE:
+        raise HTTPException(503, "Chưa nạp được man_choi.json — xem log máy chủ")
+    return STATE["man_choi"]
+
+
+def _khoa_trong_tai() -> bytes:
+    _can("vang")
+    if not TRONG_TAI_KHOA or not trong_tai.la_dia_chi(HOP_DONG_CUA_HANG):
+        raise HTTPException(503, "Chưa cấu hình TRONG_TAI_KHOA / HOP_DONG_CUA_HANG")
+    return bytes.fromhex(TRONG_TAI_KHOA.removeprefix("0x"))
+
+
+@app.get("/api/man")
+def danh_sach_man():
+    return {"man": [vars(m) | {"thuong_toi_da": m.thuong_toi_da} for m in _cac_man().values()]}
+
+
+@app.get("/api/vang/cau-hinh")
+def cau_hinh_vang():
+    khoa = _khoa_trong_tai()
+    return {
+        "chain_id": CHAIN_ID,
+        "hop_dong": HOP_DONG_CUA_HANG,
+        "hop_dong_vat_pham": HOP_DONG_VAT_PHAM or None,
+        "hop_dong_nhan_vat": HOP_DONG_DANG_KY_NHAN_VAT or None,
+        "trong_tai": dia_chi_tu_khoa(khoa),
+        "local_faucet": bool(LOCAL_FAUCET_ENABLED and CHAIN_ID == 31337),
+    }
+
+
+MA_VAN = r"^[A-Za-z0-9-]+$"
+DIA_CHI = r"^0x[0-9a-fA-F]{40}$"
+
+
+class YeuCauMoRuong(BaseModel):
+    vi: str | None = Field(default=None, min_length=42, max_length=42, pattern=DIA_CHI)
+
+
+class YeuCauFaucet(BaseModel):
+    vi: str = Field(min_length=42, max_length=42, pattern=DIA_CHI)
+
+
+@app.post("/api/test/faucet")
+async def faucet_eth_test(
+    yc: YeuCauFaucet,
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """Cấp thêm ETH giả cho ví đăng nhập trong Hardhat local.
+
+    Đây là lớp giả lập Paymaster để test local: không chuyển tiền thật và không
+    được bật trên Sepolia/mainnet. Số dư được tăng bằng RPC của Hardhat/Anvil.
+    """
+    if CHAIN_ID != 31337 or not LOCAL_FAUCET_ENABLED:
+        raise HTTPException(404, "Faucet chỉ bật cho Hardhat local.")
+    kiem_tra_csrf_va_origin(request, player)
+    if yc.vi.lower() != player.wallet_address.lower():
+        raise HTTPException(403, "Địa chỉ ví yêu cầu không khớp với phiên đăng nhập SIWE")
+    if not BLOCKCHAIN_RPC_URL:
+        raise HTTPException(503, "Chưa cấu hình RPC Hardhat local.")
+    try:
+        raw = goi_rpc("eth_getBalance", [player.wallet_address, "latest"])
+        hien_tai = int(raw, 16)
+        moi = hien_tai + LOCAL_FAUCET_AMOUNT_WEI
+        try:
+            goi_rpc("hardhat_setBalance", [player.wallet_address, hex(moi)])
+        except RuntimeError:
+            goi_rpc("anvil_setBalance", [player.wallet_address, hex(moi)])
+        return {
+            "chain_id": CHAIN_ID,
+            "vi": player.wallet_address,
+            "amount_wei": LOCAL_FAUCET_AMOUNT_WEI,
+            "balance_wei": moi,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        log.warning("Faucet Hardhat không cấp được ETH cho %s", player.wallet_address)
+        raise HTTPException(503, "Faucet Hardhat chưa sẵn sàng.") from None
+
+
+@app.post("/api/rung-ruong/ket-qua")
+async def ket_qua_rung_ruong(
+    yc: YeuCauMoRuong,
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """Backend quay một lần và ký kết quả; giao dịch burn/mint do hợp đồng thực hiện."""
+    kiem_tra_csrf_va_origin(request, player)
+    vi_xac_thuc = player.wallet_address
+    if yc.vi and yc.vi.lower() != vi_xac_thuc.lower():
+        raise HTTPException(403, "Địa chỉ ví yêu cầu không khớp với phiên đăng nhập SIWE")
+    khoa = _khoa_trong_tai()
+    phan_thuong = rung_ruong.quay_phan_thuong()
+    phieu = rung_ruong.ky_phieu_mo_ruong(
+        vi_xac_thuc, phan_thuong, khoa, CHAIN_ID, HOP_DONG_CUA_HANG
+    )
+    return {"phan_thuong": phan_thuong, **phieu}
+
+class YeuCauBatDau(BaseModel):
+    ma_van: str | None = Field(default=None, min_length=8, max_length=64, pattern=MA_VAN)
+    vi: str | None = Field(default=None, min_length=42, max_length=42, pattern=DIA_CHI)
+    man: int = Field(ge=1, le=1000)
+    ve: int = Field(default=0, ge=0)
+
+
+@app.post("/api/man/bat-dau", status_code=201)
+async def bat_dau_man(
+    yc: YeuCauBatDau,
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """App gọi NGAY TRƯỚC khi thả George vào màn (cả màn có cọc và màn miễn phí).
+
+    Bảo mật & Phân quyền:
+    - Bắt buộc phiên đăng nhập SIWE hợp lệ (Fail-Closed, 401 nếu chưa xác thực).
+    - Lấy danh tính ví từ phiên SIWE; nếu body gửi kèm `vi`, bắt buộc phải khớp (403 nếu sai khác).
+    - Mutation qua cookie phiên bắt buộc kiểm tra Origin và CSRF token (403 nếu thiếu hoặc sai).
+    - Với màn có cọc: yêu cầu vé hợp lệ (ve >= 1) từ giao dịch vaoMan on-chain.
+    - Với màn miễn phí: cho phép đăng ký vé bắt đầu ván (ve = 0) để ràng buộc danh tính ví với mã ván,
+      ngăn chặn nguy cơ chiếm đoạt phiếu (voucher hijacking) và gian lận. Truyền ve > 0 vào màn miễn phí sẽ bị từ chối 422.
+    - Không cho phép đăng ký lại mã ván đã tồn tại trong SoVe (409 Conflict).
+    - Nếu client không truyền mã ván, server sinh ngẫu nhiên an toàn bằng UUID v4.
+    """
+    kiem_tra_csrf_va_origin(request, player)
+
+    vi_xac_thuc = player.wallet_address
+    if yc.vi and yc.vi.lower() != vi_xac_thuc.lower():
+        raise HTTPException(403, "Địa chỉ ví yêu cầu không khớp với phiên đăng nhập SIWE")
+
+    m = _cac_man().get(yc.man)
+    if m is None:
+        raise HTTPException(404, f"Không có màn {yc.man}")
+
+    if m.mien_phi:
+        if yc.ve > 0:
+            raise HTTPException(422, f"Màn {yc.man} là màn luyện tập, không cần vé")
+        ve_ghi = 0
+    else:
+        if yc.ve < 1:
+            raise HTTPException(422, f"Màn {yc.man} là màn có cọc, yêu cầu số vé hợp lệ (ve >= 1)")
+        ve_ghi = yc.ve
+
+        # 1. Chống replay số vé đã bắt đầu
+        if trong_tai.SoVe(SO_VE).da_dung(vi_xac_thuc, yc.ve):
+            raise HTTPException(409, f"Vé {yc.ve} của ví {vi_xac_thuc} đã được dùng cho ván chơi khác")
+
+        # 2. Xác minh trạng thái vé on-chain qua RPC tin cậy (Fail-Closed)
+        verifier = getattr(request.app.state, "onchain_ticket_verifier", None)
+        if verifier is None:
+            verifier = XacMinhVeOnchain()
+        try:
+            verifier.xac_minh_ve_hop_le_de_vao_man(vi_xac_thuc, yc.man, yc.ve)
+        except LoiCauHinhVe as e:
+            log.warning("Lỗi cấu hình xác minh vé on-chain: %s", e)
+            raise HTTPException(503, f"Hệ thống xác minh blockchain chưa sẵn sàng: {e.message}") from None
+        except LoiKetNoiRPC as e:
+            log.warning("Lỗi kết nối RPC khi xác minh vé on-chain: %s", e)
+            raise HTTPException(503, f"Không thể kết nối RPC xác minh vé on-chain: {e.message}") from None
+        except LoiVeKhongHopLe as e:
+            log.info("Vé cọc on-chain không hợp lệ: %s", e)
+            raise HTTPException(422, f"Vé cọc on-chain không hợp lệ: {e.message}") from None
+        except Exception as e:
+            log.error("Lỗi bất ngờ khi xác minh vé on-chain: %s", e)
+            raise HTTPException(503, f"Lỗi xác minh vé on-chain (Fail-Closed): {e}") from None
+
+    ma_van_ghi = yc.ma_van if yc.ma_van else f"van-{uuid.uuid4().hex}"
+
+    try:
+        trong_tai.SoVe(SO_VE).bat_dau(ma_van_ghi, vi_xac_thuc, yc.man, ve_ghi)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    return {"da_bat_dau": True, "ma_van": ma_van_ghi, "vi": vi_xac_thuc, "gioi_han_giay": m.gioi_han_giay}
+
+
+@app.get("/api/man/ve")
+def ve_da_dung(vi: str = Query(min_length=42, max_length=42, pattern=DIA_CHI), ve: int = Query(ge=1)):
+    _cac_man()
+    return {"da_dung": trong_tai.SoVe(SO_VE).da_dung(vi, ve)}
+
+
+class YeuCauPhieu(BaseModel):
+    ma_van: str = Field(min_length=8, max_length=64, pattern=MA_VAN)
+    vi: str | None = Field(default=None, min_length=42, max_length=42, pattern=DIA_CHI)
+
+
+def _ky(khoa: bytes, ban_ghi: dict) -> dict:
+    ket_qua = trong_tai.ky_phieu(ban_ghi["vi"], ban_ghi.get("man", 1), ban_ghi.get("ve", 0),
+                                 ban_ghi["so_vang"], ban_ghi["ma_van"], khoa, CHAIN_ID, HOP_DONG_CUA_HANG)
+    if "so_vang_goc" in ban_ghi:
+        ket_qua["so_vang_goc"] = ban_ghi["so_vang_goc"]
+        ket_qua["phi_gas_vang"] = ban_ghi.get("phi_gas_vang", 0)
+        ket_qua["so_vang_thuc_nhan"] = ban_ghi["so_vang"]
+    return ket_qua
+
+
+@app.post("/api/vang/phieu")
+async def cap_phieu(
+    yc: YeuCauPhieu,
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """Cấp phiếu nhận vàng EIP-712 sau khi trọng tài kiểm định ván chơi.
+
+    Bảo mật:
+    - Bắt buộc phiên đăng nhập SIWE hợp lệ (Fail-Closed, 401 nếu chưa xác thực).
+    - Ví được lấy từ phiên SIWE; nếu body gửi kèm `vi`, bắt buộc phải khớp (403 nếu sai khác).
+    - Mutation qua cookie bắt buộc kiểm tra Origin và CSRF token.
+    - Chặn Voucher Hijacking: nếu ván đã đăng ký vé cho ví khác trong SoVe -> 403 Forbidden.
+    - Ký lại phiếu cũ: chỉ cho phép đúng chủ sở hữu ví của phiếu cũ đó.
+    - Chỉ cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực an toàn qua SIWE.
+    """
+    kiem_tra_csrf_va_origin(request, player)
+
+    vi_xac_thuc = player.wallet_address
+    if yc.vi and yc.vi.lower() != vi_xac_thuc.lower():
+        raise HTTPException(403, "Địa chỉ ví yêu cầu không khớp với phiên đăng nhập SIWE")
+
+    khoa = _khoa_trong_tai()
+    cac_man = _cac_man()
+    so = trong_tai.SoPhieu(SO_PHIEU)
+    so_ve = trong_tai.SoVe(SO_VE)
+
+    # 1. Nhánh xin ký lại: Chỉ ký lại phiếu ĐÃ TỒN TẠI trong SoPhieu và ĐÚNG chủ sở hữu ví
+    # Tuyệt đối không tạo phiếu mới, không cấp thêm vàng
+    cu = so.lay(yc.ma_van)
+    if cu is not None:
+        if cu["vi"].lower() != vi_xac_thuc.lower():
+            raise HTTPException(409, "Ván này đã cấp phiếu cho một ví khác")
+        return _ky(khoa, cu)
+
+    # 2. Đọc nhật ký ván chơi từ telemetry store
+    van = next((v for v in nhat_ky.doc_tat_ca(NHAT_KY_DIR) if v["ma_van"] == yc.ma_van), None)
+    if van is None:
+        raise HTTPException(404, "Không có nhật ký của ván này (app đã gửi /api/nhat-ky chưa?)")
+    m = cac_man.get(van["man"])
+    if m is None:
+        raise HTTPException(422, f"Không có màn {van['man']}")
+    if Path(van["ban_do"]).name != m.tep:
+        raise HTTPException(422, f"Màn {m.id} dùng bản đồ {m.tep}, nhật ký ghi {van['ban_do']}")
+    tep_ban_do = BAN_DO_DIR / m.tep
+    if not tep_ban_do.exists():
+        raise HTTPException(422, f"Máy chủ không có bản đồ {m.tep}")
+
+    # 3. Bắt buộc ván phải có ticket trong SoVe trước khi phát Voucher mới cho BẤT KỲ màn nào (kể cả màn 1)
+    # Fail-closed tuyệt đối: Nếu thiếu ticket -> từ chối (403 cho màn miễn phí, 422 cho màn có cọc)
+    bd = so_ve.lay_theo_van(yc.ma_van)
+    if bd is None:
+        if m.mien_phi:
+            raise HTTPException(403, "Ván chơi chưa được đăng ký bắt đầu (thiếu ticket SoVe)")
+        else:
+            raise HTTPException(422, {"ly_do": ["Ván màn có cọc chưa được đăng ký bắt đầu với ví này"]})
+
+    # 4. Nếu ví trong ticket khác ví SIWE xác thực -> từ chối 403 Forbidden (chống Voucher Hijacking)
+    if bd["vi"].lower() != vi_xac_thuc.lower():
+        log.warning("Voucher Hijacking bị chặn: Ván %s thuộc ví %s, nhưng ví %s xin phiếu",
+                    yc.ma_van, bd["vi"], vi_xac_thuc)
+        raise HTTPException(403, "Ván chơi này đã được đăng ký bắt đầu cho một địa chỉ ví khác")
+
+    # 5. Bắt buộc màn trong ticket khớp chính xác màn trong nhật ký
+    if bd["man"] != m.id:
+        raise HTTPException(422, f"Màn trong đăng ký ticket ({bd['man']}) không khớp màn nhật ký ({m.id})")
+
+    # 6. Kiểm định ván và quy tắc vé theo loại màn
+    kq = trong_tai.kiem_dinh(van, doc_tmx(tep_ban_do), m)
+    ly_do = list(kq.ly_do)
+    ve = 0
+
+    if m.mien_phi:
+        # Với màn miễn phí, ticket.ve bắt buộc phải bằng 0
+        if bd.get("ve", 0) != 0:
+            ly_do.append(f"Màn {m.id} là màn miễn phí, ticket.ve phải bằng 0 (nhận {bd.get('ve')})")
+        ve = 0
+    else:
+        # Với màn có cọc, ticket.ve bắt buộc >= 1 và giữ kiểm tra đồng hồ/luật cọc
+        if bd.get("ve", 0) < 1:
+            ly_do.append(f"Màn {m.id} là màn có cọc, ticket.ve phải >= 1 (nhận {bd.get('ve')})")
+        else:
+            ly_do += trong_tai.kiem_dong_ho(bd, van, m)
+            ve = bd["ve"]
+
+    if ly_do:
+        log.warning("từ chối phiếu %s: %s", yc.ma_van, ly_do)
+        raise HTTPException(422, {"ly_do": ly_do})
+    phi_gas_vang = GAS_FEE_GOLD if LOCAL_FAUCET_ENABLED and CHAIN_ID == 31337 else 0
+    so_vang_goc = kq.so_vang
+    so_vang_thuc_nhan = so_vang_goc - phi_gas_vang
+    if so_vang_thuc_nhan <= 0:
+        raise HTTPException(422, f"Phần thưởng {so_vang_goc} vàng không đủ trừ phí gas {phi_gas_vang} vàng")
+    if (
+        trong_tai.VANG_TOI_DA_MOI_NGAY > 0
+        and so.vang_hom_nay(vi_xac_thuc) + so_vang_goc
+        > trong_tai.VANG_TOI_DA_MOI_NGAY
+    ):
+        raise HTTPException(429, f"Ví đã nhận đủ {trong_tai.VANG_TOI_DA_MOI_NGAY} vàng hôm nay")
+    so.ghi(
+        yc.ma_van,
+        vi_xac_thuc,
+        so_vang_thuc_nhan,
+        m.id,
+        ve,
+        so_vang_goc=so_vang_goc,
+        phi_gas_vang=phi_gas_vang,
+    )
+
+    # 1. Cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực qua SIWE và SoVe
+    try:
+        with lay_csdl() as conn:
+            conn.execute(
+                """UPDATE match_results
+                   SET is_verified = 1, verified_by = 'referee_voucher', verified_wallet = ?
+                   WHERE ma_van = ?""",
+                (vi_xac_thuc.lower(), yc.ma_van),
+            )
+    except Exception as e_mr:
+        log.warning("Không thể cập nhật match_results verified: %s", e_mr)
+
+    # 2. Tự động ghi nhận tiến trình vào KhoTienTrinh (phục vụ mở khóa AI Character)
+    kho_tt = getattr(app.state, "kho_tien_trinh", None)
+    auth_srv = getattr(app.state, "auth_service", None)
+    if kho_tt is not None and auth_srv is not None:
+        try:
+            with auth_srv._factory() as db:
+                from auth.models import User
+                u = db.scalar(select(User).where(User.wallet_address == vi_xac_thuc.lower()))
+                if u is not None:
+                    kho_tt.ghi_nhan_hoan_thanh(
+                        owner_user_id=str(u.id),
+                        verified_wallet_address=vi_xac_thuc.lower(),
+                        stage_id=m.id,
+                        completion_status="completed",
+                        verification_source="referee_validation",
+                        completion_evidence={
+                            "ma_van": yc.ma_van,
+                            "so_vang": so_vang_goc,
+                            "so_vang_thuc_nhan": so_vang_thuc_nhan,
+                            "phi_gas_vang": phi_gas_vang,
+                            "ve": ve,
+                        },
+                        replay_key=f"referee:{yc.ma_van}",
+                    )
+        except Exception as e:
+            log.warning("Không thể tự động ghi nhận tiến trình từ cap_phieu (%s)", e)
+    return _ky(khoa, so.lay(yc.ma_van))
+
+
+@app.get("/api/vang/cho-nhan")
+def phieu_cho_nhan(vi: str = Query(min_length=42, max_length=42, pattern=DIA_CHI)):
+    """Mọi phiếu đã cấp cho ví này trong 7 ngày, ký lại với hạn mới.
+
+    Máy chủ không biết phiếu nào đã nộp lên chuỗi — app tự lọc bằng `daDoi(maVan)` (và `ve(vi)` với màn
+    có cọc). Nhờ đó tải lại trang, đổi máy, MetaMask treo… đều không làm mất vàng đã kiếm.
+    """
+    khoa = _khoa_trong_tai()
+    return {"phieu": [_ky(khoa, p) | {"ma_van": p["ma_van"]} for p in trong_tai.SoPhieu(SO_PHIEU).cua_vi(vi)]}
+
+========== gold_rush_ai/core/trong_tai.py ==========
+"""Máy chủ TRỌNG TÀI: kiểm định một ván chơi rồi ký PHIẾU VÀNG (EIP-712) cho ví người chơi.
+
+Vì sao cần trọng tài: game chạy trên máy người chơi. Nếu app tự báo "tôi nhặt 24 xu" rồi gọi
+thẳng hợp đồng để đúc vàng, ai mở DevTools cũng đúc được vô hạn. Hợp đồng `CuaHangGoldRush`
+vì vậy chỉ nhận vàng kèm chữ ký của một khoá mà CHỈ máy chủ giữ. Máy chủ chỉ ký sau khi đã
+kiểm định nhật ký ván chơi bằng chính các công cụ AI cổ điển đã có (BFS/A* trên bản đồ).
+
+Bản 2 (nhiều màn chơi): phiếu ghi thêm `man` và `ve`. Màn có cọc chỉ được cấp phiếu khi người chơi
+HOÀN THÀNH (nhặt hết xu trước khi hết giờ) và ván đó đã được đăng ký "bắt đầu" với đúng số vé
+(`SoVe`) — mỗi vé chỉ bắt đầu được MỘT lần, nên không thể "mua vé một lần, chơi lại tới khi thắng".
+
+Giới hạn phải nói rõ với sinh viên: nhật ký do app gửi lên. Kẻ gian đủ kiên nhẫn có thể bịa
+một nhật ký "hợp lý" (vị trí xu là công khai). Kiểm định chỉ làm gian lận ĐẮT hơn, không làm
+nó KHÔNG THỂ. Muốn chặn hẳn phải để máy chủ tự chạy lại ván (game "máy chủ có thẩm quyền")
+— xem tài liệu đề xuất, mục lộ trình.
+"""
+from __future__ import annotations
+
+import heapq
+import json
+import math
+import os
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+
+from .eth_ky import bam_eip712, checksum, dia_chi_tu_khoa, keccak256, ky
+from .luoi import KICH_THUOC_O, BanDo
+from .man_choi import ManChoi
+
+# ---- Hợp đồng dữ liệu với Solidity: PHẢI khớp CuaHangGoldRush.sol từng ký tự ----
+TEN_MIEN, PHIEN_BAN_MIEN = "GoldRush", "2"
+PHIEU = [("nguoiChoi", "address"), ("man", "uint256"), ("ve", "uint256"), ("soVang", "uint256"),
+         ("maVan", "bytes32"), ("hanChot", "uint256")]
+
+# ---- Thông số kiểm định ----
+TOC_DO_GEORGE = 74.0          # px/giây — CauHinh.tocDoGeorge
+DUNG_SAI_THOI_GIAN = 1.15     # cho phép nhanh hơn cận dưới 15% (khung hình, làm tròn)
+BAN_KINH_NHAT_XU = 20.0       # px — tâm George cách tâm xu khi va chạm
+# 0 = không giới hạn. Local Hardhat có thể tắt hạn mức để test; môi trường
+# deploy nên giữ giá trị dương để chống nhật ký giả nhận vàng vô hạn.
+VANG_TOI_DA_MOI_NGAY = int(os.environ.get("GOLD_DAILY_LIMIT", "150"))
+
+# ---- Đồng hồ thật của máy chủ cho màn có cọc (chống "chơi trước, nộp sau") ----
+SAI_SO_DONG_HO = 3            # giây: nhật ký tới sớm hơn thời lượng ván tự khai quá mức này → bịa
+HE_SO_TAM_DUNG = 2.0          # cho phép tạm dừng: nhật ký phải tới trong 2 × giới hạn + 60 s kể từ lúc bắt đầu
+
+
+@dataclass
+class KetQuaKiemDinh:
+    hop_le: bool
+    so_vang: int
+    ly_do: list[str]
+
+
+def _khoang_cach_ngan_nhat(ban_do: BanDo, dau: tuple[int, int]) -> dict[tuple[int, int], float]:
+    """Dijkstra 8 hướng (chéo = √2, chỉ đi chéo khi hai ô cạnh đều trống), tính bằng SỐ Ô.
+
+    Dùng làm CẬN DƯỚI cho quãng đường thật: George đi liên tục nên có thể ngắn hơn đường
+    qua tâm ô, vì vậy khi dùng sẽ trừ 1 ô và chia thêm dung sai.
+    """
+    kc = {dau: 0.0}
+    hang = [(0.0, dau)]
+    while hang:
+        d, (c, h) = heapq.heappop(hang)
+        if d > kc[(c, h)]:
+            continue
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                if not dx and not dy:
+                    continue
+                ke = (c + dx, h + dy)
+                if ban_do.bi_chan(*ke):
+                    continue
+                if dx and dy and (ban_do.bi_chan(c + dx, h) or ban_do.bi_chan(c, h + dy)):
+                    continue
+                nd = d + (math.sqrt(2) if dx and dy else 1.0)
+                if nd < kc.get(ke, math.inf):
+                    kc[ke] = nd
+                    heapq.heappush(hang, (nd, ke))
+    return kc
+
+
+def kiem_dinh(nhat_ky: dict, ban_do: BanDo, man: ManChoi | None = None) -> KetQuaKiemDinh:
+    """Nhật ký một ván (lược đồ NhatKyVan) có đáng tin để trả vàng không.
+
+    `so_vang` trả về = số xu nhặt được + thưởng (nếu hoàn thành màn). Mọi màn
+    chính thức chỉ trả vàng khi hoàn thành; màn không cọc cũng không phải lượt
+    luyện tập nhận vàng khi thua.
+    """
+    ly_do = []
+    nhat = sorted((e for e in nhat_ky["su_kien"] if e["loai"] == "nhat_xu"), key=lambda e: e["giay"])
+    so_vang = len(nhat)
+    xu = [(c * KICH_THUOC_O + KICH_THUOC_O / 2, h * KICH_THUOC_O + KICH_THUOC_O / 2)
+          for c, h in ban_do.cac_diem("coin")]
+
+    if so_vang == 0:
+        ly_do.append("Ván không nhặt được xu nào")
+    if so_vang > len(xu):
+        ly_do.append(f"Nhặt {so_vang} xu nhưng bản đồ chỉ có {len(xu)}")
+    hoan_thanh = nhat_ky.get("ket_qua") == "thang" and so_vang == len(xu) > 0
+    if man is not None:
+        if man.gioi_han_giay and nhat_ky["giay"] > man.gioi_han_giay + 1:
+            ly_do.append(f"Ván kéo dài {nhat_ky['giay']:.0f} s, màn {man.id} chỉ cho {man.gioi_han_giay} s")
+        if not hoan_thanh:
+            ly_do.append(f"Màn {man.id}: chỉ trả vàng khi thắng và nhặt hết {len(xu)} xu")
+    if nhat_ky["diem"] != 20 * so_vang:
+        ly_do.append(f"Điểm {nhat_ky['diem']} không khớp {so_vang} lần nhặt xu (20 điểm/xu)")
+    if nhat and nhat[-1]["giay"] > nhat_ky["giay"] + 1:
+        ly_do.append("Sự kiện xảy ra sau khi ván đã kết thúc")
+
+    # 1. Mỗi lần nhặt phải ở sát một đồng xu CÓ THẬT, và mỗi đồng xu chỉ nhặt một lần
+    con_lai = list(range(len(xu)))
+    o_nhat = []
+    for e in nhat:
+        if not con_lai:
+            break
+        gan = min(con_lai, key=lambda i: math.dist((e["x"], e["y"]), xu[i]))
+        if math.dist((e["x"], e["y"]), xu[gan]) > BAN_KINH_NHAT_XU:
+            ly_do.append(f"Nhặt xu ở ({e['x']:.0f},{e['y']:.0f}) — không có đồng xu nào ở đó")
+            break
+        con_lai.remove(gan)
+        o_nhat.append((int(xu[gan][0] // KICH_THUOC_O), int(xu[gan][1] // KICH_THUOC_O), e["giay"]))
+
+    # 2. Giữa hai lần nhặt phải đủ thời gian để ĐI BỘ tới (không xuyên tường, không dịch chuyển)
+    george = ban_do.cac_diem("george")
+    if george and o_nhat and not ly_do:
+        truoc = (george[0][0], george[0][1], 0.0)
+        for diem in o_nhat:
+            kc = _khoang_cach_ngan_nhat(ban_do, truoc[:2]).get(diem[:2])
+            if kc is None:
+                ly_do.append(f"Xu ở ô {diem[:2]} không tới được từ ô {truoc[:2]}")
+                break
+            can_duoi = max(kc - 1, 0) * KICH_THUOC_O / TOC_DO_GEORGE / DUNG_SAI_THOI_GIAN
+            if diem[2] - truoc[2] < can_duoi:
+                ly_do.append(f"Từ ô {truoc[:2]} tới ô {diem[:2]} mất "
+                             f"{diem[2] - truoc[2]:.1f} s, đi bộ nhanh nhất "
+                             f"cũng cần {can_duoi:.1f} s")
+                break
+            truoc = diem
+    if man is not None and hoan_thanh and not ly_do:
+        so_vang += man.thuong
+    return KetQuaKiemDinh(not ly_do, so_vang, ly_do)
+
+
+# ---------------------------------------------------------------------------
+# Ký phiếu
+# ---------------------------------------------------------------------------
+def ma_van_bytes32(ma_van: str) -> str:
+    """Mã ván UUID (chuỗi) → bytes32 đưa lên chuỗi. Băm để độ dài cố định, không lộ định dạng."""
+    return "0x" + keccak256(ma_van.encode()).hex()
+
+
+def ky_phieu(nguoi_choi: str, man: int, ve: int, so_vang: int, ma_van: str,
+             khoa_trong_tai: bytes, chain_id: int, hop_dong: str, han_giay: int = 900,
+             bay_gio: int | None = None) -> dict:
+    """Tạo và ký phiếu vàng. Trả về dữ liệu đúng dạng tham số `nhanVang(phieu, chuKy)`."""
+    if so_vang <= 0 or man <= 0 or ve < 0:
+        raise ValueError("Phiếu không hợp lệ")
+    bay_gio = bay_gio if bay_gio is not None else int(time.time())
+    phieu = {"nguoiChoi": checksum(nguoi_choi), "man": man, "ve": ve, "soVang": so_vang,
+             "maVan": ma_van_bytes32(ma_van), "hanChot": bay_gio + han_giay}
+    mien = {"name": TEN_MIEN, "version": PHIEN_BAN_MIEN,
+            "chainId": chain_id, "verifyingContract": hop_dong}
+    bam = bam_eip712(mien, "PhieuVang", PHIEU, phieu)          # đúng _hashTypedDataV4 của OZ
+    return {"phieu": phieu, "chu_ky": "0x" + ky(bam, khoa_trong_tai).hex(),
+            "bam": "0x" + bam.hex(), "trong_tai": dia_chi_tu_khoa(khoa_trong_tai)}
+
+
+def la_dia_chi(s: str) -> bool:
+    return isinstance(s, str) and len(s) == 42 and s.startswith("0x") and all(
+        c in "0123456789abcdefABCDEF" for c in s[2:])
+
+
+class _SoJsonl:
+    def __init__(self, tep: Path):
+        self.tep = Path(tep)
+        self.tep.parent.mkdir(parents=True, exist_ok=True)
+
+    def _doc(self) -> list[dict]:
+        if not self.tep.exists():
+            return []
+        return [json.loads(d) for d in self.tep.read_text(encoding="utf-8").splitlines() if d.strip()]
+
+    def _them(self, ban_ghi: dict) -> None:
+        with self.tep.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(ban_ghi) + "\n")
+
+
+def _hom_nay() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+class SoPhieu(_SoJsonl):
+    """Sổ phiếu đã cấp (JSONL). Mỗi ván MỘT bản ghi; xin lại thì KÝ LẠI đúng nội dung cũ với hạn mới.
+
+    Ký lại an toàn vì hợp đồng chặn đổi hai lần (`daDoi[maVan]`). Nhờ vậy lỗi phía người chơi —
+    phiếu hết hạn, đóng tab giữa chừng, MetaMask treo — không bao giờ làm mất vàng đã kiếm.
+    """
+
+    def lay(self, ma_van: str) -> dict | None:
+        return next((p for p in self._doc() if p["ma_van"] == ma_van), None)
+
+    def da_cap(self, ma_van: str) -> bool:
+        return self.lay(ma_van) is not None
+
+    def cua_vi(self, vi: str, so_ngay: int = 7) -> list[dict]:
+        moc = time.time() - so_ngay * 86400
+        return [p for p in self._doc() if p["vi"].lower() == vi.lower() and p.get("luc", 0) >= moc]
+
+    def vang_hom_nay(self, vi: str) -> int:
+        ngay = _hom_nay()
+        return sum(
+            p.get("so_vang_goc", p["so_vang"])
+            for p in self._doc()
+            if p["vi"].lower() == vi.lower() and p["ngay"] == ngay
+        )
+
+    def ghi(
+        self,
+        ma_van: str,
+        vi: str,
+        so_vang: int,
+        man: int = 1,
+        ve: int = 0,
+        *,
+        so_vang_goc: int | None = None,
+        phi_gas_vang: int = 0,
+    ) -> None:
+        ban_ghi = {
+            "ma_van": ma_van,
+            "vi": vi,
+            "so_vang": so_vang,
+            "man": man,
+            "ve": ve,
+            "ngay": _hom_nay(),
+            "luc": int(time.time()),
+        }
+        if so_vang_goc is not None:
+            ban_ghi["so_vang_goc"] = so_vang_goc
+            ban_ghi["phi_gas_vang"] = phi_gas_vang
+        self._them(ban_ghi)
+
+
+class SoVe(_SoJsonl):
+    """Sổ BẮT ĐẦU màn có cọc: (ví, số vé) → mã ván + thời điểm bắt đầu theo đồng hồ máy chủ."""
+
+    def lay_theo_van(self, ma_van: str) -> dict | None:
+        return next((v for v in self._doc() if v["ma_van"] == ma_van), None)
+
+    def da_dung(self, vi: str, ve: int) -> bool:
+        return any(v["vi"].lower() == vi.lower() and v["ve"] == ve for v in self._doc())
+
+    def bat_dau(self, ma_van: str, vi: str, man: int, ve: int, luc: float | None = None) -> dict:
+        if ve > 0 and self.da_dung(vi, ve):
+            raise ValueError("Vé này đã dùng để bắt đầu một ván")
+        if self.lay_theo_van(ma_van):
+            raise ValueError("Mã ván đã được dùng")
+        ban_ghi = {"ma_van": ma_van, "vi": vi, "man": man, "ve": ve,
+                   "bat_dau": luc if luc is not None else time.time()}
+        self._them(ban_ghi)
+        return ban_ghi
+
+
+def kiem_dong_ho(ve: dict, nhat_ky: dict, man: ManChoi) -> list[str]:
+    """So thời lượng ván TỰ KHAI với đồng hồ THẬT của máy chủ (lúc nhận nhật ký)."""
+    try:
+        nhan = datetime.fromisoformat(nhat_ky["nhan_luc"]).timestamp()
+    except (KeyError, ValueError):
+        return ["Nhật ký thiếu thời điểm máy chủ nhận"]
+    troi = nhan - ve["bat_dau"]
+    if troi + SAI_SO_DONG_HO < nhat_ky["giay"]:
+        return [f"Ván tự khai {nhat_ky['giay']:.0f} s nhưng nhật ký tới sau {troi:.0f} s "
+                "kể từ lúc bắt đầu"]
+    if troi > HE_SO_TAM_DUNG * man.gioi_han_giay + 60:
+        return [f"Nhật ký tới sau {troi:.0f} s — quá lâu so với giới hạn "
+                f"{man.gioi_han_giay} s của màn"]
+    return []
+
+========== gold_rush_ai/config.py ==========
+"""Cấu hình tập trung — mọi giá trị ghi đè được bằng biến môi trường (giống notebook AI Web Apps)."""
+import os
+from pathlib import Path
+
+ROOT = Path(os.environ.get("APP_ROOT", Path(__file__).resolve().parent))
+DATA_DIR = ROOT / "data"
+ART_DIR = ROOT / "artifacts"
+KB_DIR = Path(os.environ.get("KB_DIR", DATA_DIR / "kb"))
+NHAT_KY_DIR = Path(os.environ.get("NHAT_KY_DIR", DATA_DIR / "nhat_ky"))
+
+# Mô hình độ khó đang phục vụ: đổi phiên bản = đổi biến môi trường, không sửa code
+MO_HINH_DO_KHO = Path(os.environ.get("MO_HINH_DO_KHO", ART_DIR / "do_kho" / "do_kho_v1.json"))
+
+# Thư mục app Flutter — script huấn luyện chép mô hình sang assets/models/ của app
+APP_FLUTTER = Path(os.environ.get("APP_FLUTTER", ROOT.parent / "gold_rush"))
+
+ENABLED = {m.strip() for m in os.environ.get("ENABLED", "do_kho,tro_ly,ban_do,nhat_ky,vang").split(",") if m.strip()}
+CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:8501,http://localhost:5173,http://localhost:5000").split(",")
+MAX_NHAT_KY_KB = int(os.environ.get("MAX_NHAT_KY_KB", "64"))
+
+# ---- Blockchain (đề xuất cửa hàng nhân vật) — CHỈ mạng thử nghiệm ----
+# Khoá bí mật của trọng tài: đặt bằng biến môi trường / Secrets, KHÔNG BAO GIỜ ghi vào mã hay Git.
+TRONG_TAI_KHOA = os.environ.get("TRONG_TAI_KHOA", "")
+CHAIN_ID = int(os.environ.get("CHAIN_ID", "31337"))                  # 31337 Hardhat · 11155111 Sepolia
+HOP_DONG_CUA_HANG = os.environ.get("HOP_DONG_CUA_HANG", "")         # địa chỉ sau khi triển khai
+HOP_DONG_VAT_PHAM = os.environ.get("HOP_DONG_VAT_PHAM", "")         # ERC-1155 vật phẩm transferable
+BLOCKCHAIN_RPC_URL = os.environ.get("BLOCKCHAIN_RPC_URL", os.environ.get("AI_BLOCKCHAIN_RPC_URL", ""))
+RPC_TIMEOUT_SECONDS = float(os.environ.get("RPC_TIMEOUT_SECONDS", "5.0"))
+# Chỉ phục vụ Hardhat local. Không bật trên Sepolia/mainnet.
+LOCAL_FAUCET_ENABLED = os.environ.get("LOCAL_FAUCET_ENABLED", "false").lower() in ("true", "1")
+LOCAL_FAUCET_AMOUNT_WEI = int(os.environ.get("LOCAL_FAUCET_AMOUNT_WEI", "1000000000000000000"))
+# Phí gas quy đổi cố định bằng vàng trong môi trường test. 0 = không trừ phí.
+GAS_FEE_GOLD = int(os.environ.get("GAS_FEE_GOLD", "0"))
+BAN_DO_DIR = Path(os.environ.get("BAN_DO_DIR", APP_FLUTTER / "assets" / "tiles"))
+SO_PHIEU = Path(os.environ.get("SO_PHIEU", DATA_DIR / "phieu" / "da_cap.jsonl"))
+SO_VE = Path(os.environ.get("SO_VE", DATA_DIR / "phieu" / "ve_da_bat_dau.jsonl"))
+MAN_CHOI = Path(os.environ.get("MAN_CHOI", BAN_DO_DIR / "man_choi.json"))   # dùng chung với app + Ignition
+CSDL_PATH = Path(os.environ.get("CSDL_PATH", DATA_DIR / "gold_rush.db"))
+QUA_TANG_CODES_JSON = Path(os.environ.get("QUA_TANG_CODES_JSON", DATA_DIR / "qua_tang" / "codes.json"))
+
+# Lưu trữ nhân vật AI bền vững (tách biệt khỏi preview cache có TTL)
+AI_CHARACTER_DB = Path(os.environ.get("AI_CHARACTER_DB", DATA_DIR / "nhan_vat" / "characters.sqlite3"))
+AI_MAX_CHARACTERS_PER_USER = int(os.environ.get("AI_MAX_CHARACTERS_PER_USER", "20"))
+AI_MAX_CHARACTERS_TOTAL = int(os.environ.get("AI_MAX_CHARACTERS_TOTAL", "10000"))
+HOP_DONG_DANG_KY_NHAN_VAT = os.environ.get("HOP_DONG_DANG_KY_NHAN_VAT", "")
+AI_IMAGE_MIN_INTERVAL_SECONDS = float(os.environ.get("AI_IMAGE_MIN_INTERVAL_SECONDS", "20"))
+
+# Blockchain RPC & Character Registry Verifier (AI-001)
+AI_BLOCKCHAIN_RPC_URL = os.environ.get("AI_BLOCKCHAIN_RPC_URL", "")
+AI_BLOCKCHAIN_CHAIN_ID = int(os.environ.get("AI_BLOCKCHAIN_CHAIN_ID", os.environ.get("CHAIN_ID", "31337")))
+AI_CHARACTER_REGISTRY_ADDRESS = os.environ.get(
+    "AI_CHARACTER_REGISTRY_ADDRESS",
+    os.environ.get("HOP_DONG_DANG_KY_NHAN_VAT", ""),
+)
+AI_BLOCKCHAIN_MIN_CONFIRMATIONS = int(os.environ.get("AI_BLOCKCHAIN_MIN_CONFIRMATIONS", "1"))
+AI_BLOCKCHAIN_TIMEOUT_SECONDS = float(os.environ.get("AI_BLOCKCHAIN_TIMEOUT_SECONDS", "5.0"))
+
+# EIP-712 Character Voucher Signer (Giai đoạn 4)
+AI_CHARACTER_SIGNER_PRIVATE_KEY = os.environ.get("AI_CHARACTER_SIGNER_PRIVATE_KEY", os.environ.get("TRONG_TAI_KHOA", ""))
+AI_CHARACTER_AUTHORIZED_SIGNER = os.environ.get("AI_CHARACTER_AUTHORIZED_SIGNER", "")
+AI_CHARACTER_VOUCHER_TTL_SECONDS = int(os.environ.get("AI_CHARACTER_VOUCHER_TTL_SECONDS", "1800"))
+AI_CHARACTER_VOUCHER_ENABLED = os.environ.get("AI_CHARACTER_VOUCHER_ENABLED", "true").lower() in ("true", "1")
+
+# Lưu trữ tiến trình màn chơi (1-6) gắn với SIWE Auth (Fail-Closed)
+AI_PROGRESS_DB = Path(os.environ.get("AI_PROGRESS_DB", DATA_DIR / "progress" / "progress.sqlite3"))

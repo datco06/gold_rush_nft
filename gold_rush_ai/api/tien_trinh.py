@@ -26,7 +26,7 @@ class YeuCauHoanThanhMan(BaseModel):
     """Payload xác nhận hoàn thành màn chơi có kèm bằng chứng."""
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    stage_id: int = Field(..., ge=1, le=6, description="Màn chơi chính từ 1 đến 6")
+    stage_id: int = Field(..., ge=1, le=20, description="Màn chơi chính từ 1 đến 20")
     evidence_id: str = Field(
         ...,
         min_length=8,
@@ -66,7 +66,7 @@ def xac_nhan_hoan_thanh_man(
 
     Quy tắc Zero-Trust:
     1. Bắt buộc kiểm tra Origin và CSRF token qua `kiem_tra_csrf_va_origin`.
-    2. Chỉ chấp nhận các màn hợp lệ từ 1 đến 6.
+    2. Chỉ chấp nhận các màn hợp lệ từ 1 đến 20.
     3. Bằng chứng (evidence_id) phải được xác minh từ nguồn có thẩm quyền:
        - Đã ký phiếu vàng trọng tài (SoPhieu) khớp với địa chỉ ví SIWE của người chơi.
        - Hoặc bản ghi trọng tài đã thẩm định (is_verified = 1) và thuộc quyền sở hữu của người chơi.

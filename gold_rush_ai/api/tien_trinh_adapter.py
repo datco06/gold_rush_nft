@@ -62,6 +62,9 @@ def tao_tien_trinh_adapter(
 
         # 3. Tập các màn được phép (trong Gold Rush, cả 6 màn đều thuộc man_choi.json)
         allowed = frozenset(range(1, 7))
+        # Tiến trình gameplay có thể lưu tới màn 20; nguồn AI vẫn chỉ dùng
+        # sáu màn mở khóa nhân vật để không làm thay đổi quy tắc AI hiện có.
+        completed = completed & allowed
 
         # 4. Trả về BanChupNguoiChoiAI
         return BanChupNguoiChoiAI(

@@ -17,6 +17,7 @@ from .csdl import bay_gio_iso, lay_csdl
 # Mỗi cấp độ N yêu cầu: CẤP 1 -> 100 EXP -> CẤP 2 -> 250 EXP -> CẤP 3...
 # Công thức: exp_can_de_len_cap(level) = level * 100
 EXP_CO_BAN_MOI_CAP = 100
+SO_MAN_GAMEPLAY = 20
 
 
 def tinh_cap_va_exp(tong_exp: int) -> dict[str, int]:
@@ -179,11 +180,16 @@ def cong_exp(conn: sqlite3.Connection, player_id: str, exp_cong: int) -> dict[st
     return lay_tien_trinh(conn, player_id)
 
 
-def mo_khoa_man(conn: sqlite3.Connection, player_id: str, stage_id: int, so_man_toi_da: int = 6) -> dict[str, Any]:
+def mo_khoa_man(
+    conn: sqlite3.Connection,
+    player_id: str,
+    stage_id: int,
+    so_man_toi_da: int = SO_MAN_GAMEPLAY,
+) -> dict[str, Any]:
     """Mở khóa một màn chơi cụ thể cho người chơi.
 
     Quy tắc:
-    - Chỉ chấp nhận stage_id từ 1 đến 6.
+    - Chỉ chấp nhận stage_id từ 1 đến 20.
     - Màn 1 luôn được phép mở.
     - Màn N (N > 1) chỉ được mở nếu màn N - 1 đã hoàn thành.
     """
@@ -219,13 +225,13 @@ def hoan_thanh_man(
     player_id: str,
     stage_id: int,
     evidence_id: str,
-    so_man_toi_da: int = 6,
+    so_man_toi_da: int = SO_MAN_GAMEPLAY,
 ) -> dict[str, Any]:
     """Ghi nhận hoàn thành màn chơi an toàn, chống replay và mở khóa màn kế tiếp.
 
     Quy tắc nghiệp vụ:
     - Bắt buộc phải có evidence_id hợp lệ (Zero-Trust, không chấp nhận None hay rỗng).
-    - Chỉ chấp nhận 6 màn Gameplay chính (1 <= stage_id <= 6).
+    - Chỉ chấp nhận 20 màn Gameplay chính (1 <= stage_id <= 20).
     - Màn phải đã được mở khóa trước đó (không tự hợp thức hóa màn chưa mở).
     - Hoàn thành lần đầu: cộng EXP đầy đủ (50 EXP) và tự mở khóa màn kế tiếp.
     - Chơi lại (Replay): thưởng EXP giới hạn (10 EXP), có trần giới hạn chống cày cuốc vô hạn.

@@ -34,6 +34,7 @@ from core.tien_trinh_storage import (
 from core import trong_tai
 
 log = logging.getLogger(__name__)
+SO_MAN_GAMEPLAY = 20
 
 MA_VAN_REGEX = re.compile(r"^[A-Za-z0-9-]+$")
 TX_HASH_REGEX = re.compile(r"^0x[0-9a-fA-F]{64}$")
@@ -74,8 +75,10 @@ class DichVuXacMinhTienTrinh:
         ma_van: str,
     ) -> BanGhiTienTrinh:
         """Xác minh bằng chứng hoàn thành màn qua nhật ký trọng tài backend."""
-        if stage_id < 1 or stage_id > 6:
-            raise LoiXacMinhTienTrinh(f"stage_id không hợp lệ (phải từ 1 đến 6): {stage_id}")
+        if stage_id < 1 or stage_id > SO_MAN_GAMEPLAY:
+            raise LoiXacMinhTienTrinh(
+                f"stage_id không hợp lệ (phải từ 1 đến {SO_MAN_GAMEPLAY}): {stage_id}"
+            )
 
         if not MA_VAN_REGEX.match(ma_van):
             raise LoiXacMinhTienTrinh("Định dạng mã ván (ma_van) không hợp lệ")
@@ -165,8 +168,10 @@ class DichVuXacMinhTienTrinh:
         tx_hash: str,
     ) -> BanGhiTienTrinh:
         """Xác minh bằng chứng hoàn thành màn qua transaction receipt on-chain."""
-        if stage_id < 1 or stage_id > 6:
-            raise LoiXacMinhTienTrinh(f"stage_id không hợp lệ (phải từ 1 đến 6): {stage_id}")
+        if stage_id < 1 or stage_id > SO_MAN_GAMEPLAY:
+            raise LoiXacMinhTienTrinh(
+                f"stage_id không hợp lệ (phải từ 1 đến {SO_MAN_GAMEPLAY}): {stage_id}"
+            )
 
         if not TX_HASH_REGEX.match(tx_hash):
             raise LoiXacMinhTienTrinh("Định dạng transaction hash không hợp lệ (cần 0x + 64 ký tự hex)")

@@ -21,6 +21,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 log = logging.getLogger(__name__)
+SO_MAN_GAMEPLAY = 20
 
 
 class LoiKhoTienTrinh(RuntimeError):
@@ -44,7 +45,7 @@ class BanGhiTienTrinh(BaseModel):
     id: int | None = None
     owner_user_id: str = Field(min_length=1, max_length=64)
     verified_wallet_address: str = Field(pattern=r"^0x[0-9a-fA-F]{40}$")
-    stage_id: int = Field(ge=1, le=6)
+    stage_id: int = Field(ge=1, le=SO_MAN_GAMEPLAY)
     completion_status: Literal["completed", "unlocked", "locked"] = "completed"
     verification_source: str = Field(min_length=1, max_length=64)
     completion_evidence: dict[str, Any] = Field(default_factory=dict)
@@ -79,12 +80,23 @@ class KhoTienTrinh:
 
     def _khoi_tao(self) -> None:
         with self._ket_noi() as conn:
+            schema = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'tien_trinh_man'"
+            ).fetchone()
+            if schema is not None and "stage_id <= 6" in (schema[0] or ""):
+                for index_name in (
+                    "idx_tien_trinh_user",
+                    "idx_tien_trinh_wallet",
+                    "idx_tien_trinh_replay",
+                ):
+                    conn.execute(f"DROP INDEX IF EXISTS {index_name}")
+                conn.execute("ALTER TABLE tien_trinh_man RENAME TO tien_trinh_man_legacy")
             conn.execute("""
             CREATE TABLE IF NOT EXISTS tien_trinh_man (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 owner_user_id TEXT NOT NULL,
                 verified_wallet_address TEXT NOT NULL,
-                stage_id INTEGER NOT NULL CHECK(stage_id >= 1 AND stage_id <= 6),
+                stage_id INTEGER NOT NULL CHECK(stage_id >= 1 AND stage_id <= 20),
                 completion_status TEXT NOT NULL,
                 verification_source TEXT NOT NULL,
                 completion_evidence TEXT NOT NULL,
@@ -94,6 +106,18 @@ class KhoTienTrinh:
                 UNIQUE(owner_user_id, stage_id)
             )
             """)
+            if schema is not None and "stage_id <= 6" in (schema[0] or ""):
+                conn.execute("""
+                    INSERT INTO tien_trinh_man (
+                        id, owner_user_id, verified_wallet_address, stage_id, completion_status,
+                        verification_source, completion_evidence, replay_key, completed_at, created_at
+                    )
+                    SELECT id, owner_user_id, verified_wallet_address, stage_id, completion_status,
+                           verification_source, completion_evidence, replay_key, completed_at, created_at
+                    FROM tien_trinh_man_legacy
+                    WHERE stage_id BETWEEN 1 AND 20
+                """)
+                conn.execute("DROP TABLE tien_trinh_man_legacy")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tien_trinh_user ON tien_trinh_man(owner_user_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tien_trinh_wallet ON tien_trinh_man(verified_wallet_address)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tien_trinh_replay ON tien_trinh_man(replay_key)")
@@ -127,8 +151,10 @@ class KhoTienTrinh:
         completed_at: str | None = None,
     ) -> BanGhiTienTrinh:
         """Ghi nhận hoàn thành màn có kiểm tra chống replay attack."""
-        if stage_id < 1 or stage_id > 6:
-            raise ValueError(f"stage_id phải từ 1 đến 6 (nhận được: {stage_id})")
+        if stage_id < 1 or stage_id > SO_MAN_GAMEPLAY:
+            raise ValueError(
+                f"stage_id phải từ 1 đến {SO_MAN_GAMEPLAY} (nhận được: {stage_id})"
+            )
 
         now_str = datetime.now(UTC).isoformat(timespec="seconds")
         c_at = completed_at or now_str
@@ -189,7 +215,7 @@ class KhoTienTrinh:
             return [self._row_to_model(r) for r in rows]
 
     def lay_cac_man_hoan_thanh(self, owner_user_id: str) -> frozenset[int]:
-        """Lấy tập hợp các ID màn đã hoàn thành hợp lệ (1–6) của người chơi."""
+        """Lấy tập hợp các ID màn đã hoàn thành hợp lệ (1–20) của người chơi."""
         with self._ket_noi() as conn:
             rows = conn.execute(
                 "SELECT stage_id FROM tien_trinh_man WHERE owner_user_id = ? AND completion_status = 'completed'",

@@ -658,8 +658,7 @@ class GoldRushGame extends FlameGame
   JoystickComponent? joystick;
   Hud? hud;
 
-  /// Boss của ván hiện tại. null = không có Boss (mặc định; chỉ bật bằng
-  /// `--dart-define=GOLD_RUSH_BOSS=true`).
+  /// Boss của ván hiện tại. Boss chỉ được sinh từ màn 7 trở đi.
   Boss? _boss;
 
   TrangThaiChoi trangThai = TrangThaiChoi.tamDung;
@@ -823,9 +822,9 @@ class GoldRushGame extends FlameGame
 
   Future<void> _napDanhSachMan() async {
     try {
-      danhSachMan = ManChoi.docBoManChoi(
+      // Một manifest dùng chung cho Flutter, Backend và Hardhat.
+      danhSachMan = ManChoi.docDanhSach(
         await rootBundle.loadString('assets/tiles/man_choi.json'),
-        await rootBundle.loadString('assets/tiles/man_mo_rong.json'),
       );
       manHienTai = danhSachMan.first;
     } catch (e) {
@@ -996,10 +995,9 @@ class GoldRushGame extends FlameGame
       }
     }
 
-    // Boss xuất hiện khi bật `coBoss` (mặc định theo --dart-define=GOLD_RUSH_BOSS=true),
-    // nên sáu màn gốc không thay đổi. Chưa có điểm 'boss' trong .tmx thì
+    // Boss chỉ xuất hiện từ màn 7; sáu màn gốc không thay đổi. Chưa có điểm 'boss' trong .tmx thì
     // dùng tạm điểm skeleton đầu tiên (chắc chắn đi được), hoặc tâm bản đồ.
-    if (coBoss) {
+    if (coBoss && manHienTai.id >= 7) {
       final diemBoss = banDo.diemXuatHien.firstWhere(
         (d) => d.ten == 'boss',
         orElse: () => banDo.diemXuatHien.firstWhere(

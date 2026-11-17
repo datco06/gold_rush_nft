@@ -172,7 +172,8 @@ def lay_tien_trinh_nguoi_choi(
         raise HTTPException(503, "Không đọc được tiến trình người chơi") from None
 
     ban_ghi_map = {bg.stage_id: bg for bg in ban_ghis if bg.completion_status == "completed"}
-    completed_ids = sorted(ban_ghi_map.keys())
+    # API này phục vụ điều kiện mở khóa Nhân vật AI, hiện chỉ sử dụng 1–6.
+    completed_ids = sorted(set(ban_ghi_map.keys()) & frozenset(range(1, 7)))
 
     stages_detail: list[ChiTietManChoi] = []
     for s_id in range(1, 7):

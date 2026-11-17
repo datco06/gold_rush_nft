@@ -84,7 +84,7 @@ class TestApiVang(unittest.TestCase):
         j = self.c.get("/api/vang/cau-hinh").json()
         self.assertEqual(j["trong_tai"], "0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
         ds = self.c.get("/api/man").json()["man"]
-        self.assertEqual([m["id"] for m in ds], [1, 2, 3, 4, 5, 6])
+        self.assertEqual([m["id"] for m in ds], list(range(1, 21)))
         self.assertEqual(ds[1]["thuong_toi_da"], ds[1]["so_xu"] + ds[1]["thuong"])
 
     def test_luyen_tap_xin_lai_thi_ky_lai_cung_noi_dung(self):
