@@ -1722,7 +1722,7 @@ class GoldRushGame extends FlameGame
     // Nếu mở quá sớm, số dư on-chain vẫn là 0 và giao dịch mua sẽ bị revert.
     unawaited(
       dangNhan.whenComplete(() {
-        if (!_daDong) overlays.add(LopPhu.cuaHang);
+        if (isMounted) overlays.add(LopPhu.cuaHang);
       }),
     );
   }
