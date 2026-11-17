@@ -434,7 +434,19 @@ class PhienVi extends ChangeNotifier {
     cauHinh = ch;
     if (!ch.localFaucet) return;
     await mayChu.nhanEthTest(vi: dc);
+    final nguong = BigInt.from(1000000000000000); // 0.001 ETH, lớn hơn phí gas (~0.0001 ETH)
+    for (var i = 0; i < 30 && !_daDong; i++) {
+      try {
+        if (await vi.soDu(dc) >= nguong) return;
+      } catch (_) {}
+      if (i == 0) _bao('Đang chờ ví nhận ETH test…');
+      await Future.delayed(const Duration(seconds: 1));
+    }
   }
+
+  /// Cấp ETH giả của Hardhat trước một giao dịch do dịch vụ khác trong app gửi.
+  /// Trên Sepolia/mainnet, backend trả `localFaucet: false` nên đây là no-op.
+  Future<void> capEthTest() => _capEthTestNeuCan();
 
   Future<bool> nhanTatCa() => _lamViec('Chuẩn bị nhận vàng…', () async {
     await _taiLaiNoi(); // phiếu mới ký lại, hạn mới
@@ -466,6 +478,7 @@ class PhienVi extends ChangeNotifier {
       throw const LoiVi('Cần kết nối MetaMask để mua vật phẩm.');
     }
     await _taiLaiNoi();
+    await _capEthTestNeuCan();
     await cuaHang!.muaVatPham(
       diaChi: diaChi!,
       tokenId: tokenId,
@@ -488,6 +501,7 @@ class PhienVi extends ChangeNotifier {
       if (!daKetNoi) {
         throw const LoiVi('Cần kết nối MetaMask để mở rương.');
       }
+      await _capEthTestNeuCan();
       final vangThuc = await cuaHang!.soVang(diaChi!);
       if (vangThuc < BigInt.from(100)) {
         throw LoiVi('Số dư không đủ: cần 100 vàng, có $vangThuc.');
@@ -534,6 +548,7 @@ class PhienVi extends ChangeNotifier {
             }
           }
         }
+        await _capEthTestNeuCan();
         await cuaHang!.thucHien(
           diaChi: dc,
           phieu: phieuCho,

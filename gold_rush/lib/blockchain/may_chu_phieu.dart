@@ -355,7 +355,7 @@ class MayChuPhieu {
       409 => khi409,
       422 => 'Máy chủ không công nhận ván này: ${lyDoTu(than)}',
       429 => 'Ví đã nhận đủ vàng hôm nay.',
-      503 => 'Máy chủ chưa bật cửa hàng (thiếu khoá trọng tài, địa chỉ hợp đồng hoặc man_choi.json).',
+      503 => 'Máy chủ chưa sẵn sàng: ${lyDoTu(than)}',
       _ => 'Máy chủ trả về lỗi ${r.statusCode}.',
     };
     throw LoiVi(
