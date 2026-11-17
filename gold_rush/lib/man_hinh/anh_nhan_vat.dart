@@ -1008,7 +1008,7 @@ class _ManHinhAnhNhanVatState extends State<ManHinhAnhNhanVat> {
 
     Widget taoTopBar() => GoldRushTopBar(
       activeItem: GoldRushTopBarItem.xuongAi,
-      gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
+      gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangKhaDungDinhDang),
       onSanhCho: widget.onSanhCho ?? () => Navigator.of(context).maybePop(),
       onCuaHang: widget.onCuaHang ?? () => Navigator.of(context).maybePop(),
       onRungRuong: widget.onRungRuong ?? () => Navigator.of(context).maybePop(),

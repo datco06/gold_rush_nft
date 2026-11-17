@@ -171,7 +171,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                             activeItem: GoldRushTopBarItem.cuaHang,
                             gold: pv == null
                                 ? '0'
-                                : (pv.dangXuLy ? '...' : pv.vangDinhDang),
+                                : (pv.dangXuLy ? '...' : pv.vangKhaDungDinhDang),
                             playerName: _game.auth?.user?.username ?? 'datco6',
                             onSanhCho: _game.veMenu,
                             onCuaHang: null,
@@ -1547,7 +1547,10 @@ int _priceForItem(VatPhamHienThi item) {
   if (item.doHiem == DoHiemVatPham.hiem) return 100000;
 
   const prices = <String, int>{
-    'sung_cap_1': 0,
+    // Vật phẩm mặc định đã có sẵn trong Kho đồ, nhưng token on-chain vẫn
+    // không phải vật phẩm miễn phí: hợp đồng yêu cầu giá > 0 để mint.
+    // Giữ giá hiển thị khớp với cấu hình cửa hàng trên Sepolia.
+    'sung_cap_1': 1,
     'sung_cap_2': 50,
     'sung_cap_3': 120,
     'sung_manh_1': 260,

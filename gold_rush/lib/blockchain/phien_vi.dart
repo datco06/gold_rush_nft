@@ -76,7 +76,20 @@ class PhienVi extends ChangeNotifier {
 
   /// Chuỗi hiển thị số vàng có phân cách hàng nghìn.
   String get vangDinhDang {
-    final s = vang.toString();
+    return _dinhDangVang(vang);
+  }
+
+  /// Số vàng người chơi có thể dùng ngay trong giao dịch kế tiếp.
+  ///
+  /// Phiếu thưởng đã ký nhưng chưa claim vẫn được CuaHangChuoi gộp atomically
+  /// vào giao dịch mua/nhận/vào màn. Hiển thị riêng [vang] khiến TopBar tạm
+  /// nhảy về 0 sau khi thắng dù phần thưởng vẫn còn chờ claim hợp lệ.
+  BigInt get vangKhaDung => vang + vangChoNhan;
+
+  String get vangKhaDungDinhDang => _dinhDangVang(vangKhaDung);
+
+  String _dinhDangVang(BigInt soVang) {
+    final s = soVang.toString();
     final buf = StringBuffer();
     for (var i = 0; i < s.length; i++) {
       if (i > 0 && (s.length - i) % 3 == 0) {

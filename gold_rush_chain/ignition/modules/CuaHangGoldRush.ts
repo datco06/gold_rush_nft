@@ -41,7 +41,7 @@ export default buildModule("CuaHangGoldRushModule", (m) => {
   // 27 token ID khớp thứ tự danhSachTrangBiCuaHang(): 1–9 súng,
   // 10–18 giáp, 19–27 giày. Vật phẩm hiếm có giá 100.000 vàng.
   const giaVatPham = [
-    0n, 50n, 120n, 260n, 480n, 420n, 100000n, 100000n, 100000n,
+    1n, 50n, 120n, 260n, 480n, 420n, 100000n, 100000n, 100000n,
     80n, 80n, 80n, 220n, 220n, 220n, 100000n, 100000n, 100000n,
     80n, 80n, 80n, 220n, 220n, 220n, 100000n, 100000n, 100000n,
   ];
