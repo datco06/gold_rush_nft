@@ -21,13 +21,16 @@ class ManChoi {
   /// Nhân vào tốc độ zombie/skeleton (sau hệ số của AI độ khó).
   final double heSoKeDich;
 
-  /// Vàng đặt cọc khi vào màn. 0 = màn luyện tập.
+  /// Vàng đặt cọc khi vào màn. 0 = không đặt cọc (vẫn có thể là màn chính thức).
   final int coc;
 
   /// Vàng thưởng thêm khi hoàn thành (ngoài số xu).
   final int thuong;
   final int soXu;
   final int sao;
+
+  /// Màn mở rộng offline: không gửi telemetry/phiếu hoặc tạo giao dịch.
+  final bool chiChoiLocal;
 
   const ManChoi({
     required this.id,
@@ -40,6 +43,7 @@ class ManChoi {
     required this.thuong,
     required this.soXu,
     required this.sao,
+    this.chiChoiLocal = false,
   });
 
   bool get mienPhi => coc == 0;
@@ -52,23 +56,24 @@ class ManChoi {
   int get nhanVeKhiHoanThanh => coc + soXu + thuong;
 
   factory ManChoi.tuJson(Map<String, dynamic> j) => ManChoi(
-        id: j['id'] as int,
-        ten: j['ten'] as String,
-        moTa: j['mo_ta'] as String,
-        tep: j['tep'] as String,
-        gioiHanGiay: j['gioi_han_giay'] as int,
-        heSoKeDich: (j['he_so_ke_dich'] as num).toDouble(),
-        coc: j['coc'] as int,
-        thuong: j['thuong'] as int,
-        soXu: j['so_xu'] as int,
-        sao: j['sao'] as int,
-      );
+    id: j['id'] as int,
+    ten: j['ten'] as String,
+    moTa: j['mo_ta'] as String,
+    tep: j['tep'] as String,
+    gioiHanGiay: j['gioi_han_giay'] as int,
+    heSoKeDich: (j['he_so_ke_dich'] as num).toDouble(),
+    coc: j['coc'] as int,
+    thuong: j['thuong'] as int,
+    soXu: j['so_xu'] as int,
+    sao: j['sao'] as int,
+    chiChoiLocal: j['chi_choi_local'] == true,
+  );
 
-  /// Màn mặc định khi chưa nạp được tệp JSON: bản đồ gốc, luyện tập — game vẫn chơi được.
+  /// Màn mặc định khi chưa nạp được tệp JSON: bản đồ gốc không đặt cọc.
   static const ManChoi macDinh = ManChoi(
     id: 1,
     ten: 'Đồng cỏ',
-    moTa: 'Màn luyện tập.',
+    moTa: 'Màn chính thức không đặt cọc.',
     tep: 'gold_rush.tmx',
     gioiHanGiay: 0,
     heSoKeDich: 1,
@@ -82,10 +87,31 @@ class ManChoi {
   static List<ManChoi> docDanhSach(String noiDung) {
     final j = jsonDecode(noiDung) as Map<String, dynamic>;
     final ds = [
-      for (final m in j['man'] as List<dynamic>) ManChoi.tuJson(m as Map<String, dynamic>),
+      for (final m in j['man'] as List<dynamic>)
+        ManChoi.tuJson(m as Map<String, dynamic>),
     ]..sort((a, b) => a.id.compareTo(b.id));
-    if (ds.isEmpty) throw const FormatException('man_choi.json không có màn nào');
+    if (ds.isEmpty) {
+      throw const FormatException('man_choi.json không có màn nào');
+    }
     return ds;
+  }
+
+  /// Giữ nguyên danh mục dùng chung backend; bổ sung 7–20 từ tệp local riêng.
+  static List<ManChoi> docBoManChoi(String goc, String moRong) {
+    final base = docDanhSach(goc);
+    final extra = docDanhSach(moRong);
+    if (extra.any(
+      (m) => m.id <= 6 || !m.chiChoiLocal || m.coc != 0 || m.thuong != 0,
+    )) {
+      throw const FormatException(
+        'Màn mở rộng phải là màn local không cọc/thưởng blockchain.',
+      );
+    }
+    final all = [...base, ...extra]..sort((a, b) => a.id.compareTo(b.id));
+    if (all.map((m) => m.id).toSet().length != all.length) {
+      throw const FormatException('Trùng ID màn chơi.');
+    }
+    return List.unmodifiable(all);
   }
 }
 

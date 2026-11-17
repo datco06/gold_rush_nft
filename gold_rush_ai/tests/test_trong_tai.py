@@ -94,11 +94,11 @@ class TestManCoCoc(unittest.TestCase):
         self.assertFalse(kq.hop_le)
         self.assertIn("chỉ cho", kq.ly_do[0])
 
-    def test_man_luyen_tap_thua_van_duoc_xu_khong_thuong(self):
+    def test_man_khong_coc_thua_khong_duoc_cap_phieu(self):
         m1, b1 = self.ds[1], doc_tmx(TMX)
         kq = kiem_dinh(van_that(b1, 4), b1, m1)
-        self.assertTrue(kq.hop_le, kq.ly_do)
-        self.assertEqual(kq.so_vang, 4)
+        self.assertFalse(kq.hop_le)
+        self.assertIn('chỉ trả vàng khi thắng', kq.ly_do[0])
 
     def test_moi_man_deu_hoan_thanh_duoc_trong_gioi_han(self):
         for m in self.ds.values():

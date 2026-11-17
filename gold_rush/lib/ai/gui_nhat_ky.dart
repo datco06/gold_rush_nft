@@ -15,7 +15,10 @@ import 'package:http/http.dart' as http;
 class GuiNhatKy {
   GuiNhatKy._();
 
-  static const String mayChu = String.fromEnvironment('GOLD_RUSH_API');
+  static const String mayChu = String.fromEnvironment(
+    'GOLD_RUSH_API',
+    defaultValue: 'http://localhost:8000',
+  );
 
   static bool get daCauHinh => mayChu.isNotEmpty;
 
@@ -41,7 +44,7 @@ class GuiNhatKy {
             body: jsonEncode(nhatKy),
           )
           .timeout(const Duration(seconds: 5));
-      if (r.statusCode == 201) return true;
+      if (r.statusCode == 201 || r.statusCode == 200) return true;
       debugPrint('Máy chủ từ chối nhật ký (${r.statusCode}): ${r.body}');
       return r.statusCode >= 500 ? null : false;
     } catch (e) {

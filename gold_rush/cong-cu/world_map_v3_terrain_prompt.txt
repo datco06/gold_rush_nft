@@ -1,0 +1,9 @@
+Use case: precise-object-edit. Edit target: the supplied fantasy terrain background. Create a sibling production background for the SAME world, same size/aspect, same camera and art style. Keep the central castle courtyard exactly where it is at (46.5%,49.5%) with its stone wall and steps. Keep the flowing river, bridges, mountain shelves and dense forest atmosphere. There must be NO castle/buildings drawn in this background because separate sprites will be overlaid.
+Remove cave/mine imagery, empty mining tracks, the prominent ancient temple columns at upper left, and bone ruins at lower right; repurpose these areas as believable village terraces. No artificial waterfall sprite, no whirlpool.
+Open up modest, natural stone/earth house plots at these normalized centers (percent from left, top). These are precise future building footprints; build small foundation areas around each point while not covering roads or water:
+(37.4,60.8), (50.8,65.2), (59.7,55.1), (25.5,28.1), (76.3,39.1), (91,20.9),
+(18.7,73.5), (13.1,49.5), (34.3,43.9), (45.5,28.1), (57.9,28.1),
+(74.1,58.2), (91,59.2), (89.1,82.7), (76,91.8), (62.3,88.8),
+(48.6,83.7), (34.9,89.8), (10.6,87.8).
+Each plot will receive a SMALL single medieval house about 5-7% of image width, so do not make enormous empty squares. Organic village yards, small low stone retaining walls on slopes, weathered fences, dirt foundations and vegetation around margins. Several plots should form clusters rather than an even grid.
+Thin footpaths connect these tiny plots to the existing town/river bridges, no thick roads or path spaghetti. Keep a continuous believable terrain with forest clusters, layered hills, bank shadows and crisp pixel-art detail. No text, labels, map pins, numbers, characters, UI. Dense inhabited world that will be populated with 20 building sprites including the central castle. Preserve all major existing geographic landmarks and the general overall composition.

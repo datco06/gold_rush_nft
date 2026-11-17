@@ -1,0 +1,9 @@
+{
+  "contractName": "CharacterRegistry",
+  "contractAddress": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+  "chainId": 31337,
+  "transactionHash": "0x7a7e5131b971cf5d7662e8967783cdb1ca42a4c7694c5e7e9e615fa20f51a437",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "authorizedSigner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "deployedAt": "2026-11-11T02:28:51.859Z"
+}

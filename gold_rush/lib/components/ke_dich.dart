@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Color;
 
 import '../ai/tim_duong.dart';
+import '../chien_dau/sat_thuong.dart';
 import '../am_thanh/am_thanh.dart';
 import '../cau_hinh.dart';
 import 'ban_do.dart';
@@ -36,7 +37,7 @@ enum TrangThaiKeDich { tuanTra, duoiTheo, timKiem }
 ///      nhất trên lưới ô, vòng qua cả dãy tường. Không truyền thì dùng lại
 ///      cách "đi thẳng, bị chặn thì trượt" của bản gốc.
 ///   5. **Hệ số tốc độ.** [heSoTocDo] do bộ điều chỉnh độ khó cung cấp.
-class KeDich extends NhanVat {
+class KeDich extends NhanVat implements CoTheBiDanh {
   /// Trả về vị trí người chơi. Truyền hàm thay vì truyền thẳng đối tượng
   /// George để tệp này không phụ thuộc vào tệp george.dart.
   final Vector2 Function() viTriNguoiChoi;
@@ -44,6 +45,8 @@ class KeDich extends NhanVat {
   final double tocDo;
   final double tamNhin;
   final Color mauVunNo;
+  final int satThuongCham;
+  final SucKhoe sucKhoe;
 
   /// Bộ tìm đường dùng chung cho mọi kẻ địch. null = không dùng A*.
   final TimDuong? timDuong;
@@ -76,9 +79,13 @@ class KeDich extends NhanVat {
     required this.tocDo,
     required this.tamNhin,
     required this.mauVunNo,
+    int? satThuongCham,
+    int mauToiDa = CauHinh.mauZombie,
     this.timDuong,
     double Function()? heSoTocDo,
-  }) : heSoTocDo = heSoTocDo ?? _mot;
+  }) : heSoTocDo = heSoTocDo ?? _mot,
+       satThuongCham = satThuongCham ?? CauHinh.mauMatMoiLanTrung,
+       sucKhoe = SucKhoe(mauToiDa);
 
   static double _mot() => 1.0;
 
@@ -99,6 +106,7 @@ class KeDich extends NhanVat {
       timDuong: timDuong,
       heSoTocDo: heSoTocDo,
       tocDo: CauHinh.tocDoZombie,
+      mauToiDa: CauHinh.mauZombie,
       tamNhin: CauHinh.tamNhinZombie,
       mauVunNo: const Color(0xFF7EB86C),
     );
@@ -121,8 +129,78 @@ class KeDich extends NhanVat {
       timDuong: timDuong,
       heSoTocDo: heSoTocDo,
       tocDo: CauHinh.tocDoSkeleton,
+      mauToiDa: CauHinh.mauSkeleton,
       tamNhin: CauHinh.tamNhinSkeleton,
       mauVunNo: const Color(0xFFE8E6D8),
+    );
+  }
+
+  factory KeDich.thuong({
+    required BanDo banDo,
+    required Map<HuongDi, SpriteAnimation> hoatAnh,
+    required Vector2 viTri,
+    required Vector2 Function() viTriNguoiChoi,
+    TimDuong? timDuong,
+    double Function()? heSoTocDo,
+  }) {
+    return KeDich(
+      banDo: banDo,
+      hoatAnh: hoatAnh,
+      viTri: viTri,
+      viTriNguoiChoi: viTriNguoiChoi,
+      timDuong: timDuong,
+      heSoTocDo: heSoTocDo,
+      tocDo: CauHinh.tocDoZombie,
+      mauToiDa: 60,
+      tamNhin: CauHinh.tamNhinZombie,
+      mauVunNo: const Color(0xFFB7D46A),
+      satThuongCham: CauHinh.mauMatMoiLanTrung + 5,
+    );
+  }
+
+  factory KeDich.giap({
+    required BanDo banDo,
+    required Map<HuongDi, SpriteAnimation> hoatAnh,
+    required Vector2 viTri,
+    required Vector2 Function() viTriNguoiChoi,
+    TimDuong? timDuong,
+    double Function()? heSoTocDo,
+  }) {
+    return KeDich(
+      banDo: banDo,
+      hoatAnh: hoatAnh,
+      viTri: viTri,
+      viTriNguoiChoi: viTriNguoiChoi,
+      timDuong: timDuong,
+      heSoTocDo: heSoTocDo,
+      tocDo: CauHinh.tocDoSkeleton,
+      mauToiDa: 100,
+      tamNhin: CauHinh.tamNhinSkeleton,
+      mauVunNo: const Color(0xFFD8E5F2),
+      satThuongCham: CauHinh.mauMatMoiLanTrung + 10,
+    );
+  }
+
+  factory KeDich.khongLo({
+    required BanDo banDo,
+    required Map<HuongDi, SpriteAnimation> hoatAnh,
+    required Vector2 viTri,
+    required Vector2 Function() viTriNguoiChoi,
+    TimDuong? timDuong,
+    double Function()? heSoTocDo,
+  }) {
+    return KeDich(
+      banDo: banDo,
+      hoatAnh: hoatAnh,
+      viTri: viTri,
+      viTriNguoiChoi: viTriNguoiChoi,
+      timDuong: timDuong,
+      heSoTocDo: heSoTocDo,
+      tocDo: CauHinh.tocDoZombie,
+      mauToiDa: 300,
+      tamNhin: CauHinh.tamNhinZombie,
+      mauVunNo: const Color(0xFF79B7AA),
+      satThuongCham: CauHinh.mauMatMoiLanTrung + 15,
     );
   }
 
@@ -228,15 +306,15 @@ class KeDich extends NhanVat {
 
   /// Ô chứa một điểm thế giới.
   static O _oTai(Vector2 p) => (
-        cot: (p.x / CauHinh.kichThuocO).floor(),
-        hang: (p.y / CauHinh.kichThuocO).floor(),
-      );
+    cot: (p.x / CauHinh.kichThuocO).floor(),
+    hang: (p.y / CauHinh.kichThuocO).floor(),
+  );
 
   /// Tâm của một ô, tính bằng pixel thế giới.
   static Vector2 _tamO(O o) => Vector2(
-        (o.cot + 0.5) * CauHinh.kichThuocO,
-        (o.hang + 0.5) * CauHinh.kichThuocO,
-      );
+    (o.cot + 0.5) * CauHinh.kichThuocO,
+    (o.hang + 0.5) * CauHinh.kichThuocO,
+  );
 
   /// Hướng đi tới [dich] theo đường A*, hoặc null nếu không có A*, không có
   /// đường, hay đã ở cùng ô với đích (khi đó người gọi tự xử lý chặng cuối).
@@ -302,7 +380,10 @@ class KeDich extends NhanVat {
     if (den.length < 0.001) return Vector2.zero();
 
     final chuan = den.normalized();
-    final thuTruoc = Vector2(position.x + chuan.x * 6, position.y + chuan.y * 6 + 4);
+    final thuTruoc = Vector2(
+      position.x + chuan.x * 6,
+      position.y + chuan.y * 6 + 4,
+    );
 
     if (banDo.diDuoc(thuTruoc, NhanVat.hopChan)) {
       return chuan;
@@ -342,14 +423,43 @@ class KeDich extends NhanVat {
     _conLaiTuanTra = 0.8 + _rnd.nextDouble() * 1.8;
   }
 
+  @override
+  Vector2 get viTriDanh => position;
+
+  int get maxHp => sucKhoe.toiDa;
+
+  int get currentHp => sucKhoe.hien;
+
+  bool get isDead => _daNo || !sucKhoe.conSong;
+
+  bool get daNo => _daNo;
+
+  @override
+  bool nhanSatThuong(int luong) {
+    if (isDead || luong <= 0) return false;
+    takeDamage(luong);
+    return isDead;
+  }
+
+  void takeDamage(int amount) {
+    if (isDead || amount <= 0) return;
+    sucKhoe.nhan(amount);
+    if (!sucKhoe.conSong) onDeath();
+  }
+
+  void onDeath() {
+    noTung();
+  }
+
   // ------------------------------------------------------------------
-  /// Kẻ địch lao trúng George thì tự nổ và biến mất.
-  void noTung() {
-    if (_daNo) return;
+  /// Kẻ địch nổ và biến mất khi bị hạ gục (hết máu). Trả về true nếu nổ lần đầu.
+  bool noTung() {
+    if (_daNo) return false;
     _daNo = true;
 
     AmThanh.keDichNo();
     parent?.add(HieuUngNoKeDich(position.clone(), mauVunNo));
     removeFromParent();
+    return true;
   }
 }

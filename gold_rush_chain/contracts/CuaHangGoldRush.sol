@@ -7,6 +7,10 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 
+interface IVatPhamGoldRushStore {
+    function mintFromStore(address player, uint256 tokenId, uint256 amount) external;
+}
+
 /// @title Cửa hàng nhân vật Gold Rush — bản 2 (nhiều màn chơi, cọc vào màn). Chỉ dùng trên mạng thử nghiệm.
 ///
 /// ERC-1155 giữ hai loại thứ:
@@ -25,8 +29,8 @@ import {Multicall} from "@openzeppelin/contracts/utils/Multicall.sol";
 /// "+ mua nhân vật") vào MỘT giao dịch, MetaMask chỉ hỏi một lần. `multicall` dùng delegatecall
 /// vào chính hợp đồng nên `msg.sender` vẫn là người chơi.
 ///
-/// TẤT CẢ đều KHÔNG CHUYỂN NHƯỢNG (soulbound) — Nghị định 147/2024/NĐ-CP, Điều 57: cấm người chơi
-/// mua bán vật phẩm ảo, đơn vị ảo với nhau và cấm quy đổi ngược ra tiền.
+/// Vàng và nhân vật trong hợp đồng này KHÔNG CHUYỂN NHƯỢNG (soulbound). Vật phẩm mua qua
+/// [VatPhamGoldRush] là ERC-1155 transferable riêng, theo đúng luồng NFT vật phẩm.
 contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
     uint256 public constant VANG = 0;
 
@@ -40,9 +44,26 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
         uint256 hanChot; // giây Unix; quá hạn thì phiếu vô hiệu
     }
 
+    /// Phiếu kết quả mở rương do Backend ký. `loai = 0` là vàng, `loai = 1` là vật phẩm.
+    /// Với vàng, `giaTri` là số vàng thưởng và `soLuong` phải bằng 0; với vật phẩm,
+    /// `giaTri` là tokenId và `soLuong` là số NFT được mint.
+    struct PhieuMoRuong {
+        address nguoiChoi;
+        uint256 loai;
+        uint256 giaTri;
+        uint256 soLuong;
+        bytes32 maRuong;
+        uint256 hanChot;
+    }
+
     bytes32 public constant PHIEU_TYPEHASH = keccak256(
         "PhieuVang(address nguoiChoi,uint256 man,uint256 ve,uint256 soVang,bytes32 maVan,uint256 hanChot)"
     );
+    bytes32 public constant PHIEU_MO_RUONG_TYPEHASH = keccak256(
+        "PhieuMoRuong(address nguoiChoi,uint256 loai,uint256 giaTri,uint256 soLuong,bytes32 maRuong,uint256 hanChot)"
+    );
+
+    uint256 public constant GIA_MO_RUONG = 100;
 
     struct ManChoi {
         uint256 coc; // vàng đốt khi vào màn; 0 = luyện tập
@@ -57,8 +78,13 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
 
     address public trongTai;
     mapping(bytes32 => bool) public daDoi;
+    mapping(bytes32 => bool) public ruongDaMo;
     mapping(uint256 => uint256) public gia;
+    mapping(uint256 => uint256) public giaVatPham;
     mapping(uint256 => ManChoi) public manChoi;
+
+    /// Hợp đồng ERC-1155 vật phẩm có thể chuyển nhượng.
+    address public vatPham;
 
     /// Vé đang mở của mỗi ví — tối đa MỘT. Vào màn mới khi vé cũ chưa dùng thì vé cũ bị bỏ (mất cọc).
     mapping(address => Ve) public ve;
@@ -68,9 +94,13 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
     event DaVaoMan(address indexed nguoiChoi, uint256 indexed man, uint256 so, uint256 coc);
     event MatCoc(address indexed nguoiChoi, uint256 indexed man, uint256 so, uint256 coc);
     event DaMua(address indexed nguoiChoi, uint256 indexed nhanVat, uint256 gia);
+    event DaMuaVatPham(address indexed nguoiChoi, uint256 indexed vatPham, uint256 soLuong, uint256 giaMoi);
     event DoiGia(uint256 indexed nhanVat, uint256 gia);
+    event DoiGiaVatPham(uint256 indexed vatPham, uint256 giaMoi);
+    event DoiHopDongVatPham(address indexed hopDong);
     event DoiMan(uint256 indexed man, uint256 coc, uint256 thuongToiDa);
     event DoiTrongTai(address trongTaiMoi);
+    event DaMoRuong(address indexed nguoiChoi, bytes32 indexed maRuong, uint256 loai, uint256 giaTri, uint256 soLuong);
 
     error KhongChuyenNhuong();
     error SaiNguoiNhan();
@@ -84,6 +114,11 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
     error ManKhongTonTai(uint256 man);
     error ManMienPhi(uint256 man);
     error SaiVe();
+    error VatPhamChuaCauHinh();
+    error VatPhamKhongBan(uint256 vatPham);
+    error SoLuongVatPhamKhongHopLe();
+    error PhieuRuongKhongHopLe();
+    error RuongDaMo();
 
     constructor(address trongTai_, string memory uri_)
         ERC1155(uri_)
@@ -154,6 +189,46 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
         emit DaNhanVang(msg.sender, p.maVan, p.man, p.soVang, hoanCoc);
     }
 
+    /// @notice Đốt đúng 100 vàng và nhận kết quả rương do Backend ký trong cùng giao dịch.
+    /// @dev Flutter chỉ gửi phiếu; không tự chọn phần thưởng. Chữ ký gắn với ví, chain và hợp đồng.
+    function bamPhieuMoRuong(PhieuMoRuong calldata p) public view returns (bytes32) {
+        return _hashTypedDataV4(
+            keccak256(abi.encode(
+                    PHIEU_MO_RUONG_TYPEHASH,
+                    p.nguoiChoi,
+                    p.loai,
+                    p.giaTri,
+                    p.soLuong,
+                    p.maRuong,
+                    p.hanChot
+                ))
+        );
+    }
+
+    function moRuong(PhieuMoRuong calldata p, bytes calldata chuKy) external {
+        if (p.nguoiChoi != msg.sender) revert SaiNguoiNhan();
+        if (block.timestamp > p.hanChot) revert PhieuHetHan();
+        if (ruongDaMo[p.maRuong]) revert RuongDaMo();
+        if (ECDSA.recoverCalldata(bamPhieuMoRuong(p), chuKy) != trongTai) revert ChuKySai();
+
+        if (p.loai == 0) {
+            if (p.giaTri == 0 || p.soLuong != 0) revert PhieuRuongKhongHopLe();
+        } else if (p.loai == 1) {
+            if (vatPham == address(0) || p.giaTri == 0 || p.soLuong == 0) revert PhieuRuongKhongHopLe();
+        } else {
+            revert PhieuRuongKhongHopLe();
+        }
+
+        ruongDaMo[p.maRuong] = true;
+        _burn(msg.sender, VANG, GIA_MO_RUONG);
+        if (p.loai == 0) {
+            _mint(msg.sender, VANG, p.giaTri, "");
+        } else {
+            IVatPhamGoldRushStore(vatPham).mintFromStore(msg.sender, p.giaTri, p.soLuong);
+        }
+        emit DaMoRuong(msg.sender, p.maRuong, p.loai, p.giaTri, p.soLuong);
+    }
+
     // ------------------------------------------------------------------
     // Nhân vật
     // ------------------------------------------------------------------
@@ -168,10 +243,36 @@ contract CuaHangGoldRush is ERC1155, EIP712, Ownable, Multicall {
         emit DaMua(msg.sender, nhanVat, g);
     }
 
+    /// @notice Mua vật phẩm bằng vàng ERC-1155 và mint vật phẩm ERC-1155 có thể chuyển nhượng.
+    /// @dev Gọi lặp lại được; số lượng NFT của người chơi sẽ cộng dồn.
+    function muaVatPham(uint256 vatPhamId, uint256 soLuong) external {
+        if (vatPham == address(0)) revert VatPhamChuaCauHinh();
+        if (soLuong == 0) revert SoLuongVatPhamKhongHopLe();
+        uint256 g = giaVatPham[vatPhamId];
+        if (g == 0) revert VatPhamKhongBan(vatPhamId);
+
+        uint256 tongGia = g * soLuong;
+        _burn(msg.sender, VANG, tongGia);
+        IVatPhamGoldRushStore(vatPham).mintFromStore(msg.sender, vatPhamId, soLuong);
+        emit DaMuaVatPham(msg.sender, vatPhamId, soLuong, tongGia);
+    }
+
     function datGia(uint256 nhanVat, uint256 giaMoi) external onlyOwner {
         if (nhanVat == VANG) revert KhongBan(nhanVat);
         gia[nhanVat] = giaMoi;
         emit DoiGia(nhanVat, giaMoi);
+    }
+
+    function datHopDongVatPham(address hopDong) external onlyOwner {
+        if (hopDong == address(0)) revert DiaChiRong();
+        vatPham = hopDong;
+        emit DoiHopDongVatPham(hopDong);
+    }
+
+    function datGiaVatPham(uint256 vatPhamId, uint256 giaMoi) external onlyOwner {
+        if (vatPhamId == VANG) revert KhongBan(vatPhamId);
+        giaVatPham[vatPhamId] = giaMoi;
+        emit DoiGiaVatPham(vatPhamId, giaMoi);
     }
 
     /// Đổi khoá trọng tài khi khoá cũ lộ. Phiếu cũ (ký bằng khoá cũ) lập tức vô hiệu.

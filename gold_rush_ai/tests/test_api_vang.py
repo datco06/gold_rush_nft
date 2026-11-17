@@ -6,8 +6,10 @@ import tempfile
 import time
 import unittest
 import uuid
+from unittest.mock import patch
 
 try:
+    from fastapi import Request
     from fastapi.testclient import TestClient
 except ImportError:
     raise unittest.SkipTest("chưa cài fastapi/httpx")
@@ -38,13 +40,39 @@ class TestApiVang(unittest.TestCase):
         cls.c = TestClient(api.main.app).__enter__()
         cls.b1 = doc_tmx(TMX)
         cls.b2 = doc_tmx(TILES / "man_2.tmx")
+        from api.auth_guard import lay_nguoi_choi_hien_tai, NguoiChoiXacThuc
+
+        async def _mock_auth(request: Request):
+            vi = VI
+            try:
+                body = await request.body()
+                if body:
+                    d = json.loads(body)
+                    if isinstance(d, dict) and "vi" in d and len(str(d["vi"])) == 42:
+                        vi = str(d["vi"])
+            except Exception:
+                pass
+            return NguoiChoiXacThuc(user_id="test_player", wallet_address=vi)
+
+        api.main.app.dependency_overrides[lay_nguoi_choi_hien_tai] = _mock_auth
+
+        class MockTicketVerifier:
+            def xac_minh_ve_hop_le_de_vao_man(self, vi: str, man_yeu_cau: int, so_ve_yeu_cau: int):
+                return {"man": man_yeu_cau, "so": so_ve_yeu_cau, "coc": 100}
+
+        api.main.app.state.onchain_ticket_verifier = MockTicketVerifier()
 
     @classmethod
     def tearDownClass(cls):
+        api.main.app.dependency_overrides.clear()
+        if hasattr(api.main.app.state, "onchain_ticket_verifier"):
+            delattr(api.main.app.state, "onchain_ticket_verifier")
         cls.c.__exit__(None, None, None)
 
     def _gui_van(self, nk, man=1, ban_do="gold_rush.tmx", ma=None):
         ma = ma or str(uuid.uuid4())
+        if man == 1:
+            self.c.post("/api/man/bat-dau", json={"ma_van": ma, "vi": VI, "man": 1, "ve": 0})
         than = {"ma_van": ma, "phien_ban_app": "1.3.0", "man": man, "ban_do": ban_do, **nk}
         self.assertEqual(self.c.post("/api/nhat-ky", json=than).status_code, 201)
         return ma
@@ -60,18 +88,29 @@ class TestApiVang(unittest.TestCase):
         self.assertEqual(ds[1]["thuong_toi_da"], ds[1]["so_xu"] + ds[1]["thuong"])
 
     def test_luyen_tap_xin_lai_thi_ky_lai_cung_noi_dung(self):
-        ma = self._gui_van(van_that(self.b1, 5))
+        so_xu = len(self.b1.cac_diem("coin"))
+        ma = self._gui_van(van_that(self.b1, so_xu, ket_qua="thang"))
         r = self._phieu(ma)
         self.assertEqual(r.status_code, 200, r.text)
         p = r.json()["phieu"]
-        self.assertEqual((p["man"], p["ve"], p["soVang"]), (1, 0, 5))
+        self.assertEqual((p["man"], p["ve"], p["soVang"]), (1, 0, so_xu))
         time.sleep(1.1)
         r2 = self._phieu(ma)                                  # app mất phiếu / phiếu hết hạn → xin lại
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.json()["phieu"]["maVan"], p["maVan"])
-        self.assertEqual(r2.json()["phieu"]["soVang"], 5)
+        self.assertEqual(r2.json()["phieu"]["soVang"], p["soVang"])
         self.assertGreater(r2.json()["phieu"]["hanChot"], p["hanChot"])
         self.assertEqual(self._phieu(ma, "0x" + "1" * 40).status_code, 409)   # ví khác: không
+
+    def test_khong_gioi_han_vang_local_van_cap_phieu(self):
+        so_xu = len(self.b1.cac_diem("coin"))
+        ma = self._gui_van(van_that(self.b1, so_xu, ket_qua="thang"))
+        with patch.object(trong_tai, "VANG_TOI_DA_MOI_NGAY", 0), patch.object(
+            trong_tai.SoPhieu, "vang_hom_nay", return_value=10000
+        ):
+            r = self._phieu(ma)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["phieu"]["soVang"], so_xu)
 
     def test_man_co_coc_tron_luong(self):
         ma = str(uuid.uuid4())
@@ -109,7 +148,7 @@ class TestApiVang(unittest.TestCase):
 
     def test_man_co_coc_thieu_dang_ky_hoac_thua(self):
         ma = self._gui_van(van_that(self.b2, 18, ket_qua="thang"), man=2, ban_do="man_2.tmx")
-        self.assertEqual(self._phieu(ma).status_code, 422)            # không có bat-dau
+        self.assertIn(self._phieu(ma).status_code, [403, 422])        # không có bat-dau
         self.assertEqual(self.c.post("/api/man/bat-dau",
                                      json={"ma_van": str(uuid.uuid4()), "vi": VI, "man": 1, "ve": 9}).status_code,
                          422)                                         # màn luyện tập không cần vé
@@ -117,12 +156,12 @@ class TestApiVang(unittest.TestCase):
         self.assertEqual(self._phieu(ma2).status_code, 422)           # bản đồ không khớp màn
 
     def test_gui_lai_nhat_ky_khong_luu_trung(self):
-        nk = van_that(self.b1, 3)
+        nk = van_that(self.b1, len(self.b1.cac_diem("coin")), ket_qua="thang")
         ma = self._gui_van(nk)
         self._gui_van({**nk, "diem": 9999}, ma=ma)          # lần gửi lại KHÔNG ghi đè bản đầu
         r = self._phieu(ma)
         self.assertEqual(r.status_code, 200, r.text)
-        self.assertEqual(r.json()["phieu"]["soVang"], 3)
+        self.assertEqual(r.json()["phieu"]["soVang"], len(self.b1.cac_diem("coin")))
 
     def test_van_gian_bi_tu_choi(self):
         nk = van_that(self.b1, 6)
@@ -133,6 +172,26 @@ class TestApiVang(unittest.TestCase):
     def test_van_khong_ton_tai_va_vi_sai(self):
         self.assertEqual(self._phieu("khong-co-van").status_code, 404)
         self.assertEqual(self._phieu("abcdefgh", "0x12").status_code, 422)
+
+    def test_faucet_eth_cap_10000_eth(self):
+        rpc_calls = []
+
+        def mock_goi_rpc(method, params):
+            rpc_calls.append((method, params))
+            if method == "eth_getBalance":
+                return "0x0"
+            return "0x0"
+
+        with patch("api.main.LOCAL_FAUCET_ENABLED", True), \
+             patch("api.main.BLOCKCHAIN_RPC_URL", "http://127.0.0.1:8545"), \
+             patch("api.main.goi_rpc", side_effect=mock_goi_rpc):
+            r = self.c.post("/api/test/faucet", json={"vi": VI})
+            self.assertEqual(r.status_code, 200, r.text)
+            data = r.json()
+            muoi_nghin_eth = 10000 * (10 ** 18)
+            self.assertEqual(data["amount_wei"], muoi_nghin_eth)
+            self.assertEqual(data["balance_wei"], muoi_nghin_eth)
+            self.assertEqual(data["vi"].lower(), VI.lower())
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ from __future__ import annotations
 import heapq
 import json
 import math
+import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -37,7 +38,9 @@ PHIEU = [("nguoiChoi", "address"), ("man", "uint256"), ("ve", "uint256"), ("soVa
 TOC_DO_GEORGE = 74.0          # px/giây — CauHinh.tocDoGeorge
 DUNG_SAI_THOI_GIAN = 1.15     # cho phép nhanh hơn cận dưới 15% (khung hình, làm tròn)
 BAN_KINH_NHAT_XU = 20.0       # px — tâm George cách tâm xu khi va chạm
-VANG_TOI_DA_MOI_NGAY = 150    # vàng KIẾM được (xu + thưởng, không tính cọc hoàn lại) mỗi ví mỗi ngày
+# 0 = không giới hạn. Local Hardhat có thể tắt hạn mức để test; môi trường
+# deploy nên giữ giá trị dương để chống nhật ký giả nhận vàng vô hạn.
+VANG_TOI_DA_MOI_NGAY = int(os.environ.get("GOLD_DAILY_LIMIT", "150"))
 
 # ---- Đồng hồ thật của máy chủ cho màn có cọc (chống "chơi trước, nộp sau") ----
 SAI_SO_DONG_HO = 3            # giây: nhật ký tới sớm hơn thời lượng ván tự khai quá mức này → bịa
@@ -82,8 +85,9 @@ def _khoang_cach_ngan_nhat(ban_do: BanDo, dau: tuple[int, int]) -> dict[tuple[in
 def kiem_dinh(nhat_ky: dict, ban_do: BanDo, man: ManChoi | None = None) -> KetQuaKiemDinh:
     """Nhật ký một ván (lược đồ NhatKyVan) có đáng tin để trả vàng không.
 
-    `so_vang` trả về = số xu nhặt được + thưởng (nếu hoàn thành màn). Màn có cọc: không hoàn thành
-    → không hợp lệ (cọc đã đốt lúc vào màn, không có gì để trả).
+    `so_vang` trả về = số xu nhặt được + thưởng (nếu hoàn thành màn). Mọi màn
+    chính thức chỉ trả vàng khi hoàn thành; màn không cọc cũng không phải lượt
+    luyện tập nhận vàng khi thua.
     """
     ly_do = []
     nhat = sorted((e for e in nhat_ky["su_kien"] if e["loai"] == "nhat_xu"), key=lambda e: e["giay"])
@@ -99,8 +103,8 @@ def kiem_dinh(nhat_ky: dict, ban_do: BanDo, man: ManChoi | None = None) -> KetQu
     if man is not None:
         if man.gioi_han_giay and nhat_ky["giay"] > man.gioi_han_giay + 1:
             ly_do.append(f"Ván kéo dài {nhat_ky['giay']:.0f} s, màn {man.id} chỉ cho {man.gioi_han_giay} s")
-        if not man.mien_phi and not hoan_thanh:
-            ly_do.append(f"Màn {man.id} có cọc: chỉ trả vàng khi nhặt hết {len(xu)} xu (cọc đã mất)")
+        if not hoan_thanh:
+            ly_do.append(f"Màn {man.id}: chỉ trả vàng khi thắng và nhặt hết {len(xu)} xu")
     if nhat_ky["diem"] != 20 * so_vang:
         ly_do.append(f"Điểm {nhat_ky['diem']} không khớp {so_vang} lần nhặt xu (20 điểm/xu)")
     if nhat and nhat[-1]["giay"] > nhat_ky["giay"] + 1:
@@ -207,11 +211,36 @@ class SoPhieu(_SoJsonl):
 
     def vang_hom_nay(self, vi: str) -> int:
         ngay = _hom_nay()
-        return sum(p["so_vang"] for p in self._doc() if p["vi"].lower() == vi.lower() and p["ngay"] == ngay)
+        return sum(
+            p.get("so_vang_goc", p["so_vang"])
+            for p in self._doc()
+            if p["vi"].lower() == vi.lower() and p["ngay"] == ngay
+        )
 
-    def ghi(self, ma_van: str, vi: str, so_vang: int, man: int = 1, ve: int = 0) -> None:
-        self._them({"ma_van": ma_van, "vi": vi, "so_vang": so_vang, "man": man, "ve": ve,
-                    "ngay": _hom_nay(), "luc": int(time.time())})
+    def ghi(
+        self,
+        ma_van: str,
+        vi: str,
+        so_vang: int,
+        man: int = 1,
+        ve: int = 0,
+        *,
+        so_vang_goc: int | None = None,
+        phi_gas_vang: int = 0,
+    ) -> None:
+        ban_ghi = {
+            "ma_van": ma_van,
+            "vi": vi,
+            "so_vang": so_vang,
+            "man": man,
+            "ve": ve,
+            "ngay": _hom_nay(),
+            "luc": int(time.time()),
+        }
+        if so_vang_goc is not None:
+            ban_ghi["so_vang_goc"] = so_vang_goc
+            ban_ghi["phi_gas_vang"] = phi_gas_vang
+        self._them(ban_ghi)
 
 
 class SoVe(_SoJsonl):
@@ -224,7 +253,7 @@ class SoVe(_SoJsonl):
         return any(v["vi"].lower() == vi.lower() and v["ve"] == ve for v in self._doc())
 
     def bat_dau(self, ma_van: str, vi: str, man: int, ve: int, luc: float | None = None) -> dict:
-        if self.da_dung(vi, ve):
+        if ve > 0 and self.da_dung(vi, ve):
             raise ValueError("Vé này đã dùng để bắt đầu một ván")
         if self.lay_theo_van(ma_van):
             raise ValueError("Mã ván đã được dùng")

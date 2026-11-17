@@ -111,6 +111,9 @@ abstract interface class Vi {
     BigInt? gas,
   });
 
+  /// Ký thông điệp văn bản EIP-191 personal_sign (phục vụ SIWE và xác thực ví).
+  Future<String> kyThongDiep({required String diaChi, required String thongDiep});
+
   /// null = chưa vào khối (hoặc đã bị thay bằng giao dịch "tăng tốc" mang mã khác).
   Future<BienLai?> bienLai(String maGiaoDich);
 }

@@ -1,203 +1,1609 @@
 import 'package:flutter/material.dart';
 
+import '../ngon_ngu/ngon_ngu.dart';
+
+import '../ai/may_chu_nhan_vat.dart';
 import '../blockchain/nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
-import '../cau_hinh.dart';
+import '../blockchain/vi.dart';
+import '../components/ui/gold_rush_top_bar.dart';
 import '../gold_rush_game.dart';
+import '../kho_do/danh_sach_nhan_vat.dart';
+import '../kho_do/danh_sach_trang_bi.dart';
+import '../kho_do/vat_pham_hien_thi.dart';
+import 'anh_nhan_vat.dart';
+import 'ho_so_nhan_vat.dart';
 
-/// Lớp phủ "Cửa hàng nhân vật": kết nối MetaMask → nhận vàng → mua nhân vật.
-///
-/// Mọi trạng thái nằm trong [PhienVi] (dùng chung với màn hình chọn màn); mọi giao dịch đi qua
-/// `BoGiaoDich` (kiểm tra mạng, mô phỏng, gas, chờ xác nhận theo trạng thái). Mua nhân vật tự GỘP
-/// các phiếu đang chờ vào cùng giao dịch: có 8 vàng + phiếu 4 vàng vẫn mua được nhân vật giá 10
-/// bằng MỘT lần bấm Xác nhận.
-class ManHinhCuaHang extends StatelessWidget {
+/// Cửa hàng trang bị. Đây là một lớp phủ riêng của game nên không tạo
+/// Navigator mới và không làm thay đổi các màn hình đang có.
+class ManHinhCuaHang extends StatefulWidget {
   final GoldRushGame game;
 
   const ManHinhCuaHang({super.key, required this.game});
 
   @override
-  Widget build(BuildContext context) {
-    final pv = game.phienVi;
-    return Container(
-      color: CauHinh.mauNenMo,
-      alignment: Alignment.center,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: pv == null
-              ? _khung(context, const [
-                  Text(
-                    'Cần máy chủ gold_rush_ai: chạy game với '
-                    '--dart-define=GOLD_RUSH_API=http://localhost:8000',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFFFFB4A9)),
-                  ),
-                ])
-              : ListenableBuilder(
-                  listenable: pv,
-                  builder: (context, _) => _khung(context, _noiDung(pv)),
-                ),
-        ),
+  State<ManHinhCuaHang> createState() => _ManHinhCuaHangState();
+}
+
+class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
+  final List<VatPhamHienThi> _danhMuc = danhSachTrangBiCuaHang();
+  DanhMucVatPham _tab = DanhMucVatPham.vuKhi;
+  bool _dangXemNhanVat = false;
+  DoHiemVatPham? _doHiem;
+  String? _idDangChon;
+  int? _nhanVatDangChon;
+
+  GoldRushGame get _game => widget.game;
+  PhienVi? get _phienVi => _game.phienVi;
+
+  void _moHoSo() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CharacterProfileScreen(game: _game),
       ),
     );
   }
 
-  Widget _khung(BuildContext context, List<Widget> giua) {
-    const chuPhu = TextStyle(color: Color(0xFF9FAEBC), fontSize: 13, height: 1.5);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'CỬA HÀNG NHÂN VẬT',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: CauHinh.mauChinh),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Bản học tập trên mạng thử nghiệm: vàng và nhân vật không chuyển nhượng, '
-          'không quy đổi ra tiền.',
-          textAlign: TextAlign.center,
-          style: chuPhu,
-        ),
-        const SizedBox(height: 18),
-        ...giua,
-        const SizedBox(height: 16),
-        OutlinedButton(onPressed: game.dongCuaHang, child: const Text('Đóng')),
-      ],
-    );
-  }
-
-  List<Widget> _noiDung(PhienVi pv) {
-    final dc = pv.diaChi;
-    return [
-      if (!pv.daKetNoi)
-        FilledButton.icon(
-          onPressed: pv.dangXuLy ? null : pv.ketNoi,
-          icon: const Icon(Icons.account_balance_wallet_outlined),
-          label: const Text('Kết nối MetaMask'),
-        )
-      else ...[
-        Text(
-          'Ví ${dc!.substring(0, 6)}…${dc.substring(dc.length - 4)}   ·   Vàng: ${pv.vang}',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: CauHinh.mauChu, fontWeight: FontWeight.w700),
-        ),
-        if (pv.ve.dangMo)
-          Text(
-            'Vé màn ${pv.ve.man} đang mở (cọc ${pv.ve.coc})'
-            '${pv.veDangMoDaCoPhieu ? ' — đã hoàn thành, chờ nhận' : ''}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
-          ),
-        const SizedBox(height: 10),
-        if (pv.phieuCho.isNotEmpty)
-          FilledButton.icon(
-            onPressed: pv.dangXuLy ? null : pv.nhanTatCa,
-            icon: const Icon(Icons.savings_outlined),
-            label: Text('Nhận ${pv.phieuCho.length} phiếu · +${pv.vangChoNhan} vàng'),
-          ),
-        const SizedBox(height: 10),
-        for (final nv in [georgeGoc, ...bangNhanVat])
-          _DongNhanVat(
-            nhanVat: nv,
-            gia: nv.id == 0 ? BigInt.zero : (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
-            daCo: nv.id == 0 || pv.daCo.contains(nv.id),
-            dangDung: game.nhanVatDangDung == nv.tepAnh,
-            duVang: pv.vang + pv.vangChoNhan >= (pv.gia[nv.id] ?? BigInt.from(nv.giaGoiY)),
-            banKhoa: pv.dangXuLy,
-            khiMua: () => pv.mua(nv),
-            khiDung: () {
-              game.nhanVatDangDung = nv.tepAnh;
-              pv.veLai(); // vẽ lại danh sách (nhãn "Đang dùng")
+  Future<void> _moXuongAi() async {
+    _game.dongCuaHang();
+    final api = MayChuNhanVat();
+    try {
+      await Navigator.of(context).push<void>(
+        PageRouteBuilder<void>(
+          pageBuilder: (aiContext, _, _) => ManHinhAnhNhanVat(
+            mayChu: api,
+            authController: _game.auth,
+            vi: _game.phienVi?.vi,
+            phienVi: _game.phienVi,
+            tienTrinhController: _game.tienTrinh,
+            onPlayerTap: () {
+              Navigator.of(aiContext).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CharacterProfileScreen(game: _game),
+                ),
+              );
             },
+            onSanhCho: () {
+              Navigator.of(aiContext).pop();
+              _game.veMenu();
+            },
+            onCuaHang: () => Navigator.of(aiContext).maybePop(),
+            onRungRuong: () {
+              Navigator.of(aiContext).pop();
+              _game.moRungRuong();
+            },
+            onQuaTang: () {
+              Navigator.of(aiContext).pop();
+              _game.moQuaTang();
+            },
+            onKhoDo: () {
+              Navigator.of(aiContext).pop();
+              _game.moKhoDo();
+            },
+            onSettings: _game.moCaiDat,
           ),
-        const SizedBox(height: 6),
-        TextButton.icon(
-          onPressed: pv.dangXuLy ? null : pv.lamMoi,
-          icon: const Icon(Icons.refresh, size: 18),
-          label: const Text('Làm mới'),
-        ),
-      ],
-      if (pv.soVanChuaXinPhieu > 0 && !pv.daKetNoi)
-        Text(
-          '${pv.soVanChuaXinPhieu} ván đang chờ: kết nối ví để xin phiếu vàng.',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
-        ),
-      if ((pv.thongBao ?? '').isNotEmpty) ...[
-        const SizedBox(height: 12),
-        Text(
-          pv.thongBao!,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: pv.thongBaoLaLoi ? const Color(0xFFFFB4A9) : const Color(0xFF9FAEBC),
-            fontSize: 13,
-            height: 1.5,
+          transitionDuration: const Duration(milliseconds: 180),
+          reverseTransitionDuration: const Duration(milliseconds: 180),
+          transitionsBuilder: (_, animation, _, child) => FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+            child: child,
           ),
         ),
-      ],
-    ];
+      );
+    } finally {
+      api.dong();
+    }
   }
-}
 
-class _DongNhanVat extends StatelessWidget {
-  final NhanVatBan nhanVat;
-  final BigInt gia;
-  final bool daCo;
-  final bool dangDung;
-  final bool duVang;
-  final bool banKhoa;
-  final VoidCallback khiMua;
-  final VoidCallback khiDung;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _dongBoNFT());
+  }
 
-  const _DongNhanVat({
-    required this.nhanVat,
-    required this.gia,
-    required this.daCo,
-    required this.dangDung,
-    required this.duVang,
-    required this.banKhoa,
-    required this.khiMua,
-    required this.khiDung,
-  });
+  List<VatPhamHienThi> get _vatPhamHienThi {
+    return _danhMuc.where((item) {
+      final dungTab = item.danhMucHienThi == _tab;
+      final dungDoHiem = _doHiem == null || item.doHiem == _doHiem;
+      return dungTab && dungDoHiem;
+    }).toList();
+  }
+
+  List<NhanVatBan> get _nhanVatHienThi {
+    final characters = bangNhanVat.where((nhanVat) => nhanVat.id > 0).toList();
+    characters.sort((a, b) => a.giaGoiY.compareTo(b.giaGoiY));
+    return characters;
+  }
+
+  NhanVatBan? get _nhanVatDangChonHienThi {
+    final id = _nhanVatDangChon;
+    if (id == null) return null;
+    for (final nhanVat in _nhanVatHienThi) {
+      if (nhanVat.id == id) return nhanVat;
+    }
+    return null;
+  }
+
+  VatPhamHienThi? get _vatPhamDangChon {
+    final id = _idDangChon;
+    if (id == null) return null;
+    for (final item in _danhMuc) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final Widget nut;
-    if (dangDung) {
-      nut = const Chip(label: Text('Đang dùng'));
-    } else if (daCo) {
-      nut = OutlinedButton(onPressed: banKhoa ? null : khiDung, child: const Text('Dùng'));
-    } else {
-      nut = FilledButton(
-        onPressed: banKhoa || !duVang ? null : khiMua,
-        child: Text('Mua · $gia vàng'),
-      );
-    }
-    return Card(
-      color: const Color(0x22FFFFFF),
-      child: ListTile(
-        leading: Image.asset(
-          'assets/images/${nhanVat.tepAnh}',
-          width: 32,
-          height: 32,
-          fit: BoxFit.none,
-          alignment: Alignment.topLeft,
-          filterQuality: FilterQuality.none,
-          // Khung đầu tiên (16×16) của sprite sheet, phóng 2 lần.
-          scale: 0.5,
-          errorBuilder: (_, _, _) => const Icon(Icons.person),
-        ),
-        title: Text(nhanVat.ten, style: const TextStyle(color: CauHinh.mauChu)),
-        subtitle: Text(
-          nhanVat.moTa,
-          style: const TextStyle(color: Color(0xFF9FAEBC), fontSize: 12),
-        ),
-        trailing: nut,
+    final pv = _phienVi;
+    final listenable = pv == null
+        ? _game.danhSachVatPham
+        : Listenable.merge([pv, _game.danhSachVatPham]);
+
+    return Material(
+      color: const Color(0xFF060C12),
+      child: ListenableBuilder(
+        listenable: listenable,
+        builder: (context, _) {
+          final selected = _vatPhamDangChon;
+          return SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 980;
+                return Stack(
+                  children: [
+                    const _StoreAtmosphere(),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        compact ? 10 : 20,
+                        compact ? 10 : 20,
+                        compact ? 10 : 20,
+                        compact ? 8 : 14,
+                      ),
+                      child: Column(
+                        children: [
+                          GoldRushTopBar(
+                            activeItem: GoldRushTopBarItem.cuaHang,
+                            gold: pv == null
+                                ? '0'
+                                : (pv.dangXuLy ? '...' : pv.vangDinhDang),
+                            playerName: _game.auth?.user?.username ?? 'datco6',
+                            onSanhCho: _game.veMenu,
+                            onCuaHang: null,
+                            onRungRuong: () {
+                              _game.dongCuaHang();
+                              _game.moRungRuong();
+                            },
+                            onQuaTang: () {
+                              _game.dongCuaHang();
+                              _game.moQuaTang();
+                            },
+                            onKhoDo: () {
+                              _game.dongCuaHang();
+                              _game.moKhoDo();
+                            },
+                            onXuongAi: _moXuongAi,
+                            onPlayerTap: _moHoSo,
+                            onSettings: _game.moCaiDat,
+                            onClose: _game.veMenu,
+                          ),
+                          SizedBox(height: compact ? 6 : 12),
+                          _StoreHeading(compact: compact),
+                          SizedBox(height: compact ? 6 : 12),
+                          Expanded(
+                            child: compact
+                                ? _buildCompactContent(
+                                    selected,
+                                    _nhanVatDangChonHienThi,
+                                  )
+                                : _buildWideContent(
+                                    selected,
+                                    _nhanVatDangChonHienThi,
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildWideContent(
+    VatPhamHienThi? selected,
+    NhanVatBan? selectedCharacter,
+  ) {
+    if (_dangXemNhanVat) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _buildCharacterCatalog()),
+          if (selectedCharacter != null) ...[
+            const SizedBox(width: 14),
+            SizedBox(
+              width: 344,
+              child: _CharacterDetail(
+                character: selectedCharacter,
+                price: _priceForCharacter(selectedCharacter),
+                owned: _isCharacterOwned(selectedCharacter),
+                onBuy: () => _muaNhanVat(selectedCharacter),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: _buildCatalog()),
+        if (selected != null) ...[
+          const SizedBox(width: 14),
+          SizedBox(
+            width: 344,
+            child: _ItemDetail(
+              item: selected,
+              onBuy: () => _muaVatPham(selected),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCompactContent(
+    VatPhamHienThi? selected,
+    NhanVatBan? selectedCharacter,
+  ) {
+    if (_dangXemNhanVat) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildCategoryTabs(),
+          const SizedBox(height: 10),
+          Expanded(child: _buildCompactCharacterList()),
+          if (selectedCharacter != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 180,
+              child: SingleChildScrollView(
+                child: _CharacterDetail(
+                  character: selectedCharacter,
+                  price: _priceForCharacter(selectedCharacter),
+                  owned: _isCharacterOwned(selectedCharacter),
+                  onBuy: () => _muaNhanVat(selectedCharacter),
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildCategoryTabs(),
+        const SizedBox(height: 8),
+        _RarityFilters(
+          selected: _doHiem,
+          onSelected: (value) => setState(() => _doHiem = value),
+        ),
+        const SizedBox(height: 10),
+        Expanded(child: _buildCompactItemList()),
+        if (selected != null) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 150,
+            child: SingleChildScrollView(
+              child: _ItemDetail(
+                item: selected,
+                onBuy: () => _muaVatPham(selected),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCompactItemList() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final items = _vatPhamHienThi;
+        final columns = ((constraints.maxWidth + 10) / 220)
+            .floor()
+            .clamp(1, 3)
+            .toInt();
+        if (items.isEmpty) return const _EmptyStore();
+
+        return GridView.builder(
+          padding: const EdgeInsets.only(bottom: 12),
+          itemCount: items.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.25,
+          ),
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return _StoreItemCard(
+              item: item,
+              price: _priceFor(item),
+              quantity: _quantityFor(item),
+              selected: item.id == _idDangChon,
+              onTap: () => setState(() => _idDangChon = item.id),
+              onBuy: () => _muaVatPham(item),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCategoryTabs() {
+    return _CategoryTabs(
+      selected: _tab,
+      selectedNhanVat: _dangXemNhanVat,
+      onSelected: (value) => setState(() {
+        _dangXemNhanVat = false;
+        _tab = value;
+        _idDangChon = null;
+        _nhanVatDangChon = null;
+      }),
+      onNhanVat: () => setState(() {
+        _dangXemNhanVat = true;
+        _idDangChon = null;
+        _nhanVatDangChon = null;
+      }),
+    );
+  }
+
+  Widget _buildCharacterCatalog() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = ((width + 14) / 310).floor().clamp(1, 3).toInt();
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildCategoryTabs(),
+              const SizedBox(height: 16),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _nhanVatHienThi.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.25,
+                ),
+                itemBuilder: (context, index) {
+                  final character = _nhanVatHienThi[index];
+                  return _CharacterCard(
+                    character: character,
+                    price: _priceForCharacter(character),
+                    owned: _isCharacterOwned(character),
+                    selected: character.id == _nhanVatDangChon,
+                    onTap: () =>
+                        setState(() => _nhanVatDangChon = character.id),
+                    onBuy: () => _muaNhanVat(character),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactCharacterList() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = ((constraints.maxWidth + 10) / 220)
+            .floor()
+            .clamp(1, 3)
+            .toInt();
+        return GridView.builder(
+          padding: const EdgeInsets.only(bottom: 12),
+          itemCount: _nhanVatHienThi.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.25,
+          ),
+          itemBuilder: (context, index) {
+            final character = _nhanVatHienThi[index];
+            return _CharacterCard(
+              character: character,
+              price: _priceForCharacter(character),
+              owned: _isCharacterOwned(character),
+              selected: character.id == _nhanVatDangChon,
+              onTap: () => setState(() => _nhanVatDangChon = character.id),
+              onBuy: () => _muaNhanVat(character),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  int _priceForCharacter(NhanVatBan character) {
+    final giaOnChain = _phienVi?.gia[character.id]?.toInt() ?? 0;
+    return giaOnChain > 0 ? giaOnChain : character.giaGoiY;
+  }
+
+  bool _isCharacterOwned(NhanVatBan character) =>
+      _phienVi?.daCo.contains(character.id) ?? false;
+
+  Widget _buildCatalog() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final items = _vatPhamHienThi;
+        final width = constraints.maxWidth;
+        final columns = ((width + 14) / 310).floor().clamp(1, 3).toInt();
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildCategoryTabs(),
+              const SizedBox(height: 12),
+              _RarityFilters(
+                selected: _doHiem,
+                onSelected: (value) => setState(() => _doHiem = value),
+              ),
+              const SizedBox(height: 16),
+              if (items.isEmpty)
+                const _EmptyStore()
+              else
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: items.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.25,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return _StoreItemCard(
+                      item: item,
+                      price: _priceFor(item),
+                      quantity: _quantityFor(item),
+                      selected: item.id == _idDangChon,
+                      onTap: () => setState(() => _idDangChon = item.id),
+                      onBuy: () => _muaVatPham(item),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  int _quantityFor(VatPhamHienThi item) =>
+      _game.danhSachVatPham.value
+          .where((owned) => owned.id == item.id)
+          .firstOrNull
+          ?.soLuong ??
+      0;
+
+  int _priceFor(VatPhamHienThi item) => _priceForItem(item);
+
+  int _tokenIdFor(VatPhamHienThi item) => _danhMuc.indexOf(item) + 1;
+
+  Future<void> _dongBoNFT() async {
+    final pv = _phienVi;
+    final diaChi = pv?.diaChi;
+    final cuaHang = pv?.cuaHang;
+    if (pv == null || !pv.daKetNoi || diaChi == null || cuaHang == null) return;
+
+    for (final item in _danhMuc) {
+      try {
+        final soLuong = await cuaHang.soLuongVatPham(diaChi, _tokenIdFor(item));
+        if (soLuong > BigInt.zero && mounted) {
+          _game.dongBoSoLuongVatPham(item, soLuong.toInt());
+        }
+      } on LoiVi {
+        return;
+      }
+    }
+  }
+
+  Future<void> _muaVatPham(VatPhamHienThi item) async {
+    final pv = _phienVi;
+    if (pv == null) {
+      _baoMua('Cần kết nối MetaMask để mua vật phẩm.');
+      return;
+    }
+    if (!pv.daKetNoi) {
+      final diaChi = _game.auth?.walletAddress;
+      if (diaChi != null && diaChi.isNotEmpty) {
+        await pv.ketNoiDaXacThuc(diaChi);
+      }
+    }
+    if (!pv.daKetNoi) {
+      _baoMua(pv.thongBao ?? 'Cần kết nối MetaMask để mua vật phẩm.');
+      return;
+    }
+
+    final thanhCong = await pv.muaVatPham(
+      tokenId: _tokenIdFor(item),
+      ten: item.ten,
+    );
+    if (!thanhCong) {
+      if (mounted && pv.thongBao != null && pv.thongBao!.isNotEmpty) {
+        _baoMua(pv.thongBao!);
+      }
+      return;
+    }
+    if (!mounted) return;
+    _game.themVatPhamVaoKho(item);
+    _baoMua('Đã mua ${item.ten}; NFT đã được thêm vào Kho đồ.');
+  }
+
+  Future<void> _muaNhanVat(NhanVatBan character) async {
+    final pv = _phienVi;
+    if (pv == null) {
+      _baoMua('Cần kết nối MetaMask để mua nhân vật.');
+      return;
+    }
+    if (_isCharacterOwned(character)) {
+      _baoMua('Bạn đã sở hữu nhân vật này.');
+      return;
+    }
+    if (!pv.daKetNoi) {
+      final diaChi = _game.auth?.walletAddress;
+      if (diaChi != null && diaChi.isNotEmpty) {
+        await pv.ketNoiDaXacThuc(diaChi);
+      }
+    }
+    if (!pv.daKetNoi) {
+      _baoMua(pv.thongBao ?? 'Cần kết nối MetaMask để mua nhân vật.');
+      return;
+    }
+
+    final thanhCong = await pv.mua(character);
+    if (!thanhCong) {
+      if (mounted && pv.thongBao != null && pv.thongBao!.isNotEmpty) {
+        _baoMua(pv.thongBao!);
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _nhanVatDangChon = character.id);
+    _baoMua(
+      'Đã mua ${character.ten}; nhân vật đã thêm vào Bộ sưu tập nhân vật.',
+    );
+  }
+
+  void _baoMua(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: ChuGame(message),
+        backgroundColor: const Color(0xFF142B38),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+class _StoreAtmosphere extends StatelessWidget {
+  const _StoreAtmosphere();
+
+  @override
+  Widget build(BuildContext context) {
+    return const IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            top: -380,
+            right: -180,
+            width: 1200,
+            height: 660,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [Color(0x1FF2B33D), Color(0x00060C12)],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -260,
+            bottom: -300,
+            width: 900,
+            height: 620,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [Color(0x1A58A6FF), Color(0x00060C12)],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StoreHeading extends StatelessWidget {
+  const _StoreHeading({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ChuGame(
+        'Cửa hàng',
+        style: TextStyle(
+          color: const Color(0xFFEAF2F8),
+          fontSize: compact ? 26 : 34,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryTabs extends StatelessWidget {
+  const _CategoryTabs({
+    required this.selected,
+    required this.selectedNhanVat,
+    required this.onSelected,
+    required this.onNhanVat,
+  });
+
+  final DanhMucVatPham selected;
+  final bool selectedNhanVat;
+  final ValueChanged<DanhMucVatPham> onSelected;
+  final VoidCallback onNhanVat;
+
+  @override
+  Widget build(BuildContext context) {
+    final tabs = <({DanhMucVatPham value, String label, IconData icon})>[
+      (value: DanhMucVatPham.vuKhi, label: 'Súng', icon: Icons.gps_fixed),
+      (value: DanhMucVatPham.giap, label: 'Giáp', icon: Icons.shield_outlined),
+      (value: DanhMucVatPham.giay, label: 'Giày', icon: Icons.directions_run),
+    ];
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 520),
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101921),
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
+      ),
+      child: Row(
+        children: [
+          for (final tab in tabs)
+            Expanded(
+              child: _SegmentButton(
+                label: tab.label,
+                icon: tab.icon,
+                selected: !selectedNhanVat && selected == tab.value,
+                onTap: () => onSelected(tab.value),
+              ),
+            ),
+          Expanded(
+            child: _SegmentButton(
+              label: 'Nhân vật',
+              icon: Icons.person_outline,
+              selected: selectedNhanVat,
+              onTap: onNhanVat,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SegmentButton extends StatelessWidget {
+  const _SegmentButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? const Color(0xFFFFC84D) : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: selected
+                    ? const Color(0xFF12202A)
+                    : const Color(0xFF9BB0C0),
+              ),
+              const SizedBox(width: 6),
+              ChuGame(
+                label,
+                style: TextStyle(
+                  color: selected
+                      ? const Color(0xFF12202A)
+                      : const Color(0xFF9BB0C0),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CharacterCard extends StatelessWidget {
+  const _CharacterCard({
+    required this.character,
+    required this.price,
+    required this.owned,
+    required this.selected,
+    required this.onTap,
+    required this.onBuy,
+  });
+
+  final NhanVatBan character;
+  final int price;
+  final bool owned;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.fromLTRB(11, 11, 11, 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF142B38), Color(0xFF0A1721)],
+            ),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFFFFC84D)
+                  : const Color(0x66F2B33D),
+              width: selected ? 1.7 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const _RarityTag(DoHiemVatPham.suThi),
+                  if (owned)
+                    const ChuGame(
+                      'ĐÃ SỞ HỮU',
+                      style: TextStyle(
+                        color: Color(0xFF35D6A0),
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0x13000000),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0x12FFFFFF)),
+                  ),
+                  child: Center(
+                    child: AnhNhanVat(tepAnh: character.tepAnh, kichThuoc: 96),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ChuGame(
+                character.ten,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFEAF2F8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.monetization_on_outlined,
+                    size: 14,
+                    color: Color(0xFFF2B33D),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: ChuGame(
+                      '$price vàng',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD67A),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (owned)
+                    const _OwnedButton(label: 'Đã mua')
+                  else
+                    _BuyButton(onPressed: onBuy),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CharacterDetail extends StatelessWidget {
+  const _CharacterDetail({
+    required this.character,
+    required this.price,
+    required this.owned,
+    required this.onBuy,
+  });
+
+  final NhanVatBan character;
+  final int price;
+  final bool owned;
+  final VoidCallback onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF142B38), Color(0xFF0A1721)],
+        ),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xB3F2B33D)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const ChuGame(
+            'THÔNG TIN NHÂN VẬT',
+            style: TextStyle(
+              color: Color(0xFFF2B33D),
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.7,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 132,
+            child: Center(
+              child: AnhNhanVat(tepAnh: character.tepAnh, kichThuoc: 118),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ChuGame(
+            character.ten,
+            style: const TextStyle(
+              color: Color(0xFFEAF2F8),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
+          ChuGame(
+            character.moTa,
+            style: const TextStyle(
+              color: Color(0xFF9BB0C0),
+              fontSize: 11,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 13),
+          Row(
+            children: [
+              const Icon(
+                Icons.monetization_on_outlined,
+                color: Color(0xFFF2B33D),
+                size: 16,
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: ChuGame(
+                  '$price vàng',
+                  style: const TextStyle(
+                    color: Color(0xFFFFD67A),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (owned)
+                const _OwnedButton(label: 'Đã mua')
+              else
+                FilledButton.icon(
+                  onPressed: onBuy,
+                  icon: const Icon(Icons.shopping_cart_outlined, size: 15),
+                  label: const ChuGame('Mua'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFC84D),
+                    foregroundColor: const Color(0xFF12202A),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RarityFilters extends StatelessWidget {
+  const _RarityFilters({required this.selected, required this.onSelected});
+
+  final DoHiemVatPham? selected;
+  final ValueChanged<DoHiemVatPham?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final filters = <(DoHiemVatPham?, String)>[
+      (null, 'Tất cả'),
+      (DoHiemVatPham.thuong, 'Thường'),
+      (DoHiemVatPham.khongPhoBien, 'Mạnh'),
+      (DoHiemVatPham.hiem, 'Hiếm'),
+    ];
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final filter in filters)
+          _FilterChip(
+            label: filter.$2,
+            selected: selected == filter.$1,
+            onTap: () => onSelected(filter.$1),
+          ),
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? const Color(0x1FF2B33D) : const Color(0x0FFFFFFF),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? const Color(0x66F2B33D)
+                  : const Color(0x1AFFFFFF),
+            ),
+          ),
+          child: ChuGame(
+            label,
+            style: TextStyle(
+              color: selected
+                  ? const Color(0xFFFFD67A)
+                  : const Color(0xFF9BB0C0),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StoreItemCard extends StatelessWidget {
+  const _StoreItemCard({
+    required this.item,
+    required this.price,
+    required this.quantity,
+    required this.selected,
+    required this.onTap,
+    required this.onBuy,
+  });
+
+  final VatPhamHienThi item;
+  final int price;
+  final int quantity;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    final rarity = mauDoHiem(item.doHiem);
+    final isDefault = item.id == 'sung_cap_1';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.fromLTRB(11, 11, 11, 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF142B38), Color(0xFF0A1721)],
+            ),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: selected ? rarity : rarity.withValues(alpha: .65),
+              width: selected ? 1.7 : 1,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: rarity.withValues(alpha: .18),
+                      blurRadius: 16,
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _RarityTag(item.doHiem),
+                  if (isDefault)
+                    const ChuGame(
+                      'ĐANG DÙNG',
+                      style: TextStyle(
+                        color: Color(0xFF35D6A0),
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    )
+                  else if (quantity > 0)
+                    _QuantityTag(quantity),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0x13000000),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0x12FFFFFF)),
+                  ),
+                  child: Center(child: _VatPhamImage(item, size: 96)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ChuGame(
+                item.ten,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFEAF2F8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              ChuGame(
+                _shortStats(item),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF9BB0C0),
+                  fontSize: 9,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              const SizedBox(height: 7),
+              Row(
+                children: [
+                  Icon(
+                    Icons.monetization_on_outlined,
+                    size: 14,
+                    color: price == 0
+                        ? const Color(0xFFFFD67A)
+                        : const Color(0xFFF2B33D),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: ChuGame(
+                      price == 0 ? 'Miễn phí' : '$price vàng',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD67A),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (price > 0)
+                    _BuyButton(onPressed: onBuy)
+                  else
+                    _OwnedButton(label: isDefault ? 'Đã mặc' : 'Miễn phí'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BuyButton extends StatelessWidget {
+  const _BuyButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.shopping_cart_outlined, size: 14),
+      label: const ChuGame('Mua'),
+      style: FilledButton.styleFrom(
+        backgroundColor: const Color(0xFFFFC84D),
+        foregroundColor: const Color(0xFF12202A),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+      ),
+    );
+  }
+}
+
+class _OwnedButton extends StatelessWidget {
+  const _OwnedButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: null,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF7D90A0),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+      ),
+      child: ChuGame(label),
+    );
+  }
+}
+
+class _QuantityTag extends StatelessWidget {
+  const _QuantityTag(this.quantity);
+
+  final int quantity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0x1435D6A0),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: ChuGame(
+        '×$quantity',
+        style: const TextStyle(
+          color: Color(0xFF35D6A0),
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _RarityTag extends StatelessWidget {
+  const _RarityTag(this.rarity);
+
+  final DoHiemVatPham rarity;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = mauDoHiem(rarity);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: ChuGame(
+        tenDoHiem(rarity).toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
+}
+
+class _VatPhamImage extends StatelessWidget {
+  const _VatPhamImage(this.item, {required this.size});
+
+  final VatPhamHienThi item;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = item.duongDanAnh;
+    if (asset == null || asset.isEmpty) {
+      return Icon(
+        Icons.inventory_2_outlined,
+        color: mauDoHiem(item.doHiem),
+        size: size * .42,
+      );
+    }
+
+    // Toàn bộ ảnh trang bị trong catalog là sprite sheet 4x4. Chỉ lấy ô
+    // đầu tiên (một mặt), không thu nhỏ cả bốn hướng vào cùng một thẻ.
+    return FittedBox(
+      fit: BoxFit.fill,
+      child: SizedBox(
+        width: 64,
+        height: 64,
+        child: ClipRect(
+          child: OverflowBox(
+            alignment: Alignment.topLeft,
+            minWidth: 256,
+            maxWidth: 256,
+            minHeight: 256,
+            maxHeight: 256,
+            child: Image.asset(
+              asset,
+              width: 256,
+              height: 256,
+              filterQuality: FilterQuality.none,
+              errorBuilder: (_, _, _) =>
+                  const Icon(Icons.broken_image_outlined),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ItemDetail extends StatelessWidget {
+  const _ItemDetail({required this.item, required this.onBuy});
+
+  final VatPhamHienThi item;
+  final VoidCallback onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    final price = _priceForItem(item);
+    final rarity = mauDoHiem(item.doHiem);
+
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF142B38), Color(0xFF0A1721)],
+        ),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: rarity.withValues(alpha: .7)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const ChuGame(
+                'THÔNG TIN VẬT PHẨM',
+                style: TextStyle(
+                  color: Color(0xFFF2B33D),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.7,
+                ),
+              ),
+              _RarityTag(item.doHiem),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 132,
+            decoration: BoxDecoration(
+              color: const Color(0x13000000),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0x12FFFFFF)),
+            ),
+            child: Center(child: _VatPhamImage(item, size: 118)),
+          ),
+          const SizedBox(height: 13),
+          ChuGame(
+            item.ten,
+            style: const TextStyle(
+              color: Color(0xFFEAF2F8),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
+          ChuGame(
+            item.moTa,
+            style: const TextStyle(
+              color: Color(0xFF9BB0C0),
+              fontSize: 11,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 13),
+          const Divider(color: Color(0x1AFFFFFF), height: 1),
+          const SizedBox(height: 10),
+          for (final entry in item.thuocTinh.entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 7),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.bolt_outlined,
+                    size: 14,
+                    color: Color(0xFFF2B33D),
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: ChuGame(
+                      entry.key,
+                      style: const TextStyle(
+                        color: Color(0xFF9BB0C0),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  ChuGame(
+                    entry.value,
+                    style: const TextStyle(
+                      color: Color(0xFF35D6A0),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.monetization_on_outlined,
+                color: Color(0xFFF2B33D),
+                size: 16,
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: ChuGame(
+                  price == 0 ? 'Miễn phí' : '$price vàng',
+                  style: const TextStyle(
+                    color: Color(0xFFFFD67A),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: price == 0 ? null : onBuy,
+                icon: const Icon(Icons.shopping_cart_outlined, size: 15),
+                label: const ChuGame('Mua'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFC84D),
+                  foregroundColor: const Color(0xFF12202A),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 10,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+int _priceForItem(VatPhamHienThi item) {
+  if (item.doHiem == DoHiemVatPham.hiem) return 100000;
+
+  const prices = <String, int>{
+    'sung_cap_1': 0,
+    'sung_cap_2': 50,
+    'sung_cap_3': 120,
+    'sung_manh_1': 260,
+    'sung_manh_2': 480,
+    'sung_manh_3': 420,
+  };
+  if (prices.containsKey(item.id)) return prices[item.id]!;
+  switch (item.doHiem) {
+    case DoHiemVatPham.thuong:
+      return 80;
+    case DoHiemVatPham.khongPhoBien:
+      return 220;
+    case DoHiemVatPham.hiem:
+      return 560;
+    case DoHiemVatPham.suThi:
+      return 900;
+    case DoHiemVatPham.huyenThoai:
+      return 1400;
+  }
+}
+
+String _shortStats(VatPhamHienThi item) {
+  if (item.loai == LoaiVatPham.vuKhi) {
+    return '${item.satThuong} HP  ·  ${item.tamBan.toInt()} ô  ·  cơ bản';
+  }
+  if (item.loai == LoaiVatPham.giap) {
+    return '+${item.hpCongThem} HP  ·  giảm ${(item.giamSatThuong * 100).round()}%';
+  }
+  return '+${(item.tocDoCongThem * 100).round()}% tốc độ chạy';
+}
+
+class _EmptyStore extends StatelessWidget {
+  const _EmptyStore();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        color: const Color(0x0DFFFFFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
+      ),
+      child: const ChuGame(
+        'Chưa có vật phẩm trong danh mục này.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Color(0xFF9BB0C0)),
+      ),
+    );
+  }
+}
+
+String tenDoHiem(DoHiemVatPham doHiem) {
+  switch (doHiem) {
+    case DoHiemVatPham.thuong:
+      return 'Thường';
+    case DoHiemVatPham.khongPhoBien:
+      return 'Mạnh';
+    case DoHiemVatPham.hiem:
+      return 'Hiếm';
+    case DoHiemVatPham.suThi:
+      return 'Sử thi';
+    case DoHiemVatPham.huyenThoai:
+      return 'Huyền thoại';
+  }
+}
+
+Color mauDoHiem(DoHiemVatPham doHiem) {
+  switch (doHiem) {
+    case DoHiemVatPham.thuong:
+      return const Color(0xFFAAB5C0);
+    case DoHiemVatPham.khongPhoBien:
+      return const Color(0xFF43D98B);
+    case DoHiemVatPham.hiem:
+      return const Color(0xFF36BFFF);
+    case DoHiemVatPham.suThi:
+      return const Color(0xFFA765FF);
+    case DoHiemVatPham.huyenThoai:
+      return const Color(0xFFF5B829);
   }
 }
