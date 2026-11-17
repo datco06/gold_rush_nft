@@ -32,7 +32,7 @@ class TrangBiGeorge extends Component {
     : _lopGiay = _taoLop(
         giay,
         priority: -2,
-        offset: const Offset(0, 3.5),
+        offset: const Offset(0, 6.0),
         scale: 0.55,
       ),
       _lopGiap = _taoLop(

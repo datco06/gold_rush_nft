@@ -147,13 +147,13 @@ class NhanVatVoiTrangBi extends StatelessWidget {
             anhTrongBoNho: anhNhanVat,
           ),
 
-          // 2. Giày (nếu có sprite sheet, offset (0, 2) như trong game)
+          // 2. Giày (nếu có sprite sheet, đặt đúng vào phần chân như trong game)
           if (coAnhGiay)
             _lopSprite4x4(
               duongDanAnh: giay.duongDanAnh!,
               kichThuoc: kichThuoc,
               tyLe: 0.55,
-              offset16x16: const Offset(0, 3.5),
+              offset16x16: const Offset(0, 6.0),
             ),
 
           // 3. Giáp (nếu có sprite sheet, offset (0, 0) như trong game)

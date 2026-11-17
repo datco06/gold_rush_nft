@@ -412,6 +412,7 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       ),
       trangThaiTrangBi: TrangThaiKhoDo.daTai,
       danhSachVatPham: game.danhSachVatPham.value,
+      playerName: game.auth?.user?.username ?? 'datco6',
       khiTrangBi: game.trangBiVatPham,
       khiThao: game.thaoVatPham,
       khiHoanDoiNFT: (vatPham, nguoiNhan, soLuong) async {
