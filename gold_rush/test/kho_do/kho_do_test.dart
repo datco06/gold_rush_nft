@@ -81,8 +81,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tab Nhân vật hiện nút mở màn tạo nhân vật AI', (tester) async {
-    var soLanMo = 0;
+  testWidgets('tab Nhân vật không còn hiển thị phần nhân vật AI', (tester) async {
     final api = MayChuNhanVat(
       mayChu: 'http://localhost',
       client: MockClient(
@@ -99,15 +98,10 @@ void main() {
       tester,
       tabBanDau: 1,
       mayChuNhanVat: api,
-      khiMoTaoNhanVat: () async => soLanMo++,
     );
 
-    final nutTao = find.text('Tạo nhân vật AI');
-    expect(nutTao, findsOneWidget);
-    await tester.ensureVisible(nutTao);
-    await tester.tap(nutTao);
-    await tester.pump();
-    expect(soLanMo, 1);
+    expect(find.text('NHÂN VẬT AI'), findsNothing);
+    expect(find.text('Tạo nhân vật AI'), findsNothing);
   });
 
   testWidgets('Chưa có callback thì nút Trang bị bị vô hiệu hóa', (

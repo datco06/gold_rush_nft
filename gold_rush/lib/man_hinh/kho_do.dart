@@ -12,7 +12,6 @@ import '../auth/auth_controller.dart';
 import '../blockchain/nhan_vat.dart';
 import '../blockchain/phien_vi.dart';
 import '../blockchain/vi.dart';
-import '../components/ai/nhan_vat_ai_gallery.dart';
 import '../components/ui/game_inventory_controls.dart';
 import '../components/ui/gold_rush_top_bar.dart';
 import '../giao_dien/khung_game.dart';
@@ -1310,62 +1309,6 @@ class _ManHinhKhoDoState extends State<ManHinhKhoDo>
                   widget.loiNhanVat ?? 'Không tải được danh sách nhân vật.',
               khiThuLai: widget.khiThuLaiNhanVat,
             ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: MauGame.chinh.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: MauGame.chinh.withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_outlined,
-                      color: MauGame.chinh,
-                      size: 22,
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: ChuGame(
-                        'NHÂN VẬT AI',
-                        style: TextStyle(
-                          color: MauGame.chinh,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const ChuGame(
-                  'Khu vực dành cho nhân vật do AI tạo.',
-                  style: TextStyle(color: MauGame.chu, fontSize: 13),
-                ),
-                const SizedBox(height: 6),
-                const ChuGame(
-                  'Danh sách được tải từ Backend theo phiên SIWE hiện tại. '
-                  'Nhân vật AI không tự động được coi là NFT.',
-                  style: TextStyle(
-                    color: MauGame.chuPhu,
-                    fontSize: 12,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                NhanVatAiGallery(
-                  authController: widget.authController,
-                  mayChu: widget.mayChuNhanVat,
-                  khiMoTaoNhanVat: widget.khiMoTaoNhanVat,
-                  tepNhanVatDangDung: widget.tepNhanVatDangDung,
-                  khiTrangBi: widget.khiTrangBiNhanVatAi,
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
