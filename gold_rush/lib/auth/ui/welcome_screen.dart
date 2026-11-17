@@ -297,9 +297,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       fit: StackFit.expand,
       children: [
         const Positioned(left: 40, top: 28, child: _BrandBar()),
-        const Positioned(right: 42, top: 28, child: Row(mainAxisSize: MainAxisSize.min, children: [
-          ChonNgonNgu(), SizedBox(width: 12), _NetworkBar(),
-        ])),
+        const Positioned(right: 42, top: 28, child: ChonNgonNgu()),
         Positioned(
           left: 88,
           top: math.max(150, constraints.maxHeight * .25),
@@ -667,62 +665,6 @@ class _HeroCopy extends StatelessWidget {
           ),
         ),
       ),
-      SizedBox(height: compact ? 12 : 22),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Expanded(
-            child: _Feature(
-              icon: Icons.map_outlined,
-              title: '6 màn phiêu lưu',
-              desc: 'Đào sâu qua từng tầng hang',
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-}
-
-class _Feature extends StatelessWidget {
-  const _Feature({required this.icon, required this.title, required this.desc});
-  final IconData icon;
-  final String title;
-  final String desc;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      DecoratedBox(
-        decoration: BoxDecoration(
-          color: Color(0x14FFFFFF),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: Color(0x2BFFFFFF)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(7),
-          child: Icon(icon, size: 16, color: _Palette.gold),
-        ),
-      ),
-      const SizedBox(height: 7),
-      ChuGame(
-        title,
-        style: const TextStyle(
-          color: _Palette.parchment,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      const SizedBox(height: 3),
-      ChuGame(
-        desc,
-        style: const TextStyle(
-          color: _Palette.mist,
-          fontSize: 10,
-          height: 1.35,
-        ),
-      ),
     ],
   );
 }
@@ -756,55 +698,6 @@ class _BrandBar extends StatelessWidget {
           fontSize: 16,
           fontWeight: FontWeight.w800,
           letterSpacing: .6,
-        ),
-      ),
-    ],
-  );
-}
-
-class _NetworkBar extends StatelessWidget {
-  const _NetworkBar();
-
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xCC0B1822),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0x33FFFFFF)),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.circle, size: 5, color: Color(0xFF3FD9A4)),
-            SizedBox(width: 6),
-            ChuGame(
-              'TESTNET · SIWE',
-              style: TextStyle(
-                color: Color(0xFF9BB0C0),
-                fontSize: 9,
-                letterSpacing: 1.1,
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(width: 8),
-      Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: const Color(0xCC0B1822),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0x33FFFFFF)),
-        ),
-        child: const Icon(
-          Icons.info_outline,
-          size: 15,
-          color: Color(0xFF9BB0C0),
         ),
       ),
     ],
