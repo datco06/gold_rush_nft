@@ -562,6 +562,15 @@ async def faucet_eth_test(
             goi_rpc("hardhat_setBalance", [player.wallet_address, hex(moi)])
         except RuntimeError:
             goi_rpc("anvil_setBalance", [player.wallet_address, hex(moi)])
+        # hardhat_setBalance không tạo block mới nên MetaMask vẫn thấy 0 ETH
+        # với ví mới. Đào 1 block để ví làm mới số dư.
+        try:
+            goi_rpc("hardhat_mine", ["0x1"])
+        except Exception:
+            try:
+                goi_rpc("evm_mine", [])
+            except Exception:
+                log.info("Không đào được block sau khi cấp ETH cho %s", player.wallet_address)
         return {
             "chain_id": CHAIN_ID,
             "vi": player.wallet_address,
@@ -570,9 +579,13 @@ async def faucet_eth_test(
         }
     except HTTPException:
         raise
-    except Exception:
-        log.warning("Faucet Hardhat không cấp được ETH cho %s", player.wallet_address)
-        raise HTTPException(503, "Faucet Hardhat chưa sẵn sàng.") from None
+    except Exception as exc:
+        log.warning(
+            "Faucet Hardhat không cấp được ETH cho %s",
+            player.wallet_address,
+            exc_info=True,
+        )
+        raise HTTPException(503, f"Faucet Hardhat không gọi được RPC: {exc}") from None
 
 
 @app.post("/api/rung-ruong/ket-qua")
