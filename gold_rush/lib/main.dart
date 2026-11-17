@@ -381,6 +381,7 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       thanhTren: GoldRushTopBar(
         activeItem: GoldRushTopBarItem.khoDo,
         gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangDinhDang),
+        playerName: game.auth?.user?.username ?? 'datco6',
         onPlayerTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -412,7 +413,6 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       ),
       trangThaiTrangBi: TrangThaiKhoDo.daTai,
       danhSachVatPham: game.danhSachVatPham.value,
-      playerName: game.auth?.user?.username ?? 'datco6',
       khiTrangBi: game.trangBiVatPham,
       khiThao: game.thaoVatPham,
       khiHoanDoiNFT: (vatPham, nguoiNhan, soLuong) async {
