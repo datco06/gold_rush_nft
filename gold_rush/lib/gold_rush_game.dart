@@ -1043,9 +1043,15 @@ class GoldRushGame extends FlameGame
   int get _soQuaiDangSong =>
       theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length;
 
-  /// Chu kỳ sinh bổ sung cố định cho toàn bộ màn 1–20.
+  /// Chu kỳ sinh bổ sung (giây) theo nhóm màn 1–20.
   /// Mỗi lần đến chu kỳ, hệ thống sinh tối đa một quái theo logic hiện có.
-  double get _chuKySinhQuai => 2;
+  double get _chuKySinhQuai => switch (manHienTai.id) {
+    <= 1 => 30,
+    <= 6 => 20,
+    <= 10 => 10,
+    <= 15 => 5,
+    _ => 3,
+  };
 
   int get _soThuongToiDa => switch (manHienTai.id) {
     4 || 5 => 2,
