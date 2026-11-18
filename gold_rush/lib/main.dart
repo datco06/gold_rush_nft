@@ -31,6 +31,7 @@ import 'man_hinh/trung_tam_qua_tang.dart';
 import 'man_hinh/ho_so_nhan_vat.dart';
 import 'man_hinh/lop_phu.dart';
 import 'components/ui/gold_rush_top_bar.dart';
+import 'world_map/canh_quan_world_map.dart';
 
 class _LopPhuFadeIn extends StatelessWidget {
   const _LopPhuFadeIn({required this.child});
@@ -216,6 +217,9 @@ class _ManHinhGameState extends State<ManHinhGame> {
     super.initState();
     _wallet = platform.createGameWallet(widget.wallet);
     _game = GoldRushGame(vi: _wallet.vi, auth: widget.auth);
+    // Khởi động nạp ảnh World Map ngay khi game tạo, để lúc mở bản đồ
+    // phần nền thường đã nằm trong bộ nhớ dùng chung.
+    unawaited(TaiNguyenWorldMap.nap().then<void>((_) {}, onError: (_, _) {}));
     _gameFocusNode = FocusNode(debugLabel: 'gold-rush-game');
     widget.auth.addListener(_lockImmediately);
   }

@@ -846,18 +846,21 @@ class TaiNguyenWorldMap {
   static Future<Map<String, ui.Image>> _napTatCa() async {
     final daNap = <String, ui.Image>{};
     try {
-      for (final ten in tenAnh) {
-        final data = await rootBundle.load('$thuMuc$ten');
-        final codec = await ui.instantiateImageCodec(
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-          targetWidth: ten.startsWith('nha_') ? 256 : null,
-        );
-        try {
-          daNap[ten] = (await codec.getNextFrame()).image;
-        } finally {
-          codec.dispose();
-        }
-      }
+      final cacAnh = await Future.wait(
+        tenAnh.map((ten) async {
+          final data = await rootBundle.load('$thuMuc$ten');
+          final codec = await ui.instantiateImageCodec(
+            data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+            targetWidth: ten.startsWith('nha_') ? 256 : null,
+          );
+          try {
+            return MapEntry(ten, (await codec.getNextFrame()).image);
+          } finally {
+            codec.dispose();
+          }
+        }),
+      );
+      daNap.addEntries(cacAnh);
       return _anhDaNap = Map.unmodifiable(daNap);
     } catch (_) {
       for (final anh in daNap.values) {
