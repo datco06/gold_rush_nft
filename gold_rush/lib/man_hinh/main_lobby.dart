@@ -232,7 +232,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
           final pv = g.phienVi;
           final goldText = pv == null
               ? '0'
-              : (pv.dangXuLy ? '...' : _formatGold(pv.vang));
+              : (pv.dangXuLy ? '...' : _formatGold(pv.vangKhaDung));
 
           return LayoutBuilder(
             builder: (context, constraints) {

@@ -664,6 +664,7 @@ class GoldRushGame extends FlameGame
   TrangThaiChoi trangThai = TrangThaiChoi.tamDung;
   bool _daGuiVaXinPhieu = false;
   Future<void>? _dangNhanThuong;
+  Future<void>? _dangDongBoVi;
 
   int tongSoXu = 0;
   int soXuDaNhat = 0;
@@ -699,11 +700,12 @@ class GoldRushGame extends FlameGame
       final pv = phienVi;
       pv?.diaChi ??= auth!.walletAddress!;
       if (pv != null) {
-        unawaited(
-          pv.ketNoiDaXacThuc(auth!.walletAddress!).then((daKetNoi) async {
-            if (daKetNoi) await dongBoNFTKhoDo();
-          }),
-        );
+        final dongBo = () async {
+          final daKetNoi = await pv.ketNoiDaXacThuc(auth!.walletAddress!);
+          if (daKetNoi) await dongBoNFTKhoDo();
+        }();
+        _dangDongBoVi = dongBo;
+        unawaited(dongBo);
       }
     }
 
@@ -1713,18 +1715,23 @@ class GoldRushGame extends FlameGame
 
   void moCuaHang() {
     final dangNhan = _dangNhanThuong;
-    if (dangNhan == null) {
+    final dangDongBo = _dangDongBoVi;
+    if (dangNhan == null && dangDongBo == null) {
       overlays.add(LopPhu.cuaHang);
       return;
     }
 
-    // Không mở cửa hàng khi phiếu của ván vừa thắng vẫn đang được xin/claim.
-    // Nếu mở quá sớm, số dư on-chain vẫn là 0 và giao dịch mua sẽ bị revert.
-    unawaited(
-      dangNhan.whenComplete(() {
-        if (isMounted) overlays.add(LopPhu.cuaHang);
-      }),
-    );
+    // Không mở cửa hàng khi ví đăng nhập hoặc phiếu của ván vừa thắng vẫn
+    // đang được đồng bộ. Nếu mở quá sớm, giao diện có thể tạm hiện 0 và
+    // giao dịch mua có thể dùng danh sách phiếu chưa đầy đủ.
+    final cho = <Future<void>>[
+      if (dangDongBo != null) dangDongBo,
+      if (dangNhan != null) dangNhan,
+    ];
+    unawaited(() async {
+      await Future.wait(cho);
+      if (isMounted) overlays.add(LopPhu.cuaHang);
+    }());
   }
 
   void moRungRuong() {

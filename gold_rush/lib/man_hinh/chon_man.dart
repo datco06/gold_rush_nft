@@ -247,8 +247,8 @@ class _ManHinhChonManState extends State<ManHinhChonMan> {
               )
             else
               ChuGame(
-                'Vàng: ${pv.vangDinhDang}'
-                '${pv.phieuCho.isEmpty ? '' : '\nChờ nhận: ${pv.vangChoNhan} (tự gộp vào giao dịch)'}',
+                'Vàng khả dụng: ${pv.vangKhaDungDinhDang}'
+                '${pv.phieuCho.isEmpty ? '' : '\nĐã ghi on-chain: ${pv.vangDinhDang} • Phiếu chờ: ${pv.vangChoNhan}'}',
                 style: chuPhu,
               ),
             if (pv != null && (pv.thongBao ?? '').isNotEmpty) ...[
