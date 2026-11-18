@@ -221,6 +221,12 @@ class _ManHinhGameState extends State<ManHinhGame> {
   }
 
   void _lockImmediately() {
+    // Kiểm tra phiên định kỳ là thụ động; không dừng ván đang chạy trong
+    // khoảng thời gian chờ /me. Nếu phiên thật sự mất, AuthGate vẫn gỡ game.
+    if (widget.auth.status == AuthStatus.checkingSession &&
+        _game.trangThai == TrangThaiChoi.dangChoi) {
+      return;
+    }
     if (!widget.auth.canEnterGame) {
       _resumeAfterCheck =
           _resumeAfterCheck ||

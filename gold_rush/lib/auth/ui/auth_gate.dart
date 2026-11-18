@@ -49,9 +49,9 @@ class AuthGate extends StatefulWidget {
   /// AuthController implements this using /me and non-interactive wallet reads.
   final bool recheckOnResume;
 
-  /// Opt-in for a game host that synchronously pauses its engine on lost access.
-  /// Keep State only during passive checking, hidden and non-interactive. A
-  /// failed check, expiry, logout or wallet event still destroys the subtree.
+  /// Opt-in for a game host that keeps its existing State during passive
+  /// session checking. A failed check, expiry, logout or wallet event still
+  /// destroys the subtree.
   final bool retainGameDuringSessionCheck;
 
   @override
@@ -292,7 +292,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
             authenticatedBuilder: widget.authenticatedBuilder,
             retainWhileChecking: widget.retainGameDuringSessionCheck,
           ),
-          if (!_allowed)
+          if (!_allowed && !_retainChecking)
              _GateWaiting(
               message: PhamViNgonNgu.of(context).dich('ĐANG KIỂM TRA HỒ SƠ NHÀ THÁM HIỂM...'),
               detail: 'Hành trình đang tạm dừng để đối chiếu phiên và ví.',
@@ -349,8 +349,8 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   }
 }
 
-/// A fresh keyed instance owns its Widget cache. Passive checks can retain a
-/// hidden, paused game only when explicitly enabled by a suitable game host.
+/// A fresh keyed instance owns its Widget cache. Passive checks can retain the
+/// current game only when explicitly enabled by a suitable game host.
 class _AuthenticatedContent extends StatefulWidget {
   const _AuthenticatedContent({
     super.key,
@@ -389,23 +389,22 @@ class _AuthenticatedContentState extends State<_AuthenticatedContent> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_allowed &&
-        !(widget.retainWhileChecking &&
-            widget.controller.status == AuthStatus.checkingSession &&
-            _content != null)) {
+    final retainingCheck =
+        widget.retainWhileChecking &&
+        widget.controller.status == AuthStatus.checkingSession &&
+        _content != null;
+    if (!_allowed && !retainingCheck) {
       return const SizedBox.shrink();
     }
     if (_allowed) _content ??= widget.authenticatedBuilder(context);
     // A synchronous builder must not be able to publish content if it caused
     // access to be invalidated while constructing that content.
-    if (!_allowed &&
-        !(widget.retainWhileChecking &&
-            widget.controller.status == AuthStatus.checkingSession)) {
+    if (!_allowed && !retainingCheck) {
       return const SizedBox.shrink();
     }
     return TickerMode(
-      enabled: _allowed,
-      child: Offstage(offstage: !_allowed, child: _content),
+      enabled: _allowed || retainingCheck,
+      child: Offstage(offstage: false, child: _content),
     );
   }
 }

@@ -456,7 +456,7 @@ class _Harness {
 
 void main() {
   group('integrated game continuity', () {
-    testWidgets('passive recheck hides existing game and preserves its State', (
+    testWidgets('passive recheck keeps existing game visible and preserves its State', (
       tester,
     ) async {
       final rig = _Rig();
@@ -470,8 +470,8 @@ void main() {
       await reading.entered;
       await tester.pump();
       expect(rig.controller.canEnterGame, isFalse);
-      expect(find.byType(_Gameplay), findsNothing);
-      expect(_game, findsOneWidget); // Offstage, never interactive.
+      expect(find.byType(_Gameplay), findsOneWidget);
+      expect(_game, findsOneWidget);
       expect(log.disposals, 0);
       final task = rig.controller.restoreSession();
       reading.complete(_me());
@@ -1090,28 +1090,27 @@ void main() {
     );
 
     testWidgets(
-      'current periodic checkingSession disposes and later recreates gameplay',
+      'current periodic checkingSession preserves gameplay',
       (tester) async {
         final rig = _Rig();
         final log = _GameLog();
         final host = _Harness(tester);
         await rig.controller.restoreSession();
-        await host.mount(rig, log);
+        await host.mount(rig, log, retainGame: true);
         final reading = _Gate<AuthMeResponse>();
         rig.api.reading = reading.call;
         rig.timers.last.fire();
         await reading.entered;
         await tester.pump();
-        expect(_game, findsNothing);
-        expect(log.disposals, 1);
+        expect(_game, findsOneWidget);
+        expect(log.disposals, 0);
         expect(rig.controller.status, AuthStatus.checkingSession);
         final task = rig.controller.restoreSession();
         reading.complete(_me());
         await task;
         await tester.pumpAndSettle();
-        expect(log.mounts, 2);
-        // Deliberate regression documentation: periodic recheck currently resets
-        // the gameplay subtree, even for the same valid server session.
+        expect(log.mounts, 1);
+        expect(log.disposals, 0);
       },
     );
 
