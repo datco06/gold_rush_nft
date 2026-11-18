@@ -486,6 +486,59 @@ class DichVuNFT extends ChangeNotifier {
     return lamMoi();
   }
 
+  /// Chỉ đọc số dư theo lô cho màn hình Kho đồ.
+  /// Metadata hiển thị đã có sẵn từ catalog local, không cần đọc từng token
+  /// từ hợp đồng trong lúc khởi động.
+  Future<List<VatPhamNFT>> taiDanhSachSoDu(List<VatPhamNFT> metadata) async {
+    for (final v in metadata) {
+      _kiemModel(v);
+    }
+    _danhMuc = List.unmodifiable(metadata);
+    return _lamMoiSoDu();
+  }
+
+  Future<List<VatPhamNFT>> _lamMoiSoDu() async {
+    final lan = ++_lanTai;
+    final catalog = _danhMuc;
+    _danhSach = List.unmodifiable(
+      catalog.map(
+        (v) => v.copyWith(clearBalance: true, clearWalletAddress: true),
+      ),
+    );
+    dangTai = true;
+    loiTai = null;
+    _bao();
+    try {
+      final result = await _doc((ctx) async {
+        final balances = await _batch(
+          ctx,
+          catalog.map((v) => v.tokenId).toList(),
+        );
+        return List<VatPhamNFT>.unmodifiable([
+          for (var i = 0; i < catalog.length; i++)
+            catalog[i].copyWith(
+              walletAddress: ctx.player,
+              balance: balances[i],
+              balanceStatus: TrangThaiSoDuNFT.daKiemTra,
+            ),
+        ]);
+      });
+      if (_daDong || lan != _lanTai) {
+        throw const LoiVi('Lượt tải NFT đã bị thay thế.');
+      }
+      _danhSach = result;
+      return result;
+    } catch (e) {
+      if (lan == _lanTai && !_daDong) loiTai = _dichLoi(e);
+      rethrow;
+    } finally {
+      if (lan == _lanTai) {
+        dangTai = false;
+        _bao();
+      }
+    }
+  }
+
   Future<List<VatPhamNFT>> lamMoi() async {
     final lan = ++_lanTai;
     final catalog = _danhMuc;

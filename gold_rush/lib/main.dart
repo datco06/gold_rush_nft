@@ -338,6 +338,7 @@ class _KhoDoTrongGame extends StatefulWidget {
 class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
   String? _diaChiDaDongBo;
   bool _dangDongBoNFT = false;
+  String? _loiDongBoNFT;
 
   @override
   void initState() {
@@ -355,11 +356,18 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
     if (_dangDongBoNFT || _diaChiDaDongBo == diaChi) return;
     _diaChiDaDongBo = diaChi;
     _dangDongBoNFT = true;
-    unawaited(
-      widget.game.dongBoNFTKhoDo().whenComplete(() {
-        _dangDongBoNFT = false;
-      }),
-    );
+    unawaited(() async {
+      try {
+        await widget.game.dongBoNFTKhoDo(force: true);
+        if (mounted) setState(() => _loiDongBoNFT = null);
+      } catch (_) {
+        if (mounted) {
+          setState(() => _loiDongBoNFT = 'Chưa tải được kho đồ. Hãy thử lại.');
+        }
+      } finally {
+        if (mounted) setState(() => _dangDongBoNFT = false);
+      }
+    }());
   }
 
   @override
@@ -380,6 +388,8 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
   Widget _noiDung() {
     final game = widget.game;
     final pv = game.phienVi;
+    final dangChoPhienVi =
+        game.auth?.canEnterGame == true && !(pv?.daKetNoi ?? false);
 
     return ManHinhKhoDo(
       khiDong: game.veMenu,
@@ -416,15 +426,18 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
         showClose: false,
         onClose: game.veMenu,
       ),
-      trangThaiTrangBi: TrangThaiKhoDo.daTai,
+      trangThaiTrangBi: _dangDongBoNFT || dangChoPhienVi
+          ? TrangThaiKhoDo.dangTai
+          : (_loiDongBoNFT == null ? TrangThaiKhoDo.daTai : TrangThaiKhoDo.loi),
       danhSachVatPham: game.danhSachVatPham.value,
+      loiTrangBi: _loiDongBoNFT,
       khiTrangBi: game.trangBiVatPham,
       khiThao: game.thaoVatPham,
       khiHoanDoiNFT: (vatPham, nguoiNhan, soLuong) async {
         await game.chuyenVatPhamNFT(vatPham, nguoiNhan, soLuong);
       },
       layTokenIdNFT: game.tokenIdVatPham,
-      khiLamMoiKhoDo: game.dongBoNFTKhoDo,
+      khiLamMoiKhoDo: () => game.dongBoNFTKhoDo(force: true),
       trangThaiNhanVat: TrangThaiKhoDo.daTai,
       phienVi: game.phienVi,
       authController: game.auth,

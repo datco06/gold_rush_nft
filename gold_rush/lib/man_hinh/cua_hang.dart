@@ -38,6 +38,15 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
   GoldRushGame get _game => widget.game;
   PhienVi? get _phienVi => _game.phienVi;
 
+  bool get _phienViSanSangMua =>
+      _phienVi?.daKetNoi == true && !(_phienVi?.dangXuLy ?? false);
+
+  VoidCallback? _muaVatPhamNeuSanSang(VatPhamHienThi item) =>
+      _phienViSanSangMua ? () => _muaVatPham(item) : null;
+
+  VoidCallback? _muaNhanVatNeuSanSang(NhanVatBan character) =>
+      _phienViSanSangMua ? () => _muaNhanVat(character) : null;
+
   void _moHoSo() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -151,6 +160,9 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
         listenable: listenable,
         builder: (context, _) {
           final selected = _vatPhamDangChon;
+          final dangChoPhienVi =
+              _game.auth?.canEnterGame == true &&
+              !(_phienVi?.daKetNoi ?? false);
           return SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -171,7 +183,9 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                             activeItem: GoldRushTopBarItem.cuaHang,
                             gold: pv == null
                                 ? '0'
-                                : (pv.dangXuLy ? '...' : pv.vangKhaDungDinhDang),
+                                : (pv.dangXuLy
+                                      ? '...'
+                                      : pv.vangKhaDungDinhDang),
                             playerName: _game.auth?.user?.username ?? 'datco6',
                             onSanhCho: _game.veMenu,
                             onCuaHang: null,
@@ -194,7 +208,9 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                           ),
                           SizedBox(height: compact ? 6 : 12),
                           _StoreHeading(compact: compact),
-                          if (_dangDongBoNFT || _loiDongBoNFT != null) ...[
+                          if (_dangDongBoNFT ||
+                              dangChoPhienVi ||
+                              _loiDongBoNFT != null) ...[
                             const SizedBox(height: 8),
                             _TrangThaiDongBoKho(
                               dangTai: _dangDongBoNFT,
@@ -244,7 +260,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                 character: selectedCharacter,
                 price: _priceForCharacter(selectedCharacter),
                 owned: _isCharacterOwned(selectedCharacter),
-                onBuy: () => _muaNhanVat(selectedCharacter),
+                onBuy: _muaNhanVatNeuSanSang(selectedCharacter),
               ),
             ),
           ],
@@ -262,7 +278,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
             width: 344,
             child: _ItemDetail(
               item: selected,
-              onBuy: () => _muaVatPham(selected),
+              onBuy: _muaVatPhamNeuSanSang(selected),
             ),
           ),
         ],
@@ -290,7 +306,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                   character: selectedCharacter,
                   price: _priceForCharacter(selectedCharacter),
                   owned: _isCharacterOwned(selectedCharacter),
-                  onBuy: () => _muaNhanVat(selectedCharacter),
+                  onBuy: _muaNhanVatNeuSanSang(selectedCharacter),
                 ),
               ),
             ),
@@ -317,7 +333,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
             child: SingleChildScrollView(
               child: _ItemDetail(
                 item: selected,
-                onBuy: () => _muaVatPham(selected),
+                onBuy: _muaVatPhamNeuSanSang(selected),
               ),
             ),
           ),
@@ -353,7 +369,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
               quantity: _quantityFor(item),
               selected: item.id == _idDangChon,
               onTap: () => setState(() => _idDangChon = item.id),
-              onBuy: () => _muaVatPham(item),
+              onBuy: _muaVatPhamNeuSanSang(item),
             );
           },
         );
@@ -410,7 +426,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                     selected: character.id == _nhanVatDangChon,
                     onTap: () =>
                         setState(() => _nhanVatDangChon = character.id),
-                    onBuy: () => _muaNhanVat(character),
+                    onBuy: _muaNhanVatNeuSanSang(character),
                   );
                 },
               ),
@@ -445,7 +461,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
               owned: _isCharacterOwned(character),
               selected: character.id == _nhanVatDangChon,
               onTap: () => setState(() => _nhanVatDangChon = character.id),
-              onBuy: () => _muaNhanVat(character),
+              onBuy: _muaNhanVatNeuSanSang(character),
             );
           },
         );
@@ -501,7 +517,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                       quantity: _quantityFor(item),
                       selected: item.id == _idDangChon,
                       onTap: () => setState(() => _idDangChon = item.id),
-                      onBuy: () => _muaVatPham(item),
+                      onBuy: _muaVatPhamNeuSanSang(item),
                     );
                   },
                 ),
@@ -525,9 +541,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
 
   Future<void> _dongBoNFT() async {
     final pv = _phienVi;
-    final diaChi = pv?.diaChi;
-    final cuaHang = pv?.cuaHang;
-    if (pv == null || !pv.daKetNoi || diaChi == null || cuaHang == null) return;
+    if (pv == null || !pv.daKetNoi || pv.diaChi == null) return;
 
     if (mounted) {
       setState(() {
@@ -536,12 +550,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
       });
     }
     try {
-      for (final item in _danhMuc) {
-        final soLuong = await cuaHang.soLuongVatPham(diaChi, _tokenIdFor(item));
-        if (soLuong > BigInt.zero && mounted) {
-          _game.dongBoSoLuongVatPham(item, soLuong.toInt());
-        }
-      }
+      await _game.dongBoNFTKhoDo();
     } on Object {
       if (mounted) {
         setState(
@@ -560,13 +569,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
       return;
     }
     if (!pv.daKetNoi) {
-      final diaChi = _game.auth?.walletAddress;
-      if (diaChi != null && diaChi.isNotEmpty) {
-        await pv.ketNoiDaXacThuc(diaChi);
-      }
-    }
-    if (!pv.daKetNoi) {
-      _baoMua(pv.thongBao ?? 'Cần kết nối MetaMask để mua vật phẩm.');
+      _baoMua('Đang đồng bộ phiên ví — hãy thử lại sau một chút.');
       return;
     }
 
@@ -596,13 +599,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
       return;
     }
     if (!pv.daKetNoi) {
-      final diaChi = _game.auth?.walletAddress;
-      if (diaChi != null && diaChi.isNotEmpty) {
-        await pv.ketNoiDaXacThuc(diaChi);
-      }
-    }
-    if (!pv.daKetNoi) {
-      _baoMua(pv.thongBao ?? 'Cần kết nối MetaMask để mua nhân vật.');
+      _baoMua('Đang đồng bộ phiên ví — hãy thử lại sau một chút.');
       return;
     }
 
@@ -817,7 +814,7 @@ class _CharacterCard extends StatelessWidget {
   final bool owned;
   final bool selected;
   final VoidCallback onTap;
-  final VoidCallback onBuy;
+  final VoidCallback? onBuy;
 
   @override
   Widget build(BuildContext context) {
@@ -930,7 +927,7 @@ class _CharacterDetail extends StatelessWidget {
   final NhanVatBan character;
   final int price;
   final bool owned;
-  final VoidCallback onBuy;
+  final VoidCallback? onBuy;
 
   @override
   Widget build(BuildContext context) {
@@ -1124,7 +1121,7 @@ class _StoreItemCard extends StatelessWidget {
   final int quantity;
   final bool selected;
   final VoidCallback onTap;
-  final VoidCallback onBuy;
+  final VoidCallback? onBuy;
 
   @override
   Widget build(BuildContext context) {
@@ -1251,7 +1248,7 @@ class _StoreItemCard extends StatelessWidget {
 class _BuyButton extends StatelessWidget {
   const _BuyButton({required this.onPressed});
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -1396,7 +1393,7 @@ class _ItemDetail extends StatelessWidget {
   const _ItemDetail({required this.item, required this.onBuy});
 
   final VatPhamHienThi item;
-  final VoidCallback onBuy;
+  final VoidCallback? onBuy;
 
   @override
   Widget build(BuildContext context) {

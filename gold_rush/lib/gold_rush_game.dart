@@ -207,6 +207,8 @@ class GoldRushGame extends FlameGame
 
   /// Danh sách vật phẩm & trang bị đồng bộ giữa Main Lobby và Kho đồ.
   final ValueNotifier<List<VatPhamHienThi>> danhSachVatPham = ValueNotifier([]);
+  Future<void>? _dongBoNFTDangChay;
+  String? _diaChiNFTDaDongBo;
 
   /// Đồng bộ vật phẩm vừa mua thành công vào Kho đồ trong phiên hiện tại.
   /// Số dư on-chain/NFT vẫn là nguồn sự thật; notifier này chỉ cập nhật UI ngay.
@@ -295,7 +297,23 @@ class GoldRushGame extends FlameGame
     tokenId: '$tokenId',
   );
 
-  Future<void> dongBoNFTKhoDo() async {
+  Future<void> dongBoNFTKhoDo({bool force = false}) {
+    final diaChi = phienVi?.diaChi?.toLowerCase();
+    if (!force && diaChi != null && diaChi == _diaChiNFTDaDongBo) {
+      return Future<void>.value();
+    }
+    final dangChay = _dongBoNFTDangChay;
+    if (dangChay != null) return dangChay;
+    final future = _dongBoNFTKhoDoNoi();
+    _dongBoNFTDangChay = future;
+    return future.whenComplete(() {
+      if (identical(_dongBoNFTDangChay, future)) {
+        _dongBoNFTDangChay = null;
+      }
+    });
+  }
+
+  Future<void> _dongBoNFTKhoDoNoi() async {
     final pv = phienVi;
     final cauHinh = pv?.cauHinh;
     final hopDong = cauHinh?.hopDongVatPham;
@@ -317,7 +335,7 @@ class GoldRushGame extends FlameGame
         for (var i = 0; i < catalog.length; i++)
           _metadataNFT(catalog[i], i + 1, hopDong, cauHinh.chainId),
       ];
-      final nftDaDoc = await dichVu.taiDanhSach(metadata);
+      final nftDaDoc = await dichVu.taiDanhSachSoDu(metadata);
       var danhSachMoi = List<VatPhamHienThi>.of(danhSachVatPham.value);
       var coThayDoi = false;
 
@@ -350,36 +368,41 @@ class GoldRushGame extends FlameGame
         }
       }
 
-      try {
-        await pv.mayChu.dongBoKhoNFT(
-          vatPham: [
-            for (var i = 0; i < catalog.length; i++)
-              {
-                'item_id': catalog[i].id,
-                'item_type': switch (catalog[i].loai) {
-                  LoaiVatPham.vuKhi => 'weapon',
-                  LoaiVatPham.giap => 'armor',
-                  LoaiVatPham.giay => 'shoes',
-                  LoaiVatPham.vatPham => 'item',
-                },
-                'token_id': i + 1,
-                'metadata': {
-                  'name': catalog[i].ten,
-                  'description': catalog[i].moTa,
-                  'image_url': catalog[i].duongDanAnh,
-                },
-              },
-          ],
-        );
-      } on LoiVi {
-        // Blockchain vẫn là nguồn hiển thị chính; Backend sẽ thử lại ở lượt sau.
-      }
-
       if (coThayDoi) {
         danhSachVatPham.value = danhSachMoi;
         _apDungTrangBiChoGeorge();
         await _luuTrangBi();
       }
+      _diaChiNFTDaDongBo = pv.diaChi?.toLowerCase();
+
+      // Blockchain đã cập nhật UI; việc ghi snapshot cho Backend không được
+      // chặn màn hình Kho đồ/Cửa hàng.
+      unawaited(() async {
+        try {
+          await pv.mayChu.dongBoKhoNFT(
+            vatPham: [
+              for (var i = 0; i < catalog.length; i++)
+                {
+                  'item_id': catalog[i].id,
+                  'item_type': switch (catalog[i].loai) {
+                    LoaiVatPham.vuKhi => 'weapon',
+                    LoaiVatPham.giap => 'armor',
+                    LoaiVatPham.giay => 'shoes',
+                    LoaiVatPham.vatPham => 'item',
+                  },
+                  'token_id': i + 1,
+                  'metadata': {
+                    'name': catalog[i].ten,
+                    'description': catalog[i].moTa,
+                    'image_url': catalog[i].duongDanAnh,
+                  },
+                },
+            ],
+          );
+        } on Object {
+          // Blockchain vẫn là nguồn hiển thị chính; Backend sẽ thử lại ở lượt sau.
+        }
+      }());
     } finally {
       dichVu.dispose();
     }
@@ -414,7 +437,7 @@ class GoldRushGame extends FlameGame
         metadata: metadata,
       );
       await capNhatSauKhiChuyenNFT(vatPham.id, ketQua.vatPham.balance);
-      await dongBoNFTKhoDo();
+      await dongBoNFTKhoDo(force: true);
     } finally {
       dichVu.dispose();
     }
@@ -479,7 +502,7 @@ class GoldRushGame extends FlameGame
           ),
         ),
       );
-      await dongBoNFTKhoDo();
+      await dongBoNFTKhoDo(force: true);
       return ketQua.transactionHash;
     } finally {
       dichVu.dispose();
@@ -660,7 +683,6 @@ class GoldRushGame extends FlameGame
   TrangThaiChoi trangThai = TrangThaiChoi.tamDung;
   bool _daGuiVaXinPhieu = false;
   Future<void>? _dangNhanThuong;
-  Future<void>? _dangDongBoVi;
 
   int tongSoXu = 0;
   int soXuDaNhat = 0;
@@ -700,7 +722,6 @@ class GoldRushGame extends FlameGame
           final daKetNoi = await pv.ketNoiDaXacThuc(auth!.walletAddress!);
           if (daKetNoi) await dongBoNFTKhoDo();
         }();
-        _dangDongBoVi = dongBo;
         unawaited(dongBo);
       }
     }
@@ -1719,21 +1740,15 @@ class GoldRushGame extends FlameGame
 
   void moCuaHang() {
     final dangNhan = _dangNhanThuong;
-    final dangDongBo = _dangDongBoVi;
-    if (dangNhan == null && dangDongBo == null) {
+    if (dangNhan == null) {
       overlays.add(LopPhu.cuaHang);
       return;
     }
 
-    // Không mở cửa hàng khi ví đăng nhập hoặc phiếu của ván vừa thắng vẫn
-    // đang được đồng bộ. Nếu mở quá sớm, giao diện có thể tạm hiện 0 và
-    // giao dịch mua có thể dùng danh sách phiếu chưa đầy đủ.
-    final cho = <Future<void>>[
-      if (dangDongBo != null) dangDongBo,
-      if (dangNhan != null) dangNhan,
-    ];
+    // Chỉ chờ phần thưởng của ván vừa xong; đồng bộ ví/NFT chạy nền và không
+    // được chặn việc mở danh mục Cửa hàng.
     unawaited(() async {
-      await Future.wait(cho);
+      await dangNhan;
       if (isMounted) overlays.add(LopPhu.cuaHang);
     }());
   }
