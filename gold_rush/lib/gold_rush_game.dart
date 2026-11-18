@@ -1629,6 +1629,10 @@ class GoldRushGame extends FlameGame
       return false;
     }
 
+    // Xin ETH Sepolia sớm trong nền để giao dịch chốt ván không phải chờ
+    // cấp gas ở thời điểm cuối. Luồng fallback trong PhienVi vẫn giữ nguyên.
+    unawaited(phienVi?.amThamNapEth());
+
     manHienTai = m;
     veDangChoi = ve;
 

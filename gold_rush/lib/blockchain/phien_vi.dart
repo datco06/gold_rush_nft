@@ -121,8 +121,62 @@ class PhienVi extends ChangeNotifier {
   bool thongBaoLaLoi = false;
   bool dangXuLy = false;
   Future<bool>? _ketNoiDangChay;
+  Future<void>? _napEthNenDangChay;
+  String? _diaChiNapEthNenDangChay;
+  String? _diaChiDaNapEthNen;
+  DateTime? _thoiDiemNapEthNen;
+
+  static final BigInt _nguongNapEthNen = BigInt.from(1000000000000000);
 
   bool get daKetNoi => diaChi != null && cuaHang != null;
+
+  /// Xin ETH Sepolia sớm khi bắt đầu ván, không chặn giao diện/gameplay.
+  ///
+  /// Đây chỉ là tối ưu trải nghiệm. Nếu request nền lỗi hoặc chưa kịp mine,
+  /// [capEthNeuCan] vẫn giữ nguyên vai trò fallback trước giao dịch.
+  Future<void> amThamNapEth() async {
+    final dc = diaChi;
+    final ch = cauHinh;
+    if (_daDong || dc == null || ch == null || ch.chainId != 11155111) {
+      return;
+    }
+
+    final dcChuanHoa = dc.toLowerCase();
+    final dangChay = _napEthNenDangChay;
+    if (dangChay != null && _diaChiNapEthNenDangChay == dcChuanHoa) {
+      await dangChay;
+      return;
+    }
+
+    final future = _thucHienNapEthNen(dc);
+    _napEthNenDangChay = future;
+    _diaChiNapEthNenDangChay = dcChuanHoa;
+    try {
+      await future;
+    } finally {
+      if (identical(_napEthNenDangChay, future)) {
+        _napEthNenDangChay = null;
+        _diaChiNapEthNenDangChay = null;
+      }
+    }
+  }
+
+  Future<void> _thucHienNapEthNen(String dc) async {
+    try {
+      final daNapGanDay =
+          _diaChiDaNapEthNen == dc.toLowerCase() &&
+          _thoiDiemNapEthNen != null &&
+          DateTime.now().difference(_thoiDiemNapEthNen!) <
+              const Duration(minutes: 5);
+      if (daNapGanDay || await vi.soDu(dc) >= _nguongNapEthNen) return;
+
+      await mayChu.nhanEthSepolia();
+      _diaChiDaNapEthNen = dc.toLowerCase();
+      _thoiDiemNapEthNen = DateTime.now();
+    } catch (_) {
+      // Warm-up là best-effort; không được làm gián đoạn việc bắt đầu ván.
+    }
+  }
 
   BigInt get vangChoNhan {
     var t = BigInt.zero;
@@ -476,7 +530,22 @@ class PhienVi extends ChangeNotifier {
       }
       await mayChu.nhanEthTest(vi: diaChi);
     } else if (ch.chainId == 11155111) {
-      await mayChu.nhanEthSepolia();
+      final dcChuanHoa = diaChi.toLowerCase();
+      final dangChay = _napEthNenDangChay;
+      if (dangChay != null && _diaChiNapEthNenDangChay == dcChuanHoa) {
+        await dangChay;
+      }
+
+      final daNapGanDay =
+          _diaChiDaNapEthNen == dcChuanHoa &&
+          _thoiDiemNapEthNen != null &&
+          DateTime.now().difference(_thoiDiemNapEthNen!) <
+              const Duration(minutes: 5);
+      if (!daNapGanDay) {
+        await mayChu.nhanEthSepolia();
+        _diaChiDaNapEthNen = dcChuanHoa;
+        _thoiDiemNapEthNen = DateTime.now();
+      }
     } else {
       throw const LoiVi(
         'Ví không đủ ETH và mạng hiện tại không có Faucet.',
