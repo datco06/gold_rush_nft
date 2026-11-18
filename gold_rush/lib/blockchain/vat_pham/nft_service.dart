@@ -264,6 +264,7 @@ class DichVuNFT extends ChangeNotifier {
     choToiDa: choToiDa,
     nhipKiemTra: nhipKiemTra,
     ngu: ngu,
+    capEthNeuCan: phienVi.cauHinh == null ? null : phienVi.capEthNeuCan,
   );
 
   String _player() {
@@ -860,8 +861,10 @@ class _ViNFT implements Vi {
   }
 
   @override
-  Future<String> kyThongDiep({required String diaChi, required String thongDiep}) =>
-      goc.kyThongDiep(diaChi: diaChi, thongDiep: thongDiep);
+  Future<String> kyThongDiep({
+    required String diaChi,
+    required String thongDiep,
+  }) => goc.kyThongDiep(diaChi: diaChi, thongDiep: thongDiep);
 
   @override
   Future<BienLai?> bienLai(String maGiaoDich) async {

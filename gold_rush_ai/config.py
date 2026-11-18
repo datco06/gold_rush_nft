@@ -1,5 +1,6 @@
 """Cấu hình tập trung — mọi giá trị ghi đè được bằng biến môi trường (giống notebook AI Web Apps)."""
 import os
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 ROOT = Path(os.environ.get("APP_ROOT", Path(__file__).resolve().parent))
@@ -29,6 +30,40 @@ RPC_TIMEOUT_SECONDS = float(os.environ.get("RPC_TIMEOUT_SECONDS", "5.0"))
 # Chỉ phục vụ Hardhat local. Không bật trên Sepolia/mainnet.
 LOCAL_FAUCET_ENABLED = os.environ.get("LOCAL_FAUCET_ENABLED", "false").lower() in ("true", "1")
 LOCAL_FAUCET_AMOUNT_WEI = int(os.environ.get("LOCAL_FAUCET_AMOUNT_WEI", "10000000000000000000000"))
+
+# Sepolia faucet — chỉ bật tường minh trên Backend, không dùng cho Hardhat local.
+SEPOLIA_CHAIN_ID = 11155111
+SEPOLIA_FAUCET_EXPECTED_ADDRESS = "0xa93BE13C54197457602437eC6EF9B8F7bA36B36A"
+SEPOLIA_FAUCET_ENABLED = os.environ.get("SEPOLIA_FAUCET_ENABLED", "false").lower() in ("true", "1")
+SEPOLIA_FAUCET_ADDRESS = os.environ.get(
+    "SEPOLIA_FAUCET_ADDRESS", SEPOLIA_FAUCET_EXPECTED_ADDRESS
+)
+SEPOLIA_FAUCET_PRIVATE_KEY = os.environ.get("SEPOLIA_FAUCET_PRIVATE_KEY", "")
+
+
+def _eth_sang_wei(ten: str, mac_dinh: str) -> int:
+    try:
+        value = Decimal(os.environ.get(ten, mac_dinh))
+    except (InvalidOperation, ValueError):
+        raise ValueError(f"{ten} phải là số ETH hợp lệ") from None
+    if value < 0 or value.as_tuple().exponent < -18:
+        raise ValueError(f"{ten} phải không âm và có tối đa 18 chữ số thập phân")
+    return int(value * Decimal(10**18))
+
+
+SEPOLIA_FAUCET_LOW_BALANCE_WEI = _eth_sang_wei("SEPOLIA_FAUCET_LOW_BALANCE_ETH", "0.001")
+SEPOLIA_FAUCET_TARGET_BALANCE_WEI = _eth_sang_wei("SEPOLIA_FAUCET_TARGET_BALANCE_ETH", "0.003")
+SEPOLIA_FAUCET_MAX_PER_WALLET_DAY_WEI = _eth_sang_wei(
+    "SEPOLIA_FAUCET_MAX_PER_WALLET_DAY_ETH", "0.006"
+)
+SEPOLIA_FAUCET_MAX_TOTAL_DAY_WEI = _eth_sang_wei("SEPOLIA_FAUCET_MAX_TOTAL_DAY_ETH", "0.05")
+SEPOLIA_FAUCET_COOLDOWN_SECONDS = int(os.environ.get("SEPOLIA_FAUCET_COOLDOWN_SECONDS", "3600"))
+SEPOLIA_FAUCET_MAX_REQUESTS_PER_HOUR = int(
+    os.environ.get("SEPOLIA_FAUCET_MAX_REQUESTS_PER_HOUR", "3")
+)
+SEPOLIA_FAUCET_RECEIPT_TIMEOUT_SECONDS = float(
+    os.environ.get("SEPOLIA_FAUCET_RECEIPT_TIMEOUT_SECONDS", "30")
+)
 # Phí gas quy đổi cố định bằng vàng trong môi trường test. 0 = không trừ phí.
 GAS_FEE_GOLD = int(os.environ.get("GAS_FEE_GOLD", "0"))
 BAN_DO_DIR = Path(os.environ.get("BAN_DO_DIR", APP_FLUTTER / "assets" / "tiles"))

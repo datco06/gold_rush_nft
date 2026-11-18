@@ -11,6 +11,7 @@ enum KetQuaGui {
 }
 
 typedef BaoTienDo = void Function(String buoc);
+typedef CapEthNeuCan = Future<void> Function(String diaChi, BigInt phi);
 
 /// BỘ GIAO DỊCH — mọi giao dịch của app đi qua đây để tránh lỗi MetaMask tối đa.
 ///
@@ -36,6 +37,7 @@ class BoGiaoDich {
   final Duration choToiDa;
   final Duration nhipKiemTra;
   final Future<void> Function(Duration) _ngu;
+  final CapEthNeuCan? capEthNeuCan;
 
   bool _dangGui = false;
   String? maGiaoDichCuoi;
@@ -49,6 +51,7 @@ class BoGiaoDich {
     this.choToiDa = const Duration(minutes: 2),
     this.nhipKiemTra = const Duration(milliseconds: 1500),
     Future<void> Function(Duration)? ngu,
+    this.capEthNeuCan,
   }) : _ngu = ngu ?? Future<void>.delayed;
 
   /// Mạng Hardhat cục bộ: app tự đề nghị thêm vào MetaMask nếu ví chưa có.
@@ -56,6 +59,7 @@ class BoGiaoDich {
     required Vi vi,
     required int chainId,
     required String hopDong,
+    CapEthNeuCan? capEthNeuCan,
   }) => BoGiaoDich(
     vi: vi,
     chainId: chainId,
@@ -76,6 +80,7 @@ class BoGiaoDich {
       ),
       _ => null,
     },
+    capEthNeuCan: capEthNeuCan,
   );
 
   bool get dangGui => _dangGui;
@@ -144,16 +149,29 @@ class BoGiaoDich {
       final uoc = await vi.uocLuongGas(tu: tu, toi: hopDong, duLieu: duLieu);
       final gas = uoc * BigInt.from(12) ~/ BigInt.from(10); // +20% biên an toàn
       final phi = gas * await vi.giaGas();
-      final coEth = await vi.soDu(tu);
+      var coEth = await vi.soDu(tu);
       if (coEth < phi) {
-        final goiY = chainId == 31337
-            ? 'Nhập tài khoản thử của Hardhat (có sẵn 10 000 ETH ảo).'
-            : 'Lấy ETH thử từ một faucet.';
-        throw LoiVi(
-          'Ví không đủ ETH trả phí: cần khoảng ${dinhDangEth(phi)} ETH, '
-          'ví có ${dinhDangEth(coEth)} ETH. $goiY',
-          loai: LoaiLoiVi.thieuEth,
-        );
+        final cap = capEthNeuCan;
+        if (cap == null) {
+          final goiY = chainId == 31337
+              ? 'Nhập tài khoản thử của Hardhat (có sẵn 10 000 ETH ảo).'
+              : 'Lấy ETH thử từ một faucet.';
+          throw LoiVi(
+            'Ví không đủ ETH trả phí: cần khoảng ${dinhDangEth(phi)} ETH, '
+            'ví có ${dinhDangEth(coEth)} ETH. $goiY',
+            loai: LoaiLoiVi.thieuEth,
+          );
+        }
+        bao('Ví thiếu ETH gas — đang xin ETH thử…');
+        await cap(tu, phi);
+        coEth = await vi.soDu(tu);
+        if (coEth < phi) {
+          throw LoiVi(
+            'Sau khi cấp ETH, ví vẫn chưa đủ gas: cần khoảng ${dinhDangEth(phi)} ETH, '
+            'ví có ${dinhDangEth(coEth)} ETH.',
+            loai: LoaiLoiVi.thieuEth,
+          );
+        }
       }
 
       bao('Mở ${vi.ten}: xem phí rồi bấm Xác nhận — $moTa');

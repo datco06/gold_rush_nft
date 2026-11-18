@@ -19,6 +19,7 @@ Chạy:  uvicorn api.main:app --reload --port 8000      (tài liệu tương tá
 | GET    | /api/man/ve            | vé (ví, số vé) đã dùng để bắt đầu ván nào chưa                |
 | GET    | /api/vang/cau-hinh     | chainId, địa chỉ hợp đồng, địa chỉ trọng tài (app hiển thị)   |
 | POST   | /api/test/faucet        | cấp ETH giả cho đúng ví đăng nhập — chỉ Hardhat local       |
+| POST   | /api/gas/faucet         | cấp Sepolia ETH cho đúng ví đăng nhập — chỉ bật rõ ràng      |
 | POST   | /api/vang/phieu        | kiểm định ván → ký PHIẾU VÀNG EIP-712 (xin lại = ký lại)     |
 | GET    | /api/vang/cho-nhan     | mọi phiếu đã cấp cho một ví trong 7 ngày (ký lại hạn mới)    |
 """
@@ -60,6 +61,7 @@ from api.auth_guard import kiem_tra_csrf_va_origin, lay_nguoi_choi_hien_tai, Ngu
 from core import do_kho, man_choi, nhat_ky, rung_ruong, sinh_ban_do, trong_tai
 from core.csdl import khoi_tao_csdl, lay_csdl
 from core.eth_ky import dia_chi_tu_khoa
+from core.faucet_sepolia import SepoliaFaucetError, SepoliaFaucetService
 from core.luoi import doc_tmx
 from core.quan_ly_nhiem_vu import cap_nhat_tien_do
 from core.tro_ly import TroLy
@@ -534,6 +536,22 @@ class YeuCauMoRuong(BaseModel):
 
 class YeuCauFaucet(BaseModel):
     vi: str = Field(min_length=42, max_length=42, pattern=DIA_CHI)
+
+
+@app.post("/api/gas/faucet")
+async def faucet_eth_sepolia(
+    request: Request,
+    player: NguoiChoiXacThuc = Depends(lay_nguoi_choi_hien_tai),
+):
+    """Cấp Sepolia ETH từ Backend cho đúng ví của phiên SIWE hiện tại.
+
+    Địa chỉ ví không nằm trong request body: danh tính duy nhất là wallet trong phiên.
+    """
+    kiem_tra_csrf_va_origin(request, player)
+    try:
+        return SepoliaFaucetService(rpc=goi_rpc).cap_eth(player.wallet_address)
+    except SepoliaFaucetError as error:
+        raise HTTPException(error.status_code, detail={"code": error.code, "message": error.message}) from None
 
 
 @app.post("/api/test/faucet")

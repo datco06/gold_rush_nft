@@ -148,6 +148,19 @@ class MayChuPhieu {
     }
   }
 
+  /// Xin Sepolia ETH cho wallet đã đăng nhập. Backend lấy wallet từ phiên SIWE;
+  /// không gửi địa chỉ đích trong body để client không thể chọn ví khác.
+  Future<void> nhanEthSepolia() async {
+    await _json(
+      () => _client.post(
+        Uri.parse('$mayChu/api/gas/faucet'),
+        headers: _headers(),
+        body: '{}',
+      ),
+      khi409: 'Yêu cầu Faucet đang được xử lý.',
+    );
+  }
+
   Future<KetQuaDoiQuaTang> doiMaQuaTang(String ma) async {
     final j = await _json(
       () => _client.post(

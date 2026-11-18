@@ -144,6 +144,26 @@ CREATE INDEX IF NOT EXISTS idx_stage_rewards_player ON stage_rewards(player_id);
 CREATE INDEX IF NOT EXISTS idx_achievement_progress_player ON achievement_progress(player_id);
 CREATE INDEX IF NOT EXISTS idx_gift_claims_code_wallet ON gift_claims(code_hash, wallet_address);
 CREATE INDEX IF NOT EXISTS idx_gift_claims_status ON gift_claims(status);
+
+CREATE TABLE IF NOT EXISTS sepolia_faucet_claims (
+    claim_id TEXT PRIMARY KEY,
+    wallet_address TEXT NOT NULL,
+    day_utc TEXT NOT NULL,
+    amount_wei TEXT NOT NULL,
+    nonce INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    transaction_hash TEXT,
+    raw_transaction TEXT,
+    error_code TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    confirmed_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_sepolia_faucet_wallet_day
+    ON sepolia_faucet_claims(wallet_address, day_utc);
+CREATE INDEX IF NOT EXISTS idx_sepolia_faucet_day_status
+    ON sepolia_faucet_claims(day_utc, status);
 """
 
 
@@ -194,5 +214,9 @@ def khoi_tao_csdl(duong_dan: Path | str | None = None) -> None:
             cur.execute("ALTER TABLE match_results ADD COLUMN is_verified INTEGER NOT NULL DEFAULT 0")
         if "verified_by" not in cols:
             cur.execute("ALTER TABLE match_results ADD COLUMN verified_by TEXT DEFAULT ''")
+        cur.execute("PRAGMA table_info(sepolia_faucet_claims)")
+        faucet_cols = {row[1] for row in cur.fetchall()}
+        if "raw_transaction" not in faucet_cols:
+            cur.execute("ALTER TABLE sepolia_faucet_claims ADD COLUMN raw_transaction TEXT")
         if "verified_wallet" not in cols:
             cur.execute("ALTER TABLE match_results ADD COLUMN verified_wallet TEXT DEFAULT ''")

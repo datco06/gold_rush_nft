@@ -211,6 +211,7 @@ class PhienVi extends ChangeNotifier {
         vi: vi,
         chainId: ch.chainId,
         hopDong: ch.hopDong,
+        capEthNeuCan: capEthNeuCan,
       );
       await bo.damBaoMang();
       await bo.kiemHopDong();
@@ -242,6 +243,7 @@ class PhienVi extends ChangeNotifier {
         vi: vi,
         chainId: ch.chainId,
         hopDong: ch.hopDong,
+        capEthNeuCan: capEthNeuCan,
       );
       await bo.damBaoMang();
       await bo.kiemHopDong();
@@ -461,13 +463,45 @@ class PhienVi extends ChangeNotifier {
     }
   }
 
+  /// Cấp ETH chỉ sau khi BoGiaoDich đã đo được phí và xác nhận số dư thiếu.
+  Future<void> capEthNeuCan(String diaChi, BigInt phi) async {
+    final ch = cauHinh ?? await mayChu.cauHinh();
+    cauHinh = ch;
+    if (ch.chainId == 31337) {
+      if (!ch.localFaucet) {
+        throw const LoiVi(
+          'Faucet Hardhat local đang tắt.',
+          loai: LoaiLoiVi.thieuEth,
+        );
+      }
+      await mayChu.nhanEthTest(vi: diaChi);
+    } else if (ch.chainId == 11155111) {
+      await mayChu.nhanEthSepolia();
+    } else {
+      throw const LoiVi(
+        'Ví không đủ ETH và mạng hiện tại không có Faucet.',
+        loai: LoaiLoiVi.thieuEth,
+      );
+    }
+
+    // RPC của ví có thể thấy số dư chậm hơn receipt của Backend; chỉ chờ ở
+    // nhánh thực sự thiếu ETH, không thêm độ trễ cho ví đã đủ tiền.
+    for (var i = 0; i < 30 && !_daDong; i++) {
+      if (await vi.soDu(diaChi) >= phi) return;
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+    throw const LoiVi(
+      'ETH Faucet đã xác nhận nhưng ví chưa cập nhật số dư.',
+      loai: LoaiLoiVi.thieuEth,
+    );
+  }
+
   /// Cấp ETH giả của Hardhat trước một giao dịch do dịch vụ khác trong app gửi.
   /// Trên Sepolia/mainnet, backend trả `localFaucet: false` nên đây là no-op.
   Future<void> capEthTest() => _capEthTestNeuCan();
 
   Future<bool> nhanTatCa() => _lamViec('Chuẩn bị nhận vàng…', () async {
     await _taiLaiNoi(); // phiếu mới ký lại, hạn mới
-    await _capEthTestNeuCan(); // giả lập Paymaster trên Hardhat local
     await cuaHang!.thucHien(diaChi: diaChi!, phieu: phieuCho, baoTienDo: _bao);
     await _taiLaiNoi();
   }, xong: 'Đã nhận vàng.');
@@ -475,7 +509,6 @@ class PhienVi extends ChangeNotifier {
   Future<bool> mua(NhanVatBan nv) =>
       _lamViec('Chuẩn bị mua ${nv.ten}…', () async {
         await _taiLaiNoi();
-        await _capEthTestNeuCan(); // Hardhat local: mô phỏng Paymaster trước giao dịch gộp.
         await cuaHang!.thucHien(
           diaChi: diaChi!,
           phieu: phieuCho,
@@ -495,7 +528,6 @@ class PhienVi extends ChangeNotifier {
       throw const LoiVi('Cần kết nối MetaMask để mua vật phẩm.');
     }
     await _taiLaiNoi();
-    await _capEthTestNeuCan();
     await cuaHang!.muaVatPham(
       diaChi: diaChi!,
       tokenId: tokenId,
@@ -518,7 +550,6 @@ class PhienVi extends ChangeNotifier {
       if (!daKetNoi) {
         throw const LoiVi('Cần kết nối MetaMask để mở rương.');
       }
-      await _capEthTestNeuCan();
       final vangThuc = await cuaHang!.soVang(diaChi!);
       if (vangThuc < BigInt.from(100)) {
         throw LoiVi('Số dư không đủ: cần 100 vàng, có $vangThuc.');
@@ -565,7 +596,6 @@ class PhienVi extends ChangeNotifier {
             }
           }
         }
-        await _capEthTestNeuCan();
         await cuaHang!.thucHien(
           diaChi: dc,
           phieu: phieuCho,

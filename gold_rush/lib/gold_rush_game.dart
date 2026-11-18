@@ -401,8 +401,6 @@ class GoldRushGame extends FlameGame
       throw const LoiVi('Không xác định được tokenId của vật phẩm.');
     }
 
-    await pv.capEthTest();
-
     final dichVu = DichVuNFT(
       phienVi: pv,
       cauHinh: CauHinhNFT(chainId: cauHinh.chainId, hopDong: hopDong),
@@ -429,7 +427,6 @@ class GoldRushGame extends FlameGame
       throw const LoiVi('Chưa kết nối ví hoặc voucher vàng không hợp lệ.');
     }
     await pv.lamMoi();
-    await pv.capEthTest();
     await pv.cuaHang!.thucHien(diaChi: pv.diaChi!, phieu: vouchers);
     final hash = pv.cuaHang!.bo.maGiaoDichCuoi;
     await pv.lamMoi();
@@ -459,7 +456,6 @@ class GoldRushGame extends FlameGame
         tokenId > catalog.length) {
       throw const LoiVi('Voucher NFT không thuộc mạng hoặc danh mục hiện tại.');
     }
-    await pv.capEthTest();
     final item = catalog[tokenId - 1];
     final dichVu = DichVuNFT(
       phienVi: pv,
