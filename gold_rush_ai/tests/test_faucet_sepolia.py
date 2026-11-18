@@ -131,16 +131,26 @@ def test_key_mismatch_and_low_balance_do_not_send(faucet_config, monkeypatch):
     assert rpc.sent == []
 
 
-def test_total_daily_limit_is_persistent(faucet_config, monkeypatch):
+def test_no_daily_limit_for_other_wallet(faucet_config):
     rpc = RpcMock(player_balance=0)
-    monkeypatch.setattr(config, "SEPOLIA_FAUCET_MAX_TOTAL_DAY_WEI", 3 * 10**15)
     service = SepoliaFaucetService(rpc=rpc, db_path=faucet_config)
     service.cap_eth(PLAYER)
     other = "0x" + "4" * 40
-    with pytest.raises(SepoliaFaucetError) as error:
-        service.cap_eth(other)
-    assert error.value.code == "FAUCET_TOTAL_LIMIT"
-    assert len(rpc.sent) == 1
+    result = service.cap_eth(other)
+    assert result["status"] == "pending"
+    assert len(rpc.sent) == 2
+
+
+def test_confirmed_wallet_can_be_topped_up_again_after_spending(faucet_config):
+    rpc = RpcMock(player_balance=0)
+    service = SepoliaFaucetService(rpc=rpc, db_path=faucet_config)
+    service.cap_eth(PLAYER)
+    service.cap_eth(PLAYER)  # reconcile pending claim
+    rpc.balances[PLAYER.lower()] = 0  # ví đã tiêu hết ETH
+    result = service.cap_eth(PLAYER)
+    assert result["status"] == "pending"
+    assert result["amount_wei"] == 3 * 10**15
+    assert len(rpc.sent) == 2
 
 
 def test_concurrent_same_wallet_claim_sends_once(faucet_config):

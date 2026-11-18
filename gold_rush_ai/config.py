@@ -52,7 +52,9 @@ def _eth_sang_wei(ten: str, mac_dinh: str) -> int:
 
 
 SEPOLIA_FAUCET_LOW_BALANCE_WEI = _eth_sang_wei("SEPOLIA_FAUCET_LOW_BALANCE_ETH", "0.001")
-SEPOLIA_FAUCET_TARGET_BALANCE_WEI = _eth_sang_wei("SEPOLIA_FAUCET_TARGET_BALANCE_ETH", "0.003")
+# Mỗi ví được bù số dư lên 0.5 Sepolia ETH. Các biến giới hạn bên dưới được
+# giữ lại để tương thích cấu hình cũ, nhưng Faucet hiện không áp dụng chúng.
+SEPOLIA_FAUCET_TARGET_BALANCE_WEI = _eth_sang_wei("SEPOLIA_FAUCET_TARGET_BALANCE_ETH", "0.5")
 SEPOLIA_FAUCET_MAX_PER_WALLET_DAY_WEI = _eth_sang_wei(
     "SEPOLIA_FAUCET_MAX_PER_WALLET_DAY_ETH", "0.006"
 )

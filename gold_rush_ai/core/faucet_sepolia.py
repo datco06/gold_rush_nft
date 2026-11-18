@@ -118,13 +118,18 @@ class SepoliaFaucetService:
         except Exception:
             self._raise(503, "FAUCET_RPC_UNAVAILABLE", "Không đọc được số dư Sepolia.")
 
-    def _claim_for(self, wallet: str, day: str):
+    def _claim_for(self, wallet: str, day: str | None = None):
+        # Chỉ dùng bản ghi gần nhất để khôi phục giao dịch đang dở dang.
+        # Bản ghi confirmed không khóa các lần cấp tiếp theo: nếu người chơi
+        # đã tiêu hết ETH, request mới vẫn được phép bù lại lên target.
+        where_day = " AND day_utc = ?" if day is not None else ""
+        params = (wallet,) if day is None else (wallet, day)
         with lay_csdl(self.db_path) as conn:
             return conn.execute(
                 """SELECT * FROM sepolia_faucet_claims
-                   WHERE wallet_address = ? COLLATE NOCASE AND day_utc = ?
+                   WHERE wallet_address = ? COLLATE NOCASE""" + where_day + """
                    ORDER BY created_at DESC LIMIT 1""",
-                (wallet, day),
+                params,
             ).fetchone()
 
     def _reserve(self, wallet: str, amount: int, day: str):
@@ -132,11 +137,12 @@ class SepoliaFaucetService:
         with lay_csdl(self.db_path) as conn:
             existing = conn.execute(
                 """SELECT * FROM sepolia_faucet_claims
-                   WHERE wallet_address = ? COLLATE NOCASE AND day_utc = ?
+                   WHERE wallet_address = ? COLLATE NOCASE
+                     AND status IN ('reserved', 'broadcasting', 'pending')
                    ORDER BY created_at DESC LIMIT 1""",
-                (wallet, day),
+                (wallet,),
             ).fetchone()
-            if existing is not None and existing["status"] in ("reserved", "broadcasting", "pending", "confirmed"):
+            if existing is not None:
                 return existing, False
             try:
                 rpc_nonce = _hex_int(
@@ -193,34 +199,6 @@ class SepoliaFaucetService:
                     claim_id,
                 ),
             )
-
-    def _limits(self, wallet: str, day: str) -> tuple[int, int, int, float | None]:
-        with lay_csdl(self.db_path) as conn:
-            rows = conn.execute(
-                """SELECT amount_wei, created_at FROM sepolia_faucet_claims
-                   WHERE day_utc = ? AND status IN ('reserved', 'broadcasting', 'pending', 'confirmed')""",
-                (day,),
-            ).fetchall()
-            wallet_rows = conn.execute(
-                """SELECT amount_wei, created_at FROM sepolia_faucet_claims
-                   WHERE wallet_address = ? COLLATE NOCASE
-                     AND status IN ('reserved', 'broadcasting', 'pending', 'confirmed')""",
-                (wallet,),
-            ).fetchall()
-        total = sum(int(row["amount_wei"]) for row in rows)
-        wallet_total = sum(int(row["amount_wei"]) for row in wallet_rows)
-        hour_start = self.now() - 3600
-        requests_hour = 0
-        last_request = None
-        for row in wallet_rows:
-            try:
-                stamp = datetime.fromisoformat(row["created_at"]).timestamp()
-            except (TypeError, ValueError):
-                continue
-            if stamp >= hour_start:
-                requests_hour += 1
-            last_request = stamp if last_request is None else max(last_request, stamp)
-        return total, wallet_total, requests_hour, last_request
 
     def _fees(self) -> tuple[int, int]:
         try:
@@ -347,9 +325,9 @@ class SepoliaFaucetService:
             self._raise(422, "WALLET_INVALID", "Ví người chơi không được trùng ví Faucet.")
         self._chain_id()
         day = self._day()
-        existing = self._claim_for(wallet, day)
-        if existing is not None and existing["status"] == "confirmed":
-            return self._result(existing, self._balance(wallet))
+        existing = self._claim_for(wallet)
+        # Chỉ chặn/khôi phục request còn đang xử lý. Claim đã confirmed không
+        # phải idempotency lock vĩnh viễn; ví có thể nhận lại sau khi đã tiêu ETH.
         if existing is not None and existing["status"] in ("reserved", "broadcasting", "pending"):
             if existing["status"] == "reserved":
                 self._raise(503, "FAUCET_REQUEST_IN_PROGRESS", "Yêu cầu Faucet trước đang được xử lý.")
@@ -375,15 +353,6 @@ class SepoliaFaucetService:
             }
 
         amount = config.SEPOLIA_FAUCET_TARGET_BALANCE_WEI - player_balance
-        total, wallet_total, requests_hour, last_request = self._limits(wallet, day)
-        if last_request is not None and self.now() - last_request < config.SEPOLIA_FAUCET_COOLDOWN_SECONDS:
-            self._raise(429, "FAUCET_COOLDOWN", "Ví chưa hết thời gian chờ nhận Sepolia ETH.")
-        if requests_hour >= config.SEPOLIA_FAUCET_MAX_REQUESTS_PER_HOUR:
-            self._raise(429, "FAUCET_RATE_LIMIT", "Ví đã vượt tần suất nhận Sepolia ETH.")
-        if wallet_total + amount > config.SEPOLIA_FAUCET_MAX_PER_WALLET_DAY_WEI:
-            self._raise(429, "FAUCET_WALLET_LIMIT", "Ví đã đạt hạn mức Sepolia ETH trong ngày.")
-        if total + amount > config.SEPOLIA_FAUCET_MAX_TOTAL_DAY_WEI:
-            self._raise(429, "FAUCET_TOTAL_LIMIT", "Faucet đã đạt hạn mức cấp Sepolia ETH trong ngày.")
 
         faucet_balance = self._balance(config.SEPOLIA_FAUCET_ADDRESS)
         if faucet_balance < config.SEPOLIA_FAUCET_LOW_BALANCE_WEI:
