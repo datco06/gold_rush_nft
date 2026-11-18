@@ -1,0 +1,191 @@
+[
+  {
+    "code": "GR-N282LTA2DPD7NPKK4PAMRF392M",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-QNXC33FYACYRY6Q9HGYPUG6RM4",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 1",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-XKLQCL6B2L7UWHZF9WC5WLWDLH",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 2",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-BQMBFM4J4HASXG8FR4K3JG6HGC",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 3",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-YDLMLNA57FTRLCQP6UY7XNCWD9",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 4",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-8U4RHQEH2E5VY65MXKBZBDSFEU",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 5",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-FP78PBQQSBZYHL9DAEBUFG2MYT",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 6",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-X27WFDUM7U5E4N63AUPGF6T3MD",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 7",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-MUSZFGXEGKKYLR655HNC74UN9X",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 8",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-5QC3ZAHSSQSUQBK7TH5SDJ9SST",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 9",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-YNRFZ4JSM7NV5N3LHF3MQNBTPV",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 10",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-R5G8CMXAGK9T2AGUCVFY75RCXR",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 11",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-TADSGJ9PULEQ7BHQSHRHD54XU7",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 12",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-QSGS5GUWXHGQ5PBMA5V2H8TT2Z",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 13",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-DBYKKCFV3X5C4WDXVRQEULXHHA",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 14",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-U78D2PGHZ7KJEE9TSQKCJ869TX",
+    "rewardType": "gold",
+    "tokenId": 0,
+    "amount": 100,
+    "name": "Quà quay thưởng vàng 15",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-NQ9XXWNWKE9B7UVJZNPK3WV7AM",
+    "rewardType": "item",
+    "tokenId": 19,
+    "amount": 1,
+    "name": "Giày Da Thợ Mỏ",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-4YZZTBAKLH7VTHPB672VEV6DVS",
+    "rewardType": "item",
+    "tokenId": 10,
+    "amount": 1,
+    "name": "Giáp Da Tập Sự",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-CSAUCGHPSLU7RRUVYSV64FS4CJ",
+    "rewardType": "item",
+    "tokenId": 11,
+    "amount": 1,
+    "name": "Giáp Đồng Gia Cố",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-YKY79MCV9CJUC83FS29PLZWJ3K",
+    "rewardType": "item",
+    "tokenId": 1,
+    "amount": 1,
+    "name": "Súng Lục Mặc Định",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  },
+  {
+    "code": "GR-K7ECZH34TXZBCGKQBGTZTW2G9N",
+    "rewardType": "item",
+    "tokenId": 2,
+    "amount": 1,
+    "name": "Súng Ổ Xoay Thép",
+    "maxUses": 1,
+    "perWalletLimit": 1
+  }
+]
