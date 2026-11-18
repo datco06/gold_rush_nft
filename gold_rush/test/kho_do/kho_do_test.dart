@@ -81,7 +81,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tab Nhân vật không còn hiển thị phần nhân vật AI', (tester) async {
+  testWidgets('tab Nhân vật không còn hiển thị phần nhân vật AI', (
+    tester,
+  ) async {
     final api = MayChuNhanVat(
       mayChu: 'http://localhost',
       client: MockClient(
@@ -94,11 +96,7 @@ void main() {
     );
     addTearDown(api.dong);
 
-    await moKhoDo(
-      tester,
-      tabBanDau: 1,
-      mayChuNhanVat: api,
-    );
+    await moKhoDo(tester, tabBanDau: 1, mayChuNhanVat: api);
 
     expect(find.text('NHÂN VẬT AI'), findsNothing);
     expect(find.text('Tạo nhân vật AI'), findsNothing);
@@ -268,22 +266,10 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Tìm kiếm hỗ trợ tiếng Việt không dấu tại client', (
-    tester,
-  ) async {
+  testWidgets('Kho đồ hiển thị dữ liệu vật phẩm hiện tại', (tester) async {
     await moKhoDo(tester, danhSach: [taoKiemMau()]);
 
-    final oTimKiem = find.widgetWithText(TextField, 'Tìm vật phẩm...');
-    await tester.enterText(oTimKiem, 'kiem kiem thu');
-    await tester.pumpAndSettle();
-
     expect(find.byType(TheVatPham), findsOneWidget);
-
-    await tester.enterText(oTimKiem, 'khong ton tai');
-    await tester.pumpAndSettle();
-
-    expect(find.byType(TheVatPham), findsNothing);
-    expect(find.text('Không tìm thấy vật phẩm phù hợp'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

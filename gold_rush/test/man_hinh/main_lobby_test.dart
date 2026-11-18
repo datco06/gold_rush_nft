@@ -46,10 +46,9 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('GOLD RUSH'), findsOneWidget);
-      expect(find.text('AI ADVENTURE & BLOCKCHAIN'), findsOneWidget);
-      expect(find.text('George'), findsWidgets);
-      expect(find.text('Nhà Thám Hiểm Vàng'), findsOneWidget);
-      expect(find.text('Lv.1'), findsOneWidget);
+      expect(find.text('Sảnh chờ'), findsOneWidget);
+      expect(find.text('Cửa hàng'), findsOneWidget);
+      expect(find.text('datco6'), findsOneWidget);
 
       // No fake hardcoded gold or fake +15/+12 stats
       expect(find.text('46.384'), findsNothing);
@@ -85,11 +84,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Tap Shop & Settings
-      await tester.tap(find.byTooltip('Cửa hàng nhân vật'));
+      await tester.tap(find.text('Cửa hàng'));
       await tester.pump();
       expect(game.overlays.isActive(LopPhu.cuaHang), isTrue);
 
-      await tester.tap(find.byTooltip('Cài đặt & Đăng xuất'));
+      await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pump();
       expect(game.overlays.isActive(LopPhu.caiDat), isTrue);
 
@@ -99,7 +98,7 @@ void main() {
       expect(game.overlays.isActive(LopPhu.chonMan), isTrue);
 
       // Tap George mini-profile opens full CharacterProfileScreen
-      await tester.tap(find.text('Nhà Thám Hiểm Vàng'));
+      await tester.tap(find.text('datco6'));
       await tester.pumpAndSettle();
 
       expect(find.text('HỒ SƠ'), findsOneWidget);
@@ -135,7 +134,9 @@ void main() {
           thuocTinh: const {'Sát thương': '+24'},
         ),
       ];
-      game.trangBiVatPham('cuoc_vang_01');
+      game.danhSachVatPham.value = [
+        game.danhSachVatPham.value.single.voiTrangBi(OTrangBi.vuKhiChinh),
+      ];
 
       await tester.binding.setSurfaceSize(const Size(1280, 720));
       addTearDown(() => tester.binding.setSurfaceSize(null));

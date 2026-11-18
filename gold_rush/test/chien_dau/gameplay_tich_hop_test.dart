@@ -54,12 +54,31 @@ Future<GoldRushGame> _dungGameThu({
   final game = GoldRushGame(batBoss: batBoss);
   game.taiNguyen.napTuAnhGia(anh);
   final bd = banDoDau ?? _taoBanDoThu();
+  final manChoTest = danhSachMan ??
+      (batBoss
+          ? [
+              const ManChoi(
+                id: 7,
+                ten: 'Màn test Boss',
+                moTa: 'Màn kiểm thử Boss',
+                tep: 'gold_rush.tmx',
+                gioiHanGiay: 0,
+                heSoKeDich: 1,
+                coc: 0,
+                thuong: 0,
+                soXu: 2,
+                sao: 1,
+                chiChoiLocal: true,
+              ),
+            ]
+          : null);
   game.khoiTaoChoKiemThu(
     banDoDau: bd,
     cacBanDoKhac: cacBanDoKhac,
-    danhSachMan: danhSachMan,
+    danhSachMan: manChoTest,
   );
-  game.batDauVanMoi();
+  // Cấp sẵn mã ván để các test gameplay bỏ qua phần xác thực ví.
+  game.batDauVanMoi(maVan: 'van-test');
   return game;
 }
 
@@ -293,7 +312,19 @@ void main() {
   });
 
   test('14 & 15. Chơi lại không giữ sai trạng thái Boss/kỹ năng; chuyển màn ghi đúng stage_id', () async {
-    const man1 = ManChoi.macDinh;
+    const man1 = ManChoi(
+      id: 7,
+      ten: 'Màn 1 kiểm thử Boss',
+      moTa: 'Màn kiểm thử Boss',
+      tep: 'gold_rush.tmx',
+      gioiHanGiay: 0,
+      heSoKeDich: 1,
+      coc: 0,
+      thuong: 0,
+      soXu: 2,
+      sao: 1,
+      chiChoiLocal: true,
+    );
     const man2 = ManChoi(
       id: 2,
       ten: 'Rừng thưa',
@@ -322,7 +353,7 @@ void main() {
     expect(game.nhatKy.bossDaHa, isTrue);
 
     // Chơi lại ván mới: Boss được tạo mới đầy máu, bossDaHa reset về false, shield không còn giữ từ ván cũ
-    game.batDauVanMoi();
+    game.batDauVanMoi(maVan: 'van-choi-lai');
     expect(game.nhatKy.bossDaHa, isFalse);
     expect(game.boss, isNotNull);
     expect(game.boss!.sucKhoe.hien, CauHinh.mauBoss);
@@ -333,7 +364,8 @@ void main() {
     expect(doiDuoc, isTrue);
     expect(game.manHienTai.id, 2);
 
-    game.boss!.nhanSatThuong(CauHinh.mauBoss);
+    // Màn 2 không sinh Boss; chỉ cần nhặt đủ xu để hoàn thành.
+    expect(game.boss, isNull);
     for (final x in game.theGioi.children.whereType<DongXu>().toList()) {
       game.george!.onCollisionStart({}, x);
     }
@@ -344,7 +376,7 @@ void main() {
     expect(kq.maVan, 'ma-van-man-2');
     expect(kq.thongKe['stage_id'], 2);
     expect(kq.thongKe['won'], isTrue);
-    expect(kq.thongKe['boss_defeated'], isTrue);
+    expect(kq.thongKe['boss_defeated'], isFalse);
   });
 
   test(
@@ -353,7 +385,7 @@ void main() {
       final ds = ManChoi.docDanhSach(
         File('assets/tiles/man_choi.json').readAsStringSync(),
       );
-      expect(ds.map((m) => m.id).toList(), [1, 2, 3, 4, 5, 6]);
+      expect(ds.map((m) => m.id).toList(), List<int>.generate(20, (i) => i + 1));
       for (final m in ds) {
         final tmx = File('assets/tiles/${m.tep}');
         expect(tmx.existsSync(), isTrue, reason: 'Thiếu ${m.tep}');
@@ -385,8 +417,8 @@ void main() {
     () async {
       final game = await _dungGameThu(batBoss: true);
       // Không chạy update giữa các lần dựng: các component của ván trước còn trong hàng đợi.
-      game.batDauVanMoi();
-      game.batDauVanMoi();
+      game.batDauVanMoi(maVan: 'van-cho-1');
+      game.batDauVanMoi(maVan: 'van-cho-2');
       game.update(0);
       game.update(0);
 

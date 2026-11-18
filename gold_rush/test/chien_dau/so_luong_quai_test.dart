@@ -40,7 +40,8 @@ void main() {
     // ignore: invalid_use_of_internal_member
     game.mount();
 
-    game.batDauVanMoi();
+    // Cấp sẵn mã ván để test gameplay không đi qua luồng xác thực ví.
+    game.batDauVanMoi(maVan: 'test-spawn-1');
     await game.ready();
     // Đặt George ở vị trí xa để quái tuần tra không vô tình đâm vào George tự nổ
     game.george!.position.setValues(9999, 9999);
@@ -72,30 +73,30 @@ void main() {
       reason: 'Vừa tiêu diệt 1 con thì số lượng quái còn 8',
     );
 
-    // 4. Trôi thêm 15 giây (mới được 20s < chu kỳ 30s): vẫn là 8 con, chưa sinh
+    // 4. Màn 1 là màn gốc: không sinh bù dù đã thiếu quái.
     troiThoiGian(15.0);
     expect(
       game.theGioi.children.whereType<KeDich>().where((q) => !q.isDead),
       hasLength(8),
-      reason: 'Chưa đủ chu kỳ 30s thì chưa sinh bù',
+      reason: 'Màn 1 không sinh bù quái',
     );
 
-    // 5. Trôi qua mốc 30 giây (thêm 11s = 31s > 30s): sinh bù lại đủ 9 con
+    // 5. Trôi thêm thời gian: màn 1 vẫn giữ nguyên số quái còn sống.
     troiThoiGian(11.0);
     await game.ready();
     expect(
       game.theGioi.children.whereType<KeDich>().where((q) => !q.isDead),
-      hasLength(9),
-      reason: 'Hết chu kỳ 30s thì sinh bù lại để đủ 9',
+      hasLength(8),
+      reason: 'Màn 1 không sinh bù sau khi quái bị hạ',
     );
 
-    // 6. Khi đã đủ 9 con trở lại, trôi qua tiếp chu kỳ 30 giây nữa: KHÔNG SINH NỮA
+    // 6. Trôi tiếp: không sinh thêm quái ở màn 1.
     troiThoiGian(31.0);
     await game.ready();
     expect(
       game.theGioi.children.whereType<KeDich>().where((q) => !q.isDead),
-      hasLength(9),
-      reason: 'Đã đủ 9 con thì dừng sinh cơ bản',
+      hasLength(8),
+      reason: 'Màn 1 chỉ có quái ban đầu',
     );
   });
 
@@ -138,7 +139,8 @@ void main() {
     game.onGameResize(Vector2(800, 600));
     // ignore: invalid_use_of_internal_member
     game.mount();
-    game.batDauVanMoi();
+    // Cấp sẵn mã ván để test gameplay không đi qua luồng xác thực ví.
+    game.batDauVanMoi(maVan: 'test-spawn-4');
     await game.ready();
 
     game.george!.position.setValues(9999, 9999);
@@ -153,22 +155,21 @@ void main() {
     // Lúc bắt đầu: có đúng 2 quái gốc xuất hiện ngay từ giây 0
     expect(game.theGioi.children.whereType<KeDich>(), hasLength(2));
 
-    // Đẩy thời gian qua 50s (tiến trình >= 0.5) và qua 2 chu kỳ sinh quái (chu kỳ giai đoạn 2 là 20s: lúc 20s và 40s)
-    // Lúc này số quái gốc vẫn đủ 2 (không sinh bù gốc), quái bổ sung sinh thêm 2 con (tối đa cho màn 4 là 2)
+    // Đẩy thời gian qua 51s. Màn 4 sinh thêm một quái mỗi 10 giây.
     troiThoiGian(51.0);
     await game.ready();
 
-    // Đã sinh thêm 2 quái bổ sung (tổng cộng 2 gốc + 2 bổ sung = 4 quái)
+    // Đã sinh thêm 5 quái bổ sung (tổng cộng 2 gốc + 5 bổ sung = 7 quái).
     final quaiHienTai = game.theGioi.children.whereType<KeDich>().where((q) => !q.isDead).toList();
-    expect(quaiHienTai.length, 4, reason: 'Quái bổ sung sinh đủ tối đa 2 con ngoài 2 quái gốc (tổng 4)');
+    expect(quaiHienTai.length, 7, reason: 'Màn 4 sinh quái bổ sung theo chu kỳ 10 giây');
 
-    // Trôi tiếp 25s nữa: quái bổ sung đã đạt tối đa (2/2) và quái gốc vẫn đủ (2/2) -> không sinh thêm nữa
+    // Trôi tiếp 25s: thêm hai lần sinh ở giây 60 và 70.
     troiThoiGian(25.0);
     await game.ready();
     expect(
       game.theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length,
-      4,
-      reason: 'Đã đạt tối đa bổ sung và đủ quái gốc thì không sinh thêm',
+      9,
+      reason: 'Màn 4 tiếp tục sinh quái theo chu kỳ hiện tại',
     );
   });
 }

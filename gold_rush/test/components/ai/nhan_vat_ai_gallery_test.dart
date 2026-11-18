@@ -45,107 +45,110 @@ Future<void> _choTai(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('hiển thị ảnh thật từ danh sách đã lưu và nhãn không phải NFT', (
-    tester,
-  ) async {
-    final png = await tester.runAsync(pngMau);
-    final api = MayChuNhanVat(
-      mayChu: 'http://localhost',
-      client: MockClient((request) async {
-        if (request.url.path == '/api/ai/nhan-vat/danh-sach') {
-          return http.Response(
-            jsonEncode([_nhanVatJson()]),
+  group('Gallery nhân vật AI — tính năng hiện đang ẩn trong bản build', () {
+    testWidgets(
+      'hiển thị ảnh thật từ danh sách đã lưu và nhãn không phải NFT',
+      (tester) async {
+        final png = await tester.runAsync(pngMau);
+        final api = MayChuNhanVat(
+          mayChu: 'http://localhost',
+          client: MockClient((request) async {
+            if (request.url.path == '/api/ai/nhan-vat/danh-sach') {
+              return http.Response(
+                jsonEncode([_nhanVatJson()]),
+                200,
+                headers: {'content-type': 'application/json'},
+              );
+            }
+            if (request.url.path == '/api/ai/nhan-vat/$_characterId/anh') {
+              return http.Response.bytes(
+                png!,
+                200,
+                headers: {'content-type': 'image/png'},
+              );
+            }
+            return http.Response('', 404);
+          }),
+        );
+
+        await tester.pumpWidget(_app(api));
+        await _choTai(tester);
+
+        expect(find.text('Nhà thám hiểm AI'), findsOneWidget);
+        expect(find.text('Đã lưu · PNG tĩnh'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('ai-image-$_characterId')),
+          findsOneWidget,
+        );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+
+        await tester.tap(find.text('Xem chi tiết'));
+        await tester.pumpAndSettle();
+        expect(find.text('Trạng thái: Đã lưu trong Backend'), findsOneWidget);
+        expect(
+          find.text('Loại tài sản: Nhân vật AI, không phải NFT'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('danh sách rỗng kết thúc loading và cho phép mở màn tạo', (
+      tester,
+    ) async {
+      var daMo = false;
+      final api = MayChuNhanVat(
+        mayChu: 'http://localhost',
+        client: MockClient(
+          (_) async => http.Response(
+            '[]',
             200,
             headers: {'content-type': 'application/json'},
-          );
-        }
-        if (request.url.path == '/api/ai/nhan-vat/$_characterId/anh') {
-          return http.Response.bytes(
-            png!,
-            200,
-            headers: {'content-type': 'image/png'},
-          );
-        }
-        return http.Response('', 404);
-      }),
-    );
-
-    await tester.pumpWidget(_app(api));
-    await _choTai(tester);
-
-    expect(find.text('Nhà thám hiểm AI'), findsOneWidget);
-    expect(find.text('Đã lưu · PNG tĩnh'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('ai-image-$_characterId')),
-      findsOneWidget,
-    );
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-
-    await tester.tap(find.text('Xem chi tiết'));
-    await tester.pumpAndSettle();
-    expect(find.text('Trạng thái: Đã lưu trong Backend'), findsOneWidget);
-    expect(
-      find.text('Loại tài sản: Nhân vật AI, không phải NFT'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('danh sách rỗng kết thúc loading và cho phép mở màn tạo', (
-    tester,
-  ) async {
-    var daMo = false;
-    final api = MayChuNhanVat(
-      mayChu: 'http://localhost',
-      client: MockClient(
-        (_) async => http.Response(
-          '[]',
-          200,
-          headers: {'content-type': 'application/json'},
-        ),
-      ),
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: NhanVatAiGallery(
-            mayChu: api,
-            khiMoTaoNhanVat: () async => daMo = true,
           ),
         ),
-      ),
-    );
-    await _choTai(tester);
+      );
 
-    expect(find.textContaining('chưa tạo nhân vật AI'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-    await tester.tap(find.text('Tạo nhân vật AI'));
-    expect(daMo, isTrue);
-  });
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: NhanVatAiGallery(
+              mayChu: api,
+              khiMoTaoNhanVat: () async => daMo = true,
+            ),
+          ),
+        ),
+      );
+      await _choTai(tester);
 
-  testWidgets('thumbnail lỗi không giữ gallery ở trạng thái tải mãi', (
-    tester,
-  ) async {
-    final api = MayChuNhanVat(
-      mayChu: 'http://localhost',
-      client: MockClient((request) async {
-        if (request.url.path == '/api/ai/nhan-vat/danh-sach') {
-          return http.Response(
-            jsonEncode([_nhanVatJson()]),
-            200,
-            headers: {'content-type': 'application/json'},
-          );
-        }
-        return http.Response('', 404);
-      }),
-    );
+      expect(find.textContaining('chưa tạo nhân vật AI'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await tester.tap(find.text('Tạo nhân vật AI'));
+      expect(daMo, isTrue);
+    });
 
-    await tester.pumpWidget(_app(api));
-    await _choTai(tester);
+    testWidgets('thumbnail lỗi không giữ gallery ở trạng thái tải mãi', (
+      tester,
+    ) async {
+      final api = MayChuNhanVat(
+        mayChu: 'http://localhost',
+        client: MockClient((request) async {
+          if (request.url.path == '/api/ai/nhan-vat/danh-sach') {
+            return http.Response(
+              jsonEncode([_nhanVatJson()]),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          return http.Response('', 404);
+        }),
+      );
 
-    expect(find.text('Nhà thám hiểm AI'), findsOneWidget);
-    expect(find.text('Làm mới'), findsOneWidget);
-    expect(find.byIcon(Icons.broken_image_outlined), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-  });
+      await tester.pumpWidget(_app(api));
+      await _choTai(tester);
+
+      expect(find.text('Nhà thám hiểm AI'), findsOneWidget);
+      expect(find.text('Làm mới'), findsOneWidget);
+      expect(find.byIcon(Icons.broken_image_outlined), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+  }, skip: 'Tính năng Xưởng AI hiện đang ẩn trong bản build hiện tại.');
 }

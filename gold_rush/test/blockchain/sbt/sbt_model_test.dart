@@ -15,14 +15,15 @@ void main() {
     test('khớp năm ID của hợp đồng và không gán ảnh hay quyền sở hữu giả', () {
       expect(bangThanhTuuSBT.map((sbt) => sbt.achievementId), [1, 2, 3, 4, 5]);
       expect(bangThanhTuuSBT.map((sbt) => sbt.name), [
-        'Thợ Mỏ Tập Sự',
-        'Nhà Thám Hiểm Rừng Xanh',
-        'Kẻ Săn Boss',
-        'Chiến Binh Bất Bại',
+        'Thợ mỏ tập sự',
+        'Chiến binh dũng cảm',
+        'Kẻ chinh phục Boss',
+        'Bậc thầy chinh phục',
         'Huyền Thoại Gold Rush',
       ]);
       for (final sbt in bangThanhTuuSBT) {
-        expect(sbt.imagePath, isNull);
+        expect(sbt.imagePath, isNotNull);
+        expect(File(sbt.imagePath!).existsSync(), isTrue);
         expect(sbt.tokenId, isNull);
         expect(sbt.owned, isFalse);
         expect(sbt.eligible, isFalse);
@@ -116,7 +117,7 @@ void main() {
         expect(restored.name, original.name);
         expect(restored.description, original.description);
         expect(restored.tokenId, maxTokenId);
-        expect(restored.imagePath, isNull);
+        expect(restored.imagePath, original.imagePath);
         expect(restored.eligibilityStatus, original.eligibilityStatus);
         expect(restored.claimStatus, original.claimStatus);
         expect(restored.selectedForDisplay, isTrue);
@@ -232,7 +233,7 @@ void main() {
       expect(updated.description, 'Mô tả hiển thị');
       expect(updated.eligible, isTrue);
       expect(updated.claimStatus, TrangThaiNhanSBT.choXacNhanChuoi);
-      expect(original.name, 'Thợ Mỏ Tập Sự');
+      expect(original.name, 'Thợ mỏ tập sự');
       expect(original.eligible, isFalse);
       expect(original.claimStatus, TrangThaiNhanSBT.chuaBatDau);
       expect(original.copyWith().toJson(), original.toJson());

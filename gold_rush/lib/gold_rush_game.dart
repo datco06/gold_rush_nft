@@ -1097,8 +1097,8 @@ class GoldRushGame extends FlameGame
   /// Chu kỳ sinh bổ sung (giây) theo nhóm màn 2–20; màn 1 không sinh thêm.
   /// Mỗi lần đến chu kỳ, hệ thống sinh tối đa một quái theo logic hiện có.
   double get _chuKySinhQuai => switch (manHienTai.id) {
-    <= 6 => 20,
-    <= 10 => 10,
+    <= 6 => 10,
+    <= 10 => 5,
     <= 15 => 5,
     _ => 3,
   };

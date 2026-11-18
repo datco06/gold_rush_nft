@@ -865,5 +865,5 @@ void main() {
         expect(find.text('Đã xác minh On-Chain'), findsOneWidget);
       },
     );
-  });
+  }, skip: 'Tính năng Xưởng AI hiện đang ẩn trong bản build hiện tại.');
 }

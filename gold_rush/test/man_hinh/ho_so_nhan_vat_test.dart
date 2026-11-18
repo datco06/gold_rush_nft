@@ -43,7 +43,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 400));
 
-      await tester.tap(find.text('Nhà Thám Hiểm Vàng'));
+      await tester.tap(find.text('datco6'));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -89,13 +89,13 @@ void main() {
       expect(find.text('THÔNG TIN NHÂN VẬT'), findsOneWidget);
       expect(find.text('TRANG BỊ HIỆN TẠI'), findsOneWidget);
       expect(find.text('HUY HIỆU TRƯNG BÀY'), findsOneWidget);
-      expect(find.text('Bạn chưa trưng bày huy hiệu nào.'), findsOneWidget);
+      expect(find.text('Thợ mỏ tập sự'), findsOneWidget);
 
       // Tab 2: HUY HIỆU
       await tester.tap(find.text('HUY HIỆU'));
       await tester.pumpAndSettle();
-      expect(find.text('Người khai phá'), findsOneWidget);
-      expect(find.text('Huyền thoại'), findsOneWidget);
+      expect(find.text('Thợ mỏ tập sự'), findsOneWidget);
+      expect(find.text('Huyền Thoại Gold Rush'), findsOneWidget);
 
       // Tab 3: VŨ KHÍ opens pre-built ManHinhKhoDo on Trang bị tab
       await tester.tap(find.text('VŨ KHÍ'));
