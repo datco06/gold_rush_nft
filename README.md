@@ -31,6 +31,10 @@ Gold Rush là đồ án game Web3 chạy trên Flutter/Flame. Người chơi kh�
 - Mô-đun AI phục vụ phân tích, sinh dữ liệu và các API hỗ trợ đồ án.
 - CI/CD bằng GitHub Actions, Firebase Hosting và Render.
 
+> Tính năng tạo nhân vật bằng AI hiện đang ẩn trong bản build demo. Các test
+> trực tiếp cho màn hình Xưởng AI được đánh dấu skip có lý do; các test model,
+> schema và API AI độc lập vẫn được giữ lại để kiểm tra contract dữ liệu.
+
 ## Kiến trúc tổng quan
 
 ```text
@@ -252,6 +256,24 @@ flutter analyze --no-fatal-infos
 flutter test
 ```
 
+Kết quả kiểm thử Flutter của phiên bản hiện tại: **583 test đạt, 0 test thất
+bại**. Có **42 test được bỏ qua** vì cần backend tích hợp hoặc vì tính năng
+Xưởng AI đang ẩn trong bản build demo.
+
+## Kiểm tra nhanh bản Web
+
+Sau khi deploy, kiểm tra lần lượt các luồng chính:
+
+1. Đăng nhập bằng MetaMask và xác nhận đúng mạng Sepolia.
+2. Mở Sảnh chờ, Bản đồ thế giới và chọn một màn đã mở khóa.
+3. Mở Cửa hàng, kiểm tra danh mục và vật phẩm hiển thị.
+4. Mở Kho đồ, kiểm tra số lượng vật phẩm và trạng thái đồng bộ.
+5. Mở Trung tâm quà tặng, kiểm tra nút mở QR scanner và quyền camera.
+6. Nếu test giao dịch, dùng ví test có Sepolia ETH và chỉ kiểm tra trên testnet.
+
+Không thực hiện mua hàng hoặc claim QR trong smoke test nếu không muốn thay đổi
+dữ liệu tài khoản đang dùng.
+
 ## CI/CD
 
 Các workflow nằm trong `.github/workflows/`:
@@ -280,6 +302,7 @@ Các secret cần được đặt trong GitHub/Render, không đặt trong workf
 
 ```bash
 cd gold_rush
+flutter pub get
 flutter build apk --release \
   --dart-define=GOLD_RUSH_API=https://gold-rush-api.onrender.com
 ```
@@ -288,6 +311,25 @@ File đầu ra thường nằm tại:
 
 ```text
 gold_rush/build/app/outputs/flutter-apk/app-release.apk
+```
+
+APK hiện tại dùng cấu hình `compileSdk = 37` để tương thích với các dependency
+Android của Reown/Coinbase Wallet SDK. Bản build release trong đồ án đang dùng
+debug signing để kiểm thử nội bộ; muốn đưa lên Google Play cần tạo upload key
+và cấu hình signing riêng trong `android/app/build.gradle.kts`.
+
+Để tạo APK riêng cho từng kiến trúc thiết bị, dùng:
+
+```bash
+flutter build apk --release --split-per-abi
+```
+
+File APK có thể gửi sang điện thoại Android bằng cáp USB, AirDrop hoặc Drive.
+Trên điện thoại, mở file APK và cho phép cài ứng dụng từ nguồn này khi được
+hỏi. Nếu đã kết nối thiết bị Android qua ADB, có thể cài bằng:
+
+```bash
+adb install -r gold_rush/build/app/outputs/flutter-apk/app-release.apk
 ```
 
 ## Quy trình đóng góp
