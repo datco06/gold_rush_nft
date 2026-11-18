@@ -13,6 +13,7 @@ class CauHinhChuoi {
   final String hopDong;
   final String? hopDongVatPham;
   final String? hopDongNhanVat;
+  final String? hopDongSBT;
   final String trongTai;
   final bool localFaucet;
 
@@ -21,6 +22,7 @@ class CauHinhChuoi {
     required this.hopDong,
     this.hopDongVatPham,
     this.hopDongNhanVat,
+    this.hopDongSBT,
     required this.trongTai,
     this.localFaucet = false,
   });
@@ -126,6 +128,7 @@ class MayChuPhieu {
       hopDong: j['hop_dong'] as String,
       hopDongVatPham: j['hop_dong_vat_pham'] as String?,
       hopDongNhanVat: j['hop_dong_nhan_vat'] as String?,
+      hopDongSBT: j['hop_dong_sbt'] as String?,
       trongTai: j['trong_tai'] as String,
       localFaucet: j['local_faucet'] == true,
     );

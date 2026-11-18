@@ -25,6 +25,8 @@ import 'blockchain/cua_hang.dart';
 import 'blockchain/nhan_vat.dart';
 import 'blockchain/phien_vi.dart';
 import 'blockchain/vi.dart';
+import 'blockchain/sbt/sbt_model.dart';
+import 'blockchain/sbt/sbt_service.dart';
 import 'blockchain/vat_pham/nft_model.dart';
 import 'blockchain/vat_pham/nft_service.dart';
 import 'cau_hinh.dart';
@@ -670,6 +672,9 @@ class GoldRushGame extends FlameGame
   /// Huy hiệu đã được backend xác nhận trong phiên hiện tại.
   final ValueNotifier<Set<int>> huyHieuDaNhan = ValueNotifier(<int>{});
 
+  /// Huy hiệu đã được xác minh sở hữu trên blockchain.
+  final ValueNotifier<Set<int>> huyHieuSBTDaSoHuu = ValueNotifier(<int>{});
+
   int _mauTruoc = CauHinh.mauToiDa;
   int _diemTruoc = 0;
 
@@ -720,7 +725,10 @@ class GoldRushGame extends FlameGame
       if (pv != null) {
         final dongBo = () async {
           final daKetNoi = await pv.ketNoiDaXacThuc(auth!.walletAddress!);
-          if (daKetNoi) await dongBoNFTKhoDo();
+          if (daKetNoi) {
+            await dongBoNFTKhoDo();
+            await dongBoSBT();
+          }
         }();
         unawaited(dongBo);
       }
@@ -786,6 +794,32 @@ class GoldRushGame extends FlameGame
       }
     }
     if (ids.isNotEmpty) huyHieuDaNhan.value = ids;
+  }
+
+  /// Xác minh quyền sở hữu SBT thật trên đúng ví/mạng, không dùng dữ liệu eligible.
+  Future<void> dongBoSBT() async {
+    final pv = phienVi;
+    final cauHinh = pv?.cauHinh;
+    final hopDong = cauHinh?.hopDongSBT;
+    if (pv == null ||
+        !pv.daKetNoi ||
+        cauHinh == null ||
+        hopDong == null ||
+        hopDong.isEmpty) {
+      return;
+    }
+    try {
+      final danhSach = await DichVuSBT(
+        phienVi: pv,
+        cauHinh: CauHinhSBT(chainId: cauHinh.chainId, hopDong: hopDong),
+      ).taiDanhSach();
+      huyHieuSBTDaSoHuu.value = {
+        for (final badge in danhSach)
+          if (badge.owned) badge.achievementId,
+      };
+    } catch (_) {
+      // Đồng bộ hồ sơ là best-effort; không chặn gameplay.
+    }
   }
 
   /// Khởi tạo bộ nhớ bản đồ và trạng thái ván cho kiểm thử đơn vị mà không cần nạp `.tmx` hay âm thanh.
@@ -1437,24 +1471,89 @@ class GoldRushGame extends FlameGame
         : false;
 
     if (daGui && kq.thang && auth != null && maVan.isNotEmpty) {
-      final mayChuHuyHieu = MayChuHuyHieu();
-      final badge = await mayChuHuyHieu.danhGia(
-        maVan: maVan,
-        csrfToken: auth?.csrfToken,
-      );
-      mayChuHuyHieu.dong();
-      final moi = (badge?['new_badges'] as List?)
-          ?.whereType<Map<String, dynamic>>()
-          .toList();
-      if (moi != null && moi.isNotEmpty && identical(ketQuaVan.value, kq)) {
-        final badgeId = moi.first['badge_id'];
-        if (badgeId is int) {
-          huyHieuDaNhan.value = {...huyHieuDaNhan.value, badgeId};
+      final mayChuHuyHieu = MayChuHuyHieu(layCsrfToken: () => auth?.csrfToken);
+      try {
+        final badge = await mayChuHuyHieu.danhGia(
+          maVan: maVan,
+          csrfToken: auth?.csrfToken,
+        );
+        if (pv != null &&
+            !pv.daKetNoi &&
+            auth?.canEnterGame == true &&
+            auth?.walletAddress != null) {
+          await pv.ketNoiDaXacThuc(auth!.walletAddress!);
         }
-        kq = kq.voiHuyHieu(moi.first);
-        ketQuaVan.value = kq;
-        overlays.remove(LopPhu.ketThuc);
-        overlays.add(LopPhu.huyHieu);
+        List<Map<String, dynamic>> danhSach(Object? raw) => raw is List
+            ? raw.whereType<Map<String, dynamic>>().toList()
+            : const [];
+        final moiMoi = danhSach(badge?['new_badges']);
+        final cauHinhSBT = pv?.cauHinh;
+        final coSBT = cauHinhSBT?.hopDongSBT?.isNotEmpty == true;
+        final ungVien = moiMoi.isNotEmpty
+            ? moiMoi
+            : (coSBT
+                  ? danhSach(badge?['badges'])
+                        .where(
+                          (item) =>
+                              item['eligible'] == true &&
+                              item['ma_van'] != null &&
+                              item['claimed'] != true,
+                        )
+                        .toList()
+                  : const <Map<String, dynamic>>[]);
+        final moi = ungVien
+            .where(
+              (item) =>
+                  item['badge_id'] is int &&
+                  !huyHieuSBTDaSoHuu.value.contains(item['badge_id']),
+            )
+            .toList();
+        if (moi.isNotEmpty && identical(ketQuaVan.value, kq)) {
+          final badgeId = moi.first['badge_id'];
+          var sbtDaSoHuu = false;
+          if (badgeId is int) {
+            final cauHinh = cauHinhSBT;
+            final hopDongSBT = cauHinh?.hopDongSBT;
+            if (pv != null &&
+                pv.daKetNoi &&
+                cauHinh != null &&
+                hopDongSBT != null &&
+                hopDongSBT.isNotEmpty) {
+              try {
+                final mauHuyHieu = bangThanhTuuSBT.firstWhere(
+                  (item) => item.achievementId == badgeId,
+                );
+                await DichVuSBT(
+                  phienVi: pv,
+                  cauHinh: CauHinhSBT(
+                    chainId: cauHinh.chainId,
+                    hopDong: hopDongSBT,
+                  ),
+                  nguonPhieu: mayChuHuyHieu,
+                ).nhanThanhTuu(
+                  mauHuyHieu.copyWith(
+                    eligibilityStatus: TrangThaiDieuKienSBT.duDieuKien,
+                  ),
+                );
+                sbtDaSoHuu = true;
+                huyHieuSBTDaSoHuu.value = {...huyHieuSBTDaSoHuu.value, badgeId};
+              } catch (_) {
+                // Không chặn phần thưởng ván nếu người chơi hủy hoặc SBT chưa cấu hình.
+              }
+            }
+            huyHieuDaNhan.value = {...huyHieuDaNhan.value, badgeId};
+          }
+          final badgeHienThi = <String, dynamic>{
+            ...moi.first,
+            'sbt_da_so_huu': sbtDaSoHuu,
+          };
+          kq = kq.voiHuyHieu(badgeHienThi);
+          ketQuaVan.value = kq;
+          overlays.remove(LopPhu.ketThuc);
+          overlays.add(LopPhu.huyHieu);
+        }
+      } finally {
+        mayChuHuyHieu.dong();
       }
     }
 

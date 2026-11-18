@@ -545,9 +545,14 @@ class ManHinhHuyHieu extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const ChuGame(
-                    '✓ Đã ghi nhận huy hiệu SBT',
-                    style: TextStyle(color: Color(0xFF9FE4C2), fontSize: 20),
+                  ChuGame(
+                    badge['sbt_da_so_huu'] == true
+                        ? '✓ Đã lưu huy hiệu vào ví'
+                        : '✓ Đã ghi nhận điều kiện nhận huy hiệu',
+                    style: const TextStyle(
+                      color: Color(0xFF9FE4C2),
+                      fontSize: 20,
+                    ),
                   ),
                   const SizedBox(height: 22),
                   SizedBox(

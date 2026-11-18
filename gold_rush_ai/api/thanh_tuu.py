@@ -14,6 +14,8 @@ from pydantic import BaseModel, Field
 
 from api.auth_guard import kiem_tra_csrf_va_origin, lay_nguoi_choi_hien_tai, NguoiChoiXacThuc
 from core.csdl import lay_csdl
+from core.sbt_voucher import DichVuVoucherSBT, LoiCauHinhSBT
+import config
 
 router = APIRouter(prefix="/api/thanh-tuu", tags=["thanh-tuu"])
 
@@ -28,6 +30,10 @@ HUY_HIEU = {
 
 class YeuCauDanhGiaHuyHieu(BaseModel):
     ma_van: str = Field(min_length=8, max_length=128)
+
+
+class YeuCauPhieuSBT(BaseModel):
+    achievement_id: int = Field(ge=1, le=5)
 
 
 def _danh_sach(conn, player_id: str):
@@ -103,3 +109,46 @@ async def danh_gia_huy_hieu(
         )
         rows = _danh_sach(conn, player.user_id)
         return {"new_badges": [] if da_co else [b for b in rows if b["badge_id"] == badge_id], "badges": rows}
+
+
+@router.post("/phieu")
+async def cap_phieu_sbt(
+    body: YeuCauPhieuSBT,
+    request: Request,
+    player: Annotated[NguoiChoiXacThuc, Depends(lay_nguoi_choi_hien_tai)],
+):
+    """Cấp phiếu SBT cho thành tích đã được Backend ghi nhận.
+
+    Địa chỉ nhận luôn lấy từ phiên SIWE; client không được chọn ví khác.
+    """
+    kiem_tra_csrf_va_origin(request, player)
+    if not config.SBT_ENABLED or not config.HOP_DONG_SBT:
+        raise HTTPException(503, "Tính năng cấp huy hiệu SBT chưa được cấu hình")
+    with lay_csdl() as conn:
+        row = conn.execute(
+            "SELECT claimed_at FROM achievement_progress WHERE player_id = ? AND achievement_id = ?",
+            (player.user_id, body.achievement_id),
+        ).fetchone()
+    if row is None:
+        raise HTTPException(403, "Ví chưa đủ điều kiện nhận huy hiệu này")
+    if row[0]:
+        raise HTTPException(409, "Huy hiệu này đã được Backend ghi nhận là đã nhận")
+
+    try:
+        service = DichVuVoucherSBT(
+            private_key=config.SBT_SIGNER_PRIVATE_KEY,
+            contract_address=config.HOP_DONG_SBT,
+            chain_id=config.SBT_CHAIN_ID,
+            authorized_signer=config.SBT_AUTHORIZED_SIGNER,
+            ttl_seconds=config.SBT_VOUCHER_TTL_SECONDS,
+        )
+        if not service.da_cau_hinh():
+            raise LoiCauHinhSBT("Thiếu cấu hình khóa ký hoặc hợp đồng SBT")
+        return service.tao_va_ky(
+            player=player.wallet_address,
+            achievement_id=body.achievement_id,
+        )
+    except LoiCauHinhSBT as error:
+        raise HTTPException(503, str(error)) from None
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None

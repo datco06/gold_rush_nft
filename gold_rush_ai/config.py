@@ -25,6 +25,7 @@ TRONG_TAI_KHOA = os.environ.get("TRONG_TAI_KHOA", "")
 CHAIN_ID = int(os.environ.get("CHAIN_ID", "31337"))                  # 31337 Hardhat · 11155111 Sepolia
 HOP_DONG_CUA_HANG = os.environ.get("HOP_DONG_CUA_HANG", "")         # địa chỉ sau khi triển khai
 HOP_DONG_VAT_PHAM = os.environ.get("HOP_DONG_VAT_PHAM", "")         # ERC-1155 vật phẩm transferable
+HOP_DONG_SBT = os.environ.get("HOP_DONG_SBT", "")                   # ThanhTuuSBT ERC-721 soulbound
 BLOCKCHAIN_RPC_URL = os.environ.get("BLOCKCHAIN_RPC_URL", os.environ.get("AI_BLOCKCHAIN_RPC_URL", ""))
 RPC_TIMEOUT_SECONDS = float(os.environ.get("RPC_TIMEOUT_SECONDS", "5.0"))
 # Chỉ phục vụ Hardhat local. Không bật trên Sepolia/mainnet.
@@ -66,6 +67,13 @@ SEPOLIA_FAUCET_MAX_REQUESTS_PER_HOUR = int(
 SEPOLIA_FAUCET_RECEIPT_TIMEOUT_SECONDS = float(
     os.environ.get("SEPOLIA_FAUCET_RECEIPT_TIMEOUT_SECONDS", "30")
 )
+
+# ThanhTuuSBT — chỉ ký phiếu; giao dịch mint vẫn do ví người chơi ký.
+SBT_ENABLED = os.environ.get("SBT_ENABLED", "false").lower() in ("true", "1")
+SBT_CHAIN_ID = int(os.environ.get("SBT_CHAIN_ID", str(CHAIN_ID)))
+SBT_SIGNER_PRIVATE_KEY = os.environ.get("SBT_SIGNER_PRIVATE_KEY", "")
+SBT_AUTHORIZED_SIGNER = os.environ.get("SBT_AUTHORIZED_SIGNER", "")
+SBT_VOUCHER_TTL_SECONDS = int(os.environ.get("SBT_VOUCHER_TTL_SECONDS", "900"))
 # Phí gas quy đổi cố định bằng vàng trong môi trường test. 0 = không trừ phí.
 GAS_FEE_GOLD = int(os.environ.get("GAS_FEE_GOLD", "0"))
 BAN_DO_DIR = Path(os.environ.get("BAN_DO_DIR", APP_FLUTTER / "assets" / "tiles"))

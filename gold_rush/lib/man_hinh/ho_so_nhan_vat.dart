@@ -84,6 +84,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     g.phienVi?.addListener(_onDataChanged);
     g.tienTrinh.addListener(_onDataChanged);
     g.huyHieuDaNhan.addListener(_onDataChanged);
+    g.huyHieuSBTDaSoHuu.addListener(_onDataChanged);
   }
 
   void _detachListeners(GoldRushGame g) {
@@ -91,6 +92,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     g.phienVi?.removeListener(_onDataChanged);
     g.tienTrinh.removeListener(_onDataChanged);
     g.huyHieuDaNhan.removeListener(_onDataChanged);
+    g.huyHieuSBTDaSoHuu.removeListener(_onDataChanged);
   }
 
   void _onAuthChanged() {
@@ -2298,7 +2300,7 @@ class _EmptyState extends StatelessWidget {
 List<ThanhTuuSBT> _allBadges() => [...bangThanhTuuSBT];
 
 List<ThanhTuuSBT> _badgesFor(GoldRushGame game) {
-  final unlocked = game.huyHieuDaNhan.value;
+  final unlocked = game.huyHieuSBTDaSoHuu.value;
   final displayed = unlocked.toList()..sort();
   final displayedIds = displayed.take(3).toSet();
   return [
