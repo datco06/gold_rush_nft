@@ -1043,10 +1043,9 @@ class GoldRushGame extends FlameGame
   int get _soQuaiDangSong =>
       theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length;
 
-  /// Chu kỳ sinh bổ sung (giây) theo nhóm màn 1–20.
+  /// Chu kỳ sinh bổ sung (giây) theo nhóm màn 2–20; màn 1 không sinh thêm.
   /// Mỗi lần đến chu kỳ, hệ thống sinh tối đa một quái theo logic hiện có.
   double get _chuKySinhQuai => switch (manHienTai.id) {
-    <= 1 => 50,
     <= 6 => 20,
     <= 10 => 10,
     <= 15 => 5,
@@ -1078,6 +1077,9 @@ class GoldRushGame extends FlameGame
     Vector2 Function() viTriNguoiChoi,
     double Function() heSoTocDo,
   ) {
+    // Màn 1 chỉ có quái ban đầu, không sinh bù hoặc sinh bổ sung.
+    if (manHienTai.id == 1) return;
+
     _demSinhQuai += dt;
     if (_demSinhQuai < _chuKySinhQuai) return;
     _demSinhQuai = 0;
