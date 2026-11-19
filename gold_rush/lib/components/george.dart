@@ -339,7 +339,12 @@ class George extends NhanVat with KeyboardHandler {
     final cha = parent;
     if (cha == null) return false;
 
-    final huong = huongNhin;
+    // Đang di chuyển thì bắn theo vector joystick/WASD (đủ 8 hướng); đứng
+    // yên thì bắn theo hướng mặt hiện tại. Sprite vẫn giữ 4 hướng hiện có.
+    final huongDangDi = _huongHienTai();
+    final huong = huongDangDi.x == 0 && huongDangDi.y == 0
+        ? huongNhin
+        : (huongDangDi.clone()..normalize());
     _lopTrangBi?.phatBan();
 
     final sat =
