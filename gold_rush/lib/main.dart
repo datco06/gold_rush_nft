@@ -164,10 +164,14 @@ class _KhungTyLeCoDinh extends StatelessWidget {
           return child;
         }
 
+        // Giữ chiều cao thiết kế làm chuẩn. Với màn hình ngang rộng hơn 16:9,
+        // khung logic được nới thêm theo chiều ngang để FittedBox phủ kín
+        // toàn màn hình mà không kéo méo hoặc cắt nội dung.
         final scale = math.min(
           width / _kichThuocThietKe.width,
           height / _kichThuocThietKe.height,
         );
+        final kichThuocKhung = Size(width / scale, height / scale);
         final mediaQuery = MediaQuery.of(context);
         final safePadding = EdgeInsets.fromLTRB(
           mediaQuery.padding.left / scale,
@@ -183,11 +187,11 @@ class _KhungTyLeCoDinh extends StatelessWidget {
               fit: BoxFit.contain,
               alignment: Alignment.center,
               child: SizedBox(
-                width: _kichThuocThietKe.width,
-                height: _kichThuocThietKe.height,
+                width: kichThuocKhung.width,
+                height: kichThuocKhung.height,
                 child: MediaQuery(
                   data: mediaQuery.copyWith(
-                    size: _kichThuocThietKe,
+                    size: kichThuocKhung,
                     padding: safePadding,
                     viewPadding: safePadding,
                     viewInsets: EdgeInsets.fromLTRB(
