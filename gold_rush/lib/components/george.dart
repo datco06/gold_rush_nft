@@ -332,6 +332,10 @@ class George extends NhanVat with KeyboardHandler {
   bool banTheoHuongNhin() {
     if (!conSong || !dieuKhienDuoc) return false;
 
+    // Chỉ súng đã trang bị mới được tạo đạn. Khi không có súng,
+    // _tamBan được giữ ở 0 trong lúc áp dụng trang bị.
+    if (_tamBan <= 0) return false;
+
     final cha = parent;
     if (cha == null) return false;
 

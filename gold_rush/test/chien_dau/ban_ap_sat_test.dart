@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/cau_hinh.dart';
 import 'package:gold_rush/components/ban_do.dart';
+import 'package:gold_rush/components/dan_ban.dart';
 import 'package:gold_rush/components/george.dart';
 import 'package:gold_rush/components/ke_dich.dart';
 import 'package:gold_rush/components/luoi_va_cham.dart';
@@ -21,6 +22,29 @@ Future<ui.Image> _taoAnhGia() async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('Không trang bị súng thì nút bắn không tạo đạn', () async {
+    final anh = await _taoAnhGia();
+    final taiNguyen = TaiNguyen();
+    taiNguyen.napTuAnhGia(anh);
+    final banDo = BanDo.gia(
+      luoi: LuoiVaCham.trong(20, 20),
+      diemXuatHien: [],
+      tep: 'test_map.tmx',
+    );
+    final george = George(
+      banDo: banDo,
+      hoatAnh: taiNguyen.george,
+      viTri: Vector2(100, 100),
+      khiChet: () {},
+      khiChiSoDoi: () {},
+    )..dieuKhienDuoc = true;
+    final theGioi = World();
+    await theGioi.add(george);
+
+    expect(george.banTheoHuongNhin(), isFalse);
+    expect(theGioi.children.whereType<DanBan>(), isEmpty);
+  });
 
   test('Quái áp sát thẳng mặt George: bắn (banTheoHuongNhin) vẫn trúng và gây sát thương', () async {
     final anh = await _taoAnhGia();
@@ -44,6 +68,7 @@ void main() {
       khiChiSoDoi: () {},
     );
     george.dieuKhienDuoc = true;
+    george.datChiSoTrangBi(satThuong: 8, tamBan: 140);
     george.current = HuongDi.phai; // Nhìn sang phải
 
     final quai = KeDich.skeleton(
@@ -94,6 +119,7 @@ void main() {
         khiChiSoDoi: () {},
       );
       george.dieuKhienDuoc = true;
+      george.datChiSoTrangBi(satThuong: 8, tamBan: 140);
       george.current = huong;
 
       final quai = KeDich.skeleton(
@@ -136,6 +162,7 @@ void main() {
       khiChiSoDoi: () {},
     );
     george.dieuKhienDuoc = true;
+    george.datChiSoTrangBi(satThuong: 8, tamBan: 140);
     george.current = HuongDi.phai; // Nhìn sang phải
 
     // Quái ở sau lưng (bên trái George)

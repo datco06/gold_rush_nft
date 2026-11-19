@@ -57,6 +57,7 @@ void main() {
         khiChiSoDoi: () {},
       );
       george.dieuKhienDuoc = true;
+      george.datChiSoTrangBi(satThuong: 8, tamBan: 140);
       george.current = HuongDi.phai;
       await theGioi.add(george);
 
@@ -84,6 +85,7 @@ void main() {
         khiChiSoDoi: () {},
       );
       george.dieuKhienDuoc = true;
+      george.datChiSoTrangBi(satThuong: 8, tamBan: 140);
       george.current = HuongDi.phai;
       await theGioi.add(george);
 
@@ -110,6 +112,7 @@ void main() {
         khiChiSoDoi: () {},
       );
       george.dieuKhienDuoc = true;
+      george.datChiSoTrangBi(satThuong: 8, tamBan: 140);
       george.current = HuongDi.xuong;
       await theGioi.add(george);
 
@@ -136,6 +139,7 @@ void main() {
         khiChiSoDoi: () {},
       );
       george.dieuKhienDuoc = true;
+      george.datChiSoTrangBi(satThuong: 8, tamBan: 140);
       george.current = HuongDi.xuong;
       await theGioi.add(george);
 
