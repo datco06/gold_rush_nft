@@ -80,8 +80,8 @@ class UngDungGoldRush extends StatefulWidget {
 }
 
 class _UngDungGoldRushState extends State<UngDungGoldRush> {
-  late final platform.MetamaskSiweWeb _wallet;
-  late final AuthController _auth;
+  platform.MetamaskSiweWeb? _wallet;
+  AuthController? _auth;
   late final NgonNgu _ngonNgu;
 
   @override
@@ -89,12 +89,20 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
     super.initState();
     _ngonNgu = widget.ngonNgu ?? NgonNgu.chung;
     unawaited(_ngonNgu.nap());
-    _wallet = platform.createWallet(
+  }
+
+  /// Reown opens its modal with showDialog and needs a context that can reach
+  /// the root Navigator. The State context sits above MaterialApp, so create
+  /// the wallet/auth from a Builder under MaterialApp instead.
+  void _ensureAuth(BuildContext context) {
+    if (_auth != null) return;
+    final wallet = platform.createWallet(
       context: context,
       projectId: const String.fromEnvironment('REOWN_PROJECT_ID'),
     );
+    _wallet = wallet;
     _auth = AuthController.web(
-      wallet: _wallet,
+      wallet: wallet,
       api: AuthApiClient(
         baseUrl: const String.fromEnvironment(
           'GOLD_RUSH_API',
@@ -107,7 +115,7 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
 
   @override
   void dispose() {
-    _auth.dispose();
+    _auth?.dispose();
     super.dispose();
   }
 
@@ -130,12 +138,19 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
         builder: (context, child) => _LandscapeGate(
           child: _KhungTyLeCoDinh(child: child ?? const SizedBox.shrink()),
         ),
-        home: AuthGate(
-          controller: _auth,
-          recheckOnResume: false,
-          retainGameDuringSessionCheck: true,
-          authenticatedBuilder: (_) =>
-              ManHinhGame(auth: _auth, wallet: _wallet),
+        home: Builder(
+          builder: (context) {
+            _ensureAuth(context);
+            final auth = _auth!;
+            final wallet = _wallet!;
+            return AuthGate(
+              controller: auth,
+              recheckOnResume: false,
+              retainGameDuringSessionCheck: true,
+              authenticatedBuilder: (_) =>
+                  ManHinhGame(auth: auth, wallet: wallet),
+            );
+          },
         ),
       ),
     );
