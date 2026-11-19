@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
@@ -126,8 +127,9 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
           ),
           scaffoldBackgroundColor: CauHinh.mauNen,
         ),
-        builder: (context, child) =>
-            _LandscapeGate(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => _LandscapeGate(
+          child: _KhungTyLeCoDinh(child: child ?? const SizedBox.shrink()),
+        ),
         home: AuthGate(
           controller: _auth,
           recheckOnResume: false,
@@ -136,6 +138,72 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
               ManHinhGame(auth: _auth, wallet: _wallet),
         ),
       ),
+    );
+  }
+}
+
+/// Dựng toàn bộ giao diện trên cùng một khung thiết kế ngang rồi thu phóng
+/// đồng nhất theo kích thước thiết bị.
+///
+/// Các màn hình hiện có vẫn giữ nguyên widget và bố cục bên trong; khung này
+/// chỉ ngăn mỗi màn hình tự đổi hình học theo một ngưỡng responsive khác nhau.
+/// BoxFit.contain bảo đảm không cắt nội dung khi tỉ lệ màn hình thay đổi.
+class _KhungTyLeCoDinh extends StatelessWidget {
+  const _KhungTyLeCoDinh({required this.child});
+
+  static const Size _kichThuocThietKe = Size(1280, 720);
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final height = constraints.maxHeight;
+        if (!width.isFinite || !height.isFinite || width <= 0 || height <= 0) {
+          return child;
+        }
+
+        final scale = math.min(
+          width / _kichThuocThietKe.width,
+          height / _kichThuocThietKe.height,
+        );
+        final mediaQuery = MediaQuery.of(context);
+        final safePadding = EdgeInsets.fromLTRB(
+          mediaQuery.padding.left / scale,
+          mediaQuery.padding.top / scale,
+          mediaQuery.padding.right / scale,
+          mediaQuery.padding.bottom / scale,
+        );
+
+        return ColoredBox(
+          color: CauHinh.mauNen,
+          child: ClipRect(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: _kichThuocThietKe.width,
+                height: _kichThuocThietKe.height,
+                child: MediaQuery(
+                  data: mediaQuery.copyWith(
+                    size: _kichThuocThietKe,
+                    padding: safePadding,
+                    viewPadding: safePadding,
+                    viewInsets: EdgeInsets.fromLTRB(
+                      mediaQuery.viewInsets.left / scale,
+                      mediaQuery.viewInsets.top / scale,
+                      mediaQuery.viewInsets.right / scale,
+                      mediaQuery.viewInsets.bottom / scale,
+                    ),
+                  ),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
