@@ -90,7 +90,7 @@ flutter run -d <device-id> \
   --dart-define=REOWN_PROJECT_ID=<project-id>
 ```
 
-Ứng dụng Android đã đăng ký deep link `goldrush://wc` để quay lại Gold Rush
+Ứng dụng Android đã đăng ký deep link `goldrush://` để quay lại Gold Rush
 sau khi xác nhận trong MetaMask. Khi phát hành thật, thay bằng redirect/app
 link HTTPS của dự án qua `GOLD_RUSH_NATIVE_REDIRECT` và `GOLD_RUSH_APP_LINK`.
 `GOLD_RUSH_NATIVE_ORIGIN` phải là Origin đã được cho phép trong backend; không
@@ -373,7 +373,7 @@ cần tách riêng ba thành phần:
      --dart-define=REOWN_PROJECT_ID=<project-id> \
      --dart-define=GOLD_RUSH_SEPOLIA_RPC_URL=<sepolia-rpc> \
      --dart-define=GOLD_RUSH_NATIVE_ORIGIN=https://<app-domain> \
-     --dart-define=GOLD_RUSH_NATIVE_REDIRECT=goldrush://wc \
+     --dart-define=GOLD_RUSH_NATIVE_REDIRECT=goldrush:// \
      --dart-define=GOLD_RUSH_APP_LINK=https://<app-domain>/wc
    ```
 

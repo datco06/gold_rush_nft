@@ -535,7 +535,10 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
           ?.soLuong ??
       0;
 
-  int _priceFor(VatPhamHienThi item) => _priceForItem(item);
+  int _priceFor(VatPhamHienThi item) {
+    final onChain = _phienVi?.giaVatPham[_tokenIdFor(item)];
+    return onChain?.toInt() ?? _priceForItem(item);
+  }
 
   int _tokenIdFor(VatPhamHienThi item) => _danhMuc.indexOf(item) + 1;
 

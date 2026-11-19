@@ -1564,7 +1564,10 @@ class GoldRushGame extends FlameGame
     }
 
     BigInt? soVang;
-    if (pv != null && coPhieu && daGui) {
+    // Nhật ký có thể trả timeout sau khi máy chủ đã ghi thành công. Vì vậy
+    // vẫn xin phiếu trong mọi ván thắng chính thức; API xin phiếu sẽ trả về
+    // đúng lỗi nếu nhật ký thực sự chưa được ghi.
+    if (pv != null && coPhieu) {
       if (!pv.daKetNoi) {
         if (auth?.canEnterGame == true && auth?.walletAddress != null) {
           await pv.ketNoiDaXacThuc(auth!.walletAddress!);
@@ -1610,6 +1613,13 @@ class GoldRushGame extends FlameGame
             ? 'Phiếu +$soVang vàng đang chờ nhận on-chain.'
             : 'Phiếu +$soVang vàng chưa ghi on-chain: $lyDo',
       );
+    } else if (!daGui && coPhieu) {
+      final lyDo = pv?.thongBao;
+      datTrangThai(
+        lyDo == null || lyDo.isEmpty
+            ? 'Không đồng bộ được nhật ký ván với máy chủ trọng tài.'
+            : 'Không thể hoàn tất phiếu blockchain: $lyDo',
+      );
     } else if (soVangCong > BigInt.zero) {
       // Xin phiếu có thể bị trọng tài từ chối (ví dụ đã chạm hạn mức vàng
       // trong ngày). Không che mất lý do thật bằng thông báo "chưa có phiếu",
@@ -1619,11 +1629,6 @@ class GoldRushGame extends FlameGame
         lyDo == null || lyDo.isEmpty
             ? 'Đủ điều kiện nhưng chưa có phiếu blockchain; chưa cộng vàng vào topbar.'
             : 'Chưa cấp phiếu blockchain: $lyDo',
-      );
-    } else if (!daGui && coPhieu) {
-      datTrangThai(
-        'Không gửi được ván lên máy chủ '
-        '— ván này không đổi được thành vàng.',
       );
     } else if (pv != null && !pv.daKetNoi && coPhieu) {
       datTrangThai(

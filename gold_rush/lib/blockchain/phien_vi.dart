@@ -109,6 +109,9 @@ class PhienVi extends ChangeNotifier {
   BigInt vang = BigInt.zero;
   VeVaoMan ve = VeVaoMan.khong;
   final Map<int, BigInt> gia = {};
+
+  /// Giá vật phẩm đọc trực tiếp từ hợp đồng cửa hàng.
+  final Map<int, BigInt> giaVatPham = {};
   final Set<int> daCo = {};
 
   /// Phiếu đã ký, chưa nộp (đã lọc: còn dùng được).
@@ -435,6 +438,21 @@ class PhienVi extends ChangeNotifier {
         daCo.remove(nv.id);
       }
     }
+    try {
+      final giaVatPhamMoi = await Future.wait(
+        List.generate(27, (index) async {
+          final tokenId = index + 1;
+          return (tokenId: tokenId, gia: await ch.giaVatPham(tokenId));
+        }),
+      );
+      giaVatPham
+        ..clear()
+        ..addEntries(
+          giaVatPhamMoi.map((item) => MapEntry(item.tokenId, item.gia)),
+        );
+    } catch (_) {
+      // Giá tĩnh của FE vẫn là fallback nếu contract cũ chưa hỗ trợ đọc giá.
+    }
     notifyListeners();
   }
 
@@ -446,6 +464,10 @@ class PhienVi extends ChangeNotifier {
     final dc = diaChi;
     if (dc == null) {
       if (!_vanChuaXinPhieu.contains(maVan)) _vanChuaXinPhieu.add(maVan);
+      _bao(
+        'Chưa kết nối ví xác thực; không thể xin phiếu blockchain cho ván này.',
+        loi: true,
+      );
       notifyListeners();
       return null;
     }

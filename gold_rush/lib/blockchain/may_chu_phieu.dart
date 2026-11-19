@@ -368,6 +368,8 @@ class MayChuPhieu {
     }
     final chiTiet = switch (r.statusCode) {
       404 => 'Máy chủ chưa có nhật ký ván này — chơi xong một ván khi đã cấu hình máy chủ.',
+      401 => 'Phiên đăng nhập ví đã hết hạn — hãy kết nối và ký xác thực lại.',
+      403 => 'Ví chưa được xác thực cho phiên này hoặc CSRF đã hết hạn — hãy kết nối lại.',
       410 => 'Mã quà tặng đã hết hạn.',
       409 => khi409,
       422 => 'Máy chủ không công nhận ván này: ${lyDoTu(than)}',

@@ -78,7 +78,7 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
         redirect: Redirect(
           native: String.fromEnvironment(
             'GOLD_RUSH_NATIVE_REDIRECT',
-            defaultValue: 'goldrush://wc',
+            defaultValue: 'goldrush://',
           ),
           universal: String.fromEnvironment(
             'GOLD_RUSH_APP_LINK',
