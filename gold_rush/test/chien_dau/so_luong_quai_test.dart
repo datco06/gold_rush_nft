@@ -100,7 +100,7 @@ void main() {
     );
   });
 
-  test('Màn có cấu hình sinh thêm (Stage >= 4): quái bổ sung vẫn sinh thêm theo tỷ lệ khi đã đủ quái gốc', () async {
+  test('Màn có cấu hình sinh thêm: đúng chu kỳ và giới hạn quái bổ sung', () async {
     const man4 = ManChoi(
       id: 4,
       ten: 'Rừng rậm',
@@ -155,21 +155,21 @@ void main() {
     // Lúc bắt đầu: có đúng 2 quái gốc xuất hiện ngay từ giây 0
     expect(game.theGioi.children.whereType<KeDich>(), hasLength(2));
 
-    // Đẩy thời gian qua 51s. Màn 4 sinh thêm một quái mỗi 10 giây.
+    // Đẩy thời gian qua 51s. Màn 4 sinh thêm mỗi 5 giây, tối đa 3 quái.
     troiThoiGian(51.0);
     await game.ready();
 
-    // Đã sinh thêm 5 quái bổ sung (tổng cộng 2 gốc + 5 bổ sung = 7 quái).
+    // Đã sinh đủ 3 quái bổ sung (tổng cộng 2 gốc + 3 bổ sung = 5 quái).
     final quaiHienTai = game.theGioi.children.whereType<KeDich>().where((q) => !q.isDead).toList();
-    expect(quaiHienTai.length, 7, reason: 'Màn 4 sinh quái bổ sung theo chu kỳ 10 giây');
+    expect(quaiHienTai.length, 5, reason: 'Màn 4 sinh quái bổ sung mỗi 5 giây, tối đa 3 con');
 
-    // Trôi tiếp 25s: thêm hai lần sinh ở giây 60 và 70.
+    // Trôi tiếp 25s: đã đạt giới hạn nên không sinh thêm.
     troiThoiGian(25.0);
     await game.ready();
     expect(
       game.theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length,
-      9,
-      reason: 'Màn 4 tiếp tục sinh quái theo chu kỳ hiện tại',
+      5,
+      reason: 'Màn 4 dừng sinh khi đủ 3 quái bổ sung',
     );
   });
 }

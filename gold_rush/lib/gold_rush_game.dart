@@ -167,6 +167,7 @@ class GoldRushGame extends FlameGame
   final Random _ngauNhienSinhQuai = Random();
   double _demSinhQuai = 0;
   bool _congTraiTren = true;
+  int _soQuaiBoSung = 0;
   int _soQuaiThuongBoSung = 0;
   int _soQuaiKhongLo = 0;
   int _soQuaiGiap = 0;
@@ -976,6 +977,7 @@ class GoldRushGame extends FlameGame
     _soQuaiBanDau = 0;
     _loaiQuaiGoc.clear();
     _chiSoQuaiTaiSinh = 0;
+    _soQuaiBoSung = 0;
     _soQuaiThuongBoSung = 0;
     _soQuaiKhongLo = 0;
     _soQuaiGiap = 0;
@@ -1095,12 +1097,18 @@ class GoldRushGame extends FlameGame
       theGioi.children.whereType<KeDich>().where((q) => !q.isDead).length;
 
   /// Chu kỳ sinh bổ sung (giây) theo nhóm màn 2–20; màn 1 không sinh thêm.
-  /// Mỗi lần đến chu kỳ, hệ thống sinh tối đa một quái theo logic hiện có.
+  /// Mỗi lần đến chu kỳ, hệ thống sinh tối đa một quái.
   double get _chuKySinhQuai => switch (manHienTai.id) {
-    <= 6 => 10,
-    <= 10 => 5,
+    <= 6 => 5,
+    <= 15 => 3,
+    _ => 2,
+  };
+
+  /// Số quái sinh bổ sung tối đa trong một màn, không tính quái gốc trên bản đồ.
+  int get _soQuaiBoSungToiDa => switch (manHienTai.id) {
+    <= 6 => 3,
     <= 15 => 5,
-    _ => 3,
+    _ => 7,
   };
 
   int get _soThuongToiDa => switch (manHienTai.id) {
@@ -1151,17 +1159,25 @@ class GoldRushGame extends FlameGame
     if (_giaiDoanSinhQuai == 4 &&
         tienTrinh >= 0.7 &&
         _soQuaiGiap < _soGiapBatBuoc &&
+        _soQuaiBoSung < _soQuaiBoSungToiDa &&
         theGioi.children
                 .whereType<KeDich>()
                 .where((q) => q.maxHp == 100)
                 .length <
             2) {
       _soQuaiGiap++;
+      _soQuaiBoSung++;
       _sinhQuai('giap', viTriNguoiChoi, heSoTocDo);
       return;
     }
 
+    // Chừa đủ chỗ cho quái giáp bắt buộc ở màn 16–20 để giới hạn bổ sung
+    // không khiến điều kiện thắng bị kẹt khi đã qua 70% thời gian.
+    final soGiapConThieu = _soGiapBatBuoc - _soQuaiGiap;
+    if (_soQuaiBoSung >= _soQuaiBoSungToiDa - soGiapConThieu) return;
+
     final loai = _chonQuaiBoSung(tienTrinh);
+    _soQuaiBoSung++;
     if (loai == 'khong_lo') _soQuaiKhongLo++;
     if (loai == 'thuong') _soQuaiThuongBoSung++;
     _sinhQuai(loai, viTriNguoiChoi, heSoTocDo);
