@@ -30,6 +30,7 @@ BigInt _positiveChainId(String value) {
 class MetamaskSiweWeb implements MetamaskSiwePort {
   MetamaskSiweWeb({required BuildContext context, required String projectId})
     : _projectId = projectId.trim(),
+      _context = context,
       _appKit = projectId.trim().isEmpty
           ? null
           : _createAppKit(context, projectId.trim()) {
@@ -41,7 +42,8 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   }
 
   final String _projectId;
-  final ReownAppKitModal? _appKit;
+  final BuildContext _context;
+  ReownAppKitModal? _appKit;
   final StreamController<MetamaskSiweEvent> _events =
       StreamController<MetamaskSiweEvent>.broadcast();
   Future<void>? _initializing;
@@ -100,6 +102,31 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
       throw const MetamaskSiweException(MetamaskSiweErrorCode.notConfigured);
     }
     return modal;
+  }
+
+  /// A failed openModalView can leave Reown's internal `_isOpen` flag true
+  /// with an empty widget stack; the next open then crashes. Rebuild the
+  /// modal instance so the next attempt starts clean.
+  void _resetAppKit() {
+    final old = _appKit;
+    if (old == null) return;
+    old.onModalConnect.unsubscribe(_onModalConnect);
+    old.onModalUpdate.unsubscribe(_onModalUpdate);
+    old.onModalNetworkChange.unsubscribe(_onModalNetworkChange);
+    old.onModalDisconnect.unsubscribe(_onModalDisconnect);
+    old.onModalError.unsubscribe(_onModalError);
+    unawaited(old.dispose());
+    _initializing = null;
+    if (_projectId.isEmpty || _disposed) {
+      _appKit = null;
+      return;
+    }
+    _appKit = _createAppKit(_context, _projectId);
+    _appKit?.onModalConnect.subscribe(_onModalConnect);
+    _appKit?.onModalUpdate.subscribe(_onModalUpdate);
+    _appKit?.onModalNetworkChange.subscribe(_onModalNetworkChange);
+    _appKit?.onModalDisconnect.subscribe(_onModalDisconnect);
+    _appKit?.onModalError.subscribe(_onModalError);
   }
 
   @override
@@ -175,7 +202,13 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     _modal.onModalConnect.subscribe(onConnect);
     _modal.onModalError.subscribe(onError);
     try {
-      await _modal.openModalView();
+      try {
+        await _modal.openModalView();
+      } catch (error) {
+        // Empty WidgetStack / null Navigator: poisoned open state.
+        _resetAppKit();
+        rethrow;
+      }
       onConnect(null);
       return await Future.any([
         connected.future,
@@ -190,8 +223,9 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     } catch (error) {
       throw _mapError(error);
     } finally {
-      _modal.onModalConnect.unsubscribe(onConnect);
-      _modal.onModalError.unsubscribe(onError);
+      final modal = _appKit;
+      modal?.onModalConnect.unsubscribe(onConnect);
+      modal?.onModalError.unsubscribe(onError);
     }
   }
 
