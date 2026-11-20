@@ -214,9 +214,11 @@ class ViAppKit implements Vi {
   return (
     vi: vi,
     dispose: () {
+      // Game teardown must NOT dispose the shared Reown adapter. AuthController
+      // owns it (disposeDependencies: true); disposing here kills the WC session
+      // and makes the next connect throw "Adapter MetaMask đã được đóng."
       if (disposed) return;
       disposed = true;
-      wallet.dispose();
     },
   );
 }
