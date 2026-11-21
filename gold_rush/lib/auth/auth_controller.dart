@@ -546,12 +546,26 @@ class AuthController extends ChangeNotifier {
 
   void _walletChanged(MetamaskSiweEventType event) {
     if (_disposed) return;
-    // The first permission grant normally emits accountsChanged while connect
-    // is waiting. The adapter validates its returned identity itself. All later
-    // changes, including away-and-back and malformed events, invalidate work.
-    if (event == MetamaskSiweEventType.accountsChanged &&
-        _status == AuthStatus.connectingWallet &&
-        _walletAddress == null) {
+    // No bound wallet identity: connect/restore just cleared it, or we are
+    // on a cold landing page. Reown fires chainChanged/disconnected during
+    // MetaMask deep-link handoff before accounts are bound — logging out
+    // here produced "Mạng ví đã thay đổi" / WALLET_DISCONNECTED on first
+    // connect. There is no session to invalidate; ignore all wallet events.
+    if (_walletAddress == null) return;
+    // Reown fires disconnected/invalidProviderData during MetaMask deep-link
+    // handoff (chain switch, app resume). Verify the session before logging out.
+    // Any status that still holds a wallet address must take this path —
+    // including registering/checkingSession, which round-1 omitted and which
+    // let a spurious disconnect log out mid-create-account.
+    if (event == MetamaskSiweEventType.disconnected ||
+        event == MetamaskSiweEventType.invalidProviderData) {
+      unawaited(_confirmWalletStillConnected());
+      return;
+    }
+    // damBaoMang intentionally switches chain; same address on a new chain
+    // must not log out. Refresh chainId only.
+    if (event == MetamaskSiweEventType.chainChanged) {
+      unawaited(_refreshChainAfterSwitch());
       return;
     }
     final failure = switch (event) {
@@ -571,6 +585,112 @@ class AuthController extends ChangeNotifier {
     unawaited(_requestLogout(failure));
   }
 
+  /// Re-read accounts after a transient disconnect/error. Keep the session if
+  /// the same address is still authorized; only logout when it is truly gone.
+  ///
+  /// Empty getAccounts() during MetaMask handoff (_address() null → []) is
+  /// transient, NOT a real disconnect. Round-1 treated empty as "gone" and
+  /// logged out authenticated users. Only a non-empty DIFFERENT address
+  /// proves the wallet switched away.
+  Future<void> _confirmWalletStillConnected() async {
+    if (_disposed || _logoutPending) return;
+    final expected = _walletAddress;
+    if (expected == null) return;
+    final epoch = _epoch;
+    try {
+      final accounts = await _wallet.getAccounts();
+      if (_disposed || epoch != _epoch || _logoutPending) return;
+      if (accounts.isEmpty) {
+        // Transient empty read mid-handoff. Keep session while we still
+        // believe we are signed in (or mid-registration).
+        if (_status == AuthStatus.authenticated ||
+            _status == AuthStatus.registrationRequired ||
+            _status == AuthStatus.registering ||
+            _status == AuthStatus.checkingSession) {
+          return;
+        }
+        unawaited(
+          _requestLogout(
+            const _AuthFailure(
+              'WALLET_DISCONNECTED',
+              'Ví mất kết nối hoặc trả sự kiện không hợp lệ.',
+            ),
+          ),
+        );
+        return;
+      }
+      final still =
+          accounts.any((a) => a.toLowerCase() == expected.toLowerCase());
+      if (still) return;
+      unawaited(
+        _requestLogout(
+          const _AuthFailure(
+            'WALLET_DISCONNECTED',
+            'Ví mất kết nối hoặc trả sự kiện không hợp lệ.',
+          ),
+        ),
+      );
+    } catch (_) {
+      // Adapter disposed or RPC failed mid-handoff. If identity is still
+      // marked authenticated, treat as transient and keep the session.
+      if (_disposed || epoch != _epoch || _logoutPending) return;
+      if (_status == AuthStatus.authenticated ||
+          _status == AuthStatus.registrationRequired ||
+          _status == AuthStatus.registering ||
+          _status == AuthStatus.checkingSession) {
+        return;
+      }
+      unawaited(
+        _requestLogout(
+          const _AuthFailure(
+            'WALLET_DISCONNECTED',
+            'Ví mất kết nối hoặc trả sự kiện không hợp lệ.',
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Intentional chain switch (damBaoMang): same address, new chain.
+  /// Refresh _chainId; never log out for a same-address chain change.
+  Future<void> _refreshChainAfterSwitch() async {
+    if (_disposed || _logoutPending) return;
+    final expected = _walletAddress;
+    if (expected == null) return;
+    final epoch = _epoch;
+    try {
+      final accounts = await _wallet.getAccounts();
+      if (_disposed || epoch != _epoch || _logoutPending) return;
+      if (accounts.isNotEmpty) {
+        final still =
+            accounts.any((a) => a.toLowerCase() == expected.toLowerCase());
+        if (!still) {
+          unawaited(
+            _requestLogout(
+              const _AuthFailure(
+                'WALLET_CHANGED',
+                'Ví đã thay đổi. Hãy xác thực lại ví đang chọn.',
+              ),
+            ),
+          );
+          return;
+        }
+      }
+      final chain = await _wallet.getChainId();
+      if (_disposed || epoch != _epoch || _logoutPending) return;
+      _chainId = chain;
+      _notify();
+    } catch (_) {
+      // Transient RPC failure during handoff: keep session.
+      if (_disposed || epoch != _epoch || _logoutPending) return;
+      if (_status == AuthStatus.authenticated ||
+          _status == AuthStatus.registrationRequired ||
+          _status == AuthStatus.registering) {
+        return;
+      }
+    }
+  }
+
   /// Locks synchronously, then waits for the old operation before revocation.
   /// Multiple calls share the same cleanup. An underlying timed-out mutation
   /// is never retried or bypassed; the player can retry logout once it settles.
@@ -578,11 +698,15 @@ class AuthController extends ChangeNotifier {
 
   Future<void> _requestLogout(_AuthFailure? reason) {
     if (_disposed) return Future<void>.value();
+    // First reason wins: a later spurious disconnected/invalidProviderData
+    // must not overwrite a more specific CHAIN_CHANGED / WALLET_CHANGED /
+    // SESSION_EXPIRED already shown to the user.
+    final alreadyHadReason = _errorCode != null;
     ++_epoch;
     _logoutPending = true;
     _clearIdentity();
     _status = AuthStatus.loggingOut;
-    if (reason != null) {
+    if (reason != null && !alreadyHadReason) {
       _errorCode = reason.code;
       _errorMessage = reason.message;
     }

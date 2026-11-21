@@ -48,6 +48,8 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
       StreamController<MetamaskSiweEvent>.broadcast();
   Future<void>? _initializing;
   bool _disposed = false;
+  String? _lastAddress;
+  BigInt? _lastChainId;
 
   static ReownAppKitModal _createAppKit(
     BuildContext context,
@@ -177,7 +179,18 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   @override
   Future<MetamaskWalletConnection> connect() async {
     await _ensureReady();
-    if (_modal.isConnected) return _connection();
+    if (_modal.isConnected) {
+      // Session-restore path: seed suppress guards so a later deep-link
+      // handoff does not emit a bare disconnected/invalidProviderData.
+      try {
+        final connection = _connection();
+        _lastAddress = connection.address;
+        _lastChainId = connection.chainId;
+        return connection;
+      } catch (_) {
+        rethrow;
+      }
+    }
 
     final connected = Completer<MetamaskWalletConnection>();
     final rejected = Completer<MetamaskSiweException>();
@@ -185,7 +198,10 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     void onConnect(ModalConnect? _) {
       if (!connected.isCompleted && _modal.isConnected) {
         try {
-          connected.complete(_connection());
+          final connection = _connection();
+          _lastAddress = connection.address;
+          _lastChainId = connection.chainId;
+          connected.complete(connection);
         } catch (error) {
           connected.completeError(error);
         }
@@ -237,13 +253,18 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     if (!RegExp(_addressPattern).hasMatch(address)) {
       throw const MetamaskSiweException(MetamaskSiweErrorCode.invalidResponse);
     }
-    return [address.toLowerCase()];
+    // Seed suppress guards when a readable session exists (session-restore
+    // never goes through connect()'s onConnect).
+    _lastAddress = address.toLowerCase();
+    return [_lastAddress!];
   }
 
   @override
   Future<BigInt> getChainId() async {
     await _ensureReady();
-    return _chainId();
+    final chain = _chainId();
+    _lastChainId = chain;
+    return chain;
   }
 
   /// Shared raw EIP-1193-equivalent RPC boundary for native transactions.
@@ -366,6 +387,24 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     if (event == null || _events.isClosed) return;
     try {
       final connection = _connection();
+      // Reown fires onModalUpdate on every session refresh (chain switch,
+      // app resume, pairing ping). Emitting accountsChanged for the same
+      // address makes AuthController log out via WALLET_CHANGED.
+      if (connection.address == _lastAddress) {
+        if (connection.chainId == _lastChainId) return;
+        // Same account, new chain (damBaoMang / MetaMask switch): emit
+        // chainChanged only so AuthController refreshes _chainId, not logout.
+        _lastChainId = connection.chainId;
+        _events.add(
+          MetamaskSiweEvent(
+            MetamaskSiweEventType.chainChanged,
+            chainId: connection.chainId,
+          ),
+        );
+        return;
+      }
+      _lastAddress = connection.address;
+      _lastChainId = connection.chainId;
       _events.add(
         MetamaskSiweEvent(
           MetamaskSiweEventType.accountsChanged,
@@ -374,6 +413,10 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
         ),
       );
     } catch (_) {
+      // Only surface malformed identity when we have no usable session.
+      // Transient errors during MetaMask handoff must not log the user out.
+      // Use _appKit (not _modal) so a disposed adapter does not rethrow here.
+      if (_lastAddress != null && _appKit?.isConnected == true) return;
       _events.add(
         MetamaskSiweEvent(
           MetamaskSiweEventType.invalidProviderData,
@@ -392,11 +435,12 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     final chain = event.chainId;
     if (chain == null || !chain.contains(':')) return;
     try {
+      final parsed = _positiveChainId(chain.substring(chain.indexOf(':') + 1));
+      // Same chain re-broadcast (session refresh) must not fire chainChanged.
+      if (parsed == _lastChainId) return;
+      _lastChainId = parsed;
       _events.add(
-        MetamaskSiweEvent(
-          MetamaskSiweEventType.chainChanged,
-          chainId: _positiveChainId(chain.substring(chain.indexOf(':') + 1)),
-        ),
+        MetamaskSiweEvent(MetamaskSiweEventType.chainChanged, chainId: parsed),
       );
     } catch (_) {
       _events.add(
@@ -411,20 +455,26 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   }
 
   void _onModalDisconnect(ModalDisconnect? _) {
-    if (!_events.isClosed) {
-      _events.add(MetamaskSiweEvent(MetamaskSiweEventType.disconnected));
-    }
+    if (_events.isClosed) return;
+    // Deep-link handoff to MetaMask can emit a spurious disconnect while the
+    // session topic is still alive. Only report a real loss of identity.
+    if (_lastAddress != null && _appKit?.isConnected == true) return;
+    _lastAddress = null;
+    _lastChainId = null;
+    _events.add(MetamaskSiweEvent(MetamaskSiweEventType.disconnected));
   }
 
   void _onModalError(ModalError? event) {
-    if (event != null && !_events.isClosed) {
-      _events.add(
-        MetamaskSiweEvent(
-          MetamaskSiweEventType.invalidProviderData,
-          error: _mapModalError(event),
-        ),
-      );
-    }
+    if (event == null || _events.isClosed) return;
+    // ErrorOpeningWallet / pairing noise after returning from MetaMask must
+    // not tear down an authenticated session that still has an address.
+    if (_lastAddress != null && _appKit?.isConnected == true) return;
+    _events.add(
+      MetamaskSiweEvent(
+        MetamaskSiweEventType.invalidProviderData,
+        error: _mapModalError(event),
+      ),
+    );
   }
 
   @override
