@@ -651,9 +651,9 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
 
     // Dùng cùng trạng thái với cửa hàng hiện có.
     // Ngoại hình được áp dụng khi game dựng ván tiếp theo.
-    setState(() {
-      game.nhanVatDangDung = nvDaChon.tepAnh;
-    });
+    await game.luuNhanVatDaChon(nvDaChon);
+    if (!mounted) return;
+    setState(() {});
 
     pv?.veLai();
   }

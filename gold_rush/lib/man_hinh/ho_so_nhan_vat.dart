@@ -185,6 +185,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                       tenNhanVat: nhanVat.name,
                       spriteSheet: spriteSheet,
                     );
+                    if (!context.mounted) return;
                     setModalState(() {});
                   },
                   khiMoTaoNhanVat: () async {
@@ -245,7 +246,8 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                             !pv.daCo.contains(nhanVat.id))) {
                       throw StateError('Chưa xác nhận quyền sở hữu nhân vật.');
                     }
-                    g.nhanVatDangDung = nhanVat.tepAnh;
+                    await g.luuNhanVatDaChon(nhanVat);
+                    if (!context.mounted) return;
                     setModalState(() {});
                     if (mounted) setState(() {});
                     pv?.veLai();
