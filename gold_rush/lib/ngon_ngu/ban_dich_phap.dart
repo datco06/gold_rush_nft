@@ -1,5 +1,12 @@
 /// UI text only. Protocol fields and signed messages are never translated.
 const banDichPhap = <String, String>{
+  'Lịch sử màn chơi': 'Historique des niveaux',
+  'Thắng': 'Victoire',
+  'Thua': 'Défaite',
+  'Thời lượng: {0}': 'Durée : {0}',
+  'Kết thúc: {0}': 'Fin : {0}',
+  'Chưa có ván chơi hoàn thành.': 'Aucune partie terminée pour le moment.',
+  '100 ván gần nhất trên thiết bị này': 'Les 100 dernières parties sur cet appareil',
   'Hướng dẫn tân thủ': 'Guide du débutant',
   'Xem lại hướng dẫn': 'Revoir le guide',
   'Bước {0}/5': 'Étape {0}/5',

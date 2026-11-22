@@ -1,5 +1,12 @@
 /// UI text only. Protocol fields and signed messages are never translated.
 const banDichAnh = <String, String>{
+  'Lịch sử màn chơi': 'Stage history',
+  'Thắng': 'Victory',
+  'Thua': 'Defeat',
+  'Thời lượng: {0}': 'Duration: {0}',
+  'Kết thúc: {0}': 'Finished: {0}',
+  'Chưa có ván chơi hoàn thành.': 'No completed matches yet.',
+  '100 ván gần nhất trên thiết bị này': 'Latest 100 matches on this device',
   'Ngôn ngữ': 'Language',
   'Hướng dẫn tân thủ': 'Beginner guide',
   'Xem lại hướng dẫn': 'View tutorial again',

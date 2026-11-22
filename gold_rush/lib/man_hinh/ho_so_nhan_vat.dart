@@ -17,6 +17,7 @@ import '../kho_do/vat_pham_hien_thi.dart';
 import 'anh_nhan_vat.dart';
 import 'kho_do.dart';
 import 'main_lobby.dart' show CharacterMiniProfile;
+import 'lich_su_man_choi.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 //  PALETTE — extends LobbyColors for Profile-specific tones
@@ -1047,6 +1048,19 @@ class _TabCaNhan extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ManHinhLichSuManChoi(game: game),
+                ),
+              ),
+              icon: const Icon(Icons.history_rounded),
+              label: const ChuGame('Lịch sử màn chơi', textAlign: TextAlign.center),
+            ),
+          ),
+          const SizedBox(height: 14),
           // Section title
           const _SectionTitle(
             icon: Icons.info_outline_rounded,
