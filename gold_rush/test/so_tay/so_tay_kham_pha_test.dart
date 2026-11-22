@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/kho_do/danh_sach_trang_bi.dart';
 import 'package:gold_rush/man_choi.dart';
+import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 import 'package:gold_rush/so_tay/danh_muc_so_tay.dart';
 import 'package:gold_rush/so_tay/so_tay_kham_pha.dart';
 
@@ -92,6 +93,26 @@ void main() {
       );
       await failedWrite.ghi({'quai:boss'});
       expect((await failedWrite.doc()).daMo, isEmpty);
+    },
+  );
+
+  test(
+    'every notebook description has an English French and Spanish translation',
+    () async {
+      final stages = ManChoi.docDanhSach(
+        File('assets/tiles/man_choi.json').readAsStringSync(),
+      );
+      final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+      for (final code in ['en', 'fr', 'es']) {
+        await language.doi(code);
+        for (final entry in danhMucSoTay(stages)) {
+          expect(
+            language.dich(entry.moTa),
+            isNot(entry.moTa),
+            reason: '$code / ${entry.khoa}',
+          );
+        }
+      }
     },
   );
 
