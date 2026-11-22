@@ -15,6 +15,7 @@ import '../kho_do/nhan_vat_voi_trang_bi.dart';
 import '../kho_do/vat_pham_hien_thi.dart';
 import 'ho_so_nhan_vat.dart';
 import 'anh_nhan_vat.dart';
+import 'so_tay_kham_pha.dart';
 
 /// Bảng màu Fantasy Treasure Adventure / RPG Mining Cave cho Main Lobby.
 abstract final class LobbyColors {
@@ -301,6 +302,45 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
+                                  Align(
+                                    alignment: Alignment.topRight,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: SizedBox(
+                                        width: rightPanelWidth,
+                                        child: OutlinedButton.icon(
+                                          onPressed: () => Navigator.of(context)
+                                              .push(
+                                                MaterialPageRoute<void>(
+                                                  builder: (_) =>
+                                                      ManHinhSoTayKhamPha(
+                                                        game: g,
+                                                      ),
+                                                ),
+                                              ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor:
+                                                LobbyColors.highlightGold,
+                                            backgroundColor: LobbyColors.panel,
+                                            side: const BorderSide(
+                                              color: LobbyColors.panelBorder,
+                                            ),
+                                            minimumSize: const Size(0, 48),
+                                            textStyle: TextStyle(
+                                              fontSize: compact ? 12 : 14,
+                                            ),
+                                          ),
+                                          icon: const Icon(
+                                            Icons.menu_book_rounded,
+                                          ),
+                                          label: const ChuGame(
+                                            'Sổ tay khám phá',
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                   Align(
                                     alignment: Alignment.topLeft,
                                     child: Padding(

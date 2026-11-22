@@ -63,7 +63,7 @@ void main() {
   NgonNgu language() => NgonNgu(doc: () async => null, ghi: (_) async {});
 
   testWidgets(
-    'profile opens notebook and back keeps history and profile tabs',
+    'profile keeps history and tabs without notebook shortcut',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1280, 720));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -72,14 +72,7 @@ void main() {
         wrap(CharacterProfileScreen(game: g), language()),
       );
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Sổ tay khám phá'));
-      await tester.tap(find.text('Sổ tay khám phá'));
-      await tester.pumpAndSettle();
-      expect(find.byType(ManHinhSoTayKhamPha), findsOneWidget);
-      expect(find.text('Đã khám phá 0/20'), findsOneWidget);
-      expect(find.text(stages.first.ten), findsNothing);
-      await tester.tap(find.byTooltip('Quay lại'));
-      await tester.pumpAndSettle();
+      expect(find.text('Sổ tay khám phá'), findsNothing);
       expect(find.text('Lịch sử màn chơi'), findsOneWidget);
       expect(find.text('CÁ NHÂN'), findsOneWidget);
     },

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gold_rush/components/ui/gold_rush_top_bar.dart';
 import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/kho_do/vat_pham_hien_thi.dart';
 import 'package:gold_rush/man_hinh/main_lobby.dart';
+import 'package:gold_rush/man_hinh/so_tay_kham_pha.dart';
+import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
+
+import '../ngon_ngu/ho_tro_json.dart';
 
 void _registerTestOverlays(GoldRushGame game) {
   for (final name in const [
@@ -31,6 +36,62 @@ Widget _wrapLobby(GoldRushGame game, Size size) {
 }
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
+
+  for (final size in const [Size(844, 390), Size(1280, 720)]) {
+    testWidgets('Lobby opens notebook and returns at $size in all languages', (
+      tester,
+    ) async {
+      final game = GoldRushGame();
+      _registerTestOverlays(game);
+      addTearDown(game.danhSachVatPham.dispose);
+      final language = NgonNgu(doc: () async => null, ghi: (_) async {});
+      addTearDown(language.dispose);
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        PhamViNgonNgu(ngonNgu: language, child: _wrapLobby(game, size)),
+      );
+      for (final code in const ['vi', 'en', 'fr', 'es']) {
+        await language.doi(code);
+        await tester.pumpAndSettle();
+        final button = find.widgetWithText(
+          OutlinedButton,
+          language.dich('Sổ tay khám phá'),
+        );
+        expect(button, findsOneWidget, reason: code);
+        final bounds = tester.getRect(button);
+        final topBar = tester.getRect(find.byType(GoldRushTopBar));
+        expect(bounds.top, closeTo(topBar.bottom + 12, 0.1));
+        expect(bounds.right, closeTo(topBar.right, 0.1));
+        expect(bounds.left, greaterThanOrEqualTo(0));
+        expect(bounds.top, greaterThanOrEqualTo(0));
+        expect(bounds.right, lessThanOrEqualTo(size.width));
+        expect(bounds.bottom, lessThanOrEqualTo(size.height));
+        expect(button.hitTestable(), findsOneWidget, reason: code);
+        final lobby = tester.state(find.byType(GoldRushMainLobby));
+
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+        expect(find.byType(ManHinhSoTayKhamPha), findsOneWidget);
+        expect(
+          tester.widget<ManHinhSoTayKhamPha>(
+            find.byType(ManHinhSoTayKhamPha),
+          ).game,
+          same(game),
+        );
+        await tester.tap(find.byTooltip(language.dich('Quay lại')));
+        await tester.pumpAndSettle();
+        expect(find.byType(ManHinhSoTayKhamPha), findsNothing);
+        expect(tester.state(find.byType(GoldRushMainLobby)), same(lobby));
+        expect(find.text(language.dich('BẮT ĐẦU')), findsOneWidget);
+        expect(game.overlays.isActive(LopPhu.menu), isTrue);
+        expect(tester.takeException(), isNull, reason: '$size / $code');
+      }
+    });
+  }
+
   testWidgets(
     'Main Lobby renders header, George mini-profile, equipment panel, and START button without old menu buttons',
     (tester) async {
