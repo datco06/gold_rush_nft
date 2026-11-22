@@ -8,12 +8,12 @@ import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai/dieu_chinh_do_kho.dart';
 import 'ai/gui_nhat_ky.dart';
 import 'ai/may_chu_tien_trinh.dart';
 import 'ai/may_chu_huy_hieu.dart';
+import 'ai/may_chu_nhan_vat.dart';
 import 'ai/mo_hinh_do_kho.dart';
 import 'ai/nhat_ky_choi.dart';
 import 'ai/tien_trinh_controller.dart';
@@ -42,6 +42,7 @@ import 'components/vat_pham_roi.dart' hide LoaiVatPham;
 import 'dieu_khien/nut_tam_dung.dart';
 import 'kho_do/vat_pham_hien_thi.dart';
 import 'kho_do/danh_sach_trang_bi.dart';
+import 'kho_do/luu_lua_chon.dart';
 import 'man_choi.dart';
 import 'tai_nguyen.dart';
 import 'the_gioi.dart';
@@ -121,6 +122,7 @@ class GoldRushGame extends FlameGame
     this.auth,
     TienTrinhController? tienTrinh,
     bool? batBoss,
+    this._mayChuNhanVat,
   ]) : _tienTrinhController = tienTrinh,
        coBoss = batBoss ?? CauHinh.batBoss,
        super(world: theGioi);
@@ -130,11 +132,13 @@ class GoldRushGame extends FlameGame
     AuthController? auth,
     TienTrinhController? tienTrinh,
     bool? batBoss,
-  }) => GoldRushGame._(TheGioi(), vi, auth, tienTrinh, batBoss);
+    MayChuNhanVat? mayChuNhanVat,
+  }) => GoldRushGame._(TheGioi(), vi, auth, tienTrinh, batBoss, mayChuNhanVat);
 
   final Vi? _vi;
   final AuthController? auth;
   final TienTrinhController? _tienTrinhController;
+  final MayChuNhanVat? _mayChuNhanVat;
 
   late final TienTrinhController tienTrinh =
       _tienTrinhController ??
@@ -175,7 +179,29 @@ class GoldRushGame extends FlameGame
   static const String phienBanApp = '1.3.0';
 
   static const String tepMoHinhDoKho = 'assets/models/do_kho_v1.json';
-  static const String _khoaTrangBi = 'gold_rush.equipment.v1';
+  int _phienLuaChon = 0;
+  int _phienNhanVat = 0;
+  bool _daDongLuaChon = false;
+  Future<void>? _dangKhoiPhucLuaChon;
+  Future<void>? _dangKhoiPhucNhanVatAi;
+
+  ({String wallet, int chainId})? get _chuLuaChon {
+    final controller = auth;
+    if (_daDongLuaChon || controller == null || !controller.canEnterGame) {
+      return null;
+    }
+    final wallet = controller.walletAddress;
+    final chain = controller.chainId;
+    if (wallet == null || chain == null) return null;
+    return (wallet: wallet.toLowerCase(), chainId: chain.toInt());
+  }
+
+  LuuLuaChonKhoDo? _khoLuaChon() {
+    final chu = _chuLuaChon;
+    return chu == null
+        ? null
+        : LuuLuaChonKhoDo(wallet: chu.wallet, chainId: chu.chainId);
+  }
 
   late TimDuong timDuong;
 
@@ -196,16 +222,40 @@ class GoldRushGame extends FlameGame
 
   static String khoaNhanVatAi(String characterId) => 'ai:$characterId';
 
+  Future<void> luuNhanVatDaChon(NhanVatBan nhanVat) async {
+    final pv = phienVi;
+    if (nhanVat.id != georgeGoc.id &&
+        (pv == null || !pv.daKetNoi || !pv.daCo.contains(nhanVat.id))) {
+      throw StateError('Chưa xác nhận quyền sở hữu nhân vật.');
+    }
+    final kho = _khoLuaChon();
+    ++_phienLuaChon;
+    ++_phienNhanVat;
+    nhanVatDangDung = nhanVat.tepAnh;
+    tenNhanVatDangDung = nhanVat.ten;
+    await kho?.luuNhanVat(nhanVat.tepAnh);
+    await _dangKhoiPhucLuaChon;
+    await khoiPhucLuaChonKhoDo();
+  }
+
   /// Tải sprite-sheet của nhân vật AI đã lưu và chọn làm ngoại hình cho ván sau.
   Future<void> trangBiNhanVatAi({
     required String characterId,
     required String tenNhanVat,
     required Uint8List spriteSheet,
   }) async {
+    final chu = _chuLuaChon;
+    final kho = _khoLuaChon();
+    ++_phienLuaChon;
+    final phien = ++_phienNhanVat;
     final khoa = khoaNhanVatAi(characterId);
     await taiNguyen.napNhanVatAi(khoa, spriteSheet);
+    if (_daDongLuaChon || chu != _chuLuaChon || phien != _phienNhanVat) return;
     nhanVatDangDung = khoa;
     tenNhanVatDangDung = tenNhanVat;
+    await kho?.luuNhanVat(khoa);
+    await _dangKhoiPhucLuaChon;
+    await khoiPhucLuaChonKhoDo();
   }
 
   /// Danh sách vật phẩm & trang bị đồng bộ giữa Main Lobby và Kho đồ.
@@ -303,7 +353,7 @@ class GoldRushGame extends FlameGame
   Future<void> dongBoNFTKhoDo({bool force = false}) {
     final diaChi = phienVi?.diaChi?.toLowerCase();
     if (!force && diaChi != null && diaChi == _diaChiNFTDaDongBo) {
-      return Future<void>.value();
+      return khoiPhucLuaChonKhoDo();
     }
     final dangChay = _dongBoNFTDangChay;
     if (dangChay != null) return dangChay;
@@ -317,6 +367,7 @@ class GoldRushGame extends FlameGame
   }
 
   Future<void> _dongBoNFTKhoDoNoi() async {
+    final chuLucDau = _chuLuaChon;
     final pv = phienVi;
     final cauHinh = pv?.cauHinh;
     final hopDong = cauHinh?.hopDongVatPham;
@@ -339,6 +390,7 @@ class GoldRushGame extends FlameGame
           _metadataNFT(catalog[i], i + 1, hopDong, cauHinh.chainId),
       ];
       final nftDaDoc = await dichVu.taiDanhSachSoDu(metadata);
+      if (_daDongLuaChon || chuLucDau != _chuLuaChon) return;
       var danhSachMoi = List<VatPhamHienThi>.of(danhSachVatPham.value);
       var coThayDoi = false;
 
@@ -374,8 +426,11 @@ class GoldRushGame extends FlameGame
       if (coThayDoi) {
         danhSachVatPham.value = danhSachMoi;
         _apDungTrangBiChoGeorge();
-        await _luuTrangBi();
       }
+      // Inventory must exist before selected IDs can be reapplied. Automatic
+      // synchronization never overwrites preferences with a temporarily empty bag.
+      await khoiPhucLuaChonKhoDo();
+      if (_daDongLuaChon || chuLucDau != _chuLuaChon) return;
       _diaChiNFTDaDongBo = pv.diaChi?.toLowerCase();
 
       // Blockchain đã cập nhật UI; việc ghi snapshot cho Backend không được
@@ -523,12 +578,14 @@ class GoldRushGame extends FlameGame
     final hienTai = ds[index];
     final conLai = soLuongConLai?.toInt() ?? 0;
     if (conLai <= 0) {
+      final kho = _khoLuaChon();
+      ++_phienLuaChon;
       danhSachVatPham.value = [
         for (var i = 0; i < ds.length; i++)
           if (i != index) ds[i],
       ];
       _apDungTrangBiChoGeorge();
-      await _luuTrangBi();
+      await kho?.xoaVatPham(itemId);
       return;
     }
 
@@ -561,6 +618,8 @@ class GoldRushGame extends FlameGame
       o = OTrangBi.vuKhiChinh;
     }
 
+    final kho = _khoLuaChon();
+    ++_phienLuaChon;
     danhSachVatPham.value = [
       for (final item in ds)
         if (item.id == itemId)
@@ -571,58 +630,156 @@ class GoldRushGame extends FlameGame
           item,
     ];
     _apDungTrangBiChoGeorge();
-    await _luuTrangBi();
+    await kho?.luuOTrangBi(o.name, itemId);
+    // A concurrent startup read may have been discarded because this choice
+    // was newer. Reapply the other saved slots after the write has finished.
+    await _dangKhoiPhucLuaChon;
+    await khoiPhucLuaChonKhoDo();
   }
 
   Future<void> thaoVatPham(String itemId) async {
     final ds = danhSachVatPham.value;
+    final kho = _khoLuaChon();
+    ++_phienLuaChon;
     danhSachVatPham.value = [
       for (final item in ds)
         if (item.id == itemId) item.voiTrangBi(null) else item,
     ];
     _apDungTrangBiChoGeorge();
-    await _luuTrangBi();
+    await kho?.xoaVatPham(itemId);
+    await _dangKhoiPhucLuaChon;
+    await khoiPhucLuaChonKhoDo();
   }
 
-  Future<void> _luuTrangBi() async {
-    final dangMac = <String, String>{};
-    for (final vp in danhSachVatPham.value) {
-      final o = vp.oDangTrangBi;
-      if (o != null) dangMac[o.name] = vp.id;
-    }
-    await SharedPreferencesAsync().setString(_khoaTrangBi, jsonEncode(dangMac));
+  Future<void> khoiPhucLuaChonKhoDo() {
+    final dangChay = _dangKhoiPhucLuaChon;
+    if (dangChay != null) return dangChay;
+    final future = _khoiPhucLuaChonKhoDo();
+    _dangKhoiPhucLuaChon = future;
+    return future.whenComplete(() {
+      if (identical(_dangKhoiPhucLuaChon, future)) _dangKhoiPhucLuaChon = null;
+    });
   }
 
-  Future<void> _napTrangBiDaLuu() async {
-    try {
-      final raw = await SharedPreferencesAsync().getString(_khoaTrangBi);
-      if (raw == null) return;
-      final data = jsonDecode(raw);
-      if (data is! Map) return;
-      var ds = [
-        for (final item in danhSachVatPham.value) item.voiTrangBi(null),
-      ];
-      for (final entry in data.entries) {
-        if (entry.key is! String || entry.value is! String) continue;
-        OTrangBi? slot;
-        for (final value in OTrangBi.values) {
-          if (value.name == entry.key) slot = value;
+  Future<void> _khoiPhucLuaChonKhoDo() async {
+    final chu = _chuLuaChon;
+    final kho = _khoLuaChon();
+    if (chu == null || kho == null) return;
+    final phien = _phienLuaChon;
+    final saved = await kho.doc();
+    if (chu != _chuLuaChon || phien != _phienLuaChon) return;
+    final nhanVatTruoc = nhanVatDangDung;
+    final tep = saved.nhanVat;
+    if (tep != null && tep != nhanVatDangDung) {
+      for (final nv in [georgeGoc, ...bangNhanVat]) {
+        if (nv.tepAnh == tep &&
+            (nv.id == georgeGoc.id ||
+                phienVi?.daKetNoi == true &&
+                    phienVi?.diaChi?.toLowerCase() == chu.wallet &&
+                    phienVi?.cauHinh?.chainId == chu.chainId &&
+                    phienVi!.daCo.contains(nv.id))) {
+          nhanVatDangDung = nv.tepAnh;
+          tenNhanVatDangDung = nv.ten;
+          break;
         }
-        if (slot == null) continue;
-        ds = [
-          for (final item in ds)
-            if (item.id == entry.value)
-              item.voiTrangBi(slot)
-            else if (item.oDangTrangBi == slot)
-              item.voiTrangBi(null)
-            else
-              item,
-        ];
       }
-      danhSachVatPham.value = ds;
-    } catch (_) {
-      // Dữ liệu lưu cũ/hỏng không được chặn việc vào game.
+      if (tep.startsWith('ai:char_') &&
+          _dangKhoiPhucNhanVatAi == null &&
+          phienVi?.daKetNoi == true &&
+          phienVi?.diaChi?.toLowerCase() == chu.wallet &&
+          phienVi?.cauHinh?.chainId == chu.chainId) {
+        final future = _khoiPhucNhanVatAi(tep, chu, _phienNhanVat);
+        _dangKhoiPhucNhanVatAi = future;
+        unawaited(
+          future.whenComplete(() {
+            if (identical(_dangKhoiPhucNhanVatAi, future)) {
+              _dangKhoiPhucNhanVatAi = null;
+            }
+          }),
+        );
+      }
     }
+    var daDoi = false;
+    final restored = <VatPhamHienThi>[];
+    for (final item in danhSachVatPham.value) {
+      OTrangBi? slot;
+      if (item.soLuong > 0 &&
+          (item.nguon != NguonVatPham.nft ||
+              item.tokenId != null &&
+                  item.chainId == chu.chainId &&
+                  phienVi?.daKetNoi == true &&
+                  phienVi?.diaChi?.toLowerCase() == chu.wallet &&
+                  item.diaChiHopDong?.toLowerCase() ==
+                      phienVi?.cauHinh?.hopDongVatPham?.toLowerCase())) {
+        for (final value in OTrangBi.values) {
+          if (saved.trangBi[value.name] == item.id &&
+              _oCuaVatPham(item) == value) {
+            slot = value;
+          }
+        }
+      }
+      if (slot != null && slot != item.oDangTrangBi) {
+        daDoi = true;
+        restored.add(item.voiTrangBi(slot));
+      } else {
+        restored.add(item);
+      }
+    }
+    if (daDoi || nhanVatTruoc != nhanVatDangDung) {
+      danhSachVatPham.value = restored;
+      _apDungTrangBiChoGeorge();
+    }
+  }
+
+  Future<void> _khoiPhucNhanVatAi(
+    String khoa,
+    ({String wallet, int chainId}) chu,
+    int phien,
+  ) async {
+    final characterId = khoa.substring(3);
+    if (!RegExp(r'^char_[0-9a-f]{32}$').hasMatch(characterId)) return;
+    final api = _mayChuNhanVat ?? MayChuNhanVat();
+    try {
+      final detail = await api.layChiTiet(characterId);
+      final nv = detail.nhanVat;
+      if (chu != _chuLuaChon ||
+          phien != _phienNhanVat ||
+          nv == null ||
+          !nv.playableReady ||
+          nv.verifiedWalletAddress.toLowerCase() != chu.wallet) {
+        return;
+      }
+      final sprite = await api.taiSpriteSheetDaLuu(characterId);
+      if (chu != _chuLuaChon || phien != _phienNhanVat || !sprite.thanhCong) {
+        return;
+      }
+      await taiNguyen.napNhanVatAi(khoa, sprite.png!);
+      if (chu != _chuLuaChon || phien != _phienNhanVat) return;
+      nhanVatDangDung = khoa;
+      tenNhanVatDangDung = nv.name;
+      danhSachVatPham.value = List.of(danhSachVatPham.value);
+    } on Object {
+      // Keep the saved ID for the next authorized retry; never grant ownership
+      // from local storage or stop entry because the image server is unavailable.
+    } finally {
+      if (_mayChuNhanVat == null) api.dong();
+    }
+  }
+
+  OTrangBi? _oCuaVatPham(VatPhamHienThi item) => switch (item.loai) {
+    LoaiVatPham.giap => OTrangBi.giap,
+    LoaiVatPham.giay => OTrangBi.giay,
+    LoaiVatPham.vuKhi =>
+      item.bieuTuong == BieuTuongVatPham.cung
+          ? OTrangBi.vuKhiPhu
+          : OTrangBi.vuKhiChinh,
+    _ => null,
+  };
+
+  @override
+  void onRemove() {
+    _daDongLuaChon = true;
+    super.onRemove();
   }
 
   void _apDungTrangBiChoGeorge() {
@@ -707,7 +864,7 @@ class GoldRushGame extends FlameGame
   Future<void> onLoad() async {
     await taiNguyen.nap();
     await AmThanh.napTruoc();
-    await _napTrangBiDaLuu();
+    await khoiPhucLuaChonKhoDo();
     unawaited(phienVi?.napVangDaLuu());
 
     await _napDanhSachMan();
@@ -727,6 +884,7 @@ class GoldRushGame extends FlameGame
         final dongBo = () async {
           final daKetNoi = await pv.ketNoiDaXacThuc(auth!.walletAddress!);
           if (daKetNoi) {
+            await khoiPhucLuaChonKhoDo();
             await dongBoNFTKhoDo();
             await dongBoSBT();
           }
