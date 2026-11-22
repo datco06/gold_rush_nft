@@ -43,6 +43,7 @@ import 'dieu_khien/nut_tam_dung.dart';
 import 'kho_do/vat_pham_hien_thi.dart';
 import 'kho_do/danh_sach_trang_bi.dart';
 import 'kho_do/luu_lua_chon.dart';
+import 'lich_su/lich_su_man_choi.dart';
 import 'man_choi.dart';
 import 'tai_nguyen.dart';
 import 'the_gioi.dart';
@@ -201,6 +202,19 @@ class GoldRushGame extends FlameGame
     return chu == null
         ? null
         : LuuLuaChonKhoDo(wallet: chu.wallet, chainId: chu.chainId);
+  }
+
+  ({String wallet, int chainId})? _chuLichSuVan;
+  double _giayLichSuVan = 0;
+
+  Future<List<VanDaChoi>> docLichSuManChoi() async {
+    final chu = _chuLuaChon;
+    if (chu == null) return [];
+    final entries = await LuuLichSuManChoi(
+      wallet: chu.wallet,
+      chainId: chu.chainId,
+    ).doc();
+    return chu == _chuLuaChon ? entries : [];
   }
 
   late TimDuong timDuong;
@@ -1541,6 +1555,10 @@ class GoldRushGame extends FlameGame
 
   @override
   void update(double dt) {
+    if (_vanDangDienRa && trangThai == TrangThaiChoi.dangChoi) {
+      // Count the final frame too, without changing telemetry or timeout rules.
+      _giayLichSuVan += min(max(0.0, dt), max(0.0, giayConLai ?? dt));
+    }
     super.update(dt);
 
     if (trangThai != TrangThaiChoi.dangChoi) return;
@@ -1606,6 +1624,27 @@ class GoldRushGame extends FlameGame
     final maVan = nhatKy.maVan;
     final man = manHienTai;
     final thang = ketQua == 'thang';
+    final chuLichSu = _chuLichSuVan;
+    _chuLichSuVan = null;
+    if (chuLichSu != null &&
+        chuLichSu == _chuLuaChon &&
+        (ketQua == 'thang' || ketQua == 'thua')) {
+      unawaited(
+        LuuLichSuManChoi(
+          wallet: chuLichSu.wallet,
+          chainId: chuLichSu.chainId,
+        ).ghi(
+          VanDaChoi(
+            maVan: maVan,
+            manId: man.id,
+            tenMan: man.ten,
+            thang: thang,
+            giay: _giayLichSuVan,
+            ketThuc: DateTime.now().toUtc(),
+          ),
+        ),
+      );
+    }
     var kq = KetQuaVan(
       man: man,
       maVan: maVan,
@@ -1968,6 +2007,8 @@ class GoldRushGame extends FlameGame
     _daGuiVaXinPhieu = false;
 
     _dungVan(maVan: maVan);
+    _chuLichSuVan = _chuLuaChon;
+    _giayLichSuVan = 0;
     _vanDangDienRa = true;
 
     _anTatCaLopPhu();
