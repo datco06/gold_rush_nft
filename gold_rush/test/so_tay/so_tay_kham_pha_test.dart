@@ -1,3 +1,5 @@
+import '../ngon_ngu/ho_tro_json.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -10,6 +12,7 @@ import 'package:gold_rush/so_tay/danh_muc_so_tay.dart';
 import 'package:gold_rush/so_tay/so_tay_kham_pha.dart';
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
   final memory = <String, String>{};
   LuuSoTayKhamPha kho(String wallet, [int chain = 31337]) => LuuSoTayKhamPha(
     wallet: wallet,

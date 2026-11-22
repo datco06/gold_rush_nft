@@ -3,37 +3,56 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'ban_dich.dart';
-import 'ban_dich_phap.dart';
-import 'ban_dich_tay_ban_nha.dart';
+import 'nguon_ban_dich.dart';
 
 /// App text only: never changes protocol values, signed messages or game state.
 class NgonNgu extends ChangeNotifier {
-  NgonNgu({Future<String?> Function()? doc, Future<void> Function(String)? ghi})
-    : _doc = doc ?? (() => SharedPreferencesAsync().getString(khoa)),
-      _ghi = ghi ?? ((code) => SharedPreferencesAsync().setString(khoa, code));
+  NgonNgu({
+    Future<String?> Function()? doc,
+    Future<void> Function(String)? ghi,
+    NguonBanDich? nguon,
+  }) : _nguon = nguon ?? _nguonChung,
+       _doc = doc ?? (() => SharedPreferencesAsync().getString(khoa)),
+       _ghi = ghi ?? ((code) => SharedPreferencesAsync().setString(khoa, code));
 
   static const khoa = 'gold_rush.language.v1';
-  static const hoTro = {
-    'vi': 'Tiếng Việt',
-    'en': 'English',
-    'fr': 'Français',
-    'es': 'Español',
-  };
+  static final _nguonChung = NguonBanDich();
+  static Map<String, String> get hoTro => _nguonChung.cacNgonNgu;
   static final chung = NgonNgu();
+  final NguonBanDich _nguon;
+  final _cacBanDich = <String, _BanDich>{};
   final Future<String?> Function() _doc;
   final Future<void> Function(String) _ghi;
   String _ma = 'vi';
   int _phien = 0;
+  int _lanChon = 0;
+  int _lanDaChon = 0;
+  final _dangChon = <int, String>{};
   Future<void> _hangDoi = Future<void>.value();
   String get ma => _ma;
+  bool _daDong = false;
+  Map<String, String> get cacNgonNgu => _nguon.cacNgonNgu;
+
+  Future<void> chuanBi() async {
+    try {
+      await _nguon.nap();
+      if (!_daDong) notifyListeners();
+    } on Object {
+      // Keep Vietnamese usable when the bundled language manifest is missing.
+    }
+  }
 
   Future<void> nap() async {
     final phien = _phien;
     try {
+      await _nguon.nap();
       final saved = await _doc();
-      if (phien == _phien && hoTro.containsKey(saved)) {
-        _ma = saved!;
+      if (!_daDong && phien == _phien) {
+        if (cacNgonNgu.containsKey(saved)) {
+          _ma = saved!;
+        } else if (_phien == 0) {
+          _ma = _nguon.macDinh;
+        }
         notifyListeners();
       }
     } catch (_) {
@@ -42,7 +61,28 @@ class NgonNgu extends ChangeNotifier {
   }
 
   Future<bool> doi(String code) async {
-    if (!hoTro.containsKey(code)) return false;
+    if (_daDong || _nguon.daNap && !cacNgonNgu.containsKey(code)) return false;
+    final lan = ++_lanChon;
+    if (!_nguon.daNap) {
+      _dangChon[lan] = code;
+      try {
+        await _nguon.nap();
+      } on Object {
+        _dangChon.remove(lan);
+        return false;
+      }
+      final coLuaChonMoiHon = _dangChon.entries.any(
+        (entry) => entry.key > lan && cacNgonNgu.containsKey(entry.value),
+      );
+      _dangChon.remove(lan);
+      if (_daDong ||
+          lan < _lanDaChon ||
+          coLuaChonMoiHon ||
+          !cacNgonNgu.containsKey(code)) {
+        return false;
+      }
+    }
+    _lanDaChon = lan;
     ++_phien;
     _ma = code;
     notifyListeners();
@@ -60,18 +100,27 @@ class NgonNgu extends ChangeNotifier {
 
   String dich(String source) {
     if (_ma == 'vi') return source;
-    return _cacBanDich[_ma]!.dich(source);
+    return _cacBanDich
+        .putIfAbsent(
+          _ma,
+          () => _BanDich({
+            ..._nguon.banDich(_nguon.duPhong),
+            ..._nguon.banDich(_ma),
+          }),
+        )
+        .dich(source);
+  }
+
+  @override
+  void dispose() {
+    _daDong = true;
+    _dangChon.clear();
+    super.dispose();
   }
 }
 
-final _cacBanDich = {
-  'en': _BanDich(banDichAnh),
-  'fr': _BanDich(banDichPhap),
-  'es': _BanDich(banDichTayBanNha),
-};
-
 class _BanDich {
-  _BanDich(Map<String, String> noiDung) : tu = {...banDichAnh, ...noiDung} {
+  _BanDich(Map<String, String> noiDung) : tu = noiDung {
     vietHoa = {
       for (final entry in tu.entries)
         if (!entry.key.contains(RegExp(r'\{\d+\}')))
@@ -184,7 +233,7 @@ class ChonNgonNgu extends StatelessWidget {
                 size: 20,
               ),
               items: [
-                for (final entry in NgonNgu.hoTro.entries)
+                for (final entry in language.cacNgonNgu.entries)
                   DropdownMenuItem(value: entry.key, child: Text(entry.value)),
               ],
               onChanged: (code) {

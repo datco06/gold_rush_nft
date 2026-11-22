@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import '../ngon_ngu/ho_tro_json.dart';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,8 +12,6 @@ import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/man_choi.dart';
 import 'package:gold_rush/man_hinh/chon_man.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
-import 'package:gold_rush/ngon_ngu/ban_dich_phap.dart';
-import 'package:gold_rush/ngon_ngu/ban_dich_tay_ban_nha.dart';
 import 'package:gold_rush/world_map/ban_do_the_gioi.dart';
 import 'package:gold_rush/world_map/canh_quan_world_map.dart';
 import 'package:gold_rush/world_map/tien_trinh_world_map.dart';
@@ -60,6 +62,13 @@ class _GameKiemThu implements GoldRushGame {
 }
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
+  Map<String, String> catalog(String code) => Map<String, String>.from(
+    jsonDecode(File('assets/i18n/$code.json').readAsStringSync()) as Map,
+  );
+  final banDichPhap = catalog('fr');
+  final banDichTayBanNha = catalog('es');
+
   final danhSachMan = ManChoi.docDanhSach(
     File('assets/tiles/man_choi.json').readAsStringSync(),
   );
@@ -211,10 +220,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.descendant(
-            of: panel,
-            matching: find.text(description),
-          ),
+          find.descendant(of: panel, matching: find.text(description)),
           findsOneWidget,
         );
         if (entry.value.containsKey(stage.ten)) {

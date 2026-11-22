@@ -1,15 +1,25 @@
+import 'dart:io';
+import 'dart:convert';
+
+import 'ho_tro_json.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
-import 'package:gold_rush/ngon_ngu/ban_dich.dart';
-import 'package:gold_rush/ngon_ngu/ban_dich_phap.dart';
-import 'package:gold_rush/ngon_ngu/ban_dich_tay_ban_nha.dart';
 import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/man_hinh/lop_phu.dart';
 import 'package:gold_rush/auth/auth_controller.dart';
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
+  Map<String, String> catalog(String code) => Map<String, String>.from(
+    jsonDecode(File('assets/i18n/$code.json').readAsStringSync()) as Map,
+  );
+  final banDichAnh = catalog('en');
+  final banDichPhap = catalog('fr');
+  final banDichTayBanNha = catalog('es');
+
   test('new catalogs cover every UI key and preserve all placeholders', () {
     final placeholders = RegExp(r'\{\d+\}');
     List<String> parameters(String text) =>

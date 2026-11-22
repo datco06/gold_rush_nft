@@ -52,6 +52,7 @@ class _LopPhuFadeIn extends StatelessWidget {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NgonNgu.chung.chuanBi();
 
   // Toàn màn hình và hướng ngang cho nền tảng hỗ trợ.
   if (!kIsWeb) {

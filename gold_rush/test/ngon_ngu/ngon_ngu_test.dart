@@ -1,3 +1,5 @@
+import 'ho_tro_json.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,6 +11,7 @@ import 'package:gold_rush/man_hinh/lop_phu.dart';
 import 'package:gold_rush/components/ui/gold_rush_top_bar.dart';
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
   testWidgets('settings switches immediately without replacing the game', (
     tester,
   ) async {

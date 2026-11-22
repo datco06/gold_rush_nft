@@ -1,3 +1,5 @@
+import '../ngon_ngu/ho_tro_json.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:gold_rush/huong_dan/huong_dan_tan_thu.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
   test(
     'seen state survives a new controller and failed storage is harmless',
     () async {

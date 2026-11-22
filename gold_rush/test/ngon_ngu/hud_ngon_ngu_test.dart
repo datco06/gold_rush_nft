@@ -1,3 +1,5 @@
+import 'ho_tro_json.dart';
+
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +7,7 @@ import 'package:gold_rush/components/hud.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(

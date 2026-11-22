@@ -1,4 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages
+import '../ngon_ngu/ho_tro_json.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -35,6 +37,7 @@ final class _DocCham extends InMemorySharedPreferencesAsync {
 }
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
