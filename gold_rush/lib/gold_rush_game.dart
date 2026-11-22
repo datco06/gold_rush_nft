@@ -44,6 +44,7 @@ import 'kho_do/vat_pham_hien_thi.dart';
 import 'kho_do/danh_sach_trang_bi.dart';
 import 'kho_do/luu_lua_chon.dart';
 import 'lich_su/lich_su_man_choi.dart';
+import 'so_tay/so_tay_kham_pha.dart';
 import 'man_choi.dart';
 import 'tai_nguyen.dart';
 import 'the_gioi.dart';
@@ -246,6 +247,78 @@ class GoldRushGame extends FlameGame
     return chu == _chuLuaChon ? entries : [];
   }
 
+  ({String wallet, int chainId})? _chuSoTayVan;
+  final _daGhiSoTayVan = <String>{};
+  final _choGhiSoTay = <VoidCallback>{};
+
+  Future<SoTayKhamPha> docSoTayKhamPha() async {
+    final chu = _chuLuaChon;
+    if (chu == null) return SoTayKhamPha();
+    final saved = await LuuSoTayKhamPha(
+      wallet: chu.wallet,
+      chainId: chu.chainId,
+    ).doc();
+    return chu == _chuLuaChon ? saved : SoTayKhamPha();
+  }
+
+  void _ghiKhamPha(Set<String> keys, ({String wallet, int chainId}) chu) {
+    final controller = auth;
+    if (keys.isEmpty || _daDongLuaChon || controller == null) return;
+    void ghi() => unawaited(
+      LuuSoTayKhamPha(wallet: chu.wallet, chainId: chu.chainId).ghi(keys),
+    );
+    if (chu == _chuLuaChon) {
+      ghi();
+    } else if (controller.status == AuthStatus.checkingSession &&
+        !controller.logoutPending) {
+      late final VoidCallback khiXong;
+      khiXong = () {
+        if (!_daDongLuaChon &&
+            controller.status == AuthStatus.checkingSession &&
+            !controller.logoutPending) {
+          return;
+        }
+        controller.removeListener(khiXong);
+        _choGhiSoTay.remove(khiXong);
+        if (chu == _chuLuaChon) ghi();
+      };
+      _choGhiSoTay.add(khiXong);
+      controller.addListener(khiXong);
+    }
+  }
+
+  void _ghiKhamPhaCuaVan(Set<String> keys) {
+    final chu = _chuSoTayVan;
+    if (!_vanDangDienRa || chu == null) return;
+    final moi = keys.difference(_daGhiSoTayVan);
+    _daGhiSoTayVan.addAll(moi);
+    _ghiKhamPha(moi, chu);
+  }
+
+  void _ghiTrangBiSoTay(Iterable<VatPhamHienThi> items) {
+    final chu = _chuLuaChon;
+    final pv = phienVi;
+    if (chu == null ||
+        pv?.daKetNoi != true ||
+        pv?.diaChi?.toLowerCase() != chu.wallet ||
+        pv?.cauHinh?.chainId != chu.chainId) {
+      return;
+    }
+    final catalog = danhSachTrangBiCuaHang().map((v) => v.id).toSet();
+    _ghiKhamPha({
+      for (final item in items)
+        if (!item.laDuLieuMau &&
+            item.soLuong > 0 &&
+            catalog.contains(item.id) &&
+            (item.nguon != NguonVatPham.nft ||
+                item.chainId == chu.chainId &&
+                    item.tokenId != null &&
+                    item.diaChiHopDong?.toLowerCase() ==
+                        pv?.cauHinh?.hopDongVatPham?.toLowerCase()))
+          'trang_bi:${item.id}',
+    }, chu);
+  }
+
   late TimDuong timDuong;
 
   final DieuChinhDoKho doKho = DieuChinhDoKho();
@@ -310,6 +383,7 @@ class GoldRushGame extends FlameGame
   /// Số dư on-chain/NFT vẫn là nguồn sự thật; notifier này chỉ cập nhật UI ngay.
   void themVatPhamVaoKho(VatPhamHienThi vatPham, {int soLuong = 1}) {
     if (soLuong < 1) return;
+    _ghiTrangBiSoTay([vatPham]);
     final ds = danhSachVatPham.value;
     final index = ds.indexWhere((item) => item.id == vatPham.id);
     if (index < 0) {
@@ -326,6 +400,7 @@ class GoldRushGame extends FlameGame
   /// Đồng bộ số lượng NFT đã đọc trên chuỗi, không cộng lặp khi mở lại Store.
   void dongBoSoLuongVatPham(VatPhamHienThi vatPham, int soLuong) {
     if (soLuong < 1) return;
+    _ghiTrangBiSoTay([vatPham]);
     final ds = danhSachVatPham.value;
     final index = ds.indexWhere((item) => item.id == vatPham.id);
     if (index < 0) {
@@ -475,6 +550,7 @@ class GoldRushGame extends FlameGame
       await khoiPhucLuaChonKhoDo();
       if (_daDongLuaChon || chuLucDau != _chuLuaChon) return;
       _diaChiNFTDaDongBo = pv.diaChi?.toLowerCase();
+      _ghiTrangBiSoTay(danhSachMoi.where((v) => v.nguon == NguonVatPham.nft));
 
       // Blockchain đã cập nhật UI; việc ghi snapshot cho Backend không được
       // chặn màn hình Kho đồ/Cửa hàng.
@@ -826,6 +902,10 @@ class GoldRushGame extends FlameGame
       auth?.removeListener(listener);
     }
     _choLuuLichSu.clear();
+    for (final listener in _choGhiSoTay) {
+      auth?.removeListener(listener);
+    }
+    _choGhiSoTay.clear();
     super.onRemove();
   }
 
@@ -1354,6 +1434,7 @@ class GoldRushGame extends FlameGame
       final loai = _loaiQuaiGoc[_chiSoQuaiTaiSinh % _loaiQuaiGoc.length];
       _chiSoQuaiTaiSinh++;
       _sinhQuai(loai, viTriNguoiChoi, heSoTocDo);
+      _ghiKhamPhaCuaVan({'quai:$loai'});
       return;
     }
 
@@ -1373,6 +1454,7 @@ class GoldRushGame extends FlameGame
       _soQuaiGiap++;
       _soQuaiBoSung++;
       _sinhQuai('giap', viTriNguoiChoi, heSoTocDo);
+      _ghiKhamPhaCuaVan({'quai:giap'});
       return;
     }
 
@@ -1386,6 +1468,7 @@ class GoldRushGame extends FlameGame
     if (loai == 'khong_lo') _soQuaiKhongLo++;
     if (loai == 'thuong') _soQuaiThuongBoSung++;
     _sinhQuai(loai, viTriNguoiChoi, heSoTocDo);
+    _ghiKhamPhaCuaVan({'quai:$loai'});
   }
 
   String _chonQuaiBoSung(double tienTrinh) {
@@ -2042,6 +2125,13 @@ class GoldRushGame extends FlameGame
     overlays.add(LopPhu.nutBan);
 
     trangThai = TrangThaiChoi.dangChoi;
+    _chuSoTayVan = _chuLuaChon;
+    _daGhiSoTayVan.clear();
+    _ghiKhamPhaCuaVan({
+      'dia_diem:${manHienTai.id}',
+      for (final type in _loaiQuaiGoc) 'quai:$type',
+      if (_boss != null) 'quai:boss',
+    });
     _datDieuKhien(true);
 
     resumeEngine();
