@@ -251,6 +251,24 @@ class GoldRushGame extends FlameGame
   final _daGhiSoTayVan = <String>{};
   final _choGhiSoTay = <VoidCallback>{};
 
+  ({String wallet, int chainId})? get _chuSoTayHienTai {
+    final chu = _chuLuaChon;
+    if (chu != null) return chu;
+    // A passive check temporarily clears Auth identity while its confirmed
+    // game wallet is retained. Writes still wait for that identity to return.
+    if (_daDongLuaChon ||
+        auth?.status != AuthStatus.checkingSession ||
+        auth?.logoutPending == true) {
+      return null;
+    }
+    final pv = phienVi;
+    final wallet = pv?.diaChi;
+    final chain = pv?.cauHinh?.chainId;
+    return pv?.daKetNoi == true && wallet != null && chain != null
+        ? (wallet: wallet.toLowerCase(), chainId: chain)
+        : null;
+  }
+
   Future<SoTayKhamPha> docSoTayKhamPha() async {
     final chu = _chuLuaChon;
     if (chu == null) return SoTayKhamPha();
@@ -296,7 +314,7 @@ class GoldRushGame extends FlameGame
   }
 
   void _ghiTrangBiSoTay(Iterable<VatPhamHienThi> items) {
-    final chu = _chuLuaChon;
+    final chu = _chuSoTayHienTai;
     final pv = phienVi;
     if (chu == null ||
         pv?.daKetNoi != true ||
@@ -2070,6 +2088,7 @@ class GoldRushGame extends FlameGame
   }
 
   Future<void> batDauVanMoi({String? maVan}) async {
+    final chuSoTay = _chuSoTayHienTai;
     if (!tienTrinhWorldMap.duocChoi(manHienTai.id)) {
       moChonMan();
       return;
@@ -2125,7 +2144,7 @@ class GoldRushGame extends FlameGame
     overlays.add(LopPhu.nutBan);
 
     trangThai = TrangThaiChoi.dangChoi;
-    _chuSoTayVan = _chuLuaChon;
+    _chuSoTayVan = chuSoTay;
     _daGhiSoTayVan.clear();
     _ghiKhamPhaCuaVan({
       'dia_diem:${manHienTai.id}',

@@ -165,11 +165,58 @@ void main() {
         '${word(n)}${List.generate(n, (i) => word(i + 1)).join()}';
     vi.ketQuaGoi[data] =
         '0x${word(32)}${word(n)}${List.generate(n, (i) => word(i == 0 ? 1 : 0)).join()}';
+    auth.allowed = false;
+    auth.phase = AuthStatus.checkingSession;
+    auth.thayDoi();
     await g.dongBoNFTKhoDo();
+    auth.allowed = true;
+    auth.phase = AuthStatus.authenticated;
+    auth.thayDoi();
     expect((await g.docSoTayKhamPha()).daMo, {
       'trang_bi:${danhSachTrangBiCuaHang().first.id}',
     });
     expect(vi.daGui, isEmpty);
     expect(g.danhSachVatPham.value, hasLength(1));
+  });
+
+  test('starting a match and receiving equipment during session check waits for the same owner', () async {
+    final auth = AuthLichSu();
+    final g = await gameSoTay(auth, boss: true);
+    cleanup(g);
+    auth.allowed = false;
+    auth.phase = AuthStatus.checkingSession;
+    auth.thayDoi();
+    await g.batDauVanMoi(maVan: 'start-check');
+    g.themVatPhamVaoKho(danhSachTrangBiCuaHang().first);
+    expect((await g.docSoTayKhamPha()).daMo, isEmpty);
+    auth.allowed = true;
+    auth.phase = AuthStatus.authenticated;
+    auth.thayDoi();
+    expect((await g.docSoTayKhamPha()).daMo, {
+      'dia_diem:7',
+      'quai:zombie',
+      'quai:boss',
+      'trang_bi:sung_cap_1',
+    });
+  });
+
+  test('a different owner cannot inherit a start or inventory event pending session confirmation', () async {
+    final auth = AuthLichSu();
+    final old = auth.wallet;
+    final g = await gameSoTay(auth);
+    cleanup(g);
+    auth.allowed = false;
+    auth.phase = AuthStatus.checkingSession;
+    await g.batDauVanMoi(maVan: 'changed-owner');
+    g.themVatPhamVaoKho(danhSachTrangBiCuaHang().first);
+    auth.wallet = '0x${'b' * 40}';
+    auth.allowed = true;
+    auth.phase = AuthStatus.authenticated;
+    auth.thayDoi();
+    expect((await g.docSoTayKhamPha()).daMo, isEmpty);
+    expect(
+      (await LuuSoTayKhamPha(wallet: old, chainId: auth.chain).doc()).daMo,
+      isEmpty,
+    );
   });
 }
