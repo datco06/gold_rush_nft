@@ -119,6 +119,26 @@ flutter analyze
 flutter test
 ```
 
+#### Thêm hoặc sửa ngôn ngữ
+
+Bản dịch giao diện nằm trong `assets/i18n/`; `languages.json` khai báo mã và tên
+hiển thị. Bộ `NgonNgu` nạp và lưu cache một lần khi khởi động; các màn tiếp tục
+dùng `ChuGame` và `dich()` như trước, không import từng bản dịch.
+
+Để thêm một ngôn ngữ, ví dụ tiếng Nhật:
+
+1. Sao chép `assets/i18n/en.json` thành `assets/i18n/ja.json`.
+2. Dịch các **giá trị**, giữ nguyên khóa tiếng Việt, tham số `{0}`, `{1}` và ký
+   tự xuống dòng `\n`. Tên người chơi, địa chỉ ví và dữ liệu ký không phải bản dịch.
+3. Thêm `"ja": "日本語"` vào đối tượng `languages` trong `languages.json`; giữ các
+   ngôn ngữ cũ, `default` và `fallback`. Không cần sửa file Dart hoặc `pubspec.yaml`.
+4. Chạy `flutter test --no-pub test/ngon_ngu`, khởi động lại app và kiểm tra chữ
+   trên màn hình điện thoại. Build/phát hành lại để đóng gói file ngôn ngữ mới.
+
+Ngôn ngữ hợp lệ tự xuất hiện trong ô chọn. Câu thiếu dùng bản dịch dự phòng;
+file ngôn ngữ bổ sung bị lỗi, sai tham số hoặc thiếu sẽ không được đưa vào danh sách lựa chọn.
+Đây là quản lý bản dịch đóng gói trong app, không gọi dịch vụ dịch tự động.
+
 `flutter analyze` phải không có `error`. Hiện source vẫn còn một số `info`
 về style và một cảnh báo phần tử chưa dùng; đây không phải lỗi biên dịch,
 nhưng cần xử lý nếu yêu cầu analyzer hoàn toàn sạch.
