@@ -12,8 +12,14 @@ class AuthLichSu extends ChangeNotifier implements AuthController {
   String wallet = '0x${'a' * 40}';
   int chain = 31337;
   bool allowed = true;
+  AuthStatus phase = AuthStatus.authenticated;
+  bool pendingLogout = false;
   @override
   bool get canEnterGame => allowed;
+  @override
+  AuthStatus get status => phase;
+  @override
+  bool get logoutPending => pendingLogout;
   @override
   String get walletAddress => wallet;
   @override

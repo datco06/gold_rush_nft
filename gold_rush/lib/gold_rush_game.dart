@@ -206,6 +206,35 @@ class GoldRushGame extends FlameGame
 
   ({String wallet, int chainId})? _chuLichSuVan;
   double _giayLichSuVan = 0;
+  final _choLuuLichSu = <VoidCallback>{};
+
+  void _ghiLichSu(VanDaChoi van, ({String wallet, int chainId}) chu) {
+    final controller = auth;
+    if (_daDongLuaChon || controller == null) return;
+    void ghi() => unawaited(
+      LuuLichSuManChoi(wallet: chu.wallet, chainId: chu.chainId).ghi(van),
+    );
+    if (chu == _chuLuaChon) {
+      ghi();
+    } else if (controller.status == AuthStatus.checkingSession &&
+        !controller.logoutPending) {
+      // Gameplay continues during a passive /me check. Defer this local result
+      // until the same identity is confirmed; logout/switch never inherits it.
+      late final VoidCallback khiXong;
+      khiXong = () {
+        if (!_daDongLuaChon &&
+            controller.status == AuthStatus.checkingSession &&
+            !controller.logoutPending) {
+          return;
+        }
+        controller.removeListener(khiXong);
+        _choLuuLichSu.remove(khiXong);
+        if (chu == _chuLuaChon) ghi();
+      };
+      _choLuuLichSu.add(khiXong);
+      controller.addListener(khiXong);
+    }
+  }
 
   Future<List<VanDaChoi>> docLichSuManChoi() async {
     final chu = _chuLuaChon;
@@ -793,6 +822,10 @@ class GoldRushGame extends FlameGame
   @override
   void onRemove() {
     _daDongLuaChon = true;
+    for (final listener in _choLuuLichSu) {
+      auth?.removeListener(listener);
+    }
+    _choLuuLichSu.clear();
     super.onRemove();
   }
 
@@ -1626,23 +1659,17 @@ class GoldRushGame extends FlameGame
     final thang = ketQua == 'thang';
     final chuLichSu = _chuLichSuVan;
     _chuLichSuVan = null;
-    if (chuLichSu != null &&
-        chuLichSu == _chuLuaChon &&
-        (ketQua == 'thang' || ketQua == 'thua')) {
-      unawaited(
-        LuuLichSuManChoi(
-          wallet: chuLichSu.wallet,
-          chainId: chuLichSu.chainId,
-        ).ghi(
-          VanDaChoi(
-            maVan: maVan,
-            manId: man.id,
-            tenMan: man.ten,
-            thang: thang,
-            giay: _giayLichSuVan,
-            ketThuc: DateTime.now().toUtc(),
-          ),
+    if (chuLichSu != null && (ketQua == 'thang' || ketQua == 'thua')) {
+      _ghiLichSu(
+        VanDaChoi(
+          maVan: maVan,
+          manId: man.id,
+          tenMan: man.ten,
+          thang: thang,
+          giay: _giayLichSuVan,
+          ketThuc: DateTime.now().toUtc(),
         ),
+        chuLichSu,
       );
     }
     var kq = KetQuaVan(

@@ -1,5 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gold_rush/auth/auth_controller.dart';
 import 'package:gold_rush/cau_hinh.dart';
 import 'package:gold_rush/components/dong_xu.dart';
 import 'package:gold_rush/gold_rush_game.dart';
@@ -102,4 +103,66 @@ void main() {
       expect(await g.docLichSuManChoi(), isEmpty);
     },
   );
+
+  test('a match completed during passive session check saves only after the same owner returns', () async {
+    for (final sameOwner in [true, false]) {
+      final auth = AuthLichSu();
+      final original = auth.wallet;
+      final g = await game(auth);
+      await g.batDauVanMoi(maVan: 'session-$sameOwner');
+      g.update(2);
+      auth.allowed = false;
+      auth.phase = AuthStatus.checkingSession;
+      auth.thayDoi();
+      g.george!.nhanSatThuong(CauHinh.mauToiDa);
+      expect(await g.docLichSuManChoi(), isEmpty);
+      if (!sameOwner) auth.wallet = '0x${'b' * 40}';
+      auth.allowed = true;
+      auth.phase = AuthStatus.authenticated;
+      auth.thayDoi();
+      final saved = await g.docLichSuManChoi();
+      if (sameOwner) {
+        expect(saved.single.maVan, 'session-true');
+        expect(saved.single.giay, 2);
+        expect(saved.single.thang, isFalse);
+        auth.thayDoi();
+        expect(await g.docLichSuManChoi(), hasLength(1));
+      } else {
+        expect(saved, isEmpty);
+        expect(
+          (await LuuLichSuManChoi(
+            wallet: original,
+            chainId: 31337,
+          ).doc()).any((v) => v.maVan == 'session-false'),
+          isFalse,
+        );
+      }
+    }
+  });
+
+  test('pending history is discarded on real logout or game removal', () async {
+    for (final remove in [false, true]) {
+      final auth = AuthLichSu();
+      final g = await game(auth);
+      await g.batDauVanMoi(maVan: 'discard-$remove');
+      auth.allowed = false;
+      auth.phase = AuthStatus.checkingSession;
+      g.george!.nhanSatThuong(CauHinh.mauToiDa);
+      if (remove) {
+        g.onRemove();
+      } else {
+        auth.pendingLogout = true;
+        auth.phase = AuthStatus.loggingOut;
+        auth.thayDoi();
+      }
+      auth.pendingLogout = false;
+      auth.allowed = true;
+      auth.phase = AuthStatus.authenticated;
+      auth.thayDoi();
+      expect(
+        await LuuLichSuManChoi(wallet: auth.wallet, chainId: auth.chain).doc(),
+        isEmpty,
+      );
+    }
+  });
 }
