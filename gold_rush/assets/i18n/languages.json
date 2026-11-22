@@ -1,0 +1,10 @@
+{
+  "default": "vi",
+  "fallback": "en",
+  "languages": {
+    "vi": "Tiếng Việt",
+    "en": "English",
+    "fr": "Français",
+    "es": "Español"
+  }
+}

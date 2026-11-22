@@ -33,6 +33,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/i18n/
     - assets/images/
     - assets/images/trang_bi/
     - assets/images/huy_hieu/
