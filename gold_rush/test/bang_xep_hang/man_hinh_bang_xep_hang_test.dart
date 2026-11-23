@@ -110,7 +110,7 @@ void main() {
   Future<void> close(WidgetTester tester) =>
       tester.pumpWidget(const SizedBox.shrink());
 
-  testWidgets('English and French show earned gold as a grouped integer', (
+  testWidgets('English and French show current gold balance as a grouped integer', (
     tester,
   ) async {
     for (final code in ['en', 'fr']) {
@@ -124,7 +124,7 @@ void main() {
       );
       expect(
         find.text(
-          code == 'en' ? 'Earned gold: 1,234' : 'Or gagné : 1\u202f234',
+          code == 'en' ? 'Gold: 1,234' : 'Or : 1\u202f234',
         ),
         findsOneWidget,
       );

@@ -389,9 +389,9 @@ class _TheNguoiChoi extends StatelessWidget {
         const SizedBox(height: 6),
         Tooltip(
           message: PhamViNgonNgu.of(context)
-              .dich('Vàng kiếm được: ${_vang(context)}'),
+              .dich('Vàng: ${_vang(context)}'),
           child: ChuGame(
-            'Vàng kiếm được: ${_vang(context)}',
+            'Vàng: ${_vang(context)}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Color(0xFFFFD577)),

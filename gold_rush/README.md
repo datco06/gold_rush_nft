@@ -115,28 +115,33 @@ dùng khi đã có địa chỉ hợp đồng, RPC và cấu hình backend tươ
 ### Bảng xếp hạng toàn server — Top 30
 
 Mở từ Hồ sơ → Bảng xếp hạng, ở menu bên trái ngay dưới nút Nhân vật.
-Danh sách cuộn dọc hiển thị tên, Level, vàng kiếm được và từng loại huy
+Danh sách cuộn dọc hiển thị tên, Level, số dư vàng hiện có và từng loại huy
 hiệu đã sở hữu. Các vị trí 1–10 có viền vàng, 11–20 viền bạc, 21–30 viền đồng;
 có nhãn Top 10/20/30, tô sáng người chơi hiện tại và hạng cá nhân ngoài Top 30.
 
-Thứ tự: Level giảm dần → số loại huy hiệu giảm dần → tổng vàng kiếm được giảm
+Thứ tự: Level giảm dần → số loại huy hiệu giảm dần → số dư vàng hiện có giảm
 dần → mã tài khoản ổn định khi ba chỉ số bằng nhau. Tổng hợp toàn bộ tài khoản
 đã đăng ký trên backend trước khi lấy 30 người đầu; không tạo người chơi giả nếu
 server ít hơn 30 người. Dữ liệu cùng server/mạng, không đọc lịch sử cục bộ.
 
 Nguồn chỉ số:
 
-- Tên từ tài khoản SIWE đã đăng ký; Level tính bằng công thức EXP hiện có ở backend.
-  BXH không dùng cấp độ tính từ số màn cục bộ của Hồ sơ và không đổi công thức đó.
-- Vàng kiếm được cộng `so_vang_goc` (hoặc `so_vang` ở phiếu cũ hợp lệ), mỗi mã ván
-  chỉ một lần, từ sổ phiếu do server cấp và ticket khớp ví/màn/vé/chain. Đây là phần
-  thưởng đã được xác minh, kể cả còn chờ nhận về ví; không gồm cọc hoàn lại, vàng
-  được chuyển vào, faucet hay quà tặng. Mua trang bị không trừ chỉ số này. Phiếu
-  thiếu nguồn mạng rõ ràng không tự nhập vào tổng.
+- Tên từ tài khoản SIWE đã đăng ký. Level = 1 + số màn hoàn thành khác nhau,
+  cùng công thức của Hồ sơ. BXH đọc tiến trình đã xác minh của đúng tài khoản/ví
+  trong kho tiến trình đang chạy, tiến trình backend và các ván đã được trọng tài
+  ghi vào BXH trên mạng hiện tại; không đếm lại khi chơi lại cùng màn. Không lấy
+  EXP của hệ thống nhiệm vụ, telemetry tự khai hoặc fixture dev để tăng Level.
+  Tiến trình chỉ lưu offline trên thiết bị chưa được đưa vào BXH khi chưa có
+  bằng chứng xác minh trên server; công thức và gameplay của Hồ sơ không đổi.
+- Vàng đọc trực tiếp `balanceOf(wallet, 0)` trên hợp đồng `CuaHangGoldRush` của
+  từng ví đã đăng ký. Đây là số dư ERC-1155 hiện có, không phải tổng vàng từng
+  kiếm được; mua đồ, đặt cọc hoặc chuyển vàng có thể làm số dư giảm. Phiếu chưa
+  claim và số vàng cache/local trên thiết bị không được cộng vào số dư này.
 - Huy hiệu chỉ đếm từng loại SBT thực sự sở hữu (ID 1–5), đọc `hasAchievement` cho
   mọi ví đăng ký tại cùng một block; không lấy trạng thái đủ điều kiện hoặc cache
   do client gửi làm bằng chứng. Cần RPC đúng mạng, `SBT_CHAIN_ID` khớp `CHAIN_ID`
-  và `HOP_DONG_SBT` đã triển khai; RPC hỗ trợ JSON-RPC batch. Chỉ gọi phương thức
+  và `HOP_DONG_SBT`, `HOP_DONG_CUA_HANG` đã triển khai; RPC hỗ trợ JSON-RPC batch.
+  Số dư vàng và huy hiệu của mọi ví được đọc tại cùng một block. Chỉ gọi phương thức
   đọc, không yêu cầu ký, mint hoặc gửi giao dịch để xem BXH.
 
 `GET /api/bang-xep-hang/tong-the` dùng phiên SIWE, trả tối đa 30 vị trí cùng hạng
@@ -145,8 +150,8 @@ chung 60 giây. App tự làm mới khi màn BXH đang mở và ở tiền cản
 hiển thị thời điểm cập nhật. Lỗi nguồn dữ liệu giữ bản đầy đủ trước đó và báo dữ
 liệu cũ; lần đầu chưa đồng bộ được thì báo chưa sẵn sàng, không giả định 0 huy hiệu.
 Chu kỳ 60 giây tính từ lúc đồng bộ xong; khi đang làm mới, yêu cầu khác nhận ngay
-bản đầy đủ trước đó. Sổ vàng đã từng tồn tại bị thiếu/trống hoặc làm tổng vàng
-giảm bất thường sẽ không thay thế bản tốt bằng số 0. Đổi tài khoản/mạng, đăng
+bản đầy đủ trước đó. Thiếu kho tiến trình, thiếu hợp đồng hoặc lỗi RPC không
+được thay bằng Level 1/vàng 0 giả; số dư giảm hợp lệ vẫn được cập nhật. Đổi tài khoản/mạng, đăng
 xuất hoặc đóng màn BXH hủy yêu cầu cũ, không dùng chung phản hồi giữa hai phiên.
 Số vàng truyền dạng chuỗi thập phân để không mất chính xác trên Web.
 
