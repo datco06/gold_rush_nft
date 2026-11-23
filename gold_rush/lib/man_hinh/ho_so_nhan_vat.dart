@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../ngon_ngu/ngon_ngu.dart';
+import '../auth/auth_controller.dart';
 
 import 'package:flutter/services.dart';
 
@@ -60,6 +61,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     with TickerProviderStateMixin {
   _ProfileTab _currentTab = _ProfileTab.caNhan;
   late final AnimationController _idleController;
+  String? _chuHoSo;
 
   bool get _isTestBinding {
     final name = WidgetsBinding.instance.runtimeType.toString();
@@ -82,6 +84,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
   }
 
   void _attachListeners(GoldRushGame g) {
+    _chuHoSo = g.khoaCapHoSo;
     g.auth?.addListener(_onAuthChanged);
     g.phienVi?.addListener(_onDataChanged);
     g.tienTrinh.addListener(_onDataChanged);
@@ -102,7 +105,14 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
   void _onAuthChanged() {
     if (!mounted) return;
     final auth = widget.game.auth;
-    if (auth != null && !auth.canEnterGame) {
+    // Passive /me checks temporarily clear identity; keep this route stack
+    // until the result confirms the session or reports an actual loss.
+    if (auth?.status == AuthStatus.checkingSession &&
+        auth?.logoutPending != true) {
+      return;
+    }
+    if (auth != null &&
+        (!auth.canEnterGame || widget.game.khoaCapHoSo != _chuHoSo)) {
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
