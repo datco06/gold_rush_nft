@@ -91,6 +91,21 @@ CREATE TABLE IF NOT EXISTS stage_rewards (
     FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS weekly_rank_runs (
+    chain_id INTEGER NOT NULL,
+    ma_van TEXT NOT NULL,
+    wallet TEXT NOT NULL,
+    ten TEXT NOT NULL,
+    man INTEGER NOT NULL CHECK(man BETWEEN 1 AND 20),
+    diem INTEGER NOT NULL CHECK(diem > 0),
+    duration_ms INTEGER NOT NULL CHECK(duration_ms > 0),
+    thich_ung INTEGER NOT NULL CHECK(thich_ung IN (0, 1)),
+    verified_at TEXT NOT NULL,
+    PRIMARY KEY(chain_id, ma_van)
+);
+CREATE INDEX IF NOT EXISTS ix_weekly_rank_period
+    ON weekly_rank_runs(chain_id, thich_ung, verified_at, man, wallet);
+
 CREATE TABLE IF NOT EXISTS achievement_progress (
     player_id TEXT NOT NULL,
     achievement_id INTEGER NOT NULL,
