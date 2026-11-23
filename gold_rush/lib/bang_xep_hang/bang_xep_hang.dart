@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../ai/http_client_boundary.dart';
+import 'tong_the.dart';
 
 enum LoiBangXepHang { dangNhap, ketNoi, mayChu, duLieu }
 
@@ -171,5 +172,29 @@ class MayChuBangXepHang {
 
   void dong() {
     if (_tuSoHuu) _client.close();
+  }
+
+  Future<BangTongThe> taiTongThe() async {
+    try {
+      final response = await _client
+          .get(
+            _mayChu.resolve('/api/bang-xep-hang/tong-the'),
+            headers: const {'Accept': 'application/json'},
+          )
+          .timeout(thoiGianCho);
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw const LoiTaiBangXepHang(LoiBangXepHang.dangNhap);
+      }
+      if (response.statusCode != 200) {
+        throw const LoiTaiBangXepHang(LoiBangXepHang.mayChu);
+      }
+      return BangTongThe.tuJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    } on LoiTaiBangXepHang {
+      rethrow;
+    } on FormatException {
+      throw const LoiTaiBangXepHang(LoiBangXepHang.duLieu);
+    } catch (_) {
+      throw const LoiTaiBangXepHang(LoiBangXepHang.ketNoi);
+    }
   }
 }
