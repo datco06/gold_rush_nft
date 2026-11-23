@@ -1,7 +1,11 @@
 """Overall server ranking; no gameplay mutations or client-reported metrics."""
 from datetime import datetime, timezone
+import logging
 from threading import Lock
 from time import monotonic
+from traceback import extract_tb
+
+_log = logging.getLogger(__name__)
 
 def xep_hang(users, completed, gold, badges):
     result = []
@@ -71,7 +75,15 @@ class BoNhoBangTongThe:
                 self._updated = datetime.now(timezone.utc)
                 self._stale = False
                 self._snapshot = (key, value, self._updated)
-            except Exception:
+            except Exception as error:
+                # Do not log exception messages/locals: RPC or DB errors can contain secrets.
+                origin = 'unknown'
+                for frame in reversed(extract_tb(error.__traceback__)):
+                    filename = frame.filename.replace('\\', '/').rsplit('/', 1)[-1]
+                    if filename in {'bang_xep_hang.py', 'nguon_bang_tong_the.py', 'qua_tang.py'}:
+                        origin = f'{filename}:{frame.lineno}'
+                        break
+                _log.warning('BXH sync failed: type=%s source=%s', type(error).__name__, origin)
                 if self._value is None:
                     raise RuntimeError('Ranking synchronization unavailable') from None
                 self._stale = True

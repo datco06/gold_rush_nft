@@ -69,7 +69,7 @@ def test_full_registered_server_top30_names_levels_and_personal_not_client_metri
     assert client.get('/api/bang-xep-hang/tong-the').status_code == 401
 
 
-def test_source_failure_keeps_last_complete_snapshot_not_fake_zero_badges(setup, monkeypatch):
+def test_source_failure_keeps_last_complete_snapshot_not_fake_zero_badges(setup, monkeypatch, caplog):
     client, app, clock = setup
     first = client.get('/api/bang-xep-hang/tong-the').json()
     def offline(*args): raise RuntimeError('private RPC details')
@@ -82,6 +82,8 @@ def test_source_failure_keeps_last_complete_snapshot_not_fake_zero_badges(setup,
     app.state.bang_tong_the_cache = BoNhoBangTongThe()
     response = client.get('/api/bang-xep-hang/tong-the')
     assert response.status_code == 503 and 'private' not in response.text
+    assert 'RuntimeError' in caplog.text and 'bang_xep_hang.py:' in caplog.text
+    assert 'private RPC details' not in caplog.text
 
 
 def test_verified_progress_and_real_balances_work_without_exp_or_reward_ledgers(setup):
@@ -204,3 +206,15 @@ def test_legacy_matches_do_not_grant_levels_from_spoofed_or_unverified_results(
             (str(UUID(int=1)), result, valid, verified, source, wallet))
         db.commit()
     assert client.get('/api/bang-xep-hang/tong-the').json()['ban']['level'] == 1
+
+
+def test_schema_failure_logs_exact_source_without_sql_or_paths(setup, caplog):
+    client, _, _ = setup
+    with api_bxh.ket_noi() as db:
+        db.execute('ALTER TABLE match_results RENAME COLUMN verified_wallet TO legacy_wallet')
+        db.commit()
+    response = client.get('/api/bang-xep-hang/tong-the')
+    assert response.status_code == 503
+    assert 'type=OperationalError source=nguon_bang_tong_the.py:' in caplog.text
+    assert 'no such column' not in caplog.text and 'SELECT' not in caplog.text
+    assert str(api_bxh.config.SO_PHIEU.parent) not in caplog.text
