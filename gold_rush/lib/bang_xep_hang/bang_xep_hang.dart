@@ -139,6 +139,7 @@ class MayChuBangXepHang {
   final Duration thoiGianCho;
   Future<http.Response>? _tongTheDangTai;
   Completer<void>? _huyTongThe;
+  Completer<void>? _huyCapHoSo;
   String? _phienTongThe;
   int _lanTongThe = 0;
 
@@ -181,12 +182,82 @@ class MayChuBangXepHang {
 
   void huyTaiTongThe() {
     _lanTongThe++;
+    if (_huyCapHoSo case final trigger? when !trigger.isCompleted) {
+      trigger.complete();
+    }
+    _huyCapHoSo = null;
     if (_huyTongThe case final trigger? when !trigger.isCompleted) {
       trigger.complete();
     }
     _tongTheDangTai = null;
     _huyTongThe = null;
     _phienTongThe = null;
+  }
+
+  Future<int> dongBoCapHoSo({
+    required int level,
+    required String wallet,
+    required int chainId,
+    required String csrfToken,
+  }) async {
+    if (level < 1 || level > 21 || csrfToken.isEmpty || _huyCapHoSo != null) {
+      throw const LoiTaiBangXepHang(LoiBangXepHang.duLieu);
+    }
+    final trigger = Completer<void>();
+    final epoch = _lanTongThe;
+    _huyCapHoSo = trigger;
+    try {
+      final request =
+          http.AbortableRequest(
+              'POST',
+              _mayChu.resolve('/api/bang-xep-hang/cap-ho-so'),
+              abortTrigger: trigger.future,
+            )
+            ..headers.addAll({
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken,
+            })
+            ..body = jsonEncode({
+              'level': level,
+              'expected_wallet': wallet,
+              'expected_chain_id': chainId,
+            });
+      final response = await _client
+          .send(request)
+          .then(http.Response.fromStream)
+          .timeout(thoiGianCho);
+      if (epoch != _lanTongThe) {
+        throw const LoiTaiBangXepHang(LoiBangXepHang.ketNoi);
+      }
+      if ([401, 403, 409].contains(response.statusCode)) {
+        throw const LoiTaiBangXepHang(LoiBangXepHang.dangNhap);
+      }
+      if (response.statusCode != 200) {
+        throw const LoiTaiBangXepHang(LoiBangXepHang.mayChu);
+      }
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is! Map ||
+          data['level'] is! int ||
+          data['level'] < level ||
+          data['level'] > 21) {
+        throw const LoiTaiBangXepHang(LoiBangXepHang.duLieu);
+      }
+      return data['level'] as int;
+    } on LoiTaiBangXepHang {
+      rethrow;
+    } on FormatException {
+      throw const LoiTaiBangXepHang(LoiBangXepHang.duLieu);
+    } catch (_) {
+      throw const LoiTaiBangXepHang(LoiBangXepHang.ketNoi);
+    } finally {
+      if (!trigger.isCompleted) {
+        trigger.complete();
+      }
+      if (identical(_huyCapHoSo, trigger)) {
+        _huyCapHoSo = null;
+      }
+    }
   }
 
   Future<BangTongThe> taiTongThe({String? phien}) async {

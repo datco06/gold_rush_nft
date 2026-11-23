@@ -85,6 +85,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     g.auth?.addListener(_onAuthChanged);
     g.phienVi?.addListener(_onDataChanged);
     g.tienTrinh.addListener(_onDataChanged);
+    g.capHoSoDaDongBo.addListener(_onDataChanged);
     g.huyHieuDaNhan.addListener(_onDataChanged);
     g.huyHieuSBTDaSoHuu.addListener(_onDataChanged);
   }
@@ -93,6 +94,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     g.auth?.removeListener(_onAuthChanged);
     g.phienVi?.removeListener(_onDataChanged);
     g.tienTrinh.removeListener(_onDataChanged);
+    g.capHoSoDaDongBo.removeListener(_onDataChanged);
     g.huyHieuDaNhan.removeListener(_onDataChanged);
     g.huyHieuSBTDaSoHuu.removeListener(_onDataChanged);
   }
@@ -137,10 +139,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
   }
 
   int _computeLevel() {
-    final g = widget.game;
-    final mapCompleted = g.tienTrinhWorldMap.tienTrinh.cacManHoanThanh.length;
-    final aiCompleted = g.tienTrinh.tienTrinh?.totalCompleted ?? 0;
-    return 1 + math.max<int>(mapCompleted, aiCompleted);
+    return widget.game.capDoHoSo;
   }
 
   String _formatGold(BigInt? raw) {

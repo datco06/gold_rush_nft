@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/bang_xep_hang/bang_xep_hang.dart';
 import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/man_hinh/bang_xep_hang.dart';
+import 'package:gold_rush/man_hinh/ho_so_nhan_vat.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -13,6 +14,39 @@ import 'package:http/testing.dart';
 import '../lich_su/ho_tro_lich_su.dart';
 import '../ngon_ngu/ho_tro_json.dart';
 import 'tong_the_test.dart' show duLieuTongThe;
+
+class _ProfileAuth extends AuthLichSu {
+  @override
+  String get csrfToken => 'csrf-test';
+}
+
+class _PendingProfileTransport extends http.BaseClient {
+  int gets = 0;
+  bool posted = false;
+  bool aborted = false;
+  final pending = Completer<http.StreamedResponse>();
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.method == 'POST') {
+      posted = true;
+      final abort = (request as http.AbortableRequest).abortTrigger!;
+      unawaited(
+        abort.then((_) {
+          aborted = true;
+        }),
+      );
+      return pending.future;
+    }
+    gets++;
+    final data = duLieuTongThe(viewer: '0x${(gets == 1 ? 'a' : 'b') * 40}');
+    (data['ban'] as Map)['level'] = gets == 1 ? 1 : 9;
+    (data['ban'] as Map)['ten'] = gets == 1 ? 'Alice' : 'Bob';
+    return http.StreamedResponse(
+      Stream.value(utf8.encode(jsonEncode(data))),
+      200,
+    );
+  }
+}
 
 class _IdentityTransport extends http.BaseClient {
   int calls = 0;
@@ -43,17 +77,25 @@ class _IdentityTransport extends http.BaseClient {
 void main() {
   setUpAll(chuanBiNgonNguChoKiemThu);
 
-  Future<({AuthLichSu auth, NgonNgu lang})> mount(
+  Future<({AuthLichSu auth, NgonNgu lang, GoldRushGame game})> mount(
     WidgetTester tester,
     http.Client client, {
     String code = 'vi',
     Size size = const Size(844, 390),
     bool login = true,
+    AuthLichSu? profileAuth,
+    Set<int>? completed,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final auth = AuthLichSu()..allowed = login;
+    final auth = (profileAuth ?? AuthLichSu())..allowed = login;
     final game = GoldRushGame(auth: auth);
+    if (completed != null) {
+      game.tienTrinhWorldMap.khoiTaoChoKiemThu(
+        List.generate(20, (i) => i + 1),
+        hoanThanh: completed,
+      );
+    }
     final lang = NgonNgu(doc: () async => null, ghi: (_) async {});
     await lang.doi(code);
     addTearDown(auth.dispose);
@@ -72,11 +114,92 @@ void main() {
         ),
       ),
     );
-    return (auth: auth, lang: lang);
+    return (auth: auth, lang: lang, game: game);
   }
 
   http.Response response([Map<String, Object?>? data]) =>
       http.Response(jsonEncode(data ?? duLieuTongThe()), 200);
+
+  testWidgets(
+    'Missing viewer in cached ranking still synchronizes Profile level',
+    (tester) async {
+      var saved = false;
+      final methods = <String>[];
+      await mount(
+        tester,
+        MockClient((request) async {
+          methods.add(request.method);
+          if (request.method == 'POST') {
+            saved = true;
+            return http.Response('{"level":7}', 200);
+          }
+          final data = duLieuTongThe();
+          if (saved) {
+            (data['ban'] as Map)['level'] = 7;
+          } else {
+            data['ban'] = null;
+          }
+          return response(data);
+        }),
+        profileAuth: _ProfileAuth(),
+        completed: {1, 2, 3, 4, 5, 6},
+      );
+      await tester.pumpAndSettle();
+      expect(methods, ['GET', 'POST', 'GET']);
+      await tester.scrollUntilVisible(find.text('Alice'), 180);
+      expect(find.text('Cấp 7'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'Profile level7 synchronizes before showing server-sorted leaderboard',
+    (tester) async {
+      var saved = false;
+      final methods = <String>[];
+      final env = await mount(
+        tester,
+        MockClient((request) async {
+          methods.add(request.method);
+          if (request.method == 'POST') {
+            expect(jsonDecode(request.body)['level'], 7);
+            saved = true;
+            return http.Response('{"level":7}', 200);
+          }
+          final data = duLieuTongThe();
+          (data['ban'] as Map)['level'] = saved ? 7 : 1;
+          return response(data);
+        }),
+        profileAuth: _ProfileAuth(),
+        completed: {1, 2, 3, 4, 5, 6},
+      );
+      await tester.pumpAndSettle();
+      expect(methods, ['GET', 'POST', 'GET']);
+      expect(env.game.capDoHoSo, 7);
+      await tester.scrollUntilVisible(find.text('Alice'), 180);
+      expect(find.text('Cấp 7'), findsOneWidget);
+      await tester.pumpWidget(
+        PhamViNgonNgu(
+          ngonNgu: env.lang,
+          child: MaterialApp(home: CharacterProfileScreen(game: env.game)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Lv.7'), findsWidgets);
+      final identity = env.game.khoaCapHoSo!;
+      env.game.nhanCapHoSoTuServer(identity, 9);
+      await tester.pumpAndSettle();
+      expect(find.text('Lv.9'), findsWidgets);
+      expect(find.text('Lv.7'), findsNothing);
+      env.auth.wallet = '0x${'b' * 40}';
+      env.auth.thayDoi();
+      env.game.nhanCapHoSoTuServer(identity, 21);
+      await tester.pumpAndSettle();
+      expect(find.text('Lv.9'), findsNothing);
+      expect(env.game.capDoHoSo, 7);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets(
     'identity change starts a new HTTP exchange and keeps the valid session polling',
@@ -107,30 +230,60 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  testWidgets(
+    'wallet change aborts pending Profile sync and never adopts its late Level',
+    (tester) async {
+      final transport = _PendingProfileTransport();
+      final env = await mount(
+        tester,
+        transport,
+        profileAuth: _ProfileAuth(),
+        completed: {1, 2, 3, 4, 5, 6},
+      );
+      await tester.pump();
+      expect(transport.posted, isTrue);
+      env.auth.wallet = '0x${'b' * 40}';
+      env.auth.thayDoi();
+      await tester.pumpAndSettle();
+      expect(transport.aborted, isTrue);
+      transport.pending.complete(
+        http.StreamedResponse(Stream.value(utf8.encode('{"level":21}')), 200),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Bob'), findsOneWidget);
+      expect(env.game.capDoHoSo, 9);
+      expect(find.text('Cấp 21'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   Future<void> close(WidgetTester tester) =>
       tester.pumpWidget(const SizedBox.shrink());
 
-  testWidgets('English and French show current gold balance as a grouped integer', (
-    tester,
-  ) async {
-    for (final code in ['en', 'fr']) {
-      final data = duLieuTongThe();
-      (data['bang'] as List).first['vang'] = '1234';
-      await mount(tester, MockClient((_) async => response(data)), code: code);
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('bxh-row-1')),
-        180,
-      );
-      expect(
-        find.text(
-          code == 'en' ? 'Gold: 1,234' : 'Or : 1\u202f234',
-        ),
-        findsOneWidget,
-      );
-      await close(tester);
-    }
-  });
+  testWidgets(
+    'English and French show current gold balance as a grouped integer',
+    (tester) async {
+      for (final code in ['en', 'fr']) {
+        final data = duLieuTongThe();
+        (data['bang'] as List).first['vang'] = '1234';
+        await mount(
+          tester,
+          MockClient((_) async => response(data)),
+          code: code,
+        );
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('bxh-row-1')),
+          180,
+        );
+        expect(
+          find.text(code == 'en' ? 'Gold: 1,234' : 'Or : 1\u202f234'),
+          findsOneWidget,
+        );
+        await close(tester);
+      }
+    },
+  );
 
   for (final size in const [Size(844, 390), Size(568, 320), Size(360, 640)]) {
     testWidgets(

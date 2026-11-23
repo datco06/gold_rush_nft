@@ -126,17 +126,18 @@ server ít hơn 30 người. Dữ liệu cùng server/mạng, không đọc lị
 
 Nguồn chỉ số:
 
-- Tên từ tài khoản SIWE đã đăng ký. Level = 1 + số màn hoàn thành khác nhau,
-  cùng công thức của Hồ sơ. BXH đọc tiến trình đã xác minh của đúng tài khoản/ví
-  trong kho tiến trình đang chạy, tiến trình backend, lịch sử `match_results`
-  đã được trọng tài cấp phiếu xác minh và các ván ghi vào BXH trên mạng hiện tại;
-  không đếm lại khi chơi lại cùng màn. Lịch sử cũ chỉ dùng `verified_wallet` do
-  trọng tài ghi, không dùng `player_id` tự khai trong telemetry. Không lấy
-  EXP của hệ thống nhiệm vụ, telemetry tự khai hoặc fixture dev để tăng Level.
-  Level là tiến trình tài khoản trên server; lịch sử cũ chưa có cột chain ID
-  vẫn được đối chiếu bằng ví đã xác minh, còn vàng và SBT đọc đúng mạng hiện tại.
-  Tiến trình chỉ lưu offline trên thiết bị chưa được đưa vào BXH khi chưa có
-  bằng chứng xác minh trên server; công thức và gameplay của Hồ sơ không đổi.
+- Tên từ tài khoản SIWE đã đăng ký. Hồ sơ và BXH dùng chung `game.capDoHoSo`:
+  lấy cấp đang hiển thị từ tiến trình thiết bị/AI và cấp Hồ sơ đã đồng bộ trước đó.
+  Khi mở BXH, nếu cấp Hồ sơ cao hơn bản server, app đồng bộ rồi tải lại danh sách
+  đã xếp hạng trên server; không tự đổi riêng chữ Level hoặc tự sắp hạng ở client.
+  `POST /api/bang-xep-hang/cap-ho-so` lưu cấp 1–21 riêng theo tài khoản/ví/mạng,
+  xác thực SIWE và kiểm tra Origin/CSRF như các thao tác ghi hiện có. Bản cấp thấp
+  từ thiết bị cũ không ghi đè cấp đã lưu. Mỗi tài khoản cần mở BXH trên bản mới
+  một lần để gửi cấp đang lưu trên máy của họ; server không đọc được bộ nhớ thiết bị khác.
+  Đây là **cấp Hồ sơ do app báo**, không phải bằng chứng trọng tài mới hay cơ chế
+  chống gian lận. Bảng lưu riêng không cấp EXP, thưởng, mở màn, huy hiệu hay vật phẩm.
+  Tiến trình local hiện có vẫn thuộc thiết bị như trước; không đổi luồng chơi.
+  Với tài khoản chưa đồng bộ, BXH tiếp tục dùng các nguồn tiến trình đã xác minh.
 - Vàng đọc trực tiếp `balanceOf(wallet, 0)` trên hợp đồng `CuaHangGoldRush` của
   từng ví đã đăng ký. Đây là số dư ERC-1155 hiện có, không phải tổng vàng từng
   kiếm được; mua đồ, đặt cọc hoặc chuyển vàng có thể làm số dư giảm. Phiếu chưa

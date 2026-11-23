@@ -32,6 +32,34 @@ Map<String, Object?> duLieuTongThe({
 
 void main() {
   test(
+    'Profile level sync posts only level and identity guards with CSRF',
+    () async {
+      final api = MayChuBangXepHang(
+        client: MockClient((request) async {
+          expect(request.method, 'POST');
+          expect(request.url.path, '/api/bang-xep-hang/cap-ho-so');
+          expect(request.headers['X-CSRF-Token'], 'csrf-test');
+          expect(jsonDecode(request.body), {
+            'level': 7,
+            'expected_wallet': '0x${'a' * 40}',
+            'expected_chain_id': 31337,
+          });
+          return http.Response('{"level":7}', 200);
+        }),
+      );
+      expect(
+        await api.dongBoCapHoSo(
+          level: 7,
+          wallet: '0x${'a' * 40}',
+          chainId: 31337,
+          csrfToken: 'csrf-test',
+        ),
+        7,
+      );
+    },
+  );
+
+  test(
     'overall refresh never overlaps an underlying timed-out request',
     () async {
       final pending = Completer<http.Response>();

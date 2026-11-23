@@ -29,16 +29,7 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang>
   Timer? _timer;
   ModalRoute<dynamic>? _route;
 
-  String? get _chuHienTai {
-    final auth = widget.game.auth;
-    if (auth == null ||
-        !auth.canEnterGame ||
-        auth.walletAddress == null ||
-        auth.chainId == null) {
-      return null;
-    }
-    return '${auth.walletAddress!.toLowerCase()}:${auth.chainId}';
-  }
+  String? get _chuHienTai => widget.game.khoaCapHoSo;
 
   @override
   void initState() {
@@ -78,7 +69,7 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang>
       _loading = true;
     });
     try {
-      final value = await _mayChu.taiTongThe(phien: identity);
+      var value = await _mayChu.taiTongThe(phien: identity);
       if (!mounted || sequence != _sequence || identity != _chuHienTai) return;
       if (value.viewer != widget.game.auth?.walletAddress?.toLowerCase()) {
         throw const LoiTaiBangXepHang(LoiBangXepHang.dangNhap);
@@ -91,6 +82,37 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang>
         });
         _timer?.cancel();
         return;
+      }
+      final capHoSo = widget.game.capDoHoSo;
+      final csrf = widget.game.auth?.csrfToken;
+      if (capHoSo > (value.ban?.level ?? 1) ||
+          (value.ban == null && csrf != null && csrf.isNotEmpty)) {
+        if (csrf == null || csrf.isEmpty) {
+          throw const LoiTaiBangXepHang(LoiBangXepHang.dangNhap);
+        }
+        final saved = await _mayChu.dongBoCapHoSo(
+          level: capHoSo,
+          wallet: value.viewer,
+          chainId: value.chainId,
+          csrfToken: csrf,
+        );
+        if (!mounted || sequence != _sequence || identity != _chuHienTai) {
+          return;
+        }
+        value = await _mayChu.taiTongThe(phien: identity);
+        if (!mounted || sequence != _sequence || identity != _chuHienTai) {
+          return;
+        }
+        if (value.viewer != widget.game.auth?.walletAddress?.toLowerCase() ||
+            BigInt.from(value.chainId) != widget.game.auth?.chainId) {
+          throw const LoiTaiBangXepHang(LoiBangXepHang.dangNhap);
+        }
+        if (value.ban == null || value.ban!.level < saved) {
+          throw const LoiTaiBangXepHang(LoiBangXepHang.duLieu);
+        }
+      }
+      if (value.ban != null) {
+        widget.game.nhanCapHoSoTuServer(identity!, value.ban!.level);
       }
       setState(() {
         _data = value;
@@ -388,8 +410,7 @@ class _TheNguoiChoi extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Tooltip(
-          message: PhamViNgonNgu.of(context)
-              .dich('Vàng: ${_vang(context)}'),
+          message: PhamViNgonNgu.of(context).dich('Vàng: ${_vang(context)}'),
           child: ChuGame(
             'Vàng: ${_vang(context)}',
             maxLines: 2,
