@@ -15,11 +15,10 @@ class ManHinhSoTayKhamPha extends StatefulWidget {
 class _ManHinhSoTayKhamPhaState extends State<ManHinhSoTayKhamPha> {
   late Future<SoTayKhamPha> _soTay;
   NhomSoTay _nhom = NhomSoTay.diaDiem;
-  static const _tenNhom = ['Địa điểm', 'Quái & Boss', 'Trang bị đã biết'];
+  static const _tenNhom = ['Địa điểm', 'Quái & Boss'];
   static const _goiY = [
     'Vào chơi màn để mở thông tin địa điểm.',
     'Gặp quái trong ván chơi để mở thông tin.',
-    'Sở hữu trang bị được xác nhận để mở thông tin.',
   ];
 
   @override
@@ -79,7 +78,10 @@ class _ManHinhSoTayKhamPhaState extends State<ManHinhSoTayKhamPha> {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  for (final group in NhomSoTay.values)
+                  for (final group in const [
+                    NhomSoTay.diaDiem,
+                    NhomSoTay.quai,
+                  ])
                     ChoiceChip(
                       label: ChuGame(_tenNhom[group.index]),
                       selected: _nhom == group,

@@ -79,7 +79,7 @@ void main() {
   );
 
   testWidgets(
-    'all three groups hide locked names and descriptions, and show discovered entries',
+    'only locations and enemies remain, hiding equipment even when discovered',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(844, 390));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -92,6 +92,9 @@ void main() {
         wrap(ManHinhSoTayKhamPha(game: game(auth)), language()),
       );
       await tester.pumpAndSettle();
+      expect(find.byType(ChoiceChip), findsNWidgets(2));
+      expect(find.text('Trang bị đã biết'), findsNothing);
+      expect(find.text(items.first.ten), findsNothing);
       expect(find.text(stages.first.ten), findsOneWidget);
       expect(find.text(stages[1].ten), findsNothing);
       expect(find.text(stages[1].moTa), findsNothing);
@@ -105,11 +108,8 @@ void main() {
         findsNothing,
       );
       expect(find.text('Đã khám phá 1/6'), findsOneWidget);
-      await tester.tap(find.text('Trang bị đã biết'));
-      await tester.pumpAndSettle();
-      expect(find.text(items.first.ten), findsOneWidget);
-      expect(find.text(items[1].ten), findsNothing);
-      expect(find.text('Đã khám phá 1/27'), findsOneWidget);
+      expect(find.text('Trang bị đã biết'), findsNothing);
+      expect(find.text(items.first.ten), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -172,8 +172,8 @@ void main() {
               findsNothing,
             );
           }
-          await tester.tap(find.text(entry.value[3]));
-          await tester.pumpAndSettle();
+          expect(find.text(entry.value[3]), findsNothing);
+          expect(find.byType(ChoiceChip), findsNWidgets(2));
           expect(
             tester.takeException(),
             isNull,
