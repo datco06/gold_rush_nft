@@ -329,6 +329,11 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                                   builder: (_) => ManHinhBangXepHang(game: g),
                                 ),
                               ),
+                              onHistory: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ManHinhLichSuManChoi(game: g),
+                                ),
+                              ),
                             ),
                           ),
 
@@ -605,12 +610,14 @@ class _ProfileSidebar extends StatelessWidget {
   final bool compact;
   final ValueChanged<_ProfileTab> onTabChanged;
   final VoidCallback onLeaderboard;
+  final VoidCallback onHistory;
 
   const _ProfileSidebar({
     required this.currentTab,
     required this.compact,
     required this.onTabChanged,
     required this.onLeaderboard,
+    required this.onHistory,
   });
 
   @override
@@ -662,6 +669,14 @@ class _ProfileSidebar extends StatelessWidget {
               active: false,
               compact: compact,
               onTap: onLeaderboard,
+            ),
+            SizedBox(height: compact ? 6 : 10),
+            _SidebarButton(
+              icon: Icons.history_rounded,
+              label: 'Lịch sử màn chơi',
+              active: false,
+              compact: compact,
+              onTap: onHistory,
             ),
           ],
         ),
@@ -1065,19 +1080,6 @@ class _TabCaNhan extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ManHinhLichSuManChoi(game: game),
-                ),
-              ),
-              icon: const Icon(Icons.history_rounded),
-              label: const ChuGame('Lịch sử màn chơi', textAlign: TextAlign.center),
-            ),
-          ),
-          const SizedBox(height: 14),
           // Section title
           const _SectionTitle(
             icon: Icons.info_outline_rounded,

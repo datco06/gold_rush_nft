@@ -5,6 +5,7 @@ import 'package:gold_rush/kho_do/vat_pham_hien_thi.dart';
 import 'package:gold_rush/man_hinh/ho_so_nhan_vat.dart';
 import 'package:gold_rush/man_hinh/main_lobby.dart';
 import 'package:gold_rush/man_hinh/bang_xep_hang.dart';
+import 'package:gold_rush/man_hinh/lich_su_man_choi.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 
 import '../ngon_ngu/ho_tro_json.dart';
@@ -35,7 +36,7 @@ void main() {
   setUpAll(chuanBiNgonNguChoKiemThu);
 
   for (final size in const [Size(844, 390), Size(1280, 720)]) {
-    testWidgets('Profile left menu opens leaderboard below character and returns at $size in four languages', (tester) async {
+    testWidgets('Profile left menu opens leaderboard and history at $size in four languages', (tester) async {
       final game = GoldRushGame();
       addTearDown(game.danhSachVatPham.dispose);
       final lang = NgonNgu(doc: () async => null, ghi: (_) async {});
@@ -46,7 +47,7 @@ void main() {
       for (final code in const ['vi', 'en', 'fr', 'es']) {
         await lang.doi(code);
         await tester.pumpAndSettle();
-        final history = find.widgetWithText(OutlinedButton, lang.dich('Lịch sử màn chơi'));
+        final history = find.widgetWithText(GestureDetector, lang.dich('Lịch sử màn chơi'));
         final rank = find.widgetWithText(GestureDetector, lang.dich('Bảng xếp hạng'));
         final character = find.widgetWithText(GestureDetector, lang.dich('NHÂN VẬT'));
         expect(rank, findsOneWidget, reason: code);
@@ -57,6 +58,21 @@ void main() {
         expect(bounds.left, closeTo(tester.getRect(character).left, 0.1));
         expect(find.widgetWithText(OutlinedButton, lang.dich('Bảng xếp hạng')), findsNothing);
         expect(history, findsOneWidget);
+        await tester.ensureVisible(history);
+        final historyBounds = tester.getRect(history);
+        expect(historyBounds.top, greaterThanOrEqualTo(tester.getRect(rank).bottom));
+        expect(historyBounds.left, closeTo(tester.getRect(character).left, 0.1));
+        expect(historyBounds.right, lessThan(size.width / 2));
+        expect(find.widgetWithText(OutlinedButton, lang.dich('Lịch sử màn chơi')), findsNothing);
+        final beforeHistory = tester.state(find.byType(CharacterProfileScreen));
+        await tester.tap(history);
+        await tester.pumpAndSettle();
+        expect(find.byType(ManHinhLichSuManChoi), findsOneWidget);
+        expect(tester.widget<ManHinhLichSuManChoi>(find.byType(ManHinhLichSuManChoi)).game, same(game));
+        await tester.tap(find.byTooltip(lang.dich('Quay lại')));
+        await tester.pumpAndSettle();
+        expect(tester.state(find.byType(CharacterProfileScreen)), same(beforeHistory));
+        await tester.ensureVisible(rank);
         expect(rank.hitTestable(), findsOneWidget);
         final profile = tester.state(find.byType(CharacterProfileScreen));
         await tester.tap(rank);
