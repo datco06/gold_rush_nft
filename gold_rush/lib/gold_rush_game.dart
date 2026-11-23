@@ -1720,7 +1720,7 @@ class GoldRushGame extends FlameGame
     }
 
     if (g != null && nhatKy.troiThoiGian(dt)) {
-      final dacTrung = nhatKy.chup(g.mau, CauHinh.mauToiDa);
+      final dacTrung = nhatKy.chup(g.mau, g.mauToiDaHienTai);
       if (_aiDoKhoDuocPhep) doKho.capNhat(dacTrung);
     }
   }
@@ -1731,7 +1731,7 @@ class GoldRushGame extends FlameGame
     _vanDangDienRa = false;
 
     final g = george;
-    if (g != null) nhatKy.chup(g.mau, CauHinh.mauToiDa);
+    if (g != null) nhatKy.chup(g.mau, g.mauToiDaHienTai);
 
     // Thống kê chiến đấu: chỉ ghi log cục bộ, CHƯA gửi lên máy chủ
     if (g != null) nhatKy.trangBi = g.trangBi.idDangTrang;
