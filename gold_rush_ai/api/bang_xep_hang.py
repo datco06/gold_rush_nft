@@ -1,8 +1,6 @@
 """Read-only authenticated weekly leaderboard, independent of raw telemetry ranking."""
 from typing import Annotated
 from contextlib import closing
-import json
-from pathlib import Path
 from threading import Lock
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -15,23 +13,10 @@ from config import CHAIN_ID
 from core.bang_xep_hang import bang_tuan
 from core.csdl import ket_noi
 from core.bang_xep_hang_tong_the import BoNhoBangTongThe, xep_hang, phan_hoi
-from core.nguon_bang_tong_the import doc_huy_hieu, tong_vang
+from core.nguon_bang_tong_the import doc_man_hoan_thanh, doc_so_du_va_huy_hieu
 
 router = APIRouter(prefix='/api/bang-xep-hang', tags=['bang-xep-hang'])
 _cache_init = Lock()
-
-
-def _doc_so(path, seen):
-    file = Path(path)
-    if not file.exists():
-        if str(file.resolve()) in seen:
-            raise RuntimeError('Established reward ledger unavailable')
-        return []
-    rows = [json.loads(line) for line in file.read_text(encoding='utf-8').splitlines() if line.strip()]
-    if any(not isinstance(row, dict) for row in rows):
-        raise ValueError('Invalid server reward ledger')
-    seen.add(str(file.resolve()))
-    return rows
 
 
 def _tai_tong_the(request):
@@ -43,24 +28,15 @@ def _tai_tong_the(request):
                  for uid, wallet, name in db.execute(select(User.id, User.wallet_address, User.username)).all()]
     if not users:
         return []
+    kho = getattr(request.app.state, 'kho_tien_trinh', None)
+    if kho is None:
+        raise RuntimeError('Verified account progress unavailable')
     with closing(ket_noi()) as conn:
         conn.execute('BEGIN')
-        exp = {row['wallet_address'].lower(): row['exp'] for row in conn.execute(
-            'SELECT p.wallet_address,pr.exp FROM players p JOIN player_progress pr ON pr.player_id=p.player_id WHERE p.wallet_address IS NOT NULL'
-        ).fetchall()}
-    wallets = {u['wallet'] for u in users}
-    seen = getattr(request.app.state, 'bang_tong_the_ledger_seen', None)
-    if seen is None:
-        seen = request.app.state.bang_tong_the_ledger_seen = set()
-    vouchers = _doc_so(config.SO_PHIEU, seen)
-    tickets = _doc_so(config.SO_VE, seen)
-    if not tickets and any(
-        v.get('chain_id') == CHAIN_ID and str(v.get('vi', '')).lower() in wallets for v in vouchers
-    ):
-        raise RuntimeError('Ticket source required for existing rewards')
-    gold = tong_vang(vouchers, tickets, CHAIN_ID, wallets)
-    owned = doc_huy_hieu(sorted(wallets), CHAIN_ID, config.HOP_DONG_SBT)
-    return xep_hang(users, exp, gold, owned)
+        completed = doc_man_hoan_thanh(users, conn, kho.db_path, CHAIN_ID)
+    wallets = sorted(u['wallet'] for u in users)
+    gold, owned = doc_so_du_va_huy_hieu(wallets, CHAIN_ID, config.HOP_DONG_CUA_HANG, config.HOP_DONG_SBT)
+    return xep_hang(users, completed, gold, owned)
 
 
 @router.get('/tong-the')
@@ -75,7 +51,7 @@ def xep_hang_toan_server(
             request.app.state.bang_tong_the_cache = BoNhoBangTongThe()
         cache = request.app.state.bang_tong_the_cache
     try:
-        ranked, updated, stale = cache.lay((CHAIN_ID, config.HOP_DONG_SBT.lower()), lambda: _tai_tong_the(request))
+        ranked, updated, stale = cache.lay((CHAIN_ID, config.HOP_DONG_CUA_HANG.lower(), config.HOP_DONG_SBT.lower()), lambda: _tai_tong_the(request))
         return phan_hoi(ranked, player.wallet_address, CHAIN_ID, updated, stale)
     except Exception:
         raise HTTPException(503, 'Bảng xếp hạng chưa đồng bộ được dữ liệu server.') from None

@@ -11,13 +11,13 @@ def people(n):
 
 def test_priority_complete_server_before_top30_and_personal_outside():
     users = people(35)
-    exp = {u['wallet']: 100 for u in users}
-    exp[users[34]['wallet']] = 300
+    completed = {u['wallet']: {1} for u in users}
+    completed[users[34]['wallet']] = {1, 2}
     badges = {u['wallet']: [] for u in users}
     badges[users[33]['wallet']] = [1, 3]
     gold = {u['wallet']: i for i, u in enumerate(users)}
     gold[users[32]['wallet']] = 10**35
-    ranked = xep_hang(users, exp, gold, badges)
+    ranked = xep_hang(users, completed, gold, badges)
     assert [r['ten'] for r in ranked[:3]] == ['Player34', 'Player33', 'Player32']
     assert ranked[0]['level'] == 3
     data = phan_hoi(ranked, users[0]['wallet'], 31337, datetime.now(timezone.utc), False)
@@ -30,12 +30,18 @@ def test_priority_complete_server_before_top30_and_personal_outside():
 
 def test_stable_ties_distinct_owned_badges_new_users_and_small_server():
     users = people(3)
-    ranked = xep_hang(list(reversed(users)), {}, {}, {u['wallet']: [] for u in users})
+    completed = {u['wallet']: set() for u in users}
+    balances = {u['wallet']: 0 for u in users}
+    ranked = xep_hang(list(reversed(users)), completed, balances, {u['wallet']: [] for u in users})
     assert [r['ten'] for r in ranked] == ['Player0', 'Player1', 'Player2']
     assert all(r['level'] == 1 and r['vang'] == 0 for r in ranked)
     assert len(phan_hoi(ranked, users[0]['wallet'], 1, datetime.now(timezone.utc), False)['bang']) == 3
     with pytest.raises(ValueError):
-        xep_hang(users, {}, {}, {users[0]['wallet']: [1, 1]})
+        xep_hang(users, completed, balances, {users[0]['wallet']: [1, 1]})
+    with pytest.raises(ValueError):
+        xep_hang(users, completed, {}, {u['wallet']: [] for u in users})
+    with pytest.raises(ValueError):
+        xep_hang(users, {}, balances, {u['wallet']: [] for u in users})
 
 
 def test_cache_once_ttl_failure_stale_and_configuration_isolation():
@@ -44,7 +50,8 @@ def test_cache_once_ttl_failure_stale_and_configuration_isolation():
     calls = []
     def build():
         calls.append(1)
-        return xep_hang(people(2), {}, {}, {u['wallet']: [] for u in people(2)})
+        return xep_hang(people(2), {u['wallet']: set() for u in people(2)},
+                        {u['wallet']: 0 for u in people(2)}, {u['wallet']: [] for u in people(2)})
     first = cache.lay((1, 'contract'), build)
     assert cache.lay((1, 'contract'), build) == first
     assert len(calls) == 1
