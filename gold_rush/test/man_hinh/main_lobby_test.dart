@@ -56,12 +56,18 @@ void main() {
       for (final code in const ['vi', 'en', 'fr', 'es']) {
         await language.doi(code);
         await tester.pumpAndSettle();
-        final button = find.widgetWithText(
-          OutlinedButton,
-          language.dich('Sổ tay khám phá'),
-        );
+        final button = find.byTooltip(language.dich('Sổ tay khám phá'));
         expect(button, findsOneWidget, reason: code);
+        expect(find.text(language.dich('Sổ tay khám phá')), findsNothing);
+        expect(
+          find.descendant(
+            of: button,
+            matching: find.byIcon(Icons.menu_book_rounded),
+          ),
+          findsOneWidget,
+        );
         final bounds = tester.getRect(button);
+        expect(bounds.size, const Size(48, 48));
         final topBar = tester.getRect(find.byType(GoldRushTopBar));
         expect(bounds.top, closeTo(topBar.bottom + 12, 0.1));
         expect(bounds.right, closeTo(topBar.right, 0.1));

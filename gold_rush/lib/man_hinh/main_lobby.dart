@@ -307,8 +307,11 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                     child: Padding(
                                       padding: const EdgeInsets.only(top: 12),
                                       child: SizedBox(
-                                        width: rightPanelWidth,
-                                        child: OutlinedButton.icon(
+                                        width: 48,
+                                        height: 48,
+                                        child: IconButton.outlined(
+                                          tooltip: PhamViNgonNgu.of(context)
+                                              .dich('Sổ tay khám phá'),
                                           onPressed: () => Navigator.of(context)
                                               .push(
                                                 MaterialPageRoute<void>(
@@ -318,7 +321,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                                       ),
                                                 ),
                                               ),
-                                          style: OutlinedButton.styleFrom(
+                                          style: IconButton.styleFrom(
                                             foregroundColor:
                                                 LobbyColors.highlightGold,
                                             backgroundColor: LobbyColors.panel,
@@ -326,16 +329,9 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                               color: LobbyColors.panelBorder,
                                             ),
                                             minimumSize: const Size(0, 48),
-                                            textStyle: TextStyle(
-                                              fontSize: compact ? 12 : 14,
-                                            ),
                                           ),
                                           icon: const Icon(
                                             Icons.menu_book_rounded,
-                                          ),
-                                          label: const ChuGame(
-                                            'Sổ tay khám phá',
-                                            textAlign: TextAlign.center,
                                           ),
                                         ),
                                       ),
