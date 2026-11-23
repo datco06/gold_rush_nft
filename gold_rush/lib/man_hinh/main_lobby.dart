@@ -16,6 +16,7 @@ import '../kho_do/vat_pham_hien_thi.dart';
 import 'ho_so_nhan_vat.dart';
 import 'anh_nhan_vat.dart';
 import 'so_tay_kham_pha.dart';
+import 'bang_xep_hang.dart';
 
 /// Bảng màu Fantasy Treasure Adventure / RPG Mining Cave cho Main Lobby.
 abstract final class LobbyColors {
@@ -306,34 +307,72 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                     alignment: Alignment.topRight,
                                     child: Padding(
                                       padding: const EdgeInsets.only(top: 12),
-                                      child: SizedBox(
-                                        width: 48,
-                                        height: 48,
-                                        child: IconButton.outlined(
-                                          tooltip: PhamViNgonNgu.of(context)
-                                              .dich('Sổ tay khám phá'),
-                                          onPressed: () => Navigator.of(context)
-                                              .push(
-                                                MaterialPageRoute<void>(
-                                                  builder: (_) =>
-                                                      ManHinhSoTayKhamPha(
-                                                        game: g,
-                                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(
+                                            width: 48,
+                                            height: 48,
+                                            child: IconButton.outlined(
+                                              tooltip: PhamViNgonNgu.of(context)
+                                                  .dich('Bảng xếp hạng tuần'),
+                                              onPressed: () =>
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute<void>(
+                                                      builder: (_) =>
+                                                          ManHinhBangXepHang(
+                                                            game: g,
+                                                          ),
+                                                    ),
+                                                  ),
+                                              style: IconButton.styleFrom(
+                                                foregroundColor:
+                                                    LobbyColors.highlightGold,
+                                                backgroundColor:
+                                                    LobbyColors.panel,
+                                                side: const BorderSide(
+                                                  color:
+                                                      LobbyColors.panelBorder,
                                                 ),
                                               ),
-                                          style: IconButton.styleFrom(
-                                            foregroundColor:
-                                                LobbyColors.highlightGold,
-                                            backgroundColor: LobbyColors.panel,
-                                            side: const BorderSide(
-                                              color: LobbyColors.panelBorder,
+                                              icon: const Icon(
+                                                Icons.emoji_events_outlined,
+                                              ),
                                             ),
-                                            minimumSize: const Size(0, 48),
                                           ),
-                                          icon: const Icon(
-                                            Icons.menu_book_rounded,
+                                          const SizedBox(width: 8),
+                                          SizedBox(
+                                            width: 48,
+                                            height: 48,
+                                            child: IconButton.outlined(
+                                              tooltip: PhamViNgonNgu.of(context)
+                                                  .dich('Sổ tay khám phá'),
+                                              onPressed: () =>
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute<void>(
+                                                      builder: (_) =>
+                                                          ManHinhSoTayKhamPha(
+                                                            game: g,
+                                                          ),
+                                                    ),
+                                                  ),
+                                              style: IconButton.styleFrom(
+                                                foregroundColor:
+                                                    LobbyColors.highlightGold,
+                                                backgroundColor:
+                                                    LobbyColors.panel,
+                                                side: const BorderSide(
+                                                  color:
+                                                      LobbyColors.panelBorder,
+                                                ),
+                                                minimumSize: const Size(0, 48),
+                                              ),
+                                              icon: const Icon(
+                                                Icons.menu_book_rounded,
+                                              ),
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ),
                                   ),
