@@ -29,6 +29,7 @@ import os
 import sys
 import time
 import uuid
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from ipaddress import ip_address
 from pathlib import Path
@@ -79,6 +80,8 @@ from api.nhiem_vu import router as nhiem_vu_router
 from api.qua_tang import goi_rpc, router as qua_tang_router
 from api.tien_trinh import router as tien_trinh_router
 from api.thanh_tuu import router as thanh_tuu_router
+from api.bang_xep_hang import router as bang_xep_hang_router
+from core import bang_xep_hang
 
 from api.ai_nhiem_vu import khoi_dong_nhiem_vu, nhiem_vu_da_nap, router as router_nhiem_vu
 from api.de_xuat_do_kho import (de_xuat_do_kho_da_nap, khoi_dong_de_xuat_do_kho,
@@ -335,6 +338,7 @@ app.add_middleware(_LifespanCORSMiddleware)
 # Đăng ký các router mở rộng (Tiến trình, Kho đồ, Nhiệm vụ, Bản đồ)
 app.include_router(tien_trinh_router)
 app.include_router(thanh_tuu_router)
+app.include_router(bang_xep_hang_router)
 app.include_router(kho_do_router)
 app.include_router(nhiem_vu_router)
 app.include_router(qua_tang_router)
@@ -722,6 +726,42 @@ def _ky(khoa: bytes, ban_ghi: dict) -> dict:
     return ket_qua
 
 
+def _thu_ghi_bang_tuan(player, phieu, van=None):
+    """Rank only checked victories; retry can repair a missed write without moving week.
+
+    Existing reward delivery must remain available if this optional storage fails.
+    Never uses telemetry's self-reported identity or display name.
+    """
+    try:
+        with lay_csdl() as conn:
+            if conn.execute('SELECT 1 FROM weekly_rank_runs WHERE chain_id=? AND ma_van=?',
+                            (CHAIN_ID, phieu['ma_van'])).fetchone():
+                return
+        if van is None:
+            van = next((v for v in nhat_ky.doc_tat_ca(NHAT_KY_DIR)
+                        if v['ma_van'] == phieu['ma_van']), None)
+            if van is None:
+                return
+            ticket = trong_tai.SoVe(SO_VE).lay_theo_van(phieu['ma_van'])
+            stage = _cac_man().get(van['man'])
+            if (stage is None or ticket is None or ticket['man'] != stage.id
+                    or phieu['man'] != stage.id
+                    or ticket['vi'].lower() != player.wallet_address.lower()
+                    or phieu['vi'].lower() != player.wallet_address.lower()
+                    or Path(van['ban_do']).name != stage.tep):
+                return
+            check = trong_tai.kiem_dinh(van, doc_tmx(BAN_DO_DIR / stage.tep), stage)
+            if not check.hop_le or check.so_vang != phieu.get('so_vang_goc', phieu['so_vang']):
+                return
+        with lay_csdl() as conn:
+            bang_xep_hang.ghi_van_da_xac_minh(
+                conn, player, CHAIN_ID, van,
+                datetime.fromtimestamp(phieu['luc'], timezone.utc),
+            )
+    except Exception as exc:
+        log.warning('Không ghi được BXH tuần: %s', type(exc).__name__)
+
+
 @app.post("/api/vang/phieu")
 async def cap_phieu(
     yc: YeuCauPhieu,
@@ -755,6 +795,7 @@ async def cap_phieu(
     if cu is not None:
         if cu["vi"].lower() != vi_xac_thuc.lower():
             raise HTTPException(409, "Ván này đã cấp phiếu cho một ví khác")
+        _thu_ghi_bang_tuan(player, cu)
         return _ky(khoa, cu)
 
     # 2. Đọc nhật ký ván chơi từ telemetry store
@@ -832,6 +873,7 @@ async def cap_phieu(
     )
 
     # 1. Cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực qua SIWE và SoVe
+    _thu_ghi_bang_tuan(player, so.lay(yc.ma_van), van)
     try:
         with lay_csdl() as conn:
             conn.execute(
