@@ -5,7 +5,6 @@ import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/kho_do/vat_pham_hien_thi.dart';
 import 'package:gold_rush/man_hinh/main_lobby.dart';
 import 'package:gold_rush/man_hinh/so_tay_kham_pha.dart';
-import 'package:gold_rush/man_hinh/bang_xep_hang.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 
 import '../ngon_ngu/ho_tro_json.dart';
@@ -94,16 +93,8 @@ void main() {
         expect(tester.state(find.byType(GoldRushMainLobby)), same(lobby));
         expect(find.text(language.dich('BẮT ĐẦU')), findsOneWidget);
         expect(game.overlays.isActive(LopPhu.menu), isTrue);
-        final trophy = find.byTooltip(language.dich('Bảng xếp hạng tuần'));
-        expect(trophy.hitTestable(), findsOneWidget);
-        expect(tester.getRect(trophy).size, const Size(48, 48));
-        expect(tester.getRect(trophy).right, closeTo(bounds.left - 8, 0.1));
-        await tester.tap(trophy);
-        await tester.pumpAndSettle();
-        expect(find.byType(ManHinhBangXepHang), findsOneWidget);
-        await tester.tap(find.byTooltip(language.dich('Quay lại')));
-        await tester.pumpAndSettle();
-        expect(tester.state(find.byType(GoldRushMainLobby)), same(lobby));
+        expect(find.byTooltip(language.dich('Bảng xếp hạng tuần')), findsNothing);
+        expect(find.byIcon(Icons.emoji_events_outlined), findsNothing);
         expect(tester.takeException(), isNull, reason: '$size / $code');
       }
     });

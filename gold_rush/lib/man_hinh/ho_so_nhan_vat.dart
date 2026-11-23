@@ -18,6 +18,7 @@ import 'anh_nhan_vat.dart';
 import 'kho_do.dart';
 import 'main_lobby.dart' show CharacterMiniProfile;
 import 'lich_su_man_choi.dart';
+import 'bang_xep_hang.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 //  PALETTE — extends LobbyColors for Profile-specific tones
@@ -1059,6 +1060,19 @@ class _TabCaNhan extends StatelessWidget {
               ),
               icon: const Icon(Icons.history_rounded),
               label: const ChuGame('Lịch sử màn chơi', textAlign: TextAlign.center),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ManHinhBangXepHang(game: game),
+                ),
+              ),
+              icon: const Icon(Icons.emoji_events_outlined),
+              label: const ChuGame('Bảng xếp hạng tuần', textAlign: TextAlign.center),
             ),
           ),
           const SizedBox(height: 14),

@@ -114,7 +114,8 @@ dùng khi đã có địa chỉ hợp đồng, RPC và cấu hình backend tươ
 
 ### Bảng xếp hạng tuần
 
-Mở bằng icon cúp cạnh Sổ tay ở sảnh. Cần đăng nhập SIWE và backend cùng mạng ví.
+Mở từ Hồ sơ → Cá nhân → nút Bảng xếp hạng tuần trong bảng bên phải, ngay dưới
+Lịch sử màn chơi. Cần đăng nhập SIWE và backend cùng mạng ví.
 Màn hình có bảng tổng hợp, bộ lọc màn 1–20, chế độ tiêu chuẩn/thích ứng, Top 100
 và hạng cá nhân kể cả ngoài Top 100. Các thiết bị phải dùng chung backend để thấy
 cùng bảng; dữ liệu không lấy từ lịch sử cục bộ trên điện thoại.

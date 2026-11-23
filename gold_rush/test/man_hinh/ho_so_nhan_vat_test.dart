@@ -4,6 +4,10 @@ import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/kho_do/vat_pham_hien_thi.dart';
 import 'package:gold_rush/man_hinh/ho_so_nhan_vat.dart';
 import 'package:gold_rush/man_hinh/main_lobby.dart';
+import 'package:gold_rush/man_hinh/bang_xep_hang.dart';
+import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
+
+import '../ngon_ngu/ho_tro_json.dart';
 
 void _registerTestOverlays(GoldRushGame game) {
   for (final name in const [
@@ -28,6 +32,43 @@ Widget _wrapScreen(Widget child, Size size) {
 }
 
 void main() {
+  setUpAll(chuanBiNgonNguChoKiemThu);
+
+  for (final size in const [Size(844, 390), Size(1280, 720)]) {
+    testWidgets('Profile right panel opens leaderboard and returns at $size in four languages', (tester) async {
+      final game = GoldRushGame();
+      addTearDown(game.danhSachVatPham.dispose);
+      final lang = NgonNgu(doc: () async => null, ghi: (_) async {});
+      addTearDown(lang.dispose);
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(PhamViNgonNgu(ngonNgu: lang, child: _wrapScreen(CharacterProfileScreen(game: game), size)));
+      for (final code in const ['vi', 'en', 'fr', 'es']) {
+        await lang.doi(code);
+        await tester.pumpAndSettle();
+        final history = find.widgetWithText(OutlinedButton, lang.dich('Lịch sử màn chơi'));
+        final rank = find.widgetWithText(OutlinedButton, lang.dich('Bảng xếp hạng tuần'));
+        expect(rank, findsOneWidget, reason: code);
+        await tester.ensureVisible(rank);
+        final bounds = tester.getRect(rank);
+        expect(bounds.top, greaterThanOrEqualTo(tester.getRect(history).bottom));
+        expect(bounds.left, greaterThan(size.width / 2));
+        expect(bounds.right, closeTo(tester.getRect(history).right, 0.1));
+        expect(rank.hitTestable(), findsOneWidget);
+        final profile = tester.state(find.byType(CharacterProfileScreen));
+        await tester.tap(rank);
+        await tester.pumpAndSettle();
+        expect(find.byType(ManHinhBangXepHang), findsOneWidget);
+        expect(tester.widget<ManHinhBangXepHang>(find.byType(ManHinhBangXepHang)).game, same(game));
+        await tester.tap(find.byTooltip(lang.dich('Quay lại')));
+        await tester.pumpAndSettle();
+        expect(tester.state(find.byType(CharacterProfileScreen)), same(profile));
+        expect(find.text(lang.dich('TRANG BỊ HIỆN TẠI')), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: '$size / $code');
+      }
+    });
+  }
+
   testWidgets(
     'Clicking George in Main Lobby opens CharacterProfileScreen and X returns to Main Lobby',
     (tester) async {
@@ -83,10 +124,10 @@ void main() {
       expect(find.text('Lực chiến'), findsNothing);
       expect(find.text('THỐNG KÊ'), findsNothing);
       expect(find.text('Tỷ lệ thắng'), findsNothing);
-      expect(find.text('Bảng xếp hạng'), findsNothing);
 
       // Default tab: CÁ NHÂN
       expect(find.text('THÔNG TIN NHÂN VẬT'), findsOneWidget);
+      expect(find.text('Bảng xếp hạng tuần'), findsOneWidget);
       expect(find.text('TRANG BỊ HIỆN TẠI'), findsOneWidget);
       expect(find.text('HUY HIỆU TRƯNG BÀY'), findsOneWidget);
       expect(find.text('Thợ mỏ tập sự'), findsOneWidget);
