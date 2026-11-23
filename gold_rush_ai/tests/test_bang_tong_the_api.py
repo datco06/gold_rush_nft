@@ -167,3 +167,40 @@ def test_changing_shop_contract_invalidates_cached_balances(setup, monkeypatch):
     monkeypatch.setattr(api_bxh.config,'HOP_DONG_CUA_HANG','0x'+'d'*40)
     data = client.get('/api/bang-xep-hang/tong-the').json()
     assert data['ban']['vang'] == '1002' and len(calls) == 2
+
+
+def test_legacy_verified_matches_restore_level7_without_new_progress_rows(setup):
+    client, _, _ = setup
+    with api_bxh.ket_noi() as db:
+        db.execute("UPDATE player_progress SET completed_stage_ids='[]',exp=0")
+        for run, stage in enumerate([1, 2, 3, 4, 5, 6, 1]):
+            db.execute('''INSERT INTO match_results
+                (ma_van,player_id,man,ket_qua,hop_le,is_verified,verified_by,verified_wallet,created_at)
+                VALUES(?,?,?,'thang',1,1,'referee_voucher',?,'now')''',
+                (f'old-win-{run}', 'client-reported-name', stage, '0x'+'0'*40))
+        db.commit()
+    data = client.get('/api/bang-xep-hang/tong-the').json()
+    assert data['ban']['level'] == 7
+    assert data['bang'][0]['ten'] == 'User0'
+    assert data['ban']['vang'] == '1000'
+
+
+@pytest.mark.parametrize('result,valid,verified,source,wallet', [
+    ('thang',1,0,'telemetry_unverified','0x'+'0'*40),
+    ('thang',1,1,'telemetry_unverified','0x'+'0'*40),
+    ('thang',1,1,'referee_voucher',''),
+    ('thang',1,1,'referee_voucher','0x'+'1'*40),
+    ('thua',1,1,'referee_voucher','0x'+'0'*40),
+    ('thang',0,1,'referee_voucher','0x'+'0'*40),
+])
+def test_legacy_matches_do_not_grant_levels_from_spoofed_or_unverified_results(
+        setup, result, valid, verified, source, wallet):
+    client, _, _ = setup
+    with api_bxh.ket_noi() as db:
+        db.execute("UPDATE player_progress SET completed_stage_ids='[]',exp=0")
+        db.execute('''INSERT INTO match_results
+            (ma_van,player_id,man,ket_qua,hop_le,is_verified,verified_by,verified_wallet,created_at)
+            VALUES('spoof',?,6,?,?,?,?,?,'now')''',
+            (str(UUID(int=1)), result, valid, verified, source, wallet))
+        db.commit()
+    assert client.get('/api/bang-xep-hang/tong-the').json()['ban']['level'] == 1

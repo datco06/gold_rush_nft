@@ -59,6 +59,15 @@ def doc_man_hoan_thanh(users, conn, progress_path, chain_id):
         if wallet in completed:
             add(wallet, [row['man']])
 
+    # Older verified wins can predate both the weekly table and progress store.
+    # player_id in telemetry is client-supplied; only the referee-owned wallet is trusted.
+    for row in conn.execute('''SELECT DISTINCT verified_wallet,man FROM match_results
+            WHERE ket_qua='thang' AND hop_le=1 AND is_verified=1
+            AND verified_by='referee_voucher' AND man BETWEEN 1 AND 20'''):
+        wallet = str(row['verified_wallet'] or '').lower()
+        if wallet in completed:
+            add(wallet, [row['man']])
+
     # mode=ro: a missing active progress database is an error, never an empty new DB.
     with closing(sqlite3.connect(Path(progress_path).resolve().as_uri() + '?mode=ro', uri=True)) as db:
         for uid, wallet, stage in db.execute('''SELECT owner_user_id,verified_wallet_address,stage_id

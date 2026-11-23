@@ -128,9 +128,13 @@ Nguồn chỉ số:
 
 - Tên từ tài khoản SIWE đã đăng ký. Level = 1 + số màn hoàn thành khác nhau,
   cùng công thức của Hồ sơ. BXH đọc tiến trình đã xác minh của đúng tài khoản/ví
-  trong kho tiến trình đang chạy, tiến trình backend và các ván đã được trọng tài
-  ghi vào BXH trên mạng hiện tại; không đếm lại khi chơi lại cùng màn. Không lấy
+  trong kho tiến trình đang chạy, tiến trình backend, lịch sử `match_results`
+  đã được trọng tài cấp phiếu xác minh và các ván ghi vào BXH trên mạng hiện tại;
+  không đếm lại khi chơi lại cùng màn. Lịch sử cũ chỉ dùng `verified_wallet` do
+  trọng tài ghi, không dùng `player_id` tự khai trong telemetry. Không lấy
   EXP của hệ thống nhiệm vụ, telemetry tự khai hoặc fixture dev để tăng Level.
+  Level là tiến trình tài khoản trên server; lịch sử cũ chưa có cột chain ID
+  vẫn được đối chiếu bằng ví đã xác minh, còn vàng và SBT đọc đúng mạng hiện tại.
   Tiến trình chỉ lưu offline trên thiết bị chưa được đưa vào BXH khi chưa có
   bằng chứng xác minh trên server; công thức và gameplay của Hồ sơ không đổi.
 - Vàng đọc trực tiếp `balanceOf(wallet, 0)` trên hợp đồng `CuaHangGoldRush` của
