@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/bang_xep_hang/bang_xep_hang.dart';
 import 'package:gold_rush/gold_rush_game.dart';
-import 'package:gold_rush/man_choi.dart';
 import 'package:gold_rush/man_hinh/bang_xep_hang.dart';
 import 'package:gold_rush/ngon_ngu/ngon_ngu.dart';
 import 'package:http/http.dart' as http;
@@ -14,25 +12,22 @@ import 'package:http/testing.dart';
 
 import '../lich_su/ho_tro_lich_su.dart';
 import '../ngon_ngu/ho_tro_json.dart';
-import 'may_chu_bang_xep_hang_test.dart' show duLieuBang, dongBang;
+import 'tong_the_test.dart' show duLieuTongThe;
 
 void main() {
   setUpAll(chuanBiNgonNguChoKiemThu);
-  final stages = ManChoi.docDanhSach(
-    File('assets/tiles/man_choi.json').readAsStringSync(),
-  );
 
-  Future<({AuthLichSu auth, GoldRushGame game, NgonNgu lang})> mount(
+  Future<({AuthLichSu auth, NgonNgu lang})> mount(
     WidgetTester tester,
     http.Client client, {
-    bool login = true,
     String code = 'vi',
     Size size = const Size(844, 390),
+    bool login = true,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final auth = AuthLichSu()..allowed = login;
-    final game = GoldRushGame(auth: auth)..danhSachMan = stages;
+    final game = GoldRushGame(auth: auth);
     final lang = NgonNgu(doc: () async => null, ghi: (_) async {});
     await lang.doi(code);
     addTearDown(auth.dispose);
@@ -51,171 +46,185 @@ void main() {
         ),
       ),
     );
-    return (auth: auth, game: game, lang: lang);
+    return (auth: auth, lang: lang);
   }
+
+  http.Response response([Map<String, Object?>? data]) =>
+      http.Response(jsonEncode(data ?? duLieuTongThe()), 200);
+  Future<void> close(WidgetTester tester) =>
+      tester.pumpWidget(const SizedBox.shrink());
 
   for (final size in const [Size(844, 390), Size(568, 320), Size(360, 640)]) {
-    testWidgets('Top and personal rank fit $size in all four languages', (
-      tester,
-    ) async {
-      for (final code in const ['vi', 'en', 'fr', 'es']) {
-        await tester.pumpWidget(const SizedBox.shrink());
-        final client = MockClient(
-          (_) async => http.Response(jsonEncode(duLieuBang()), 200),
-        );
-        final env = await mount(tester, client, code: code, size: size);
-        await tester.pumpAndSettle();
-        expect(find.text(env.lang.dich('Bảng xếp hạng tuần')), findsOneWidget);
-        expect(find.text('Alice'), findsOneWidget);
-        expect(find.text(env.lang.dich('Hạng 106')), findsOneWidget);
-        expect(find.text(env.lang.dich('Hạng của bạn')), findsOneWidget);
-        await tester.drag(find.byType(ListView), const Offset(0, -220));
-        await tester.pumpAndSettle();
-        expect(find.text('Bob'), findsOneWidget);
-        if (code != 'vi') expect(find.text('Bảng xếp hạng tuần'), findsNothing);
-        expect(tester.takeException(), isNull, reason: '$size / $code');
-      }
-    });
+    testWidgets(
+      'Overall Top30 fits $size in four languages and keeps own rank',
+      (tester) async {
+        for (final code in const ['vi', 'en', 'fr', 'es']) {
+          await close(tester);
+          final env = await mount(
+            tester,
+            MockClient((_) async => response()),
+            code: code,
+            size: size,
+          );
+          await tester.pumpAndSettle();
+          expect(find.text(env.lang.dich('Bảng xếp hạng')), findsOneWidget);
+          expect(find.text('Alice'), findsOneWidget);
+          expect(find.text(env.lang.dich('Hạng 35')), findsOneWidget);
+          expect(find.byType(DropdownButton<int>), findsNothing);
+          await tester.scrollUntilVisible(
+            find.byKey(const ValueKey('bxh-row-30')),
+            250,
+          );
+          expect(find.text('Player30'), findsOneWidget);
+          expect(tester.takeException(), isNull, reason: '$size / $code');
+        }
+        await close(tester);
+      },
+    );
   }
 
-  testWidgets('loading and fast filter changes ignore old responses', (
+  testWidgets('Three position bands have distinct borders and tier labels', (
     tester,
   ) async {
-    final requests = <Uri>[];
-    final pending = <Completer<http.Response>>[];
-    await mount(
-      tester,
-      MockClient((r) {
-        requests.add(r.url);
-        final c = Completer<http.Response>();
-        pending.add(c);
-        return c.future;
-      }),
-    );
-    await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('bxh-stage')));
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('Màn 1').last);
-    await tester.pump();
-    expect(requests.last.queryParameters['man'], '1');
-    final filtered = duLieuBang(rows: [dongBang(name: 'New stage')])
-      ..['man'] = 1;
-    pending[1].complete(http.Response(jsonEncode(filtered), 200));
+    await mount(tester, MockClient((_) async => response()));
     await tester.pumpAndSettle();
-    pending[0].complete(
-      http.Response(
-        jsonEncode(duLieuBang(rows: [dongBang(name: 'Old response')])),
-        200,
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('New stage'), findsOneWidget);
-    expect(find.text('Old response'), findsNothing);
-  });
-
-  testWidgets('logout and wallet switch hide old personal data immediately', (
-    tester,
-  ) async {
-    final late = Completer<http.Response>();
-    var count = 0;
-    final env = await mount(
-      tester,
-      MockClient((_) {
-        count++;
-        return count == 1
-            ? late.future
-            : Future.value(
-                http.Response(
-                  jsonEncode(duLieuBang(rows: [])..['ban'] = null),
-                  200,
-                ),
-              );
-      }),
-    );
-    env.auth.allowed = false;
-    env.auth.thayDoi();
-    await tester.pump();
-    expect(find.text('Đăng nhập để xem bảng xếp hạng.'), findsOneWidget);
-    late.complete(http.Response(jsonEncode(duLieuBang()), 200));
-    await tester.pumpAndSettle();
-    expect(find.text('Alice'), findsNothing);
-    env.auth.wallet = '0x${'b' * 40}';
-    env.auth.allowed = true;
-    env.auth.thayDoi();
-    await tester.pumpAndSettle();
-    expect(count, 2);
-    expect(find.text('Alice'), findsNothing);
-  });
-
-  testWidgets('network error offers retry, empty result and mode filter work', (
-    tester,
-  ) async {
-    var attempt = 0;
-    final requests = <Uri>[];
-    await mount(
-      tester,
-      MockClient((r) async {
-        requests.add(r.url);
-        if (attempt++ == 0) throw http.ClientException('test offline');
-        final value = duLieuBang(rows: []);
-        value['ban'] = null;
-        value['tong_nguoi'] = 0;
-        value['thich_ung'] = r.url.queryParameters['thich_ung'] == 'true';
-        return http.Response(jsonEncode(value), 200);
-      }),
-    );
-    await tester.pumpAndSettle();
-    expect(
-      find.text('Không tải được bảng xếp hạng. Kiểm tra kết nối và thử lại.'),
-      findsOneWidget,
-    );
-    await tester.tap(find.text('Thử lại'));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('Chưa có thành tích được xác minh trong tuần này.'),
-      findsOneWidget,
-    );
-    await tester.tap(find.byKey(const ValueKey('bxh-mode')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Độ khó thích ứng').last);
-    await tester.pumpAndSettle();
-    expect(requests.last.queryParameters['thich_ung'], 'true');
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('unauthenticated page does not request or fabricate rankings', (
-    tester,
-  ) async {
-    var calls = 0;
-    await mount(
-      tester,
-      MockClient((_) async {
-        calls++;
-        return http.Response('{}', 200);
-      }),
-      login: false,
-    );
-    await tester.pumpAndSettle();
-    expect(calls, 0);
-    expect(find.text('Đăng nhập để xem bảng xếp hạng.'), findsOneWidget);
+    final colors = <Color>[];
+    for (final rank in [1, 11, 21, 30]) {
+      final row = find.byKey(ValueKey('bxh-row-$rank'));
+      await tester.scrollUntilVisible(row, 180);
+      final box = tester.widget<Container>(row).decoration! as BoxDecoration;
+      colors.add((box.border! as Border).top.color);
+      if (rank != 30) {
+        expect(
+          find.text(
+            rank <= 10
+                ? 'Top 10'
+                : rank <= 20
+                ? 'Top 20'
+                : 'Top 30',
+          ),
+          findsWidgets,
+        );
+      }
+    }
+    expect(colors.take(3).toSet(), hasLength(3));
+    expect(colors[2], colors[3]);
+    await close(tester);
   });
 
   testWidgets(
-    'another tab changing the server session cannot display its personal rank',
+    'Refresh every 60 seconds without overlap, pause in background and cancel on dispose',
     (tester) async {
-      final response = duLieuBang();
-      response['viewer'] = '0x${'b' * 40}';
+      var calls = 0;
+      final pending = Completer<http.Response>();
       await mount(
         tester,
-        MockClient((_) async => http.Response(jsonEncode(response), 200)),
+        MockClient((_) {
+          calls++;
+          return calls == 1 ? pending.future : Future.value(response());
+        }),
       );
+      await tester.pump(const Duration(seconds: 60));
+      expect(calls, 1);
+      pending.complete(response());
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 60));
+      await tester.pumpAndSettle();
+      expect(calls, 2);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump(const Duration(seconds: 120));
+      expect(calls, 2);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(calls, 3);
+      await close(tester);
+      await tester.pump(const Duration(seconds: 120));
+      expect(calls, 3);
+    },
+  );
+
+  testWidgets(
+    'Account switch rejects old responses and cross-tab server identity',
+    (tester) async {
+      final late = Completer<http.Response>();
+      var calls = 0;
+      final env = await mount(
+        tester,
+        MockClient((_) {
+          calls++;
+          return calls == 1 ? late.future : Future.value(response());
+        }),
+      );
+      env.auth.wallet = '0x${'b' * 40}';
+      env.auth.thayDoi();
+      await tester.pump();
+      late.complete(response());
       await tester.pumpAndSettle();
       expect(find.text('Alice'), findsNothing);
       expect(
         find.text('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.'),
         findsOneWidget,
       );
+      env.auth.allowed = false;
+      env.auth.thayDoi();
+      await tester.pumpAndSettle();
+      expect(find.text('Đăng nhập để xem bảng xếp hạng.'), findsOneWidget);
+      await close(tester);
     },
   );
+
+  testWidgets(
+    'Refresh error retains same-session list and stale source is labelled',
+    (tester) async {
+      var calls = 0;
+      await mount(
+        tester,
+        MockClient((_) async {
+          if (++calls == 1) return response(duLieuTongThe(stale: true));
+          throw http.ClientException('offline');
+        }),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Đang hiển thị dữ liệu cập nhật lần trước.'),
+        findsOneWidget,
+      );
+      expect(find.text('Alice'), findsOneWidget);
+      await tester.tap(find.byTooltip('Làm mới'));
+      await tester.pumpAndSettle();
+      expect(find.text('Alice'), findsOneWidget);
+      expect(
+        find.text('Không tải được bảng xếp hạng. Kiểm tra kết nối và thử lại.'),
+        findsOneWidget,
+      );
+      await close(tester);
+    },
+  );
+
+  testWidgets('Empty and unauthenticated states create no fake players', (
+    tester,
+  ) async {
+    final empty = duLieuTongThe(count: 0)..['tong_nguoi'] = 0;
+    empty['ban'] = null;
+    await mount(tester, MockClient((_) async => response(empty)));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Chưa có người chơi trong bảng xếp hạng.'),
+      findsOneWidget,
+    );
+    await close(tester);
+    var calls = 0;
+    await mount(
+      tester,
+      MockClient((_) async {
+        calls++;
+        return response();
+      }),
+      login: false,
+    );
+    await tester.pumpAndSettle();
+    expect(calls, 0);
+    expect(find.text('Đăng nhập để xem bảng xếp hạng.'), findsOneWidget);
+    await close(tester);
+  });
 }

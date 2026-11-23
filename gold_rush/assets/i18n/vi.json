@@ -843,5 +843,21 @@
   "Không tải được bảng xếp hạng. Kiểm tra kết nối và thử lại.": "Không tải được bảng xếp hạng. Kiểm tra kết nối và thử lại.",
   "Bảng xếp hạng tạm thời chưa sẵn sàng.": "Bảng xếp hạng tạm thời chưa sẵn sàng.",
   "Dữ liệu bảng xếp hạng không hợp lệ.": "Dữ liệu bảng xếp hạng không hợp lệ.",
-  "Bảng xếp hạng chưa hỗ trợ mạng ví hiện tại.": "Bảng xếp hạng chưa hỗ trợ mạng ví hiện tại."
+  "Bảng xếp hạng chưa hỗ trợ mạng ví hiện tại.": "Bảng xếp hạng chưa hỗ trợ mạng ví hiện tại.",
+  "Bảng xếp hạng": "Bảng xếp hạng",
+  "Top 30 server · {0} người chơi": "Top 30 server · {0} người chơi",
+  "Cập nhật: {0} (giờ Việt Nam)": "Cập nhật: {0} (giờ Việt Nam)",
+  "Tự động cập nhật mỗi 60 giây.": "Tự động cập nhật mỗi 60 giây.",
+  "Ưu tiên: Level → Huy hiệu → Vàng kiếm được": "Ưu tiên: Level → Huy hiệu → Vàng kiếm được",
+  "Level theo EXP trên server.": "Level theo EXP trên server.",
+  "Đang hiển thị dữ liệu cập nhật lần trước.": "Đang hiển thị dữ liệu cập nhật lần trước.",
+  "Hạng của bạn: {0}": "Hạng của bạn: {0}",
+  "Chưa có dữ liệu xếp hạng của bạn.": "Chưa có dữ liệu xếp hạng của bạn.",
+  "Chưa có người chơi trong bảng xếp hạng.": "Chưa có người chơi trong bảng xếp hạng.",
+  "Cấp {0}": "Cấp {0}",
+  "Vàng kiếm được: {0}": "Vàng kiếm được: {0}",
+  "{0} huy hiệu": "{0} huy hiệu",
+  "Top 10": "Top 10",
+  "Top 20": "Top 20",
+  "Top 30": "Top 30"
 }

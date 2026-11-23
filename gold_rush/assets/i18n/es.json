@@ -843,5 +843,21 @@
   "Không tải được bảng xếp hạng. Kiểm tra kết nối và thử lại.": "No se pudo cargar la clasificación. Comprueba la conexión e inténtalo de nuevo.",
   "Bảng xếp hạng tạm thời chưa sẵn sàng.": "La clasificación no está disponible temporalmente.",
   "Dữ liệu bảng xếp hạng không hợp lệ.": "Datos de clasificación no válidos.",
-  "Bảng xếp hạng chưa hỗ trợ mạng ví hiện tại.": "La clasificación no admite la red actual de tu cartera."
+  "Bảng xếp hạng chưa hỗ trợ mạng ví hiện tại.": "La clasificación no admite la red actual de tu cartera.",
+  "Bảng xếp hạng": "Clasificación",
+  "Top 30 server · {0} người chơi": "Top 30 del servidor · {0} jugadores",
+  "Cập nhật: {0} (giờ Việt Nam)": "Actualizado: {0} (hora de Vietnam)",
+  "Tự động cập nhật mỗi 60 giây.": "Se actualiza automáticamente cada 60 segundos.",
+  "Ưu tiên: Level → Huy hiệu → Vàng kiếm được": "Orden: Nivel → Insignias → Oro ganado",
+  "Level theo EXP trên server.": "El nivel utiliza la EXP verificada del servidor.",
+  "Đang hiển thị dữ liệu cập nhật lần trước.": "Se muestra la última actualización disponible.",
+  "Hạng của bạn: {0}": "Tu posición: {0}",
+  "Chưa có dữ liệu xếp hạng của bạn.": "Tus datos de clasificación aún no están disponibles.",
+  "Chưa có người chơi trong bảng xếp hạng.": "Aún no hay jugadores en la clasificación.",
+  "Cấp {0}": "Nivel {0}",
+  "Vàng kiếm được: {0}": "Oro ganado: {0}",
+  "{0} huy hiệu": "{0} insignias",
+  "Top 10": "Top 10",
+  "Top 20": "Top 20",
+  "Top 30": "Top 30"
 }

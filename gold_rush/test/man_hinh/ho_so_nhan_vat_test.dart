@@ -47,7 +47,7 @@ void main() {
         await lang.doi(code);
         await tester.pumpAndSettle();
         final history = find.widgetWithText(OutlinedButton, lang.dich('Lịch sử màn chơi'));
-        final rank = find.widgetWithText(OutlinedButton, lang.dich('Bảng xếp hạng tuần'));
+        final rank = find.widgetWithText(OutlinedButton, lang.dich('Bảng xếp hạng'));
         expect(rank, findsOneWidget, reason: code);
         await tester.ensureVisible(rank);
         final bounds = tester.getRect(rank);
@@ -127,7 +127,7 @@ void main() {
 
       // Default tab: CÁ NHÂN
       expect(find.text('THÔNG TIN NHÂN VẬT'), findsOneWidget);
-      expect(find.text('Bảng xếp hạng tuần'), findsOneWidget);
+      expect(find.text('Bảng xếp hạng'), findsOneWidget);
       expect(find.text('TRANG BỊ HIỆN TẠI'), findsOneWidget);
       expect(find.text('HUY HIỆU TRƯNG BÀY'), findsOneWidget);
       expect(find.text('Thợ mỏ tập sự'), findsOneWidget);

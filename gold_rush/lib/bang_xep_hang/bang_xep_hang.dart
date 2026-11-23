@@ -137,6 +137,7 @@ class MayChuBangXepHang {
   final http.Client _client;
   final bool _tuSoHuu;
   final Duration thoiGianCho;
+  Future<http.Response>? _tongTheDangTai;
 
   Future<BangXepHangTuan> tai({int? man, bool thichUng = false}) async {
     try {
@@ -176,12 +177,19 @@ class MayChuBangXepHang {
 
   Future<BangTongThe> taiTongThe() async {
     try {
-      final response = await _client
-          .get(
-            _mayChu.resolve('/api/bang-xep-hang/tong-the'),
-            headers: const {'Accept': 'application/json'},
-          )
-          .timeout(thoiGianCho);
+      if (_tongTheDangTai == null) {
+        late final Future<http.Response> request;
+        request = _client
+            .get(
+              _mayChu.resolve('/api/bang-xep-hang/tong-the'),
+              headers: const {'Accept': 'application/json'},
+            )
+            .whenComplete(() {
+              if (identical(_tongTheDangTai, request)) _tongTheDangTai = null;
+            });
+        _tongTheDangTai = request;
+      }
+      final response = await _tongTheDangTai!.timeout(thoiGianCho);
       if (response.statusCode == 401 || response.statusCode == 403) {
         throw const LoiTaiBangXepHang(LoiBangXepHang.dangNhap);
       }

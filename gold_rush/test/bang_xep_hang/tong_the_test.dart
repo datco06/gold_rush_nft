@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/bang_xep_hang/bang_xep_hang.dart';
@@ -30,6 +31,24 @@ Map<String, Object?> duLieuTongThe({
 };
 
 void main() {
+  test(
+    'overall refresh never overlaps an underlying timed-out request',
+    () async {
+      final pending = Completer<http.Response>();
+      var calls = 0;
+      final api = MayChuBangXepHang(
+        client: MockClient((_) {
+          calls++;
+          return pending.future;
+        }),
+        thoiGianCho: const Duration(milliseconds: 1),
+      );
+      await expectLater(api.taiTongThe(), throwsA(isA<LoiTaiBangXepHang>()));
+      await expectLater(api.taiTongThe(), throwsA(isA<LoiTaiBangXepHang>()));
+      expect(calls, 1);
+      pending.complete(http.Response(jsonEncode(duLieuTongThe()), 200));
+    },
+  );
   test('overall client calls fixed Top30 endpoint, parses exact BigInt and immutable badges', () async {
     final data = duLieuTongThe();
     (data['bang'] as List).first['vang'] =

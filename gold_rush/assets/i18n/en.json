@@ -843,5 +843,21 @@
   "Không tải được bảng xếp hạng. Kiểm tra kết nối và thử lại.": "Could not load the leaderboard. Check your connection and retry.",
   "Bảng xếp hạng tạm thời chưa sẵn sàng.": "The leaderboard is temporarily unavailable.",
   "Dữ liệu bảng xếp hạng không hợp lệ.": "Invalid leaderboard data.",
-  "Bảng xếp hạng chưa hỗ trợ mạng ví hiện tại.": "The leaderboard does not support your current wallet network."
+  "Bảng xếp hạng chưa hỗ trợ mạng ví hiện tại.": "The leaderboard does not support your current wallet network.",
+  "Bảng xếp hạng": "Leaderboard",
+  "Top 30 server · {0} người chơi": "Server Top 30 · {0} players",
+  "Cập nhật: {0} (giờ Việt Nam)": "Updated: {0} (Vietnam time)",
+  "Tự động cập nhật mỗi 60 giây.": "Refreshes automatically every 60 seconds.",
+  "Ưu tiên: Level → Huy hiệu → Vàng kiếm được": "Order: Level → Badges → Earned gold",
+  "Level theo EXP trên server.": "Level uses server-verified EXP.",
+  "Đang hiển thị dữ liệu cập nhật lần trước.": "Showing the last available update.",
+  "Hạng của bạn: {0}": "Your rank: {0}",
+  "Chưa có dữ liệu xếp hạng của bạn.": "Your ranking data is not available yet.",
+  "Chưa có người chơi trong bảng xếp hạng.": "There are no players on the leaderboard yet.",
+  "Cấp {0}": "Level {0}",
+  "Vàng kiếm được: {0}": "Earned gold: {0}",
+  "{0} huy hiệu": "{0} badges",
+  "Top 10": "Top 10",
+  "Top 20": "Top 20",
+  "Top 30": "Top 30"
 }

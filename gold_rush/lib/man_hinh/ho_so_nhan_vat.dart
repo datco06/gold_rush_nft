@@ -1072,7 +1072,7 @@ class _TabCaNhan extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.emoji_events_outlined),
-              label: const ChuGame('Bảng xếp hạng tuần', textAlign: TextAlign.center),
+              label: const ChuGame('Bảng xếp hạng', textAlign: TextAlign.center),
             ),
           ),
           const SizedBox(height: 14),
