@@ -112,6 +112,40 @@ Hardhat Local dùng chain ID `31337`. Sepolia dùng chain ID `11155111` và ch�
 dùng khi đã có địa chỉ hợp đồng, RPC và cấu hình backend tương ứng. Xem thêm
 [`../gold_rush_chain/README.md`](../gold_rush_chain/README.md).
 
+### Bảng xếp hạng tuần
+
+Mở bằng icon cúp cạnh Sổ tay ở sảnh. Cần đăng nhập SIWE và backend cùng mạng ví.
+Màn hình có bảng tổng hợp, bộ lọc màn 1–20, chế độ tiêu chuẩn/thích ứng, Top 100
+và hạng cá nhân kể cả ngoài Top 100. Các thiết bị phải dùng chung backend để thấy
+cùng bảng; dữ liệu không lấy từ lịch sử cục bộ trên điện thoại.
+
+`GET /api/bang-xep-hang/tuan?top=100&thich_ung=false` dùng phiên đăng nhập hiện có;
+thêm `man=1` để lọc theo màn. Không nhận ví hoặc điểm do client gửi để tính hạng.
+Backend tự tạo thêm bảng SQLite khi khởi động, giữ nguyên dữ liệu cũ và API bảng
+điểm telemetry `/api/bang-xep-hang`.
+
+Chỉ ván thắng qua luồng xác minh trọng tài/cấp phiếu hiện có được tính. Điểm là
+20 × số xu đã kiểm định, không cộng vàng thưởng, phí gas hay tiền mua vật phẩm.
+Mỗi ví/màn/tuần/chế độ chỉ lấy ván điểm cao nhất, sau đó thời gian ngắn nhất;
+bảng tổng hợp cộng các ván tốt nhất. Cùng tổng điểm và thời gian thì đồng hạng
+theo 1, 1, 3. Thời gian hiển thị tới mili giây.
+
+Một ván có dùng thích ứng ở bất kỳ khung hình đang chơi nào được đưa vào bảng
+thích ứng, kể cả sau đó tắt đi; chỉ màn 1 hiện hỗ trợ chế độ này. Việc phân loại
+dựa trên metadata ván do app ghi lại cùng bằng chứng được trọng tài kiểm định,
+không phải mô phỏng toàn bộ trận đấu trên máy chủ. Bản app cũ thiếu metadata này
+không được tự đưa lên BXH.
+Nếu đã chơi màn 1 với thích ứng, chọn bộ lọc “Độ khó thích ứng” để xem hạng tương ứng.
+
+Tuần bắt đầu 00:00 thứ Hai, giờ Việt Nam (UTC+7), theo thời điểm máy chủ cấp
+phiếu lần đầu. Gửi lại không chuyển thành tích sang tuần khác. App hiện hiển thị
+tuần hiện tại, có nút làm mới; dữ liệu tuần trước vẫn được giữ. Không tự nhập lịch
+sử trên thiết bị hay telemetry chưa xác minh. Khi ghi BXH lỗi, phần nhận kết quả
+cũ vẫn tiếp tục; xin lại phiếu sẽ thử khôi phục thành tích bằng bằng chứng gốc.
+Chỉ ticket và phiếu có nguồn chain ID do máy chủ ghi, khớp mạng hiện tại, mới
+được dùng để ghi BXH; phiếu cũ không rõ mạng vẫn dùng luồng cũ nhưng không nhập hạng.
+Không yêu cầu mint huy hiệu hoặc thực hiện giao dịch mới để xem bảng.
+
 ### 2.5. Kiểm tra mã nguồn
 
 ```bash
