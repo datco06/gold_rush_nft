@@ -12,10 +12,11 @@ from core import bang_xep_hang as bxh, csdl, nhat_ky, trong_tai
 
 @pytest.fixture
 def setup(tmp_path, monkeypatch):
+    original_check = trong_tai.kiem_dinh
     path = tmp_path / 'rank.db'
     csdl.khoi_tao_csdl(path)
     database = lambda: csdl.lay_csdl(path)
-    monkeypatch.setattr(api_bxh, 'lay_csdl', database)
+    monkeypatch.setattr(api_bxh, 'ket_noi', lambda: csdl.ket_noi(path))
     monkeypatch.setattr(api_bxh, 'CHAIN_ID', 31337)
     monkeypatch.setattr(main, 'lay_csdl', database)
     monkeypatch.setattr(main, 'CHAIN_ID', 31337)
@@ -38,17 +39,18 @@ def setup(tmp_path, monkeypatch):
     app.dependency_overrides[lay_nguoi_choi_hien_tai] = lambda: player
     main.app.dependency_overrides[lay_nguoi_choi_hien_tai] = lambda: player
     yield SimpleNamespace(path=path, db=database, player=player, app=app,
-                          client=TestClient(app), game_client=TestClient(main.app), root=tmp_path)
+                          client=TestClient(app), game_client=TestClient(main.app), root=tmp_path,
+                          original_check=original_check)
     main.app.dependency_overrides.pop(lay_nguoi_choi_hien_tai, None)
 
 
 def send_log(env, run='rank-run-001', result='thang'):
     nk = nhat_ky.NhatKyVan(ma_van=run, phien_ban_app='test', ket_qua=result,
                           man=1, ban_do='stage.tmx', giay=60, diem=100,
-                          player_id='attacker', ten_hien_thi='attacker',
+                          player_id='attacker', ten_hien_thi='attacker', xep_hang_thich_ung=False,
                           su_kien=[dict(loai='nhat_xu', giay=i + 1, x=i, y=1) for i in range(5)])
     nhat_ky.luu(nk, main.NHAT_KY_DIR)
-    trong_tai.SoVe(main.SO_VE).bat_dau(run, env.player.wallet_address, 1, 0)
+    trong_tai.SoVe(main.SO_VE).bat_dau(run, env.player.wallet_address, 1, 0, chain_id=main.CHAIN_ID)
 
 
 def test_api_requires_auth_and_does_not_accept_spoofed_personal_identity(setup):
@@ -61,6 +63,14 @@ def test_api_requires_auth_and_does_not_accept_spoofed_personal_identity(setup):
 @pytest.mark.parametrize('query', ['man=0', 'man=21', 'top=0', 'top=101', 'thich_ung=invalid'])
 def test_query_validation(setup, query):
     assert setup.client.get('/api/bang-xep-hang/tuan?' + query).status_code == 422
+
+
+def test_viewer_identity_comes_from_session_and_read_does_not_lock_writer(setup):
+    env = setup
+    assert env.client.get('/api/bang-xep-hang/tuan?wallet=spoofed').json()['viewer'] == env.player.wallet_address
+    with env.db() as writer:
+        writer.execute("INSERT INTO players(player_id,created_at,last_login) VALUES ('reserved','now','now')")
+        assert env.client.get('/api/bang-xep-hang/tuan').status_code == 200
 
 
 def test_only_successful_referee_victory_is_counted_and_retry_is_immutable(setup):
@@ -83,7 +93,7 @@ def test_retry_recovers_missing_snapshot_in_original_issuance_week(setup):
     env = setup
     send_log(env)
     so = trong_tai.SoPhieu(main.SO_PHIEU)
-    so.ghi('rank-run-001', env.player.wallet_address, 5, 1, 0)
+    so.ghi('rank-run-001', env.player.wallet_address, 5, 1, 0, chain_id=main.CHAIN_ID)
     env.game_client.post('/api/vang/phieu', json={'ma_van': 'rank-run-001'})
     with env.db() as conn:
         stored = conn.execute('SELECT verified_at FROM weekly_rank_runs').fetchone()
@@ -113,4 +123,65 @@ def test_other_owner_cannot_score_and_storage_failure_does_not_block_rewards(set
         raise RuntimeError('test storage unavailable')
     monkeypatch.setattr(bxh, 'ghi_van_da_xac_minh', unavailable)
     assert env.game_client.post('/api/vang/phieu', json={'ma_van': 'rank-run-001'}).status_code == 200
+    assert env.client.get('/api/bang-xep-hang/tuan').json()['bang'] == []
+
+
+def test_actual_map_and_referee_record_verified_win(setup, monkeypatch):
+    from core import man_choi
+    from core.luoi import doc_tmx
+    from tests.test_trong_tai import van_that
+    import config
+
+    env = setup
+    stage = man_choi.doc(config.MAN_CHOI)[1]
+    map_dir = config.MAN_CHOI.parent
+    monkeypatch.setattr(main, 'BAN_DO_DIR', map_dir)
+    monkeypatch.setattr(main, 'doc_tmx', doc_tmx)
+    monkeypatch.setattr(main, '_cac_man', lambda: {1: stage})
+    monkeypatch.setattr(trong_tai, 'kiem_dinh', env.original_check)
+    run = van_that(doc_tmx(map_dir / stage.tep), stage.so_xu, ket_qua='thang')
+    nk = nhat_ky.NhatKyVan(**run, ma_van='real-map-win', phien_ban_app='test',
+                          man=1, ban_do=stage.tep, xep_hang_thich_ung=False)
+    nhat_ky.luu(nk, main.NHAT_KY_DIR)
+    trong_tai.SoVe(main.SO_VE).bat_dau(nk.ma_van, env.player.wallet_address, 1, 0, chain_id=main.CHAIN_ID)
+    assert env.game_client.post('/api/vang/phieu', json={'ma_van': nk.ma_van}).status_code == 200
+    data = env.client.get('/api/bang-xep-hang/tuan').json()
+    assert data['ban']['diem'] == 20 * stage.so_xu
+
+
+def test_retry_does_not_import_voucher_into_different_chain(setup, monkeypatch):
+    env = setup
+    send_log(env)
+    assert env.game_client.post('/api/vang/phieu', json={'ma_van': 'rank-run-001'}).status_code == 200
+    monkeypatch.setattr(main, 'CHAIN_ID', 11155111)
+    monkeypatch.setattr(api_bxh, 'CHAIN_ID', 11155111)
+    assert env.game_client.post('/api/vang/phieu', json={'ma_van': 'rank-run-001'}).status_code == 200
+    assert env.client.get('/api/bang-xep-hang/tuan').json()['bang'] == []
+    with env.db() as conn:
+        assert conn.execute('SELECT COUNT(*) FROM weekly_rank_runs').fetchone()[0] == 1
+
+
+def test_legacy_ambiguous_voucher_still_reissues_but_is_not_ranked(setup):
+    env = setup
+    send_log(env)
+    trong_tai.SoPhieu(main.SO_PHIEU).ghi('rank-run-001', env.player.wallet_address, 5, 1, 0)
+    assert env.game_client.post('/api/vang/phieu', json={'ma_van': 'rank-run-001'}).status_code == 200
+    assert env.client.get('/api/bang-xep-hang/tuan').json()['bang'] == []
+
+
+def test_recovery_rechecks_ticket_number_and_paid_clock(setup, monkeypatch):
+    env = setup
+    send_log(env)
+    trong_tai.SoPhieu(main.SO_PHIEU).ghi('rank-run-001', env.player.wallet_address, 5, 1, 99, chain_id=main.CHAIN_ID)
+    assert env.game_client.post('/api/vang/phieu', json={'ma_van': 'rank-run-001'}).status_code == 200
+    assert env.client.get('/api/bang-xep-hang/tuan').json()['bang'] == []
+    nk = nhat_ky.NhatKyVan(ma_van='paid-recovery', phien_ban_app='test', ket_qua='thang',
+                          man=1, ban_do='stage.tmx', giay=60, diem=100, xep_hang_thich_ung=False,
+                          su_kien=[dict(loai='nhat_xu', giay=i+1, x=i, y=1) for i in range(5)])
+    nhat_ky.luu(nk, main.NHAT_KY_DIR)
+    trong_tai.SoVe(main.SO_VE).bat_dau(nk.ma_van, env.player.wallet_address, 1, 1, chain_id=main.CHAIN_ID)
+    trong_tai.SoPhieu(main.SO_PHIEU).ghi(nk.ma_van, env.player.wallet_address, 5, 1, 1, chain_id=main.CHAIN_ID)
+    main._cac_man()[1].mien_phi = False
+    monkeypatch.setattr(trong_tai, 'kiem_dong_ho', lambda *args: ['bad server timing'])
+    assert env.game_client.post('/api/vang/phieu', json={'ma_van': nk.ma_van}).status_code == 200
     assert env.client.get('/api/bang-xep-hang/tuan').json()['bang'] == []

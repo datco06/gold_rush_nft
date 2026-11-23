@@ -227,6 +227,7 @@ class SoPhieu(_SoJsonl):
         *,
         so_vang_goc: int | None = None,
         phi_gas_vang: int = 0,
+        chain_id: int | None = None,
     ) -> None:
         ban_ghi = {
             "ma_van": ma_van,
@@ -240,6 +241,8 @@ class SoPhieu(_SoJsonl):
         if so_vang_goc is not None:
             ban_ghi["so_vang_goc"] = so_vang_goc
             ban_ghi["phi_gas_vang"] = phi_gas_vang
+        if chain_id is not None:
+            ban_ghi['chain_id'] = chain_id
         self._them(ban_ghi)
 
 
@@ -252,13 +255,16 @@ class SoVe(_SoJsonl):
     def da_dung(self, vi: str, ve: int) -> bool:
         return any(v["vi"].lower() == vi.lower() and v["ve"] == ve for v in self._doc())
 
-    def bat_dau(self, ma_van: str, vi: str, man: int, ve: int, luc: float | None = None) -> dict:
+    def bat_dau(self, ma_van: str, vi: str, man: int, ve: int, luc: float | None = None,
+                *, chain_id: int | None = None) -> dict:
         if ve > 0 and self.da_dung(vi, ve):
             raise ValueError("Vé này đã dùng để bắt đầu một ván")
         if self.lay_theo_van(ma_van):
             raise ValueError("Mã ván đã được dùng")
         ban_ghi = {"ma_van": ma_van, "vi": vi, "man": man, "ve": ve,
                    "bat_dau": luc if luc is not None else time.time()}
+        if chain_id is not None:
+            ban_ghi['chain_id'] = chain_id
         self._them(ban_ghi)
         return ban_ghi
 

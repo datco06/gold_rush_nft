@@ -699,7 +699,7 @@ async def bat_dau_man(
     ma_van_ghi = yc.ma_van if yc.ma_van else f"van-{uuid.uuid4().hex}"
 
     try:
-        trong_tai.SoVe(SO_VE).bat_dau(ma_van_ghi, vi_xac_thuc, yc.man, ve_ghi)
+        trong_tai.SoVe(SO_VE).bat_dau(ma_van_ghi, vi_xac_thuc, yc.man, ve_ghi, chain_id=CHAIN_ID)
     except ValueError as e:
         raise HTTPException(409, str(e))
     return {"da_bat_dau": True, "ma_van": ma_van_ghi, "vi": vi_xac_thuc, "gioi_han_giay": m.gioi_han_giay}
@@ -733,6 +733,10 @@ def _thu_ghi_bang_tuan(player, phieu, van=None):
     Never uses telemetry's self-reported identity or display name.
     """
     try:
+        ticket = trong_tai.SoVe(SO_VE).lay_theo_van(phieu['ma_van'])
+        if (ticket is None or ticket.get('chain_id') != CHAIN_ID
+                or phieu.get('chain_id') != CHAIN_ID):
+            return  # ambiguous/other-chain evidence must never enter this board
         with lay_csdl() as conn:
             if conn.execute('SELECT 1 FROM weekly_rank_runs WHERE chain_id=? AND ma_van=?',
                             (CHAIN_ID, phieu['ma_van'])).fetchone():
@@ -742,16 +746,20 @@ def _thu_ghi_bang_tuan(player, phieu, van=None):
                         if v['ma_van'] == phieu['ma_van']), None)
             if van is None:
                 return
-            ticket = trong_tai.SoVe(SO_VE).lay_theo_van(phieu['ma_van'])
             stage = _cac_man().get(van['man'])
             if (stage is None or ticket is None or ticket['man'] != stage.id
-                    or phieu['man'] != stage.id
+                    or phieu['man'] != stage.id or phieu.get('ve') != ticket.get('ve')
                     or ticket['vi'].lower() != player.wallet_address.lower()
                     or phieu['vi'].lower() != player.wallet_address.lower()
                     or Path(van['ban_do']).name != stage.tep):
                 return
             check = trong_tai.kiem_dinh(van, doc_tmx(BAN_DO_DIR / stage.tep), stage)
             if not check.hop_le or check.so_vang != phieu.get('so_vang_goc', phieu['so_vang']):
+                return
+            if stage.mien_phi:
+                if ticket.get('ve', 0) != 0:
+                    return
+            elif ticket.get('ve', 0) < 1 or trong_tai.kiem_dong_ho(ticket, van, stage):
                 return
         with lay_csdl() as conn:
             bang_xep_hang.ghi_van_da_xac_minh(
@@ -870,6 +878,7 @@ async def cap_phieu(
         ve,
         so_vang_goc=so_vang_goc,
         phi_gas_vang=phi_gas_vang,
+        chain_id=CHAIN_ID,
     )
 
     # 1. Cập nhật verified_wallet vào match_results khi danh tính ví đã được xác thực qua SIWE và SoVe

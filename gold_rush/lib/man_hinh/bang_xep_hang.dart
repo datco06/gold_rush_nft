@@ -25,8 +25,9 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang> {
     if (auth == null ||
         !auth.canEnterGame ||
         auth.walletAddress == null ||
-        auth.chainId == null)
+        auth.chainId == null) {
       return null;
+    }
     return '${auth.walletAddress!.toLowerCase()}:${auth.chainId}';
   }
 
@@ -185,8 +186,9 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang> {
                 : FutureBuilder<BangXepHangTuan>(
                     future: _bang,
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done)
+                      if (snapshot.connectionState != ConnectionState.done) {
                         return const Center(child: CircularProgressIndicator());
+                      }
                       if (snapshot.hasError) {
                         final error = snapshot.error;
                         final kind = error is LoiTaiBangXepHang
@@ -204,6 +206,13 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang> {
                         return _thongBao(message, thuLai: true);
                       }
                       final data = snapshot.data!;
+                      if (data.viewer !=
+                          widget.game.auth?.walletAddress?.toLowerCase()) {
+                        return _thongBao(
+                          'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.',
+                          thuLai: true,
+                        );
+                      }
                       if (BigInt.from(data.chainId) !=
                           widget.game.auth?.chainId) {
                         return _thongBao(

@@ -42,6 +42,7 @@ class NhatKyVan(BaseModel):
     giay: float = Field(ge=0, le=3600)
     diem: int = Field(ge=0, le=100000)
     do_kho_thich_ung: bool = False
+    xep_hang_thich_ung: bool | None = None  # any adaptive play during this run; absent in legacy apps
     ten_hien_thi: str = Field(default="", max_length=20)
     player_id: str = Field(default="", max_length=64)
     anh_chup: list[AnhChup] = Field(default_factory=list, max_length=400)

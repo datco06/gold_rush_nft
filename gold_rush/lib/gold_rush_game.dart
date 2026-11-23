@@ -1690,6 +1690,9 @@ class GoldRushGame extends FlameGame
   @override
   void update(double dt) {
     if (_vanDangDienRa && trangThai == TrangThaiChoi.dangChoi) {
+      nhatKy.ghiNhanCheDoXepHang(
+        _aiDoKhoDuocPhep && doKho.batThichUng && doKho.moHinh != null,
+      );
       // Count the final frame too, without changing telemetry or timeout rules.
       _giayLichSuVan += min(max(0.0, dt), max(0.0, giayConLai ?? dt));
     }

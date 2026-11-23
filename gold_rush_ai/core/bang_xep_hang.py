@@ -21,10 +21,13 @@ def ghi_van_da_xac_minh(conn, player, chain_id: int, van: dict, verified_at: dat
     """
     stage, seconds = van.get('man'), van.get('giay')
     coins = sum(e.get('loai') == 'nhat_xu' for e in van.get('su_kien', []))
+    adaptive = van.get('xep_hang_thich_ung')
     if (van.get('ket_qua') != 'thang' or type(stage) is not int or not 1 <= stage <= 20
             or type(seconds) not in (int, float) or not math.isfinite(seconds)
             or not 0 < seconds <= 3600 or not 0 < coins <= 500
-            or van.get('diem') != coins * 20):
+            or van.get('diem') != coins * 20 or type(adaptive) is not bool
+            or adaptive and stage != 1
+            or van.get('do_kho_thich_ung') and not adaptive):
         raise ValueError('Invalid verified ranking result')
     wallet = player.wallet_address.lower()
     name = player.username or f'{wallet[:6]}…{wallet[-4:]}'
@@ -33,7 +36,7 @@ def ghi_van_da_xac_minh(conn, player, chain_id: int, van: dict, verified_at: dat
            (chain_id,ma_van,wallet,ten,man,diem,duration_ms,thich_ung,verified_at)
            VALUES (?,?,?,?,?,?,?,?,?)''',
         (chain_id, van['ma_van'], wallet, name, stage, coins * 20,
-         max(1, round(seconds * 1000)), int(bool(van.get('do_kho_thich_ung', False))),
+         max(1, round(seconds * 1000)), int(adaptive),
          _utc(verified_at).isoformat(timespec='microseconds')),
     )
 
@@ -76,6 +79,6 @@ def bang_tuan(conn, wallet: str, chain_id: int, *, man: int | None = None,
                     la_ban=row['wallet'] == wallet.lower())
 
     return dict(tuan=start.date().isoformat(), bat_dau=_utc(start).isoformat(),
-                ket_thuc=_utc(end).isoformat(), chain_id=chain_id, man=man,
+                ket_thuc=_utc(end).isoformat(), chain_id=chain_id, viewer=wallet.lower(), man=man,
                 thich_ung=thich_ung, tong_nguoi=rows[0]['tong_nguoi'] if rows else 0,
                 bang=[entry(row) for row in rows], ban=entry(mine))

@@ -22,7 +22,7 @@ def conn(tmp_path):
 def record(conn, run, player=ALICE, stage=1, coins=5, seconds=50,
            at=NOW, chain=31337, adaptive=False, result='thang'):
     van = dict(ma_van=run, man=stage, ket_qua=result, diem=coins * 20,
-               giay=seconds, do_kho_thich_ung=adaptive,
+               giay=seconds, do_kho_thich_ung=adaptive, xep_hang_thich_ung=adaptive,
                player_id='spoofed', ten_hien_thi='spoofed',
                su_kien=[{'loai': 'nhat_xu'} for _ in range(coins)])
     return bxh.ghi_van_da_xac_minh(conn, player, chain, van, at)
@@ -87,6 +87,21 @@ def test_chain_and_adaptive_mode_are_separate(conn):
     assert board(conn)['tong_nguoi'] == 1
     assert board(conn, thich_ung=True)['ban'] is None
     assert board(conn, thich_ung=True)['bang'][0]['ten'] == 'Bob'
+
+
+def test_adaptive_stage_outside_stage1_is_rejected(conn):
+    with pytest.raises(ValueError):
+        record(conn, 'impossible-mode', stage=2, adaptive=True)
+    assert board(conn, thich_ung=True)['bang'] == []
+
+
+def test_missing_or_conflicting_ranking_mode_is_rejected(conn):
+    for sticky, end in [(None, False), (False, True)]:
+        van = dict(ma_van='bad-mode', man=1, ket_qua='thang', diem=20,
+                   giay=10, su_kien=[{'loai': 'nhat_xu'}],
+                   xep_hang_thich_ung=sticky, do_kho_thich_ung=end)
+        with pytest.raises(ValueError):
+            bxh.ghi_van_da_xac_minh(conn, ALICE, 31337, van, NOW)
 
 
 @pytest.mark.parametrize('changes', [

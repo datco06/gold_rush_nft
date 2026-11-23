@@ -13,6 +13,7 @@ Map<String, Object?> duLieuBang({
   'bat_dau': '2026-11-22T17:00:00+00:00',
   'ket_thuc': '2026-11-29T17:00:00+00:00',
   'chain_id': 31337,
+  'viewer': '0x${'a' * 40}',
   'man': null,
   'thich_ung': false,
   'tong_nguoi': 106,

@@ -62,6 +62,7 @@ class BangXepHangTuan {
     required this.batDau,
     required this.ketThuc,
     required this.chainId,
+    required this.viewer,
     required this.man,
     required this.thichUng,
     required this.tongNguoi,
@@ -72,6 +73,7 @@ class BangXepHangTuan {
   final DateTime batDau;
   final DateTime ketThuc;
   final int chainId;
+  final String viewer;
   final int? man;
   final bool thichUng;
   final int tongNguoi;
@@ -89,6 +91,10 @@ class BangXepHangTuan {
       throw const FormatException('Invalid weekly ranking');
     }
     final start = DateTime.parse(raw['bat_dau'] as String).toUtc();
+    final viewer = raw['viewer'];
+    if (viewer is! String || !RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(viewer)) {
+      throw const FormatException('Invalid ranking viewer');
+    }
     final end = DateTime.parse(raw['ket_thuc'] as String).toUtc();
     final total = _soNguyen(raw['tong_nguoi'], 0);
     final rows = (raw['bang'] as List).map(DongXepHang.tuJson).toList();
@@ -104,6 +110,7 @@ class BangXepHangTuan {
       batDau: start,
       ketThuc: end,
       chainId: _soNguyen(raw['chain_id'], 1),
+      viewer: viewer.toLowerCase(),
       man: raw['man'] == null ? null : _soNguyen(raw['man'], 1, 20),
       thichUng: raw['thich_ung'] as bool,
       tongNguoi: total,

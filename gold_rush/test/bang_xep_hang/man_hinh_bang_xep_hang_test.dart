@@ -200,4 +200,22 @@ void main() {
     expect(calls, 0);
     expect(find.text('Đăng nhập để xem bảng xếp hạng.'), findsOneWidget);
   });
+
+  testWidgets(
+    'another tab changing the server session cannot display its personal rank',
+    (tester) async {
+      final response = duLieuBang();
+      response['viewer'] = '0x${'b' * 40}';
+      await mount(
+        tester,
+        MockClient((_) async => http.Response(jsonEncode(response), 200)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Alice'), findsNothing);
+      expect(
+        find.text('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.'),
+        findsOneWidget,
+      );
+    },
+  );
 }

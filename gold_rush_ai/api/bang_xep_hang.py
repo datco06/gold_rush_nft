@@ -1,12 +1,13 @@
 """Read-only authenticated weekly leaderboard, independent of raw telemetry ranking."""
 from typing import Annotated
+from contextlib import closing
 
 from fastapi import APIRouter, Depends, Query, Response
 
 from api.auth_guard import NguoiChoiXacThuc, lay_nguoi_choi_hien_tai
 from config import CHAIN_ID
 from core.bang_xep_hang import bang_tuan
-from core.csdl import lay_csdl
+from core.csdl import ket_noi
 
 router = APIRouter(prefix='/api/bang-xep-hang', tags=['bang-xep-hang'])
 
@@ -20,6 +21,7 @@ def xep_hang_tuan(
     top: int = Query(100, ge=1, le=100),
 ):
     response.headers['Cache-Control'] = 'no-store, private'
-    with lay_csdl() as conn:
+    with closing(ket_noi()) as conn:
+        conn.execute('BEGIN')  # consistent read snapshot without reserving SQLite's writer
         return bang_tuan(conn, player.wallet_address, CHAIN_ID,
                          man=man, thich_ung=thich_ung, top=top)
