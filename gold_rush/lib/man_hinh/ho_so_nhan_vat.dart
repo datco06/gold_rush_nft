@@ -324,6 +324,11 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                               currentTab: _currentTab,
                               compact: compact,
                               onTabChanged: _onTabSelected,
+                              onLeaderboard: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ManHinhBangXepHang(game: g),
+                                ),
+                              ),
                             ),
                           ),
 
@@ -599,11 +604,13 @@ class _ProfileSidebar extends StatelessWidget {
   final _ProfileTab currentTab;
   final bool compact;
   final ValueChanged<_ProfileTab> onTabChanged;
+  final VoidCallback onLeaderboard;
 
   const _ProfileSidebar({
     required this.currentTab,
     required this.compact,
     required this.onTabChanged,
+    required this.onLeaderboard,
   });
 
   @override
@@ -647,6 +654,14 @@ class _ProfileSidebar extends StatelessWidget {
               active: currentTab == _ProfileTab.nhanVat,
               compact: compact,
               onTap: () => onTabChanged(_ProfileTab.nhanVat),
+            ),
+            SizedBox(height: compact ? 6 : 10),
+            _SidebarButton(
+              icon: Icons.emoji_events_outlined,
+              label: 'Bảng xếp hạng',
+              active: false,
+              compact: compact,
+              onTap: onLeaderboard,
             ),
           ],
         ),
@@ -1060,19 +1075,6 @@ class _TabCaNhan extends StatelessWidget {
               ),
               icon: const Icon(Icons.history_rounded),
               label: const ChuGame('Lịch sử màn chơi', textAlign: TextAlign.center),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ManHinhBangXepHang(game: game),
-                ),
-              ),
-              icon: const Icon(Icons.emoji_events_outlined),
-              label: const ChuGame('Bảng xếp hạng', textAlign: TextAlign.center),
             ),
           ),
           const SizedBox(height: 14),

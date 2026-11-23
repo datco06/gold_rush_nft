@@ -114,8 +114,8 @@ dùng khi đã có địa chỉ hợp đồng, RPC và cấu hình backend tươ
 
 ### Bảng xếp hạng toàn server — Top 30
 
-Mở từ Hồ sơ → Cá nhân → Bảng xếp hạng, trong bảng bên phải ngay dưới Lịch sử
-màn chơi. Danh sách cuộn dọc hiển thị tên, Level, vàng kiếm được và từng loại huy
+Mở từ Hồ sơ → Bảng xếp hạng, ở menu bên trái ngay dưới nút Nhân vật.
+Danh sách cuộn dọc hiển thị tên, Level, vàng kiếm được và từng loại huy
 hiệu đã sở hữu. Các vị trí 1–10 có viền vàng, 11–20 viền bạc, 21–30 viền đồng;
 có nhãn Top 10/20/30, tô sáng người chơi hiện tại và hạng cá nhân ngoài Top 30.
 

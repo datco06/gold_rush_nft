@@ -35,7 +35,7 @@ void main() {
   setUpAll(chuanBiNgonNguChoKiemThu);
 
   for (final size in const [Size(844, 390), Size(1280, 720)]) {
-    testWidgets('Profile right panel opens leaderboard and returns at $size in four languages', (tester) async {
+    testWidgets('Profile left menu opens leaderboard below character and returns at $size in four languages', (tester) async {
       final game = GoldRushGame();
       addTearDown(game.danhSachVatPham.dispose);
       final lang = NgonNgu(doc: () async => null, ghi: (_) async {});
@@ -47,13 +47,16 @@ void main() {
         await lang.doi(code);
         await tester.pumpAndSettle();
         final history = find.widgetWithText(OutlinedButton, lang.dich('Lịch sử màn chơi'));
-        final rank = find.widgetWithText(OutlinedButton, lang.dich('Bảng xếp hạng'));
+        final rank = find.widgetWithText(GestureDetector, lang.dich('Bảng xếp hạng'));
+        final character = find.widgetWithText(GestureDetector, lang.dich('NHÂN VẬT'));
         expect(rank, findsOneWidget, reason: code);
         await tester.ensureVisible(rank);
         final bounds = tester.getRect(rank);
-        expect(bounds.top, greaterThanOrEqualTo(tester.getRect(history).bottom));
-        expect(bounds.left, greaterThan(size.width / 2));
-        expect(bounds.right, closeTo(tester.getRect(history).right, 0.1));
+        expect(bounds.top, greaterThanOrEqualTo(tester.getRect(character).bottom));
+        expect(bounds.right, lessThan(size.width / 2));
+        expect(bounds.left, closeTo(tester.getRect(character).left, 0.1));
+        expect(find.widgetWithText(OutlinedButton, lang.dich('Bảng xếp hạng')), findsNothing);
+        expect(history, findsOneWidget);
         expect(rank.hitTestable(), findsOneWidget);
         final profile = tester.state(find.byType(CharacterProfileScreen));
         await tester.tap(rank);
