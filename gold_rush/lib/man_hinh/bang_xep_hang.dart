@@ -237,19 +237,6 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang>
                 'Cập nhật: ${_ngay(data.capNhatLuc)} (giờ Việt Nam)',
                 style: const TextStyle(color: Color(0xFFAFC0D2), fontSize: 12),
               ),
-              const ChuGame(
-                'Tự động cập nhật mỗi 60 giây.',
-                style: TextStyle(color: Color(0xFFAFC0D2), fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              const ChuGame(
-                'Ưu tiên: Level → Huy hiệu → Vàng kiếm được',
-                style: TextStyle(color: Color(0xFFAFC0D2), fontSize: 12),
-              ),
-              const ChuGame(
-                'Level theo EXP trên server.',
-                style: TextStyle(color: Color(0xFFAFC0D2), fontSize: 12),
-              ),
               if (data.duLieuCu)
                 const ChuGame(
                   'Đang hiển thị dữ liệu cập nhật lần trước.',
