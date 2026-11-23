@@ -112,40 +112,46 @@ Hardhat Local dùng chain ID `31337`. Sepolia dùng chain ID `11155111` và ch�
 dùng khi đã có địa chỉ hợp đồng, RPC và cấu hình backend tương ứng. Xem thêm
 [`../gold_rush_chain/README.md`](../gold_rush_chain/README.md).
 
-### Bảng xếp hạng tuần
+### Bảng xếp hạng toàn server — Top 30
 
-Mở từ Hồ sơ → Cá nhân → nút Bảng xếp hạng tuần trong bảng bên phải, ngay dưới
-Lịch sử màn chơi. Cần đăng nhập SIWE và backend cùng mạng ví.
-Màn hình có bảng tổng hợp, bộ lọc màn 1–20, chế độ tiêu chuẩn/thích ứng, Top 100
-và hạng cá nhân kể cả ngoài Top 100. Các thiết bị phải dùng chung backend để thấy
-cùng bảng; dữ liệu không lấy từ lịch sử cục bộ trên điện thoại.
+Mở từ Hồ sơ → Cá nhân → Bảng xếp hạng, trong bảng bên phải ngay dưới Lịch sử
+màn chơi. Danh sách cuộn dọc hiển thị tên, Level, vàng kiếm được và từng loại huy
+hiệu đã sở hữu. Các vị trí 1–10 có viền vàng, 11–20 viền bạc, 21–30 viền đồng;
+có nhãn Top 10/20/30, tô sáng người chơi hiện tại và hạng cá nhân ngoài Top 30.
 
-`GET /api/bang-xep-hang/tuan?top=100&thich_ung=false` dùng phiên đăng nhập hiện có;
-thêm `man=1` để lọc theo màn. Không nhận ví hoặc điểm do client gửi để tính hạng.
-Backend tự tạo thêm bảng SQLite khi khởi động, giữ nguyên dữ liệu cũ và API bảng
-điểm telemetry `/api/bang-xep-hang`.
+Thứ tự: Level giảm dần → số loại huy hiệu giảm dần → tổng vàng kiếm được giảm
+dần → mã tài khoản ổn định khi ba chỉ số bằng nhau. Tổng hợp toàn bộ tài khoản
+đã đăng ký trên backend trước khi lấy 30 người đầu; không tạo người chơi giả nếu
+server ít hơn 30 người. Dữ liệu cùng server/mạng, không đọc lịch sử cục bộ.
 
-Chỉ ván thắng qua luồng xác minh trọng tài/cấp phiếu hiện có được tính. Điểm là
-20 × số xu đã kiểm định, không cộng vàng thưởng, phí gas hay tiền mua vật phẩm.
-Mỗi ví/màn/tuần/chế độ chỉ lấy ván điểm cao nhất, sau đó thời gian ngắn nhất;
-bảng tổng hợp cộng các ván tốt nhất. Cùng tổng điểm và thời gian thì đồng hạng
-theo 1, 1, 3. Thời gian hiển thị tới mili giây.
+Nguồn chỉ số:
 
-Một ván có dùng thích ứng ở bất kỳ khung hình đang chơi nào được đưa vào bảng
-thích ứng, kể cả sau đó tắt đi; chỉ màn 1 hiện hỗ trợ chế độ này. Việc phân loại
-dựa trên metadata ván do app ghi lại cùng bằng chứng được trọng tài kiểm định,
-không phải mô phỏng toàn bộ trận đấu trên máy chủ. Bản app cũ thiếu metadata này
-không được tự đưa lên BXH.
-Nếu đã chơi màn 1 với thích ứng, chọn bộ lọc “Độ khó thích ứng” để xem hạng tương ứng.
+- Tên từ tài khoản SIWE đã đăng ký; Level tính bằng công thức EXP hiện có ở backend.
+  BXH không dùng cấp độ tính từ số màn cục bộ của Hồ sơ và không đổi công thức đó.
+- Vàng kiếm được cộng `so_vang_goc` (hoặc `so_vang` ở phiếu cũ hợp lệ), mỗi mã ván
+  chỉ một lần, từ sổ phiếu do server cấp và ticket khớp ví/màn/vé/chain. Đây là phần
+  thưởng đã được xác minh, kể cả còn chờ nhận về ví; không gồm cọc hoàn lại, vàng
+  được chuyển vào, faucet hay quà tặng. Mua trang bị không trừ chỉ số này. Phiếu
+  thiếu nguồn mạng rõ ràng không tự nhập vào tổng.
+- Huy hiệu chỉ đếm từng loại SBT thực sự sở hữu (ID 1–5), đọc `hasAchievement` cho
+  mọi ví đăng ký tại cùng một block; không lấy trạng thái đủ điều kiện hoặc cache
+  do client gửi làm bằng chứng. Cần RPC đúng mạng, `SBT_CHAIN_ID` khớp `CHAIN_ID`
+  và `HOP_DONG_SBT` đã triển khai; RPC hỗ trợ JSON-RPC batch. Chỉ gọi phương thức
+  đọc, không yêu cầu ký, mint hoặc gửi giao dịch để xem BXH.
 
-Tuần bắt đầu 00:00 thứ Hai, giờ Việt Nam (UTC+7), theo thời điểm máy chủ cấp
-phiếu lần đầu. Gửi lại không chuyển thành tích sang tuần khác. App hiện hiển thị
-tuần hiện tại, có nút làm mới; dữ liệu tuần trước vẫn được giữ. Không tự nhập lịch
-sử trên thiết bị hay telemetry chưa xác minh. Khi ghi BXH lỗi, phần nhận kết quả
-cũ vẫn tiếp tục; xin lại phiếu sẽ thử khôi phục thành tích bằng bằng chứng gốc.
-Chỉ ticket và phiếu có nguồn chain ID do máy chủ ghi, khớp mạng hiện tại, mới
-được dùng để ghi BXH; phiếu cũ không rõ mạng vẫn dùng luồng cũ nhưng không nhập hạng.
-Không yêu cầu mint huy hiệu hoặc thực hiện giao dịch mới để xem bảng.
+`GET /api/bang-xep-hang/tong-the` dùng phiên SIWE, trả tối đa 30 vị trí cùng hạng
+cá nhân; không nhận điểm/ví/level từ query để tính hạng. Backend dùng bộ nhớ đệm
+chung 60 giây. App tự làm mới khi màn BXH đang mở và ở tiền cảnh, có nút làm mới,
+hiển thị thời điểm cập nhật. Lỗi nguồn dữ liệu giữ bản đầy đủ trước đó và báo dữ
+liệu cũ; lần đầu chưa đồng bộ được thì báo chưa sẵn sàng, không giả định 0 huy hiệu.
+Chu kỳ 60 giây tính từ lúc đồng bộ xong; khi đang làm mới, yêu cầu khác nhận ngay
+bản đầy đủ trước đó. Sổ vàng đã từng tồn tại bị thiếu/trống hoặc làm tổng vàng
+giảm bất thường sẽ không thay thế bản tốt bằng số 0. Đổi tài khoản/mạng, đăng
+xuất hoặc đóng màn BXH hủy yêu cầu cũ, không dùng chung phản hồi giữa hai phiên.
+Số vàng truyền dạng chuỗi thập phân để không mất chính xác trên Web.
+
+API BXH tuần `/api/bang-xep-hang/tuan` và API telemetry `/api/bang-xep-hang` vẫn
+được giữ nguyên cho dữ liệu cũ; màn BXH trong app hiện dùng Top 30 tổng thể.
 
 ### 2.5. Kiểm tra mã nguồn
 
