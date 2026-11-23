@@ -218,3 +218,74 @@ def test_schema_failure_logs_exact_source_without_sql_or_paths(setup, caplog):
     assert 'type=OperationalError source=nguon_bang_tong_the.py:' in caplog.text
     assert 'no such column' not in caplog.text and 'SELECT' not in caplog.text
     assert str(api_bxh.config.SO_PHIEU.parent) not in caplog.text
+
+
+def profile_payload(level=7, wallet='0x'+'0'*40, chain=31337):
+    return dict(level=level, expected_wallet=wallet, expected_chain_id=chain)
+
+
+def test_new_account_profile_sync_refreshes_snapshot_that_omits_viewer(setup):
+    client, app, _ = setup
+    assert client.get('/api/bang-xep-hang/tong-the').json()['tong_nguoi'] == 35
+    uid, wallet = UUID(int=36), f'0x{35:040x}'
+    with app.state.auth_session_factory() as db:
+        db.add(User(id=uid, wallet_address=wallet, username='New player', username_key='new player'))
+        db.commit()
+    app.dependency_overrides[lay_nguoi_choi_hien_tai] = lambda: NguoiChoiXacThuc(
+        user_id=str(uid), wallet_address=wallet, username='New player')
+    assert client.get('/api/bang-xep-hang/tong-the').json()['ban'] is None
+    assert client.post('/api/bang-xep-hang/cap-ho-so', json=profile_payload(wallet=wallet)).status_code == 200
+    data = client.get('/api/bang-xep-hang/tong-the').json()
+    assert data['tong_nguoi'] == 36 and data['ban']['level'] == 7 and data['ban']['hang'] == 1
+
+
+def test_profile_revision_keeps_complete_stale_snapshot_when_rpc_is_down(setup, monkeypatch):
+    client, _, clock = setup
+    first = client.get('/api/bang-xep-hang/tong-the').json()
+    def offline(*args): raise RuntimeError('private RPC details')
+    monkeypatch.setattr(api_bxh, 'doc_so_du_va_huy_hieu', offline)
+    clock[0] = 61
+    assert client.get('/api/bang-xep-hang/tong-the').json()['du_lieu_cu'] is True
+    assert client.post('/api/bang-xep-hang/cap-ho-so', json=profile_payload()).status_code == 200
+    response = client.get('/api/bang-xep-hang/tong-the')
+    assert response.status_code == 200
+    data = response.json()
+    assert data['du_lieu_cu'] is True and data['bang'] == first['bang']
+    assert data['cap_nhat_luc'] == first['cap_nhat_luc']
+
+
+def test_profile_level7_is_persisted_and_reranks_all_players_without_granting_progress(setup):
+    client, app, _ = setup
+    assert client.get('/api/bang-xep-hang/tong-the').json()['ban']['level'] == 2
+    with api_bxh.ket_noi() as db:
+        before = [tuple(r) for r in db.execute('SELECT * FROM player_progress ORDER BY player_id')]
+    response = client.post('/api/bang-xep-hang/cap-ho-so', json=profile_payload())
+    assert response.status_code == 200 and response.json()['level'] == 7
+    # No waiting for the old 60-second snapshot: a different worker also sees the revision.
+    data = client.get('/api/bang-xep-hang/tong-the').json()
+    assert data['ban']['level'] == 7 and data['ban']['hang'] == 1
+    assert data['bang'][0]['ten'] == 'User0'
+    assert client.post('/api/bang-xep-hang/cap-ho-so', json=profile_payload(1)).json()['level'] == 7
+    app.state.bang_tong_the_cache = BoNhoBangTongThe()
+    assert client.get('/api/bang-xep-hang/tong-the').json()['ban']['level'] == 7
+    with api_bxh.ket_noi() as db:
+        assert [tuple(r) for r in db.execute('SELECT * FROM player_progress ORDER BY player_id')] == before
+        assert db.execute('SELECT COUNT(*) FROM player_profile_levels').fetchone()[0] == 1
+
+
+@pytest.mark.parametrize('level', [0,22,True,'7',7.5])
+def test_profile_level_payload_is_strict_and_bounded(setup, level):
+    client, _, _ = setup
+    assert client.post('/api/bang-xep-hang/cap-ho-so',json=profile_payload(level)).status_code == 422
+
+
+def test_profile_level_requires_auth_csrf_and_cannot_target_another_account_or_chain(setup):
+    client, app, _ = setup
+    assert client.post('/api/bang-xep-hang/cap-ho-so',json=profile_payload(wallet=f'0x{1:040x}')).status_code == 409
+    assert client.post('/api/bang-xep-hang/cap-ho-so',json=profile_payload(chain=1)).status_code == 409
+    assert client.post('/api/bang-xep-hang/cap-ho-so',json=dict(profile_payload(), user_id='other')).status_code == 422
+    client.cookies.set('gr_session','test-cookie')
+    assert client.post('/api/bang-xep-hang/cap-ho-so',json=profile_payload()).status_code == 403
+    client.cookies.clear()
+    app.dependency_overrides.clear()
+    assert client.post('/api/bang-xep-hang/cap-ho-so',json=profile_payload()).status_code == 401

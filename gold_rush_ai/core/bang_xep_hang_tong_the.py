@@ -1,4 +1,4 @@
-"""Overall server ranking; no gameplay mutations or client-reported metrics."""
+"""Overall ranking from Profile snapshots, verified progress and on-chain assets."""
 from datetime import datetime, timezone
 import logging
 from threading import Lock
@@ -7,15 +7,17 @@ from traceback import extract_tb
 
 _log = logging.getLogger(__name__)
 
-def xep_hang(users, completed, gold, badges):
+def xep_hang(users, completed, gold, badges, profile_levels=None):
     result = []
     seen = set()
     for user in users:
         wallet = user['wallet'].lower()
         balance = gold.get(wallet)
         stages = completed.get(wallet)
+        profile_level = (profile_levels or {}).get(wallet, 1)
         owned = badges.get(wallet)
         if (wallet in seen or not isinstance(stages, (set, frozenset))
+                or type(profile_level) is not int or not 1 <= profile_level <= 21
                 or any(type(s) is not int or not 1 <= s <= 20 for s in stages)
                 or type(balance) is not int or balance < 0 or not isinstance(owned, list)
                 or len(set(owned)) != len(owned)
@@ -23,7 +25,7 @@ def xep_hang(users, completed, gold, badges):
             raise ValueError('Incomplete or invalid ranking source')
         seen.add(wallet)
         result.append(dict(user_id=user['user_id'], wallet=wallet, ten=user['ten'],
-                           level=1 + len(stages), vang=balance,
+                           level=max(1 + len(stages), profile_level), vang=balance,
                            huy_hieu=sorted(owned)))
     result.sort(key=lambda r: (-r['level'], -len(r['huy_hieu']), -r['vang'], r['user_id']))
     for position, row in enumerate(result, 1):
@@ -53,8 +55,9 @@ class BoNhoBangTongThe:
         self._attempt = None
         self._stale = False
         self._snapshot = None
+        self._revision = None
 
-    def lay(self, key, build):
+    def lay(self, key, build, *, revision=None):
         if not self._lock.acquire(blocking=False):
             snapshot = self._snapshot
             if snapshot is not None and snapshot[0] == key:
@@ -64,7 +67,7 @@ class BoNhoBangTongThe:
             now = self._clock()
             if key != self._key:
                 self._key, self._value, self._updated, self._attempt = key, None, None, None
-            if self._attempt is not None and now - self._attempt < 60:
+            if self._attempt is not None and revision == self._revision and now - self._attempt < 60:
                 if self._value is None:
                     raise RuntimeError('Ranking synchronization unavailable')
                 return self._value, self._updated, self._stale
@@ -88,6 +91,7 @@ class BoNhoBangTongThe:
                     raise RuntimeError('Ranking synchronization unavailable') from None
                 self._stale = True
             finally:
+                self._revision = revision
                 self._attempt = self._clock()  # cooldown starts after all source reads finish
             return self._value, self._updated, self._stale
         finally:

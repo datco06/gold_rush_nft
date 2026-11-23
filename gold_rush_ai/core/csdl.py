@@ -36,6 +36,16 @@ CREATE TABLE IF NOT EXISTS player_progress (
     FOREIGN KEY(player_id) REFERENCES players(player_id) ON DELETE CASCADE
 );
 
+-- Cosmetic Profile Level reported by the authenticated app; never grants gameplay progress.
+CREATE TABLE IF NOT EXISTS player_profile_levels (
+    user_id TEXT NOT NULL,
+    chain_id INTEGER NOT NULL,
+    wallet_address TEXT NOT NULL,
+    level INTEGER NOT NULL CHECK(level BETWEEN 1 AND 21),
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(user_id, chain_id)
+);
+
 CREATE TABLE IF NOT EXISTS inventory (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     player_id TEXT NOT NULL,
