@@ -72,3 +72,39 @@ def test_cache_concurrent_build_is_coalesced():
         result = list(pool.map(lambda _: cache.lay((1, 'c'), build), range(20)))
     assert len(calls) == 1
     assert all(r == result[0] for r in result)
+
+
+def test_slow_build_ttl_starts_when_snapshot_finishes():
+    time = [0.0]
+    cache = BoNhoBangTongThe(clock=lambda: time[0])
+    calls = []
+    def slow():
+        calls.append(1)
+        time[0] += 65
+        return []
+    cache.lay((1, 'c'), slow)
+    cache.lay((1, 'c'), slow)
+    assert len(calls) == 1
+
+
+def test_concurrent_refresh_serves_last_snapshot_without_waiting():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    time = [0.0]
+    cache = BoNhoBangTongThe(clock=lambda: time[0])
+    cache.lay((1, 'c'), lambda: [])
+    time[0] = 61
+    started, finish = Event(), Event()
+    def blocked():
+        started.set()
+        assert finish.wait(3)
+        return []
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(cache.lay, (1, 'c'), blocked)
+        assert started.wait(1)
+        second = pool.submit(cache.lay, (1, 'c'), lambda: [])
+        try:
+            assert second.result(timeout=.3)[2] is True
+        finally:
+            finish.set()
+        first.result(timeout=1)

@@ -138,6 +138,9 @@ class MayChuBangXepHang {
   final bool _tuSoHuu;
   final Duration thoiGianCho;
   Future<http.Response>? _tongTheDangTai;
+  Completer<void>? _huyTongThe;
+  String? _phienTongThe;
+  int _lanTongThe = 0;
 
   Future<BangXepHangTuan> tai({int? man, bool thichUng = false}) async {
     try {
@@ -172,24 +175,60 @@ class MayChuBangXepHang {
   }
 
   void dong() {
+    huyTaiTongThe();
     if (_tuSoHuu) _client.close();
   }
 
-  Future<BangTongThe> taiTongThe() async {
+  void huyTaiTongThe() {
+    _lanTongThe++;
+    if (_huyTongThe case final trigger? when !trigger.isCompleted) {
+      trigger.complete();
+    }
+    _tongTheDangTai = null;
+    _huyTongThe = null;
+    _phienTongThe = null;
+  }
+
+  Future<BangTongThe> taiTongThe({String? phien}) async {
     try {
+      if (_tongTheDangTai != null && _phienTongThe != phien) huyTaiTongThe();
+      final lan = _lanTongThe;
       if (_tongTheDangTai == null) {
+        final trigger = Completer<void>();
+        _huyTongThe = trigger;
+        _phienTongThe = phien;
+        final call = http.AbortableRequest(
+          'GET',
+          _mayChu.resolve('/api/bang-xep-hang/tong-the'),
+          abortTrigger: trigger.future,
+        )..headers['Accept'] = 'application/json';
         late final Future<http.Response> request;
         request = _client
-            .get(
-              _mayChu.resolve('/api/bang-xep-hang/tong-the'),
-              headers: const {'Accept': 'application/json'},
-            )
+            .send(call)
+            .then(http.Response.fromStream)
             .whenComplete(() {
-              if (identical(_tongTheDangTai, request)) _tongTheDangTai = null;
+              if (identical(_tongTheDangTai, request)) {
+                _tongTheDangTai = null;
+                _huyTongThe = null;
+                _phienTongThe = null;
+              }
             });
         _tongTheDangTai = request;
       }
-      final response = await _tongTheDangTai!.timeout(thoiGianCho);
+      final pending = _tongTheDangTai!;
+      final trigger = _huyTongThe!;
+      final response = await pending.timeout(
+        thoiGianCho,
+        onTimeout: () {
+          if (identical(_tongTheDangTai, pending) && !trigger.isCompleted) {
+            trigger.complete();
+          }
+          throw TimeoutException('Ranking request timed out');
+        },
+      );
+      if (lan != _lanTongThe) {
+        throw const LoiTaiBangXepHang(LoiBangXepHang.ketNoi);
+      }
       if (response.statusCode == 401 || response.statusCode == 403) {
         throw const LoiTaiBangXepHang(LoiBangXepHang.dangNhap);
       }

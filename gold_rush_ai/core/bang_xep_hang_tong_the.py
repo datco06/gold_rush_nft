@@ -50,9 +50,15 @@ class BoNhoBangTongThe:
         self._updated = None
         self._attempt = None
         self._stale = False
+        self._snapshot = None
 
     def lay(self, key, build):
-        with self._lock:
+        if not self._lock.acquire(blocking=False):
+            snapshot = self._snapshot
+            if snapshot is not None and snapshot[0] == key:
+                return snapshot[1], snapshot[2], True
+            raise RuntimeError('Ranking synchronization in progress')
+        try:
             now = self._clock()
             if key != self._key:
                 self._key, self._value, self._updated, self._attempt = key, None, None, None
@@ -63,11 +69,19 @@ class BoNhoBangTongThe:
             self._attempt = now
             try:
                 value = build()
+                previous_gold = {r['wallet']: r['vang'] for r in self._value or []}
+                if any(r['vang'] < previous_gold.get(r['wallet'], 0) for r in value):
+                    raise ValueError('Lifetime reward source has decreased')
                 self._value = value
                 self._updated = datetime.now(timezone.utc)
                 self._stale = False
+                self._snapshot = (key, value, self._updated)
             except Exception:
                 if self._value is None:
                     raise RuntimeError('Ranking synchronization unavailable') from None
                 self._stale = True
+            finally:
+                self._attempt = self._clock()  # cooldown starts after all source reads finish
             return self._value, self._updated, self._stale
+        finally:
+            self._lock.release()

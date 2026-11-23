@@ -78,7 +78,7 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang>
       _loading = true;
     });
     try {
-      final value = await _mayChu.taiTongThe();
+      final value = await _mayChu.taiTongThe(phien: identity);
       if (!mounted || sequence != _sequence || identity != _chuHienTai) return;
       if (value.viewer != widget.game.auth?.walletAddress?.toLowerCase()) {
         throw const LoiTaiBangXepHang(LoiBangXepHang.dangNhap);
@@ -125,6 +125,7 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang>
 
   void _doiPhien() {
     if (!mounted || _chu == _chuHienTai) return;
+    _mayChu.huyTaiTongThe();
     setState(() {
       _sequence++;
       _chu = _chuHienTai;
@@ -149,6 +150,7 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.game != widget.game || oldWidget.mayChu != widget.mayChu) {
       oldWidget.game.auth?.removeListener(_doiPhien);
+      _mayChu.huyTaiTongThe();
       if (oldWidget.mayChu == null) _mayChu.dong();
       _mayChu =
           widget.mayChu ??
@@ -168,6 +170,7 @@ class _ManHinhBangXepHangState extends State<ManHinhBangXepHang>
   @override
   void dispose() {
     _sequence++;
+    _mayChu.huyTaiTongThe();
     _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     widget.game.auth?.removeListener(_doiPhien);
@@ -342,11 +345,17 @@ class _TheNguoiChoi extends StatelessWidget {
   final DongBangTongThe row;
   final bool personal;
 
-  String _vang() {
+  String _vang(BuildContext context) {
     final text = row.vang.toString();
+    final separator = switch (PhamViNgonNgu.of(context).ma.split('-').first) {
+      'en' => ',',
+      'fr' => '\u202f',
+      'vi' || 'es' => '.',
+      _ => '',
+    };
     final out = StringBuffer();
     for (var i = 0; i < text.length; i++) {
-      if (i > 0 && (text.length - i) % 3 == 0) out.write('.');
+      if (i > 0 && (text.length - i) % 3 == 0) out.write(separator);
       out.write(text[i]);
     }
     return out.toString();
@@ -392,9 +401,10 @@ class _TheNguoiChoi extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Tooltip(
-          message: PhamViNgonNgu.of(context).dich('Vàng kiếm được: ${_vang()}'),
+          message: PhamViNgonNgu.of(context)
+              .dich('Vàng kiếm được: ${_vang(context)}'),
           child: ChuGame(
-            'Vàng kiếm được: ${_vang()}',
+            'Vàng kiếm được: ${_vang(context)}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Color(0xFFFFD577)),

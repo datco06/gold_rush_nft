@@ -14,6 +14,32 @@ import '../lich_su/ho_tro_lich_su.dart';
 import '../ngon_ngu/ho_tro_json.dart';
 import 'tong_the_test.dart' show duLieuTongThe;
 
+class _IdentityTransport extends http.BaseClient {
+  int calls = 0;
+  final pending = Completer<http.StreamedResponse>();
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    calls++;
+    if (calls == 1) {
+      if (request case http.AbortableRequest(:final abortTrigger?)) {
+        unawaited(
+          abortTrigger.then((_) {
+            if (!pending.isCompleted) {
+              pending.completeError(http.RequestAbortedException());
+            }
+          }),
+        );
+      }
+      return pending.future;
+    }
+    final data = duLieuTongThe(viewer: '0x${'b' * 40}');
+    (data['ban'] as Map)['ten'] = 'Bob';
+    return Future.value(
+      http.StreamedResponse(Stream.value(utf8.encode(jsonEncode(data))), 200),
+    );
+  }
+}
+
 void main() {
   setUpAll(chuanBiNgonNguChoKiemThu);
 
@@ -51,8 +77,60 @@ void main() {
 
   http.Response response([Map<String, Object?>? data]) =>
       http.Response(jsonEncode(data ?? duLieuTongThe()), 200);
+
+  testWidgets(
+    'identity change starts a new HTTP exchange and keeps the valid session polling',
+    (tester) async {
+      final transport = _IdentityTransport();
+      final env = await mount(tester, transport);
+      env.auth.wallet = '0x${'b' * 40}';
+      env.auth.thayDoi();
+      await tester.pump();
+      if (!transport.pending.isCompleted) {
+        transport.pending.complete(
+          http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode(duLieuTongThe()))),
+            200,
+          ),
+        );
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('Bob'), findsOneWidget);
+      expect(
+        find.text('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.'),
+        findsNothing,
+      );
+      expect(transport.calls, 2);
+      await tester.pump(const Duration(seconds: 60));
+      await tester.pumpAndSettle();
+      expect(transport.calls, 3);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   Future<void> close(WidgetTester tester) =>
       tester.pumpWidget(const SizedBox.shrink());
+
+  testWidgets('English and French show earned gold as a grouped integer', (
+    tester,
+  ) async {
+    for (final code in ['en', 'fr']) {
+      final data = duLieuTongThe();
+      (data['bang'] as List).first['vang'] = '1234';
+      await mount(tester, MockClient((_) async => response(data)), code: code);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('bxh-row-1')),
+        180,
+      );
+      expect(
+        find.text(
+          code == 'en' ? 'Earned gold: 1,234' : 'Or gagné : 1\u202f234',
+        ),
+        findsOneWidget,
+      );
+      await close(tester);
+    }
+  });
 
   for (final size in const [Size(844, 390), Size(568, 320), Size(360, 640)]) {
     testWidgets(

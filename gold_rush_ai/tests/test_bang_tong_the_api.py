@@ -77,3 +77,28 @@ def test_source_failure_keeps_last_complete_snapshot_not_fake_zero_badges(setup,
     app.state.bang_tong_the_cache = BoNhoBangTongThe()
     response = client.get('/api/bang-xep-hang/tong-the')
     assert response.status_code == 503 and 'private' not in response.text
+
+
+@pytest.mark.parametrize('lost', ['SO_VE', 'SO_PHIEU', 'truncated'])
+def test_lost_established_ledger_does_not_reset_lifetime_gold(setup, lost):
+    client, app, clock = setup
+    ticket = dict(ma_van='verified-win', chain_id=31337, vi='0x'+'0'*40, man=1, ve=0)
+    api_bxh.config.SO_VE.write_text(json.dumps(ticket)+'\n', encoding='utf-8')
+    api_bxh.config.SO_PHIEU.write_text(json.dumps(dict(ticket, so_vang=25))+'\n', encoding='utf-8')
+    first = client.get('/api/bang-xep-hang/tong-the').json()
+    assert first['ban']['vang'] == '25'
+    if lost == 'truncated':
+        api_bxh.config.SO_PHIEU.write_text('', encoding='utf-8')
+    else:
+        getattr(api_bxh.config, lost).unlink()
+    clock[0] = 61
+    later = client.get('/api/bang-xep-hang/tong-the').json()
+    assert later['du_lieu_cu'] is True
+    assert later['ban']['vang'] == '25'
+
+
+def test_initial_vouchers_without_required_ticket_source_are_unavailable(setup):
+    client, _, _ = setup
+    voucher = dict(ma_van='verified-win', chain_id=31337, vi='0x'+'0'*40, man=1, ve=0, so_vang=25)
+    api_bxh.config.SO_PHIEU.write_text(json.dumps(voucher)+'\n', encoding='utf-8')
+    assert client.get('/api/bang-xep-hang/tong-the').status_code == 503

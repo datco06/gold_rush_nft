@@ -21,13 +21,16 @@ router = APIRouter(prefix='/api/bang-xep-hang', tags=['bang-xep-hang'])
 _cache_init = Lock()
 
 
-def _doc_so(path):
+def _doc_so(path, seen):
     file = Path(path)
     if not file.exists():
+        if str(file.resolve()) in seen:
+            raise RuntimeError('Established reward ledger unavailable')
         return []
     rows = [json.loads(line) for line in file.read_text(encoding='utf-8').splitlines() if line.strip()]
     if any(not isinstance(row, dict) for row in rows):
         raise ValueError('Invalid server reward ledger')
+    seen.add(str(file.resolve()))
     return rows
 
 
@@ -46,7 +49,16 @@ def _tai_tong_the(request):
             'SELECT p.wallet_address,pr.exp FROM players p JOIN player_progress pr ON pr.player_id=p.player_id WHERE p.wallet_address IS NOT NULL'
         ).fetchall()}
     wallets = {u['wallet'] for u in users}
-    gold = tong_vang(_doc_so(config.SO_PHIEU), _doc_so(config.SO_VE), CHAIN_ID, wallets)
+    seen = getattr(request.app.state, 'bang_tong_the_ledger_seen', None)
+    if seen is None:
+        seen = request.app.state.bang_tong_the_ledger_seen = set()
+    vouchers = _doc_so(config.SO_PHIEU, seen)
+    tickets = _doc_so(config.SO_VE, seen)
+    if not tickets and any(
+        v.get('chain_id') == CHAIN_ID and str(v.get('vi', '')).lower() in wallets for v in vouchers
+    ):
+        raise RuntimeError('Ticket source required for existing rewards')
+    gold = tong_vang(vouchers, tickets, CHAIN_ID, wallets)
     owned = doc_huy_hieu(sorted(wallets), CHAIN_ID, config.HOP_DONG_SBT)
     return xep_hang(users, exp, gold, owned)
 
