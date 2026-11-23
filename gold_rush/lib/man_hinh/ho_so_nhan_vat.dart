@@ -873,20 +873,21 @@ class _EquipmentSlots extends StatelessWidget {
           (OTrangBi.vuKhiChinh, 'Vũ khí chính', Icons.gavel_rounded),
           (OTrangBi.vuKhiPhu, 'Vũ khí phụ', Icons.sports_martial_arts),
           (OTrangBi.giap, 'Giáp', Icons.shield_outlined),
+          (OTrangBi.giay, 'Giày', Icons.directions_run_rounded),
         ];
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        return Wrap(
+          alignment: WrapAlignment.center,
+          spacing: compact ? 6 : 10,
+          runSpacing: compact ? 6 : 10,
           children: [
-            for (var i = 0; i < slots.length; i++) ...[
-              if (i > 0) SizedBox(width: compact ? 6 : 10),
+            for (final slot in slots)
               _MiniSlot(
-                label: slots[i].$2,
-                icon: slots[i].$3,
-                item: findBySlot(slots[i].$1),
+                label: slot.$2,
+                icon: slot.$3,
+                item: findBySlot(slot.$1),
                 compact: compact,
               ),
-            ],
           ],
         );
       },
