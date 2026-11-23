@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../gold_rush_game.dart';
+import '../kho_do/danh_sach_nhan_vat.dart' show AnhNhanVat;
 import '../ngon_ngu/ngon_ngu.dart';
 import '../so_tay/danh_muc_so_tay.dart';
 import '../so_tay/so_tay_kham_pha.dart';
+import '../world_map/canh_quan_world_map.dart'
+    show BoCucWorldMap, TaiNguyenWorldMap;
 
 class ManHinhSoTayKhamPha extends StatefulWidget {
   const ManHinhSoTayKhamPha({super.key, required this.game});
@@ -140,15 +143,7 @@ class _ManHinhSoTayKhamPhaState extends State<ManHinhSoTayKhamPha> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    mo
-                                        ? Icons.menu_book_rounded
-                                        : Icons.lock_outline,
-                                    color: mo
-                                        ? const Color(0xFFF5B829)
-                                        : const Color(0xFFAFC0D2),
-                                    size: 22,
-                                  ),
+                                  _AnhSoTay(muc: muc, daMo: mo),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
@@ -185,6 +180,69 @@ class _ManHinhSoTayKhamPhaState extends State<ManHinhSoTayKhamPha> {
                 },
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnhSoTay extends StatelessWidget {
+  const _AnhSoTay({required this.muc, required this.daMo});
+
+  final MucSoTay muc;
+  final bool daMo;
+  static const _quai = {
+    'quai:zombie': 'zombie.png',
+    'quai:skeleton': 'skeleton.png',
+    'quai:thuong': 'quai_thuong.png',
+    'quai:giap': 'quai_giap.png',
+    'quai:khong_lo': 'quai_khong_lo.png',
+    // Boss dùng cùng sprite bộ xương như trong GoldRushGame.
+    'quai:boss': 'skeleton.png',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final sprite = _quai[muc.khoa];
+    final id = muc.nhom == NhomSoTay.diaDiem
+        ? int.tryParse(muc.khoa.split(':').last)
+        : null;
+    final congTrinh = BoCucWorldMap.congTrinh
+        .where((c) => c.id == id)
+        .firstOrNull;
+    const anhLoi = Icon(Icons.broken_image_outlined, color: Color(0xFFAFC0D2));
+
+    return ExcludeSemantics(
+      child: SizedBox.square(
+        dimension: 72,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Opacity(
+              key: ValueKey('so-tay-anh:${muc.khoa}'),
+              opacity: daMo ? 1 : 0.28,
+              child: sprite != null
+                  ? AnhNhanVat(tepAnh: sprite, kichThuoc: 72)
+                  : congTrinh != null
+                  ? Image.asset(
+                      '${TaiNguyenWorldMap.thuMuc}${congTrinh.anh}',
+                      fit: BoxFit.contain,
+                      cacheWidth: 216,
+                      filterQuality: FilterQuality.none,
+                      errorBuilder: (_, _, _) => anhLoi,
+                    )
+                  : anhLoi,
+            ),
+            if (!daMo)
+              const Align(
+                alignment: Alignment.bottomRight,
+                child: Icon(
+                  Icons.lock_outline,
+                  color: Color(0xFFAFC0D2),
+                  size: 18,
+                ),
+              ),
           ],
         ),
       ),
