@@ -127,7 +127,9 @@ class GoldRushTopBar extends StatelessWidget {
       children: [
         brand,
         SizedBox(width: tight ? 6 : 12),
-        Expanded(child: navigation),
+        Expanded(
+          child: Align(alignment: Alignment.center, child: navigation),
+        ),
         SizedBox(width: tight ? 6 : 12),
         status,
       ],
@@ -297,10 +299,7 @@ class _NavItem extends StatelessWidget {
           minimumSize: const Size(0, 44),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: TextStyle(
-            fontSize: compact ? 12 : 14,
-            fontWeight: FontWeight.w500,
-          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
       ),
     );
