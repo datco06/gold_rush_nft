@@ -245,14 +245,9 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
               // short. Use the compact geometry before the equipment panel
               // and start button are pushed below the viewport.
               final compact = w < 1100 || h < 640;
-              final panelSide = compact
-                  ? math.min(230.0, math.max(150.0, (w - 100) * 0.32))
+              final rightPanelWidth = compact
+                  ? math.min(230.0, w * 0.42)
                   : math.min(286.0, math.max(230.0, w * 0.22));
-              final panelWidth = math.min(
-                panelSide,
-                math.max(0.0, (w - horizontalPanelGaps(w)) / 2),
-              );
-              final characterClearance = panelWidth + 24;
               final horizontalPad = compact ? 14.0 : 28.0;
               final verticalPad = compact ? 12.0 : 20.0;
 
@@ -263,7 +258,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                   RepaintBoundary(
                     child: _LobbyBackground(
                       compact: compact,
-                      rightPanelWidth: panelWidth,
+                      rightPanelWidth: rightPanelWidth,
                     ),
                   ),
 
@@ -277,7 +272,6 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                     danhSachVatPham: g.danhSachVatPham.value,
                     idleAnimation: _idleController,
                     compact: compact,
-                    horizontalClearance: characterClearance,
                   ),
 
                   // 3. Giao diện Header + Panel Trang bị + Nút BẮT ĐẦU
@@ -317,7 +311,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                       padding: const EdgeInsets.only(top: 30),
                                       child: SingleChildScrollView(
                                         child: SizedBox(
-                                          width: panelWidth,
+                                          width: rightPanelWidth,
                                           child: _EquippedItemsPanel(
                                             compact: compact,
                                             items: g.danhSachVatPham.value,
@@ -364,7 +358,7 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                             side: const BorderSide(
                                               color: LobbyColors.panelBorder,
                                             ),
-                                            minimumSize: const Size(48, 48),
+                                            minimumSize: const Size(0, 48),
                                           ),
                                           icon: const Icon(
                                             Icons.menu_book_rounded,
@@ -425,8 +419,6 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
 // ============================================================================
 // 1. HÌNH NỀN HANG ĐỘNG MỎ VÀNG & BỤC ĐÁ PHÁT SÁNG
 // ============================================================================
-
-double horizontalPanelGaps(double width) => width < 500 ? 96 : 140;
 
 class _LobbyBackground extends StatelessWidget {
   final bool compact;
@@ -1086,10 +1078,7 @@ class _CharacterShowcase extends StatelessWidget {
     required this.danhSachVatPham,
     required this.idleAnimation,
     required this.compact,
-    required this.horizontalClearance,
   });
-
-  final double horizontalClearance;
 
   @override
   Widget build(BuildContext context) {
@@ -1098,28 +1087,20 @@ class _CharacterShowcase extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final pedestalY = constraints.maxHeight * 0.65;
-          final availableWidth = math.max(
-            0.0,
-            constraints.maxWidth - horizontalClearance,
-          );
-          final responsiveSpriteSize = math.min(
-            spriteSize,
-            math.min(availableWidth, constraints.maxHeight * 0.42),
-          );
-          final left = (constraints.maxWidth - responsiveSpriteSize) * 0.5;
+          final left = (constraints.maxWidth - spriteSize) * 0.5;
           // Keep the character's feet above the action button on short
           // landscape viewports; the pedestal remains the visual baseline.
           final top = math.max(
             0.0,
-            pedestalY - responsiveSpriteSize + (compact ? -10.0 : 8.0),
+            pedestalY - spriteSize + (compact ? -10.0 : 8.0),
           );
           return Stack(
             children: [
               Positioned(
                 left: left,
                 top: top,
-                width: responsiveSpriteSize,
-                height: responsiveSpriteSize,
+                width: spriteSize,
+                height: spriteSize,
                 child: RepaintBoundary(
                   child: AnimatedBuilder(
                     animation: idleAnimation,
@@ -1145,7 +1126,7 @@ class _CharacterShowcase extends StatelessWidget {
                       ),
                       child: NhanVatVoiTrangBi(
                         tepAnh: tepAnh,
-                        kichThuoc: responsiveSpriteSize,
+                        kichThuoc: spriteSize,
                         danhSachVatPham: danhSachVatPham,
                         anhNhanVat: anhNhanVat,
                       ),
