@@ -25,10 +25,7 @@ void main() {
     expect(find.text('Kho đồ'), findsOneWidget);
     expect(find.text('Xưởng AI'), findsNothing);
 
-    final inventory = find.text('Kho đồ');
-    await tester.ensureVisible(inventory);
-    await tester.pumpAndSettle();
-    await tester.tap(inventory);
+    await tester.tap(find.text('Kho đồ'));
     expect(khoDoTapped, isTrue);
   });
 

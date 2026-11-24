@@ -50,8 +50,7 @@ class GoldRushTopBar extends StatelessWidget {
       color: Colors.transparent,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 680;
-          final tight = constraints.maxWidth < 1200;
+          final compact = constraints.maxWidth < 980;
           return Container(
             constraints: BoxConstraints(minHeight: compact ? 56 : 64),
             padding: EdgeInsets.symmetric(
@@ -74,19 +73,18 @@ class GoldRushTopBar extends StatelessWidget {
                 ),
               ],
             ),
-            child: _buildContent(compact, tight),
+            child: _buildContent(compact),
           );
         },
       ),
     );
   }
 
-  Widget _buildContent(bool compact, bool tight) {
-    final brand = _GoldRushBrand(compact: tight);
+  Widget _buildContent(bool compact) {
+    final brand = _GoldRushBrand(compact: compact);
     final navigation = SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: _NavItems(
-        compact: tight,
         activeItem: activeItem,
         onSanhCho: onSanhCho,
         onCuaHang: onCuaHang,
@@ -104,7 +102,7 @@ class GoldRushTopBar extends StatelessWidget {
       onSettings: onSettings,
       onClose: onClose,
       showClose: showClose,
-      compact: tight,
+      compact: compact,
     );
 
     if (compact) {
@@ -126,11 +124,9 @@ class GoldRushTopBar extends StatelessWidget {
     return Row(
       children: [
         brand,
-        SizedBox(width: tight ? 6 : 12),
-        Expanded(
-          child: Align(alignment: Alignment.center, child: navigation),
-        ),
-        SizedBox(width: tight ? 6 : 12),
+        const SizedBox(width: 12),
+        Expanded(child: Center(child: navigation)),
+        const SizedBox(width: 12),
         status,
       ],
     );
@@ -187,7 +183,6 @@ class _GoldRushBrand extends StatelessWidget {
 
 class _NavItems extends StatelessWidget {
   const _NavItems({
-    required this.compact,
     required this.activeItem,
     required this.onSanhCho,
     required this.onCuaHang,
@@ -197,7 +192,6 @@ class _NavItems extends StatelessWidget {
     required this.onXuongAi,
   });
 
-  final bool compact;
   final GoldRushTopBarItem? activeItem;
   final VoidCallback? onSanhCho;
   final VoidCallback? onCuaHang;
@@ -216,7 +210,6 @@ class _NavItems extends StatelessWidget {
           label: 'Sảnh chờ',
           icon: Icons.explore_outlined,
           activeItem: activeItem,
-          compact: compact,
           onTap: onSanhCho,
         ),
         _NavItem(
@@ -224,7 +217,6 @@ class _NavItems extends StatelessWidget {
           label: 'Cửa hàng',
           icon: Icons.storefront_outlined,
           activeItem: activeItem,
-          compact: compact,
           onTap: onCuaHang,
         ),
         _NavItem(
@@ -232,7 +224,6 @@ class _NavItems extends StatelessWidget {
           label: 'Rung rương',
           icon: Icons.card_giftcard_outlined,
           activeItem: activeItem,
-          compact: compact,
           onTap: onRungRuong,
         ),
         _NavItem(
@@ -240,7 +231,6 @@ class _NavItems extends StatelessWidget {
           label: 'Quà tặng',
           icon: Icons.redeem_outlined,
           activeItem: activeItem,
-          compact: compact,
           onTap: onQuaTang,
         ),
         _NavItem(
@@ -248,7 +238,6 @@ class _NavItems extends StatelessWidget {
           label: 'Kho đồ',
           icon: Icons.inventory_2_outlined,
           activeItem: activeItem,
-          compact: compact,
           onTap: onKhoDo,
         ),
       ],
@@ -263,7 +252,6 @@ class _NavItem extends StatelessWidget {
     required this.icon,
     required this.activeItem,
     required this.onTap,
-    required this.compact,
   });
 
   final GoldRushTopBarItem item;
@@ -271,7 +259,6 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final GoldRushTopBarItem? activeItem;
   final VoidCallback? onTap;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -280,7 +267,7 @@ class _NavItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: TextButton.icon(
         onPressed: onTap,
-        icon: Icon(icon, size: compact ? 12 : 14),
+        icon: Icon(icon, size: 14),
         label: ChuGame(label),
         style: TextButton.styleFrom(
           foregroundColor: active
@@ -292,10 +279,7 @@ class _NavItem extends StatelessWidget {
           side: active
               ? const BorderSide(color: Color(0x4DF2B33D))
               : BorderSide.none,
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 5 : 10,
-            vertical: 5,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           minimumSize: const Size(0, 44),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -330,13 +314,13 @@ class _StatusArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: compact ? 2 : 4,
-      runSpacing: 2,
+      spacing: 4,
+      runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _GoldChip(value: gold),
         ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: compact ? 112 : 152),
+          constraints: const BoxConstraints(maxWidth: 152),
           child: _PlayerChip(
             name: playerName,
             address: walletAddress,
@@ -344,17 +328,8 @@ class _StatusArea extends StatelessWidget {
             compact: compact,
           ),
         ),
-        _IconButton(
-          icon: Icons.settings_outlined,
-          onTap: onSettings,
-          compact: compact,
-        ),
-        if (showClose)
-          _IconButton(
-            icon: Icons.close_rounded,
-            onTap: onClose,
-            compact: compact,
-          ),
+        _IconButton(icon: Icons.settings_outlined, onTap: onSettings),
+        if (showClose) _IconButton(icon: Icons.close_rounded, onTap: onClose),
       ],
     );
   }
@@ -479,14 +454,9 @@ class _PlayerChip extends StatelessWidget {
 }
 
 class _IconButton extends StatelessWidget {
-  const _IconButton({
-    required this.icon,
-    required this.onTap,
-    required this.compact,
-  });
+  const _IconButton({required this.icon, required this.onTap});
   final IconData icon;
   final VoidCallback? onTap;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -497,10 +467,7 @@ class _IconButton extends StatelessWidget {
       color: const Color(0xFF9BB0C0),
       tooltip: PhamViNgonNgu.of(context)
           .dich(icon == Icons.close_rounded ? 'Đóng' : 'Cài đặt'),
-      constraints: BoxConstraints.tightFor(
-        width: compact ? 34 : 44,
-        height: compact ? 34 : 44,
-      ),
+      constraints: const BoxConstraints.tightFor(width: 44, height: 44),
       padding: EdgeInsets.zero,
       style: IconButton.styleFrom(
         backgroundColor: const Color(0x0FFFFFFF),
