@@ -12,6 +12,7 @@ Tích hợp với kiến trúc SIWE của feature/ai:
 from __future__ import annotations
 
 import logging
+import os
 import re
 from typing import Annotated
 
@@ -85,6 +86,10 @@ def kiem_tra_csrf_va_origin(request: Request, player: NguoiChoiXacThuc) -> None:
       và X-CSRF-Token được xác minh bởi auth_service tin cậy (Fail-Closed).
     - CORS_ORIGINS = '*' không bao giờ được phép dùng để bypass kiểm tra mutation.
     """
+    if os.environ.get("AUTH_DISABLE_ORIGIN_CSRF", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }:
+        return
     raw_origins = getattr(config, "CORS_ORIGINS", [])
     allowed = set(o.strip() for o in raw_origins if o.strip() and o.strip() != "*")
     auth_cfg = getattr(request.app.state, "auth_config", None)

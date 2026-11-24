@@ -38,6 +38,7 @@ This module does not mount routes or modify the existing app/CORS configuration.
 """
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -74,6 +75,13 @@ _MESSAGES = {
     "AUTH_UNAVAILABLE": "Hệ thống xác thực tạm thời không sẵn sàng.",
 }
 _INVALID_AUTH = {"SESSION_INVALID", "SESSION_EXPIRED", "SESSION_REVOKED", "GRANT_INVALID", "GRANT_EXPIRED"}
+
+
+def _disable_origin_csrf() -> bool:
+    """Local-only escape hatch; never enable it on a public deployment."""
+    return os.environ.get("AUTH_DISABLE_ORIGIN_CSRF", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
 
 
 class _Credential(BaseModel):
@@ -165,6 +173,8 @@ def _json_mutation(request: Request) -> None:
 
 
 def _csrf(request: Request, svc: AuthService, token: str) -> None:
+    if _disable_origin_csrf():
+        return
     csrf = _header(request, "x-csrf-token")
     if csrf is None or not svc.verify_csrf_token(token, csrf):
         _fail(403, "CSRF_INVALID")
@@ -184,6 +194,8 @@ def make_auth_dependencies(
     def origin(request: Request, response: Response) -> str:
         response.headers["Cache-Control"] = "no-store"
         value = _header(request, "origin")
+        if _disable_origin_csrf():
+            return value or "origin-check-disabled"
         if value is None or value == "null" or value not in config.cors_origins:
             _fail(403, "ORIGIN_FORBIDDEN")
         if request.method == "OPTIONS" and _header(request, "access-control-request-method") is not None:
