@@ -29,14 +29,33 @@ void main() {
     expect(khoDoTapped, isTrue);
   });
 
-  testWidgets('TopBar thu gọn vẫn cuộn được menu', (tester) async {
+  testWidgets('Compact top bar keeps navigation readable and scrollable', (
+    tester,
+  ) async {
+    var tapped = false;
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: SizedBox(width: 360, child: GoldRushTopBar())),
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 320,
+            child: GoldRushTopBar(
+              playerName:
+                  'A long player name with Vietnamese accents Tiếng Việt',
+              onKhoDo: () => tapped = true,
+            ),
+          ),
+        ),
       ),
     );
 
+    expect(tester.takeException(), isNull);
     expect(find.text('GOLD RUSH'), findsOneWidget);
-    expect(find.text('Xưởng AI'), findsNothing);
+    final firstLabel = tester.getRect(find.text('Sảnh chờ'));
+    expect(firstLabel.height, greaterThanOrEqualTo(14));
+    final inventory = find.text('Kho đồ');
+    await tester.ensureVisible(inventory);
+    await tester.pumpAndSettle();
+    await tester.tap(inventory);
+    expect(tapped, isTrue);
   });
 }

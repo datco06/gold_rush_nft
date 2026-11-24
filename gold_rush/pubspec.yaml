@@ -34,6 +34,7 @@ flutter:
 
   assets:
     - assets/i18n/
+    - assets/fonts/Roboto_LICENSE.txt
     - assets/images/
     - assets/images/trang_bi/
     - assets/images/huy_hieu/
@@ -42,3 +43,14 @@ flutter:
     - assets/audio/
     # Mô hình AI chạy trên máy (tệp nhỏ, < vài MB). Mô hình lớn để ở máy chủ.
     - assets/models/
+
+  fonts:
+    - family: GoldRushRoboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Roboto-Black.ttf
+          weight: 900

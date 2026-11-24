@@ -299,11 +299,39 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                               showClose: false,
                             ),
                             Expanded(
-                              child: Stack(
-                                fit: StackFit.expand,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Align(
-                                    alignment: Alignment.topRight,
+                                  Flexible(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 30),
+                                      child: SingleChildScrollView(
+                                        child: SizedBox(
+                                          width: rightPanelWidth,
+                                          child: _EquippedItemsPanel(
+                                            compact: compact,
+                                            items: g.danhSachVatPham.value,
+                                            tepNhanVatDangDung:
+                                                g.nhanVatDangDung,
+                                            anhNhanVatDangDung: g.taiNguyen
+                                                .anhNhanVat(g.nhanVatDangDung),
+                                            tenNhanVatDangDung:
+                                                g.nhanVatDangDung.startsWith(
+                                                  'ai:',
+                                                )
+                                                ? g.tenNhanVatDangDung
+                                                : nv.ten,
+                                            selectedSlotId: _selectedSlotId,
+                                            onSlotTap: _onSlotTap,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
                                     child: Padding(
                                       padding: const EdgeInsets.only(top: 12),
                                       child: SizedBox(
@@ -337,68 +365,38 @@ class _GoldRushMainLobbyState extends State<GoldRushMainLobby>
                                       ),
                                     ),
                                   ),
-                                  Align(
-                                    alignment: Alignment.topLeft,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(top: 30),
-                                      child: SingleChildScrollView(
-                                        physics: const ClampingScrollPhysics(),
-                                        child: SizedBox(
-                                          width: rightPanelWidth,
-                                          child: _EquippedItemsPanel(
-                                            compact: compact,
-                                            items: g.danhSachVatPham.value,
-                                            tepNhanVatDangDung: g.nhanVatDangDung,
-                                            anhNhanVatDangDung: g.taiNguyen
-                                                .anhNhanVat(g.nhanVatDangDung),
-                                            tenNhanVatDangDung:
-                                                g.nhanVatDangDung.startsWith('ai:')
-                                                    ? g.tenNhanVatDangDung
-                                                    : nv.ten,
-                                            selectedSlotId: _selectedSlotId,
-                                            onSlotTap: _onSlotTap,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Align(
-                                    alignment: Alignment(
-                                      0,
-                                      compact ? 0.94 : 0.88,
-                                    ),
-                                    child: Transform.translate(
-                                      offset: Offset(0, compact ? 22 : 26),
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(
-                                          maxWidth: compact ? 260 : 440,
-                                        ),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            _StartAdventureButton(
-                                              compact: compact,
-                                              loading: _startingAdventure,
-                                              onPressed: _onStartAdventure,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            const ChuGame(
-                                              'Nhấn ENTER để bắt đầu ván mới',
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Color(0xFF7D90A0),
-                                                fontSize: 10,
-                                                letterSpacing: 1.1,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                                 ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Center(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: compact ? 280 : 440,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _StartAdventureButton(
+                                      compact: compact,
+                                      loading: _startingAdventure,
+                                      onPressed: _onStartAdventure,
+                                    ),
+                                    if (!compact) ...[
+                                      const SizedBox(height: 8),
+                                      const ChuGame(
+                                        'Nhấn ENTER để bắt đầu ván mới',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Color(0xFF7D90A0),
+                                          fontSize: 10,
+                                          letterSpacing: 1.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -1290,7 +1288,10 @@ class _EquippedItemsPanel extends StatelessWidget {
               mainAxisSpacing: compact ? 8 : 10,
               // Giảm chiều cao mỗi ô ở màn hình ngang thấp để toàn bộ
               // panel 2×2 nằm gọn trong viewport.
-              childAspectRatio: compact ? 1.3 : 1.08,
+              mainAxisExtent: compact
+                  ? 44 + MediaQuery.textScalerOf(context).scale(12)
+                  : null,
+              childAspectRatio: 1.08,
             ),
             itemCount: slots.length,
             itemBuilder: (context, index) {
@@ -1370,11 +1371,13 @@ class _EquipmentSlotWidgetState extends State<_EquipmentSlotWidget> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Tooltip(
-        message: PhamViNgonNgu.of(context).dich(isCharacter || item != null
-            ? '${widget.slot.label}: $displayName'
-            : (supported
-                  ? '${widget.slot.label} (Trống — bấm để mở Kho đồ)'
-                  : '${widget.slot.label} (Chưa hỗ trợ)')),
+        message: PhamViNgonNgu.of(context).dich(
+          isCharacter || item != null
+              ? '${widget.slot.label}: $displayName'
+              : (supported
+                    ? '${widget.slot.label} (Trống — bấm để mở Kho đồ)'
+                    : '${widget.slot.label} (Chưa hỗ trợ)'),
+        ),
         child: GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
@@ -1538,8 +1541,11 @@ class _StartAdventureButtonState extends State<_StartAdventureButton> {
           duration: const Duration(milliseconds: 100),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            height: widget.compact ? 46 : 70,
-            padding: EdgeInsets.symmetric(horizontal: widget.compact ? 14 : 18),
+            constraints: BoxConstraints(minHeight: widget.compact ? 48 : 70),
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.compact ? 14 : 18,
+              vertical: 6,
+            ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               gradient: LinearGradient(

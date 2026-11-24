@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
@@ -129,6 +128,7 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
+          fontFamily: 'GoldRushRoboto',
           brightness: Brightness.dark,
           colorScheme: ColorScheme.fromSeed(
             seedColor: CauHinh.mauChinh,
@@ -136,9 +136,8 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
           ),
           scaffoldBackgroundColor: CauHinh.mauNen,
         ),
-        builder: (context, child) => _LandscapeGate(
-          child: _KhungTyLeCoDinh(child: child ?? const SizedBox.shrink()),
-        ),
+        builder: (context, child) =>
+            _LandscapeGate(child: child ?? const SizedBox.shrink()),
         home: Builder(
           builder: (context) {
             _ensureAuth(context);
@@ -154,76 +153,6 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
           },
         ),
       ),
-    );
-  }
-}
-
-/// Dựng toàn bộ giao diện trên cùng một khung thiết kế ngang rồi thu phóng
-/// đồng nhất theo kích thước thiết bị.
-///
-/// Các màn hình hiện có vẫn giữ nguyên widget và bố cục bên trong; khung này
-/// chỉ ngăn mỗi màn hình tự đổi hình học theo một ngưỡng responsive khác nhau.
-/// BoxFit.contain bảo đảm không cắt nội dung khi tỉ lệ màn hình thay đổi.
-class _KhungTyLeCoDinh extends StatelessWidget {
-  const _KhungTyLeCoDinh({required this.child});
-
-  static const Size _kichThuocThietKe = Size(1280, 720);
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final height = constraints.maxHeight;
-        if (!width.isFinite || !height.isFinite || width <= 0 || height <= 0) {
-          return child;
-        }
-
-        // Giữ chiều cao thiết kế làm chuẩn. Với màn hình ngang rộng hơn 16:9,
-        // khung logic được nới thêm theo chiều ngang để FittedBox phủ kín
-        // toàn màn hình mà không kéo méo hoặc cắt nội dung.
-        final scale = math.min(
-          width / _kichThuocThietKe.width,
-          height / _kichThuocThietKe.height,
-        );
-        final kichThuocKhung = Size(width / scale, height / scale);
-        final mediaQuery = MediaQuery.of(context);
-        final safePadding = EdgeInsets.fromLTRB(
-          mediaQuery.padding.left / scale,
-          mediaQuery.padding.top / scale,
-          mediaQuery.padding.right / scale,
-          mediaQuery.padding.bottom / scale,
-        );
-
-        return ColoredBox(
-          color: CauHinh.mauNen,
-          child: ClipRect(
-            child: FittedBox(
-              fit: BoxFit.contain,
-              alignment: Alignment.center,
-              child: SizedBox(
-                width: kichThuocKhung.width,
-                height: kichThuocKhung.height,
-                child: MediaQuery(
-                  data: mediaQuery.copyWith(
-                    size: kichThuocKhung,
-                    padding: safePadding,
-                    viewPadding: safePadding,
-                    viewInsets: EdgeInsets.fromLTRB(
-                      mediaQuery.viewInsets.left / scale,
-                      mediaQuery.viewInsets.top / scale,
-                      mediaQuery.viewInsets.right / scale,
-                      mediaQuery.viewInsets.bottom / scale,
-                    ),
-                  ),
-                  child: child,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
