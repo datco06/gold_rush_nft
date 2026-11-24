@@ -95,7 +95,11 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
   Widget _thanhTren(PhienVi? pv) {
     Widget taoThanhTren() => GoldRushTopBar(
       activeItem: GoldRushTopBarItem.quaTang,
-      gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangKhaDungDinhDang),
+      gold: pv == null
+          ? '0'
+          : (pv.dangXuLy && pv.daKetNoi
+                ? '...'
+                : pv.vangKhaDungDinhDang),
       playerName: game.auth?.user?.username ?? 'datco6',
       onSanhCho: game.veMenu,
       onPlayerTap: _moHoSo,

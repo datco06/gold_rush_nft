@@ -59,6 +59,10 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
       'GOLD_RUSH_LOCAL_RPC_URL',
       defaultValue: 'http://10.0.2.2:8545',
     );
+    final sepoliaRpc = const String.fromEnvironment(
+      'GOLD_RUSH_SEPOLIA_RPC_URL',
+      defaultValue: 'https://rpc.sepolia.org',
+    );
     ReownAppKitModalNetworks.addSupportedNetworks('eip155', [
       ReownAppKitModalNetworkInfo(
         name: 'Hardhat cục bộ',
@@ -66,6 +70,14 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
         currency: 'ETH',
         rpcUrl: localRpc,
         explorerUrl: 'https://hardhat.org',
+        isTestNetwork: true,
+      ),
+      ReownAppKitModalNetworkInfo(
+        name: 'Sepolia',
+        chainId: 'eip155:11155111',
+        currency: 'ETH',
+        rpcUrl: sepoliaRpc,
+        explorerUrl: 'https://sepolia.etherscan.io',
         isTestNetwork: true,
       ),
     ]);
@@ -280,11 +292,20 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
       throw const MetamaskSiweException(MetamaskSiweErrorCode.notConnected);
     }
     try {
-      return await modal.request(
-        topic: topic,
-        chainId: 'eip155:${_chainId()}',
-        request: SessionRequestParams(method: method, params: params),
-      );
+      return await modal
+          .request(
+            topic: topic,
+            chainId: 'eip155:${_chainId()}',
+            request: SessionRequestParams(method: method, params: params),
+          )
+          .timeout(const Duration(minutes: 2));
+    } on TimeoutException {
+      // Drop the stale session so the next attempt opens a fresh MetaMask
+      // connection instead of repeating the same dead request.
+      try {
+        await modal.disconnect();
+      } catch (_) {}
+      throw const MetamaskSiweException(MetamaskSiweErrorCode.timeout);
     } catch (error) {
       throw _mapError(error);
     }

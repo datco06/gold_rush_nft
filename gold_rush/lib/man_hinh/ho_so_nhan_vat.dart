@@ -292,7 +292,9 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     final pv = g.phienVi;
     final goldText = pv == null
         ? '0'
-        : (pv.dangXuLy ? '...' : _formatGold(pv.vangKhaDung));
+        : (pv.dangXuLy && pv.daKetNoi
+              ? '...'
+              : _formatGold(pv.vangKhaDung));
 
     return Material(
       color: ProfileColors.background,

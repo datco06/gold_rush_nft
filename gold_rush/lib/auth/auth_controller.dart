@@ -558,7 +558,11 @@ class AuthController extends ChangeNotifier {
     // including registering/checkingSession, which round-1 omitted and which
     // let a spurious disconnect log out mid-create-account.
     if (event == MetamaskSiweEventType.disconnected ||
-        event == MetamaskSiweEventType.invalidProviderData) {
+        event == MetamaskSiweEventType.invalidProviderData ||
+        event == MetamaskSiweEventType.accountsChanged) {
+      // Treat an account event as a hint, not proof: Reown can emit a
+      // spurious accountsChanged during a network switch or wallet handoff.
+      // Only log out when the expected address is genuinely gone/changed.
       unawaited(_confirmWalletStillConnected());
       return;
     }

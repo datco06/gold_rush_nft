@@ -183,7 +183,7 @@ class _ManHinhCuaHangState extends State<ManHinhCuaHang> {
                             activeItem: GoldRushTopBarItem.cuaHang,
                             gold: pv == null
                                 ? '0'
-                                : (pv.dangXuLy
+                                : (pv.dangXuLy && pv.daKetNoi
                                       ? '...'
                                       : pv.vangKhaDungDinhDang),
                             playerName: _game.auth?.user?.username ?? 'datco6',

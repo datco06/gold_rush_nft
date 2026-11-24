@@ -384,7 +384,9 @@ class _ManHinhRungRuongState extends State<ManHinhRungRuong>
                       listenable: pv,
                       builder: (context, _) => GoldRushTopBar(
                         activeItem: GoldRushTopBarItem.rungRuong,
-                        gold: pv.dangXuLy ? '...' : pv.vangKhaDungDinhDang,
+                        gold: pv.dangXuLy && pv.daKetNoi
+                            ? '...'
+                            : pv.vangKhaDungDinhDang,
                         playerName: _game.auth?.user?.username ?? 'datco6',
                         onSanhCho: _game.veMenu,
                         onPlayerTap: _moHoSo,

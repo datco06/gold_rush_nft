@@ -422,7 +422,11 @@ class _KhoDoTrongGameState extends State<_KhoDoTrongGame> {
       khiDong: game.veMenu,
       thanhTren: GoldRushTopBar(
         activeItem: GoldRushTopBarItem.khoDo,
-        gold: pv == null ? '0' : (pv.dangXuLy ? '...' : pv.vangKhaDungDinhDang),
+        gold: pv == null
+            ? '0'
+            : (pv.dangXuLy && pv.daKetNoi
+                  ? '...'
+                  : pv.vangKhaDungDinhDang),
         playerName: game.auth?.user?.username ?? 'datco6',
         onPlayerTap: () {
           Navigator.of(context).push(
