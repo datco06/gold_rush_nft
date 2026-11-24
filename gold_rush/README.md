@@ -112,6 +112,57 @@ Hardhat Local dùng chain ID `31337`. Sepolia dùng chain ID `11155111` và ch�
 dùng khi đã có địa chỉ hợp đồng, RPC và cấu hình backend tương ứng. Xem thêm
 [`../gold_rush_chain/README.md`](../gold_rush_chain/README.md).
 
+### Bảng xếp hạng toàn server — Top 30
+
+Mở từ Hồ sơ → Bảng xếp hạng, ở menu bên trái ngay dưới nút Nhân vật.
+Danh sách cuộn dọc hiển thị tên, Level, số dư vàng hiện có và từng loại huy
+hiệu đã sở hữu. Các vị trí 1–10 có viền vàng, 11–20 viền bạc, 21–30 viền đồng;
+có nhãn Top 10/20/30, tô sáng người chơi hiện tại và hạng cá nhân ngoài Top 30.
+
+Thứ tự: Level giảm dần → số loại huy hiệu giảm dần → số dư vàng hiện có giảm
+dần → mã tài khoản ổn định khi ba chỉ số bằng nhau. Tổng hợp toàn bộ tài khoản
+đã đăng ký trên backend trước khi lấy 30 người đầu; không tạo người chơi giả nếu
+server ít hơn 30 người. Dữ liệu cùng server/mạng, không đọc lịch sử cục bộ.
+
+Nguồn chỉ số:
+
+- Tên từ tài khoản SIWE đã đăng ký. Hồ sơ và BXH dùng chung `game.capDoHoSo`:
+  lấy cấp đang hiển thị từ tiến trình thiết bị/AI và cấp Hồ sơ đã đồng bộ trước đó.
+  Khi mở BXH, nếu cấp Hồ sơ cao hơn bản server, app đồng bộ rồi tải lại danh sách
+  đã xếp hạng trên server; không tự đổi riêng chữ Level hoặc tự sắp hạng ở client.
+  `POST /api/bang-xep-hang/cap-ho-so` lưu cấp 1–21 riêng theo tài khoản/ví/mạng,
+  xác thực SIWE và kiểm tra Origin/CSRF như các thao tác ghi hiện có. Bản cấp thấp
+  từ thiết bị cũ không ghi đè cấp đã lưu. Mỗi tài khoản cần mở BXH trên bản mới
+  một lần để gửi cấp đang lưu trên máy của họ; server không đọc được bộ nhớ thiết bị khác.
+  Đây là **cấp Hồ sơ do app báo**, không phải bằng chứng trọng tài mới hay cơ chế
+  chống gian lận. Bảng lưu riêng không cấp EXP, thưởng, mở màn, huy hiệu hay vật phẩm.
+  Tiến trình local hiện có vẫn thuộc thiết bị như trước; không đổi luồng chơi.
+  Với tài khoản chưa đồng bộ, BXH tiếp tục dùng các nguồn tiến trình đã xác minh.
+- Vàng đọc trực tiếp `balanceOf(wallet, 0)` trên hợp đồng `CuaHangGoldRush` của
+  từng ví đã đăng ký. Đây là số dư ERC-1155 hiện có, không phải tổng vàng từng
+  kiếm được; mua đồ, đặt cọc hoặc chuyển vàng có thể làm số dư giảm. Phiếu chưa
+  claim và số vàng cache/local trên thiết bị không được cộng vào số dư này.
+- Huy hiệu chỉ đếm từng loại SBT thực sự sở hữu (ID 1–5), đọc `hasAchievement` cho
+  mọi ví đăng ký tại cùng một block; không lấy trạng thái đủ điều kiện hoặc cache
+  do client gửi làm bằng chứng. Cần RPC đúng mạng, `SBT_CHAIN_ID` khớp `CHAIN_ID`
+  và `HOP_DONG_SBT`, `HOP_DONG_CUA_HANG` đã triển khai; RPC hỗ trợ JSON-RPC batch.
+  Số dư vàng và huy hiệu của mọi ví được đọc tại cùng một block. Chỉ gọi phương thức
+  đọc, không yêu cầu ký, mint hoặc gửi giao dịch để xem BXH.
+
+`GET /api/bang-xep-hang/tong-the` dùng phiên SIWE, trả tối đa 30 vị trí cùng hạng
+cá nhân; không nhận điểm/ví/level từ query để tính hạng. Backend dùng bộ nhớ đệm
+chung 60 giây. App tự làm mới khi màn BXH đang mở và ở tiền cảnh, có nút làm mới,
+hiển thị thời điểm cập nhật. Lỗi nguồn dữ liệu giữ bản đầy đủ trước đó và báo dữ
+liệu cũ; lần đầu chưa đồng bộ được thì báo chưa sẵn sàng, không giả định 0 huy hiệu.
+Chu kỳ 60 giây tính từ lúc đồng bộ xong; khi đang làm mới, yêu cầu khác nhận ngay
+bản đầy đủ trước đó. Thiếu kho tiến trình, thiếu hợp đồng hoặc lỗi RPC không
+được thay bằng Level 1/vàng 0 giả; số dư giảm hợp lệ vẫn được cập nhật. Đổi tài khoản/mạng, đăng
+xuất hoặc đóng màn BXH hủy yêu cầu cũ, không dùng chung phản hồi giữa hai phiên.
+Số vàng truyền dạng chuỗi thập phân để không mất chính xác trên Web.
+
+API BXH tuần `/api/bang-xep-hang/tuan` và API telemetry `/api/bang-xep-hang` vẫn
+được giữ nguyên cho dữ liệu cũ; màn BXH trong app hiện dùng Top 30 tổng thể.
+
 ### 2.5. Kiểm tra mã nguồn
 
 ```bash

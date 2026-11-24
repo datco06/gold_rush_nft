@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../ngon_ngu/ngon_ngu.dart';
+import '../auth/auth_controller.dart';
 
 import 'package:flutter/services.dart';
 
@@ -18,6 +19,7 @@ import 'anh_nhan_vat.dart';
 import 'kho_do.dart';
 import 'main_lobby.dart' show CharacterMiniProfile;
 import 'lich_su_man_choi.dart';
+import 'bang_xep_hang.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 //  PALETTE — extends LobbyColors for Profile-specific tones
@@ -59,6 +61,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     with TickerProviderStateMixin {
   _ProfileTab _currentTab = _ProfileTab.caNhan;
   late final AnimationController _idleController;
+  String? _chuHoSo;
 
   bool get _isTestBinding {
     final name = WidgetsBinding.instance.runtimeType.toString();
@@ -81,9 +84,11 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
   }
 
   void _attachListeners(GoldRushGame g) {
+    _chuHoSo = g.khoaCapHoSo;
     g.auth?.addListener(_onAuthChanged);
     g.phienVi?.addListener(_onDataChanged);
     g.tienTrinh.addListener(_onDataChanged);
+    g.capHoSoDaDongBo.addListener(_onDataChanged);
     g.huyHieuDaNhan.addListener(_onDataChanged);
     g.huyHieuSBTDaSoHuu.addListener(_onDataChanged);
   }
@@ -92,6 +97,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
     g.auth?.removeListener(_onAuthChanged);
     g.phienVi?.removeListener(_onDataChanged);
     g.tienTrinh.removeListener(_onDataChanged);
+    g.capHoSoDaDongBo.removeListener(_onDataChanged);
     g.huyHieuDaNhan.removeListener(_onDataChanged);
     g.huyHieuSBTDaSoHuu.removeListener(_onDataChanged);
   }
@@ -99,7 +105,14 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
   void _onAuthChanged() {
     if (!mounted) return;
     final auth = widget.game.auth;
-    if (auth != null && !auth.canEnterGame) {
+    // Passive /me checks temporarily clear identity; keep this route stack
+    // until the result confirms the session or reports an actual loss.
+    if (auth?.status == AuthStatus.checkingSession &&
+        auth?.logoutPending != true) {
+      return;
+    }
+    if (auth != null &&
+        (!auth.canEnterGame || widget.game.khoaCapHoSo != _chuHoSo)) {
       Navigator.of(context).popUntil((route) => route.isFirst);
       return;
     }
@@ -136,10 +149,7 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
   }
 
   int _computeLevel() {
-    final g = widget.game;
-    final mapCompleted = g.tienTrinhWorldMap.tienTrinh.cacManHoanThanh.length;
-    final aiCompleted = g.tienTrinh.tienTrinh?.totalCompleted ?? 0;
-    return 1 + math.max<int>(mapCompleted, aiCompleted);
+    return widget.game.capDoHoSo;
   }
 
   String _formatGold(BigInt? raw) {
@@ -323,6 +333,16 @@ class _CharacterProfileScreenState extends State<CharacterProfileScreen>
                               currentTab: _currentTab,
                               compact: compact,
                               onTabChanged: _onTabSelected,
+                              onLeaderboard: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ManHinhBangXepHang(game: g),
+                                ),
+                              ),
+                              onHistory: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ManHinhLichSuManChoi(game: g),
+                                ),
+                              ),
                             ),
                           ),
 
@@ -598,11 +618,15 @@ class _ProfileSidebar extends StatelessWidget {
   final _ProfileTab currentTab;
   final bool compact;
   final ValueChanged<_ProfileTab> onTabChanged;
+  final VoidCallback onLeaderboard;
+  final VoidCallback onHistory;
 
   const _ProfileSidebar({
     required this.currentTab,
     required this.compact,
     required this.onTabChanged,
+    required this.onLeaderboard,
+    required this.onHistory,
   });
 
   @override
@@ -646,6 +670,22 @@ class _ProfileSidebar extends StatelessWidget {
               active: currentTab == _ProfileTab.nhanVat,
               compact: compact,
               onTap: () => onTabChanged(_ProfileTab.nhanVat),
+            ),
+            SizedBox(height: compact ? 6 : 10),
+            _SidebarButton(
+              icon: Icons.emoji_events_outlined,
+              label: 'Bảng xếp hạng',
+              active: false,
+              compact: compact,
+              onTap: onLeaderboard,
+            ),
+            SizedBox(height: compact ? 6 : 10),
+            _SidebarButton(
+              icon: Icons.history_rounded,
+              label: 'Lịch sử màn chơi',
+              active: false,
+              compact: compact,
+              onTap: onHistory,
             ),
           ],
         ),
@@ -1049,19 +1089,6 @@ class _TabCaNhan extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ManHinhLichSuManChoi(game: game),
-                ),
-              ),
-              icon: const Icon(Icons.history_rounded),
-              label: const ChuGame('Lịch sử màn chơi', textAlign: TextAlign.center),
-            ),
-          ),
-          const SizedBox(height: 14),
           // Section title
           const _SectionTitle(
             icon: Icons.info_outline_rounded,

@@ -58,6 +58,22 @@ void main() {
     expect(nk.maVan, isNot(a));
   });
 
+  test('ranking mode is sticky within the run and resets without changing analytics', () {
+    nk.ghiNhanCheDoXepHang(false);
+    nk.ghiNhanCheDoXepHang(true);
+    nk.ghiNhanCheDoXepHang(false);
+    Map<String, Object> data() => nk.thanhJson(
+      ketQua: 'thang',
+      diem: 480,
+      phienBanApp: 'test',
+      doKhoThichUng: false,
+    );
+    expect(data()['xep_hang_thich_ung'], isTrue);
+    expect(data()['do_kho_thich_ung'], isFalse);
+    nk.batDau(24);
+    expect(data()['xep_hang_thich_ung'], isFalse);
+  });
+
   test('màn có cọc: dùng mã ván đã đăng ký với máy chủ, ghi id màn và bản đồ', () {
     final ma = nk.sinhMaVan();
     nk.batDau(18, maVanCoSan: ma);

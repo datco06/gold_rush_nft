@@ -156,6 +156,41 @@ class GoldRushGame extends FlameGame
   final TaiNguyen taiNguyen = TaiNguyen();
   final BoTienTrinhWorldMap tienTrinhWorldMap = BoTienTrinhWorldMap();
 
+  /// Cosmetic Profile Level shared with the leaderboard, isolated by authenticated account.
+  final ValueNotifier<Map<String, int>> capHoSoDaDongBo = ValueNotifier(const {});
+
+  String? get khoaCapHoSo {
+    final a = auth;
+    if (a == null ||
+        !a.canEnterGame ||
+        a.walletAddress == null ||
+        a.chainId == null) {
+      return null;
+    }
+    return '${a.user?.id ?? ''}:${a.walletAddress!.toLowerCase()}:${a.chainId}';
+  }
+
+  int get capDoHoSo => max(
+    1 + max(
+      tienTrinhWorldMap.tienTrinh.cacManHoanThanh.length,
+      tienTrinh.totalCompleted,
+    ),
+    capHoSoDaDongBo.value[khoaCapHoSo] ?? 1,
+  );
+
+  void nhanCapHoSoTuServer(String identity, int level) {
+    if (identity != khoaCapHoSo || level < 1 || level > 21) {
+      return;
+    }
+    if (level <= (capHoSoDaDongBo.value[identity] ?? 1)) {
+      return;
+    }
+    capHoSoDaDongBo.value = Map.unmodifiable({
+      ...capHoSoDaDongBo.value,
+      identity: level,
+    });
+  }
+
   late BanDo banDo;
 
   List<ManChoi> danhSachMan = const [ManChoi.macDinh];
@@ -1690,6 +1725,9 @@ class GoldRushGame extends FlameGame
   @override
   void update(double dt) {
     if (_vanDangDienRa && trangThai == TrangThaiChoi.dangChoi) {
+      nhatKy.ghiNhanCheDoXepHang(
+        _aiDoKhoDuocPhep && doKho.batThichUng && doKho.moHinh != null,
+      );
       // Count the final frame too, without changing telemetry or timeout rules.
       _giayLichSuVan += min(max(0.0, dt), max(0.0, giayConLai ?? dt));
     }

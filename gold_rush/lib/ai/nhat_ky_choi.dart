@@ -28,6 +28,12 @@ class NhatKyChoi {
   int soLanTrung = 0;
   double giay = 0;
   double _demAnhChup = 0;
+  bool _xepHangThichUng = false;
+
+  /// Ranking metadata only: turning adaptive play off cannot erase earlier use.
+  void ghiNhanCheDoXepHang(bool thichUng) {
+    _xepHangThichUng = _xepHangThichUng || thichUng;
+  }
 
   final List<Map<String, Object>> anhChup = [];
   final List<Map<String, Object>> suKien = [];
@@ -72,6 +78,7 @@ class NhatKyChoi {
     bossDaHa = false;
     giay = 0;
     _demAnhChup = 0;
+    _xepHangThichUng = false;
     anhChup.clear();
     suKien.clear();
   }
@@ -155,6 +162,7 @@ class NhatKyChoi {
       'giay': _tron(giay),
       'diem': diem,
       'do_kho_thich_ung': doKhoThichUng,
+      'xep_hang_thich_ung': _xepHangThichUng,
       'ten_hien_thi': ten.length > 20 ? ten.substring(0, 20) : ten,
       'anh_chup': List.of(anhChup),
       'su_kien': List.of(suKien),

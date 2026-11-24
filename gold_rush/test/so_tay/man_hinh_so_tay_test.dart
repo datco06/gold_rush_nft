@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/gold_rush_game.dart';
 import 'package:gold_rush/kho_do/danh_sach_trang_bi.dart';
+import 'package:gold_rush/kho_do/danh_sach_nhan_vat.dart';
 import 'package:gold_rush/man_choi.dart';
 import 'package:gold_rush/man_hinh/ho_so_nhan_vat.dart';
 import 'package:gold_rush/man_hinh/so_tay_kham_pha.dart';
@@ -63,6 +64,104 @@ void main() {
   NgonNgu language() => NgonNgu(doc: () async => null, ghi: (_) async {});
 
   testWidgets(
+    'all location and enemy pictures remain visible, dimmed until discovered',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(844, 390));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final auth = AuthLichSu();
+      await LuuSoTayKhamPha(
+        wallet: auth.wallet,
+        chainId: auth.chain,
+      ).ghi({'dia_diem:1', 'quai:zombie', 'quai:boss'});
+      await tester.pumpWidget(
+        wrap(ManHinhSoTayKhamPha(game: game(auth)), language()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('so-tay-anh:dia_diem:1')),
+        findsOneWidget,
+      );
+      Future<void> picture(
+        String key, {
+        required bool unlocked,
+        String? sprite,
+      }) async {
+        final finder = find.byKey(ValueKey('so-tay-anh:$key'));
+        await tester.scrollUntilVisible(finder, 160);
+        final opacity = tester.widget<Opacity>(finder);
+        expect(
+          opacity.opacity,
+          unlocked ? 1.0 : allOf(greaterThan(0), lessThan(1)),
+        );
+        final image = find.descendant(of: finder, matching: find.byType(Image));
+        expect(image, findsOneWidget);
+        final imageErrors = <Object>[];
+        await tester.runAsync(
+          () => precacheImage(
+            tester.widget<Image>(image).image,
+            tester.element(image),
+            onError: (error, _) => imageErrors.add(error),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(imageErrors, isEmpty, reason: key);
+        expect(
+          tester
+              .getRect(find.byType(ListView))
+              .overlaps(tester.getRect(finder)),
+          isTrue,
+        );
+        if (sprite != null) {
+          expect(
+            tester
+                .widget<AnhNhanVat>(
+                  find.descendant(
+                    of: finder,
+                    matching: find.byType(AnhNhanVat),
+                  ),
+                )
+                .tepAnh,
+            sprite,
+          );
+        }
+      }
+
+      for (var id = 1; id <= 20; id++) {
+        await picture('dia_diem:$id', unlocked: id == 1);
+      }
+      expect(find.text('Đã khám phá 1/20'), findsOneWidget);
+      expect(find.text(stages.last.ten), findsNothing);
+      await tester.tap(find.text('Quái & Boss'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView), const Offset(0, 5000));
+      await tester.pumpAndSettle();
+      for (final entry in const {
+        'zombie': 'zombie.png',
+        'skeleton': 'skeleton.png',
+        'thuong': 'quai_thuong.png',
+        'giap': 'quai_giap.png',
+        'khong_lo': 'quai_khong_lo.png',
+        'boss': 'skeleton.png',
+      }.entries) {
+        await picture(
+          'quai:${entry.key}',
+          unlocked: entry.key == 'zombie' || entry.key == 'boss',
+          sprite: entry.value,
+        );
+      }
+      expect(find.text('Đã khám phá 2/6'), findsOneWidget);
+      auth.wallet = '0x${'b' * 40}';
+      auth.thayDoi();
+      await tester.pumpAndSettle();
+      await picture('quai:boss', unlocked: false, sprite: 'skeleton.png');
+      expect(find.text('Boss'), findsNothing);
+      expect(find.text('Đã khám phá 0/6'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'profile keeps history and tabs without notebook shortcut',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1280, 720));
@@ -79,7 +178,7 @@ void main() {
   );
 
   testWidgets(
-    'all three groups hide locked names and descriptions, and show discovered entries',
+    'only locations and enemies remain, hiding equipment even when discovered',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(844, 390));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -92,6 +191,9 @@ void main() {
         wrap(ManHinhSoTayKhamPha(game: game(auth)), language()),
       );
       await tester.pumpAndSettle();
+      expect(find.byType(ChoiceChip), findsNWidgets(2));
+      expect(find.text('Trang bị đã biết'), findsNothing);
+      expect(find.text(items.first.ten), findsNothing);
       expect(find.text(stages.first.ten), findsOneWidget);
       expect(find.text(stages[1].ten), findsNothing);
       expect(find.text(stages[1].moTa), findsNothing);
@@ -105,11 +207,8 @@ void main() {
         findsNothing,
       );
       expect(find.text('Đã khám phá 1/6'), findsOneWidget);
-      await tester.tap(find.text('Trang bị đã biết'));
-      await tester.pumpAndSettle();
-      expect(find.text(items.first.ten), findsOneWidget);
-      expect(find.text(items[1].ten), findsNothing);
-      expect(find.text('Đã khám phá 1/27'), findsOneWidget);
+      expect(find.text('Trang bị đã biết'), findsNothing);
+      expect(find.text(items.first.ten), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -172,8 +271,8 @@ void main() {
               findsNothing,
             );
           }
-          await tester.tap(find.text(entry.value[3]));
-          await tester.pumpAndSettle();
+          expect(find.text(entry.value[3]), findsNothing);
+          expect(find.byType(ChoiceChip), findsNWidgets(2));
           expect(
             tester.takeException(),
             isNull,
