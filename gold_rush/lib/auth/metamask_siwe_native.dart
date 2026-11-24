@@ -166,7 +166,11 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   String? _address() => _modal.session?.getAddress('eip155');
 
   BigInt _chainId() {
-    final chain = _modal.selectedChain?.chainId ?? _modal.session?.chainId;
+    // The session chain is the wallet's real chain. selectedChain is the
+    // modal's UI selection and can point at a different supported network,
+    // which made the auth flow see a spurious chainChanged after opening the
+    // Reown modal.
+    final chain = _modal.session?.chainId ?? _modal.selectedChain?.chainId;
     if (chain == null || !chain.contains(':')) {
       throw const MetamaskSiweException(MetamaskSiweErrorCode.invalidChainId);
     }
