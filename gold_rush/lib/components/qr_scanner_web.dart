@@ -5,6 +5,7 @@ import 'dart:js_interop_unsafe';
 import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../ngon_ngu/ngon_ngu.dart';
 // `web` đã có trong package graph của Flutter Web; không thêm package mới.
 // ignore: depend_on_referenced_packages
@@ -47,6 +48,7 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
   String _thongBao = 'Đang yêu cầu quyền truy cập camera…';
   bool _daTraKetQua = false;
   bool _dangQuet = false;
+  bool _dangDocAnh = false;
 
   @override
   void initState() {
@@ -126,6 +128,54 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
           () => _thongBao = 'Không thể mở camera: ${_thongBaoLoiCamera(e)}',
         );
       }
+    }
+  }
+
+  Future<void> _chonAnhTuGallery() async {
+    if (_daTraKetQua || _dangDocAnh) return;
+    setState(() {
+      _dangDocAnh = true;
+      _thongBao = 'Đang đọc mã QR trong ảnh…';
+    });
+    String? url;
+    try {
+      final file = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (file == null) {
+        if (mounted) setState(() => _thongBao = 'Đưa mã QR vào khung để quét');
+        return;
+      }
+      final bytes = await file.readAsBytes();
+      final blob = web.Blob([bytes.toJS].toJS);
+      url = web.URL.createObjectURL(blob);
+      final image = web.HTMLImageElement()..src = url;
+      await image.decode().toDart;
+      final detector = _BarcodeDetector(
+        {
+          'formats': ['qr_code'],
+        }.jsify()!,
+      );
+      final results = await detector.detect(image).toDart;
+      final decoded = results.toDart;
+      if (!mounted) return;
+      if (decoded.isEmpty || decoded.first.rawValue.trim().isEmpty) {
+        setState(
+          () => _thongBao =
+              'Không tìm thấy mã QR trong ảnh. Hãy chọn ảnh rõ hơn.',
+        );
+        return;
+      }
+      _daTraKetQua = true;
+      _dungCamera();
+      Navigator.of(context).pop(decoded.first.rawValue.trim());
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _thongBao = 'Không đọc được ảnh. Hãy chọn ảnh PNG/JPG khác.',
+        );
+      }
+    } finally {
+      if (url != null) web.URL.revokeObjectURL(url);
+      if (mounted && !_daTraKetQua) setState(() => _dangDocAnh = false);
     }
   }
 
@@ -235,6 +285,18 @@ class _QrScannerDialogState extends State<_QrScannerDialog> {
         ),
       ),
       actions: [
+        TextButton.icon(
+          onPressed: _daTraKetQua || _dangDocAnh
+              ? null
+              : _chonAnhTuGallery,
+          icon: _dangDocAnh
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.photo_library_outlined),
+          label: const ChuGame('CHỌN ẢNH QR'),
+        ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const ChuGame('HỦY'),
