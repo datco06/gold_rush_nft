@@ -339,31 +339,50 @@ class AuthController extends ChangeNotifier {
     final connection = await _wallet.connect();
     _guard(epoch);
     final address = connection.address.toLowerCase();
-    final chain = connection.chainId;
+    var chain = connection.chainId;
     _walletAddress = address;
     _chainId = chain;
-    await _checkWallet(epoch, address, chain);
-    _stage(AuthStatus.requestingChallenge, epoch);
-    final challenge = await _api.createChallenge(
-      walletAddress: address,
-      chainId: chain,
-    );
-    _guard(epoch);
-    if (!challenge.expiresAt.isAfter(_now())) {
-      throw const _AuthFailure(
-        'CHALLENGE_EXPIRED',
-        'Thông điệp đăng nhập đã hết hạn. Hãy lấy thông điệp mới.',
-      );
+    late AuthChallengeResponse challenge;
+    late String signature;
+    // The game wallet sync may switch MetaMask to the backend chain while the
+    // auth challenge is being prepared. A SIWE challenge is chain-bound, so
+    // re-issue it once for the new chain instead of forcing a manual restart.
+    for (var attempt = 0; ; attempt++) {
+      try {
+        await _checkWallet(epoch, address, chain);
+        _stage(AuthStatus.requestingChallenge, epoch);
+        challenge = await _api.createChallenge(
+          walletAddress: address,
+          chainId: chain,
+        );
+        _guard(epoch);
+        if (!challenge.expiresAt.isAfter(_now())) {
+          throw const _AuthFailure(
+            'CHALLENGE_EXPIRED',
+            'Thông điệp đăng nhập đã hết hạn. Hãy lấy thông điệp mới.',
+          );
+        }
+        await _checkWallet(epoch, address, chain);
+        _stage(AuthStatus.awaitingSignature, epoch);
+        signature = await _wallet.signSiweMessage(
+          address: address,
+          message: challenge.message,
+          expectedChainId: chain,
+        );
+        _guard(epoch);
+        await _checkWallet(epoch, address, chain);
+        break;
+      } on MetamaskSiweException catch (error) {
+        if (error.code != MetamaskSiweErrorCode.chainChanged || attempt >= 1) {
+          rethrow;
+        }
+        final newChain = await _wallet.getChainId();
+        _guard(epoch);
+        if (newChain == chain) rethrow;
+        chain = newChain;
+        _chainId = chain;
+      }
     }
-    await _checkWallet(epoch, address, chain);
-    _stage(AuthStatus.awaitingSignature, epoch);
-    final signature = await _wallet.signSiweMessage(
-      address: address,
-      message: challenge.message,
-      expectedChainId: chain,
-    );
-    _guard(epoch);
-    await _checkWallet(epoch, address, chain);
     _stage(AuthStatus.verifying, epoch);
     final result = await _api.verify(
       challengeId: challenge.challengeId,

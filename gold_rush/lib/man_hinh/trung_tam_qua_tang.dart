@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -135,10 +136,44 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
     await _doiMa(ma);
   }
 
+  String _lyDoChuaKetNoi(PhienVi? pv) {
+    final auth = game.auth;
+    if (auth == null || auth.canEnterGame != true) {
+      return 'Chưa đăng nhập ví. Hãy kết nối MetaMask và ký xác thực trước khi nhận quà.';
+    }
+    if (pv == null) {
+      return 'Phiên ví on-chain chưa khởi tạo. Hãy quay lại sảnh chờ rồi thử lại.';
+    }
+    final thongBao = pv.thongBao?.trim();
+    if (thongBao != null && thongBao.isNotEmpty) return thongBao;
+    if (auth.walletAddress != null) {
+      return 'Đã đăng nhập nhưng chưa đồng bộ được ví on-chain. Kiểm tra mạng Sepolia trong MetaMask rồi thử lại.';
+    }
+    return 'Không thể kết nối ví on-chain. Hãy thử lại.';
+  }
+
   Future<void> _doiMa(String ma) async {
     final pv = game.phienVi;
-    if (pv == null || !pv.daKetNoi) {
-      setState(() => _thongBao = 'Cần kết nối MetaMask trước khi nhận quà.');
+    if (pv == null) {
+      setState(() => _thongBao = _lyDoChuaKetNoi(pv));
+      return;
+    }
+    // AuthGate may already have a wallet session while the shared on-chain
+    // session is still finishing its asynchronous startup sync.
+    for (var i = 0; i < 100 && pv.dangXuLy && !pv.daKetNoi; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (!pv.daKetNoi) {
+      final wallet = game.auth?.canEnterGame == true
+          ? game.auth?.walletAddress
+          : null;
+      if (wallet != null && wallet.isNotEmpty) {
+        await pv.ketNoiDaXacThuc(wallet);
+      }
+    }
+    if (!mounted) return;
+    if (!pv.daKetNoi) {
+      setState(() => _thongBao = _lyDoChuaKetNoi(pv));
       return;
     }
     setState(() {
