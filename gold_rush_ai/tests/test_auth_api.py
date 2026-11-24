@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 import os
+import re
 import secrets
 import socket
 import sqlite3
@@ -106,8 +107,10 @@ def _hash(token: str) -> str:
 def _cookie(response, name: str):
     found = []
     for value in response.headers.get_list("set-cookie"):
+        # SimpleCookie in Python 3.12 rejects the valid `Partitioned` attribute
+        # that the Router appends on secure production cookies.
         jar = SimpleCookie()
-        jar.load(value)
+        jar.load(re.sub(r";\s*Partitioned\b", "", value, flags=re.IGNORECASE))
         if name in jar:
             found.append(jar[name])
     assert len(found) == 1
