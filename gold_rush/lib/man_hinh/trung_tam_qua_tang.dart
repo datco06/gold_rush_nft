@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -137,8 +138,29 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
 
   Future<void> _doiMa(String ma) async {
     final pv = game.phienVi;
-    if (pv == null || !pv.daKetNoi) {
+    if (pv == null) {
       setState(() => _thongBao = 'Cần kết nối MetaMask trước khi nhận quà.');
+      return;
+    }
+    // AuthGate may already have a wallet session while the shared on-chain
+    // session is still finishing its asynchronous startup sync.
+    for (var i = 0; i < 100 && pv.dangXuLy && !pv.daKetNoi; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (!pv.daKetNoi) {
+      final wallet = game.auth?.canEnterGame == true
+          ? game.auth?.walletAddress
+          : null;
+      if (wallet != null && wallet.isNotEmpty) {
+        await pv.ketNoiDaXacThuc(wallet);
+      }
+    }
+    if (!mounted) return;
+    if (!pv.daKetNoi) {
+      setState(
+        () => _thongBao =
+            pv.thongBao ?? 'Cần kết nối MetaMask trước khi nhận quà.',
+      );
       return;
     }
     setState(() {

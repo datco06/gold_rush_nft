@@ -332,6 +332,19 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     } catch (_) {
       await _modal.requestAddChain(info);
     }
+    // MetaMask confirms the switch asynchronously; the WalletConnect session
+    // may still report the old chain for a moment. Wait for it before callers
+    // re-read chainId and wrongly report "still on the old network".
+    final deadline = DateTime.now().add(const Duration(seconds: 60));
+    while (DateTime.now().isBefore(deadline)) {
+      try {
+        if (_chainId().toInt() == chainId) return;
+      } catch (_) {
+        // Session/chain may be transiently unavailable while MetaMask returns.
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
+    throw const MetamaskSiweException(MetamaskSiweErrorCode.chainChanged);
   }
 
   @override
