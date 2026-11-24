@@ -62,8 +62,17 @@ class AuthApiException implements Exception {
   String get message {
     if (code == 'USERNAME_TAKEN') return 'Tên nhà thám hiểm đã được sử dụng.';
     if (code == 'USERNAME_INVALID') return 'Tên nhân vật không hợp lệ.';
-    if (code == 'CSRF_INVALID') {
+    if (code == 'CSRF_INVALID' || code == 'CSRF_MISSING') {
       return 'CSRF không hợp lệ. Cần đối chiếu lại phiên.';
+    }
+    if (code == 'ORIGIN_FORBIDDEN' || code == 'ORIGIN_REQUIRED') {
+      return 'Origin không được máy chủ cho phép. Kiểm tra GOLD_RUSH_NATIVE_ORIGIN.';
+    }
+    if (code == 'BROWSER_BINDING_INVALID') {
+      return 'Phiên thử thách cũ không hợp lệ. Hãy xác thực lại từ đầu.';
+    }
+    if (code == 'BOOTSTRAP_REQUIRED') {
+      return 'Thiếu header khởi tạo xác thực (X-Gold-Rush-Auth).';
     }
     if (code == 'WALLET_ALREADY_REGISTERED') {
       return 'Ví đã có tài khoản. Hãy xác thực lại để đăng nhập.';
