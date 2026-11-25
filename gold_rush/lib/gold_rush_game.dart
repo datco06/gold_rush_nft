@@ -39,6 +39,7 @@ import 'components/hieu_ung.dart';
 import 'components/hud.dart';
 import 'components/ke_dich.dart';
 import 'components/vat_pham_roi.dart' hide LoaiVatPham;
+import 'dieu_khien/bo_cuc_dieu_khien.dart';
 import 'dieu_khien/nut_tam_dung.dart';
 import 'kho_do/vat_pham_hien_thi.dart';
 import 'kho_do/danh_sach_trang_bi.dart';
@@ -1018,6 +1019,7 @@ class GoldRushGame extends FlameGame
 
   George? george;
   JoystickComponent? joystick;
+  EdgeInsets _leAnToanDieuKhien = EdgeInsets.zero;
   Hud? hud;
 
   /// Boss của ván hiện tại. Boss chỉ được sinh từ màn 7 trở đi.
@@ -1097,10 +1099,10 @@ class GoldRushGame extends FlameGame
         sprite: taiNguyen.joystickNen,
         size: Vector2.all(72),
       ),
-      margin: const EdgeInsets.only(left: 26, bottom: 26),
       priority: 100,
     );
 
+    _capNhatBoCucJoystick();
     camera.viewport.add(joystick!);
     camera.viewport.add(NutTamDung(khiBam: tamDung));
 
@@ -1278,7 +1280,25 @@ class GoldRushGame extends FlameGame
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
+    _capNhatBoCucJoystick();
     if (isLoaded) _capNhatZoom();
+  }
+
+  void capNhatLeAnToanDieuKhien(EdgeInsets leAnToan) {
+    _leAnToanDieuKhien = leAnToan;
+    _capNhatBoCucJoystick();
+  }
+
+  void _capNhatBoCucJoystick() {
+    final j = joystick;
+    if (j == null || !hasLayout) return;
+
+    final khung = camera.viewport.virtualSize;
+    final boCuc = BoCucDieuKhien(Size(khung.x, khung.y), _leAnToanDieuKhien);
+    final nuaCanh = boCuc.kichThuoc / 2;
+    j.scale.setAll(boCuc.kichThuoc / j.width);
+    j.margin = EdgeInsets.only(left: boCuc.trai, bottom: boCuc.duoi);
+    j.position.setValues(boCuc.trai + nuaCanh, khung.y - boCuc.duoi - nuaCanh);
   }
 
   void _capNhatZoom() {

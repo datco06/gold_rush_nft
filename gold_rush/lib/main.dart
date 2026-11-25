@@ -312,6 +312,12 @@ class _ManHinhGameState extends State<ManHinhGame> {
     widget.auth.addListener(_lockImmediately);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _game.capNhatLeAnToanDieuKhien(MediaQuery.paddingOf(context));
+  }
+
   void _lockImmediately() {
     // Kiểm tra phiên định kỳ là thụ động; không dừng ván đang chạy trong
     // khoảng thời gian chờ /me. Nếu phiên thật sự mất, AuthGate vẫn gỡ game.

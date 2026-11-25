@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-
-import '../ngon_ngu/ngon_ngu.dart';
+import 'package:flutter/widgets.dart';
 
 import '../gold_rush_game.dart';
+import '../ngon_ngu/ngon_ngu.dart';
+import 'bo_cuc_dieu_khien.dart';
 
 /// Nút bắn nổi trên màn chơi.
 class NutBan extends StatelessWidget {
@@ -12,41 +12,42 @@ class NutBan extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final manHinh = MediaQuery.sizeOf(context);
     final leAnToan = MediaQuery.paddingOf(context);
-    final compact = manHinh.width < 600 || manHinh.height < 420;
-    final size = compact ? 70.0 : 84.0;
-    final lePhai = (manHinh.width * .085 - size / 2).clamp(24.0, 120.0);
-    final leDuoi = (manHinh.height * .23 - size / 2).clamp(32.0, 150.0);
-    return Positioned(
-      right: leAnToan.right + lePhai,
-      bottom: leAnToan.bottom + leDuoi,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => game.george?.banTheoHuongNhin(),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Image.asset(
-                'assets/images/joystick_nen.png',
-                width: size,
-                height: size,
-              ),
-              ChuGame(
-                'BẮN',
-                style: TextStyle(
-                  color: const Color(0xFFF2F4F7),
-                  fontWeight: FontWeight.w800,
-                  fontSize: compact ? 13 : 15,
-                  letterSpacing: 0.5,
+    return Positioned.fill(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final boCuc = BoCucDieuKhien(constraints.biggest, leAnToan);
+          return Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: EdgeInsets.only(right: boCuc.phai, bottom: boCuc.duoi),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => game.george?.banTheoHuongNhin(),
+                child: SizedBox.square(
+                  dimension: boCuc.kichThuoc,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset('assets/images/joystick_nen.png'),
+                      Center(
+                        child: ChuGame(
+                          'BẮN',
+                          style: TextStyle(
+                            color: const Color(0xFFF2F4F7),
+                            fontWeight: FontWeight.w800,
+                            fontSize: boCuc.gon ? 14 : 16,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
