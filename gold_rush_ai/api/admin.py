@@ -17,7 +17,7 @@ from core.admin_session import AdminSessions, COOKIE, TTL, digest
 from core.csdl import lay_csdl
 from scripts.tao_ma_qr_qua_tang import _new_code, _qr_matrix
 
-STATIC = Path(__file__).resolve().parents[1] / "admin_web"
+STATIC = Path(__file__).resolve().parents[2] / "gold_rush_admin"
 SECURITY = {
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
