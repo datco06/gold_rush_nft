@@ -143,14 +143,10 @@ Nếu không truyền `GOLD_RUSH_API`, ứng dụng có thể dùng giá trị m
 
 ### 4. Flutter Android
 
-```bash
-cd gold_rush
-flutter pub get
-flutter run -d android \
-  --dart-define=GOLD_RUSH_API=http://10.0.2.2:8000
-```
-
-Trên thiết bị thật, thay `10.0.2.2` bằng địa chỉ IP LAN của máy chạy backend. Luồng ký ví trên Android sử dụng MetaMask Mobile/WalletConnect tùy cấu hình app.
+Có thể chạy trên máy ảo Android SDK để thử giao diện và luồng mở MetaMask.
+Xem [cấu hình máy ảo và cách chạy Android](gold_rush/README.md#23-chạy-bản-android).
+Để dùng chung API demo và Sepolia với người kiểm thử, dùng cùng bộ cấu hình
+trong mục [Đóng gói APK thủ công](#đóng-gói-apk-thủ-công).
 
 ## Cấu hình blockchain
 
@@ -256,9 +252,18 @@ flutter analyze --no-fatal-infos
 flutter test
 ```
 
-Kết quả kiểm thử Flutter của phiên bản hiện tại: **583 test đạt, 0 test thất
-bại**. Có **42 test được bỏ qua** vì cần backend tích hợp hoặc vì tính năng
-Xưởng AI đang ẩn trong bản build demo.
+Một lần chạy toàn bộ bộ test trước đợt sửa Android ghi nhận **583 test đạt**
+và **42 test bỏ qua**. Đợt sửa Android ghi nhận **187 test đạt** trong nhóm
+xác thực ví native và blockchain. Có thể chạy lại nhóm này từ `gold_rush/`
+bằng PowerShell.
+
+```powershell
+$blockchainTests = Get-ChildItem test/blockchain -Recurse -Filter '*_test.dart' |
+  Where-Object { $_.Name -notlike '*_web_test.dart' } |
+  ForEach-Object FullName
+flutter test test/auth/metamask_siwe_native_test.dart @blockchainTests
+flutter test test/man_hinh/trung_tam_qua_tang_test.dart test/chien_dau/ban_sat_mep_test.dart test/chien_dau/ban_ap_sat_test.dart
+```
 
 ## Kiểm tra nhanh bản Web
 
@@ -284,6 +289,9 @@ Các workflow nằm trong `.github/workflows/`:
 | `deploy-web.yml` | Thay đổi `gold_rush/**` trên `main` | Build Flutter Web và deploy Firebase Hosting nếu có `FIREBASE_TOKEN` |
 | `build-apk.yml` | Thay đổi `gold_rush/**` hoặc tag `v*` | Build APK, upload artifact; tag `v*` tạo GitHub Release |
 
+Workflow APK hiện chỉ truyền `GOLD_RUSH_API`. Để gửi bản có luồng kết nối
+MetaMask, dùng lệnh đóng gói thủ công với đầy đủ cấu hình Android bên dưới.
+
 Backend Render được cấu hình Auto-Deploy theo branch `main`. Vì vậy thay đổi backend hoặc dữ liệu QR cần push lên `main` để Render nhận commit và tạo deploy mới. Có thể kiểm tra trạng thái tại mục **Deploys** của service `gold-rush-api`.
 
 Để tạo bản APK phát hành bằng tag:
@@ -300,37 +308,90 @@ Các secret cần được đặt trong GitHub/Render, không đặt trong workf
 
 ## Đóng gói APK thủ công
 
-```bash
-cd gold_rush
-flutter pub get
-flutter build apk --release \
-  --dart-define=GOLD_RUSH_API=https://gold-rush-api.onrender.com
+Máy build cần Flutter, Android SDK Platform 37, Build Tools và Platform Tools.
+Bản APK test trên Windows được build với Flutter 3.50.1, JDK 21 chạy Gradle,
+NDK 28.2.13676358 và CMake 3.22.1. Mã ứng dụng vẫn nhắm Java 17. Dùng
+`flutter doctor -v` để kiểm tra JDK và SDK Flutter đang dùng.
+
+Từ thư mục gốc, lưu cấu hình dưới đây vào
+`build/gold-rush-android-defines.json` và thay `<project-id>` bằng Project ID
+của Gold Rush trên Reown. Thư mục `build/` được Git bỏ qua.
+
+```json
+{
+  "GOLD_RUSH_API": "https://gold-rush-api.onrender.com",
+  "REOWN_PROJECT_ID": "<project-id>",
+  "GOLD_RUSH_DAPP_URL": "https://gold-rush-web.web.app",
+  "GOLD_RUSH_NATIVE_ORIGIN": "https://gold-rush-web.web.app",
+  "GOLD_RUSH_NATIVE_REDIRECT": "goldrush://",
+  "GOLD_RUSH_APP_LINK": "https://gold-rush-web.web.app/wc",
+  "GOLD_RUSH_SEPOLIA_RPC_URL": "https://ethereum-sepolia-rpc.publicnode.com"
+}
 ```
 
-File đầu ra thường nằm tại:
+Backend phải cho phép giá trị `GOLD_RUSH_NATIVE_ORIGIN` và trả cấu hình hợp
+đồng trên Sepolia. Android dùng `goldrush://` để nhận lượt quay lại từ ví.
+Giữ private key và cụm từ khôi phục ngoài cấu hình build.
+
+Chạy từ thư mục gốc bằng PowerShell. Có thể truyền thêm
+`--build-number=N` với số lớn hơn bản đã gửi để tester cài cập nhật.
+
+```powershell
+$defines = (Resolve-Path .\build\gold-rush-android-defines.json).Path
+Set-Location .\gold_rush
+flutter pub get
+flutter build apk --release --target-platform android-arm,android-arm64,android-x64 "--dart-define-from-file=$defines"
+```
+
+APK chứa ba kiến trúc `armeabi-v7a`, `arm64-v8a` và `x86_64`. Từ thư
+mục gốc, file đầu ra nằm ở đường dẫn sau.
 
 ```text
 gold_rush/build/app/outputs/flutter-apk/app-release.apk
 ```
 
-APK hiện tại dùng cấu hình `compileSdk = 37` để tương thích với các dependency
-Android của Reown/Coinbase Wallet SDK. Bản build release trong đồ án đang dùng
-debug signing để kiểm thử nội bộ; muốn đưa lên Google Play cần tạo upload key
-và cấu hình signing riêng trong `android/app/build.gradle.kts`.
+Nếu đã biết kiến trúc thiết bị, có thể thêm `--split-per-abi` vào lệnh
+build để tạo APK nhỏ hơn cho từng kiến trúc.
 
-Để tạo APK riêng cho từng kiến trúc thiết bị, dùng:
+APK kiểm thử đã xuất trên máy build ở `build/GoldRush-1.3.0-build5-Android.apk`
+(`1.3.0+5`, Android 7.0 trở lên). Bản này có các sửa lỗi ví và đồng bộ
+Android trước đợt chỉnh giao diện. Bố cục trang Quà tặng và nút **Bắn** ở
+mã nguồn cần được build lại để có trong APK gửi tiếp theo.
 
-```bash
-flutter build apk --release --split-per-abi
+Có thể gửi APK qua Drive hoặc USB. Tester mở APK trên điện thoại và cấp quyền
+cài ứng dụng từ nguồn đã mở tệp khi Android hỏi. Với ADB, chạy từ thư mục gốc.
+
+```powershell
+adb devices
+adb install -r .\gold_rush\build\app\outputs\flutter-apk\app-release.apk
 ```
 
-File APK có thể gửi sang điện thoại Android bằng cáp USB, AirDrop hoặc Drive.
-Trên điện thoại, mở file APK và cho phép cài ứng dụng từ nguồn này khi được
-hỏi. Nếu đã kết nối thiết bị Android qua ADB, có thể cài bằng:
+APK nội bộ dùng khóa debug. Cài đè cần cùng khóa ký và số build phù hợp.
+Khi phát hành qua Google Play, cấu hình upload key riêng trong
+`gold_rush/android/app/build.gradle.kts`.
 
-```bash
-adb install -r gold_rush/build/app/outputs/flutter-apk/app-release.apk
-```
+## Kiểm tra nhanh bản Android
+
+1. Mở khóa MetaMask Mobile, chọn Sepolia, mở Gold Rush và bấm **Kết nối MetaMask**.
+   Duyệt kết nối rồi ký thông điệp đăng nhập. Kiểm tra Gold Rush mở lại sau khi duyệt.
+2. Mở **Cửa hàng** và **Kho đồ**. Kiểm tra tải danh mục, số vàng, vật phẩm, trang
+   bị đang dùng và nút làm mới. Kiểm tra `/api/health` và `/api/vang/cau-hinh` nếu
+   cả hai trang đều chờ dữ liệu.
+3. Dùng ví test có Sepolia ETH để thử vào màn, mua vật phẩm, mua nhân vật,
+   mở rương, nhận vật phẩm hoặc nhận huy hiệu theo điều kiện của tài khoản.
+   Đọc thông điệp ký và kiểm tra biên lai cùng dữ liệu sau khi quay lại game.
+4. Với APK build từ mã nguồn đã chỉnh giao diện, mở **Quà tặng** ở chế độ
+   ngang, kiểm tra nút quét QR hiện trong khung hình và cấp quyền camera khi
+   được hỏi. Vào màn chơi để kiểm tra vị trí và vùng chạm của nút **Bắn**.
+
+API demo trả HTTP 200 ở `/api/health`, `/api/vang/cau-hinh` và `/api/man`.
+Cấu hình hợp đồng trả chain ID `11155111`. Các API hồ sơ, kho đồ và huy
+hiệu trả HTTP 401 khi Origin hợp lệ và chưa có phiên. Luồng challenge và
+verify thử nghiệm nhận `registration_required` với ví mới. Trên Sepolia đã
+kiểm tra mã triển khai và cấu hình của
+`CuaHangGoldRush`, `VatPhamGoldRush`, `CharacterRegistry` và
+`ThanhTuuSBT`. Bước duyệt MetaMask và xác nhận giao dịch đầu cuối trên
+điện thoại Android thật vẫn cần tester thực hiện.
 
 ## Quy trình đóng góp
 

@@ -74,27 +74,46 @@ diện offline, có thể bỏ `GOLD_RUSH_API`.
 
 ### 2.3. Chạy bản Android
 
-Android dùng Reown AppKit/WalletConnect để mở MetaMask Mobile. Không đưa
-private key vào APK; project ID chỉ là mã nhận diện ứng dụng, không phải khóa
-ví.
+Android dùng Reown AppKit/WalletConnect để mở MetaMask Mobile. Cấu hình
+`REOWN_PROJECT_ID` của dự án và dùng ví riêng cho kiểm thử. Cài MetaMask Mobile
+(gói `io.metamask`) từ Google Play trong máy ảo hoặc trên điện thoại.
 
-```bash
-# Android Emulator: backend trên máy phát triển
-flutter run -d emulator-5554 \
-  --dart-define=GOLD_RUSH_API=http://10.0.2.2:8000 \
-  --dart-define=REOWN_PROJECT_ID=<project-id>
+#### Máy ảo nhẹ trên Windows
 
-# Android thật: thay <ip-lan> bằng địa chỉ LAN của máy chạy backend
-flutter run -d <device-id> \
-  --dart-define=GOLD_RUSH_API=http://<ip-lan>:8000 \
-  --dart-define=REOWN_PROJECT_ID=<project-id>
+Tạo AVD `GoldRush_Lite` với ảnh hệ thống Android 14 (API 34), **Google Play**,
+`x86_64`. Cấu hình đã dùng 2 lõi, 1536 MB RAM và độ phân giải 540 × 960.
+Bật tăng tốc ảo hóa trên máy chủ để chạy AVD. Nếu đã có bộ công cụ local,
+mở `build/android-toolchain/Mo-GoldRush-Lite.cmd` từ thư mục gốc. Các file
+trong `build/` được tạo trên máy build và bị Git bỏ qua.
+
+Chạy các lệnh sau từ thư mục gốc bằng PowerShell sau khi tạo file JSON
+theo [hướng dẫn đóng gói APK](../README.md#đóng-gói-apk-thủ-công).
+Nếu ID máy ảo khác `emulator-5554`, dùng ID hiện trong `flutter devices`.
+
+```powershell
+$defines = (Resolve-Path .\build\gold-rush-android-defines.json).Path
+Set-Location .\gold_rush
+flutter pub get
+flutter devices
+flutter run -d emulator-5554 "--dart-define-from-file=$defines"
 ```
 
-Ứng dụng Android đã đăng ký deep link `goldrush://` để quay lại Gold Rush
-sau khi xác nhận trong MetaMask. Khi phát hành thật, thay bằng redirect/app
-link HTTPS của dự án qua `GOLD_RUSH_NATIVE_REDIRECT` và `GOLD_RUSH_APP_LINK`.
-`GOLD_RUSH_NATIVE_ORIGIN` phải là Origin đã được cho phép trong backend; không
-dùng URL RPC hoặc URL API làm Origin.
+Bật Sepolia trong MetaMask, kết nối ví rồi xác nhận thông điệp đăng nhập
+SIWE. Android đăng ký deep link `goldrush://` để nhận lượt quay lại.
+`GOLD_RUSH_NATIVE_ORIGIN` phải khớp Origin được backend cho phép.
+
+#### Khi kết nối ví hoặc đồng bộ gặp lỗi
+
+| Triệu chứng | Cần kiểm tra |
+|---|---|
+| MetaMask quay mãi ở bước kết nối | Ví đã mở khóa, máy có Internet và APK đã nhận đúng `REOWN_PROJECT_ID`. Nếu phiên WalletConnect cũ bị treo, ngắt phiên rồi kết nối lại. |
+| Challenge báo hết hạn ngay | Bật ngày giờ tự động và kiểm tra đồng hồ của Android, máy chủ chạy AVD và API. Sau khi giờ khớp, yêu cầu challenge mới. |
+| Game báo mạng ví đã đổi | Kiểm tra mạng đang chọn trong MetaMask và chain ID từ `/api/vang/cau-hinh`. Sau khi chọn đúng mạng, kết nối hoặc xác thực lại. |
+| Cửa hàng và Kho đồ chờ dữ liệu | Kiểm tra `GOLD_RUSH_API`, thử `/api/health` và `/api/vang/cau-hinh`. Nếu API công khai tải được, kiểm tra phiên đăng nhập, Origin và RPC Sepolia. Danh mục mẫu trong Cửa hàng có thể xuất hiện khi chưa đồng bộ được dữ liệu tài khoản. |
+
+Android dùng mạng hoạt động đã được WalletConnect xác nhận để kiểm tra
+chain ID. Các lượt đọc hợp đồng, ước lượng gas và đọc biên lai dùng RPC.
+Thông điệp đăng nhập và các giao dịch gửi lên mạng vẫn cần MetaMask duyệt.
 
 ### 2.4. Backend và mạng Blockchain phát triển
 
@@ -111,6 +130,16 @@ Chạy backend từ thư mục `gold_rush_ai/` theo README của backend, sau đ
 Hardhat Local dùng chain ID `31337`. Sepolia dùng chain ID `11155111` và chỉ
 dùng khi đã có địa chỉ hợp đồng, RPC và cấu hình backend tương ứng. Xem thêm
 [`../gold_rush_chain/README.md`](../gold_rush_chain/README.md).
+
+Với Hardhat, Android Emulator gọi RPC của máy phát triển qua
+`http://10.0.2.2:8545`. Với điện thoại thật, đặt `GOLD_RUSH_LOCAL_RPC_URL`
+thành địa chỉ RPC mà thiết bị có thể truy cập. Dùng HTTPS cho API và RPC
+khi đóng gói APK gửi qua Internet.
+
+Khi chạy local, tạo một bản JSON riêng từ cấu hình demo, đổi
+`GOLD_RUSH_API` theo bảng trên và đặt `GOLD_RUSH_NATIVE_ORIGIN` thành
+`http://localhost:5174` nếu dùng danh sách Origin mặc định của backend.
+Truyền đường dẫn JSON local bằng `--dart-define-from-file` như lệnh ở mục 2.3.
 
 ### Bảng xếp hạng toàn server — Top 30
 
@@ -324,6 +353,8 @@ Muốn sửa bản đồ bằng phần mềm **Tiled** (tiled.mapeditor.org): m�
 | Nhìn thấy nhiều/ít hơn | `CauHinh.soONhinThayNgang` |
 | Thêm loại kẻ địch mới | thêm một hàm dựng `factory` trong `ke_dich.dart` |
 | Đổi giao diện menu | `man_hinh/lop_phu.dart` — là widget Flutter thuần |
+| Chỉnh bố cục Quà tặng và nút quét QR | `lib/man_hinh/trung_tam_qua_tang.dart` |
+| Chỉnh vị trí, kích thước và vùng chạm của nút Bắn | `lib/dieu_khien/nut_ban.dart` |
 | Xem vùng va chạm để gỡ lỗi | mở `gold_rush.tmx`, bật hiển thị lớp `VaCham` |
 
 ---
@@ -438,21 +469,14 @@ cần tách riêng ba thành phần:
    ```bash
    flutter build web --release \
      --dart-define=GOLD_RUSH_API=https://<backend-domain>
-
-   flutter build apk --release \
-     --dart-define=GOLD_RUSH_API=https://<backend-domain> \
-     --dart-define=REOWN_PROJECT_ID=<project-id> \
-     --dart-define=GOLD_RUSH_SEPOLIA_RPC_URL=<sepolia-rpc> \
-     --dart-define=GOLD_RUSH_NATIVE_ORIGIN=https://<app-domain> \
-     --dart-define=GOLD_RUSH_NATIVE_REDIRECT=goldrush:// \
-     --dart-define=GOLD_RUSH_APP_LINK=https://<app-domain>/wc
    ```
 
-APK phát hành phải ký bằng keystore riêng, thay cấu hình redirect bằng domain
-thật và kiểm thử quay lại ứng dụng sau khi MetaMask Mobile xác nhận. Không dùng
-debug signing cho bản phát hành. Trước khi phát hành Sepolia, phải cập nhật
-backend và AppKit với chain `eip155:11155111`, địa chỉ hợp đồng và RPC thật;
-không dùng địa chỉ hợp đồng Hardhat `31337` cho APK release.
+   Xem [các biến cấu hình và lệnh đóng gói APK](../README.md#đóng-gói-apk-thủ-công)
+   và [checklist kiểm thử trên Android](../README.md#kiểm-tra-nhanh-bản-android).
+
+Khi phát hành, cấu hình khóa ký riêng và kiểm thử lượt quay lại ứng dụng sau
+khi xác nhận trong MetaMask. Backend và AppKit cần cùng dùng Sepolia
+`eip155:11155111` với RPC và địa chỉ hợp đồng đã triển khai trên mạng này.
 
 ## 10. Nguồn tham khảo
 
