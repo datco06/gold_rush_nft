@@ -15,10 +15,6 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
-subprojects {
-    project.evaluationDependsOn(":app")
-}
-
 // Hardened fixes for broken/outdated plugins from pub.dev.
 // coinbase_wallet_sdk 1.0.10 ships without consumer-rules.pro and pins compileSdk 31
 // (AAR metadata of its androidx deps requires >= 34). Re-apply on every configure so a
@@ -79,6 +75,11 @@ subprojects {
             }
         }
     }
+}
+
+// Flutter scans plugin build files during :app configuration. Apply the fixes above first.
+subprojects {
+    project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {
