@@ -98,9 +98,7 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
       activeItem: GoldRushTopBarItem.quaTang,
       gold: pv == null
           ? '0'
-          : (pv.dangXuLy && pv.daKetNoi
-                ? '...'
-                : pv.vangKhaDungDinhDang),
+          : (pv.dangXuLy && pv.daKetNoi ? '...' : pv.vangKhaDungDinhDang),
       playerName: game.auth?.user?.username ?? 'datco6',
       onSanhCho: game.veMenu,
       onPlayerTap: _moHoSo,
@@ -376,9 +374,6 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
     final pv = widget.game.phienVi;
     final size = MediaQuery.sizeOf(context);
     final compact = size.width < 1100 || size.height < 560;
-    final giftSize = compact
-        ? math.min(150.0, math.max(112.0, size.height * .28))
-        : 190.0;
     return Material(
       color: const Color(0xFF081421),
       child: SafeArea(
@@ -398,122 +393,11 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
                   _thanhTren(pv),
                   SizedBox(height: compact ? 8 : 26),
                   Expanded(
-                    child: SingleChildScrollView(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: compact ? 320 : 720,
-                          ),
-                          child: Column(
-                            children: [
-                              ChuGame(
-                                '✦ KHO BÁU DÀNH CHO BẠN ✦',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: const Color(0xFFE6AE43),
-                                  fontSize: compact ? 10 : 13,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 4,
-                                ),
-                              ),
-                              SizedBox(height: compact ? 5 : 14),
-                              ChuGame(
-                                'TRUNG TÂM\nQUÀ TẶNG',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: const Color(0xFFFFD889),
-                                  fontFamily: 'serif',
-                                  fontSize: compact ? 28 : 42,
-                                  height: .96,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              SizedBox(height: compact ? 6 : 18),
-                              ChuGame(
-                                'Khám phá những mã quà đặc biệt\nvà nhận phần thưởng vào ví Gold Rush.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: const Color(0xFFAFC0D1),
-                                  fontSize: compact ? 11 : 17,
-                                  height: compact ? 1.25 : 1.5,
-                                ),
-                              ),
-                              SizedBox(height: compact ? 8 : 28),
-                              compact
-                                  ? SizedBox(
-                                      height: giftSize,
-                                      child: const FittedBox(
-                                        fit: BoxFit.contain,
-                                        child: SizedBox(
-                                          width: 289,
-                                          height: 190,
-                                          child: _GiftShowcase(),
-                                        ),
-                                      ),
-                                    )
-                                  : const _GiftShowcase(),
-                              SizedBox(height: compact ? 8 : 22),
-                              SizedBox(
-                                width: double.infinity,
-                                height: compact ? 46 : 62,
-                                child: FilledButton.icon(
-                                  onPressed: _dangXuLy ? null : _moQuetMaQr,
-                                  icon: const Icon(
-                                    Icons.qr_code_scanner_rounded,
-                                  ),
-                                  label: const ChuGame('MỞ CAMERA QUÉT QR'),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: const Color(0xFFF2C76B),
-                                    foregroundColor: const Color(0xFF382719),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    elevation: 7,
-                                    textStyle: TextStyle(
-                                      fontSize: compact ? 12 : 17,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: compact ? 6 : 14),
-                              ChuGame(
-                                '✧ Quét mã QR hợp lệ để nhận quà ✧',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: const Color(0xFFAFC0D1),
-                                  fontSize: compact ? 11 : 15,
-                                ),
-                              ),
-                              if (_thongBao != null) ...[
-                                SizedBox(height: compact ? 6 : 12),
-                                ChuGame(
-                                  _thongBao!,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: _thongBao!.startsWith('ĐANG')
-                                        ? const Color(0xFFFFD889)
-                                        : const Color(0xFFFFB4A8),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ] else if (!_dangXuLy) ...[
-                                SizedBox(height: compact ? 6 : 12),
-                                const ChuGame(
-                                  'Chưa có mã quà nào đang xử lý.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Color(0xFF8FA4B7),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                              SizedBox(height: compact ? 8 : 18),
-                            ],
-                          ),
-                        ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => _noiDung(
+                        context,
+                        constraints,
+                        compact: compact || constraints.maxHeight < 400,
                       ),
                     ),
                   ),
@@ -521,6 +405,162 @@ class _ManHinhTrungTamQuaTangState extends State<ManHinhTrungTamQuaTang> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _noiDung(
+    BuildContext context,
+    BoxConstraints constraints, {
+    required bool compact,
+  }) {
+    final sideBySide =
+        constraints.maxWidth >= 560 && constraints.maxHeight < 350;
+    final maxWidth = compact && !sideBySide ? 320.0 : 720.0;
+    final normalGiftHeight = compact
+        ? (MediaQuery.sizeOf(context).height * .28).clamp(112.0, 150.0)
+        : math.min(maxWidth, constraints.maxWidth) / 1.52;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final textAndControls =
+        (compact ? 220.0 : 380.0) +
+        math.max(0.0, textScale - 1) * (compact ? 130 : 220);
+    final giftHeight = sideBySide
+        ? math.min(190.0, constraints.maxHeight)
+        : (constraints.maxHeight - textAndControls).clamp(
+            64.0,
+            normalGiftHeight,
+          );
+    final gift = !compact && giftHeight == normalGiftHeight
+        ? const _GiftShowcase()
+        : SizedBox(
+            height: giftHeight.toDouble(),
+            child: const FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(width: 289, height: 190, child: _GiftShowcase()),
+            ),
+          );
+    final title = <Widget>[
+      ChuGame(
+        '✦ KHO BÁU DÀNH CHO BẠN ✦',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: const Color(0xFFE6AE43),
+          fontSize: compact ? 10 : 13,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 4,
+        ),
+      ),
+      SizedBox(height: compact ? 5 : 14),
+      ChuGame(
+        'TRUNG TÂM\nQUÀ TẶNG',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: const Color(0xFFFFD889),
+          fontFamily: 'serif',
+          fontSize: compact ? 28 : 42,
+          height: .96,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.2,
+        ),
+      ),
+      SizedBox(height: compact ? 6 : 18),
+      ChuGame(
+        'Khám phá những mã quà đặc biệt\nvà nhận phần thưởng vào ví Gold Rush.',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: const Color(0xFFAFC0D1),
+          fontSize: compact ? 11 : 17,
+          height: compact ? 1.25 : 1.5,
+        ),
+      ),
+    ];
+    final actions = <Widget>[
+      SizedBox(
+        width: double.infinity,
+        height: compact ? 46 : 62,
+        child: FilledButton.icon(
+          onPressed: _dangXuLy ? null : _moQuetMaQr,
+          icon: const Icon(Icons.qr_code_scanner_rounded),
+          label: const ChuGame('MỞ CAMERA QUÉT QR'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFF2C76B),
+            foregroundColor: const Color(0xFF382719),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 7,
+            textStyle: TextStyle(
+              fontSize: compact ? 12 : 17,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+      ),
+      SizedBox(height: compact ? 6 : 14),
+      ChuGame(
+        '✧ Quét mã QR hợp lệ để nhận quà ✧',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: const Color(0xFFAFC0D1),
+          fontSize: compact ? 11 : 15,
+        ),
+      ),
+      if (_thongBao != null) ...[
+        SizedBox(height: compact ? 6 : 12),
+        ChuGame(
+          _thongBao!,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: _thongBao!.startsWith('ĐANG')
+                ? const Color(0xFFFFD889)
+                : const Color(0xFFFFB4A8),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ] else if (!_dangXuLy) ...[
+        SizedBox(height: compact ? 6 : 12),
+        const ChuGame(
+          'Chưa có mã quà nào đang xử lý.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Color(0xFF8FA4B7), fontSize: 12),
+        ),
+      ],
+    ];
+
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: sideBySide
+              ? Row(
+                  children: [
+                    Expanded(child: gift),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          ...title,
+                          const SizedBox(height: 8),
+                          ...actions,
+                          const SizedBox(height: 8),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    ...title,
+                    SizedBox(height: compact ? 8 : 28),
+                    gift,
+                    SizedBox(height: compact ? 8 : 22),
+                    ...actions,
+                    SizedBox(height: compact ? 8 : 18),
+                  ],
+                ),
         ),
       ),
     );
