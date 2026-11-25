@@ -75,6 +75,7 @@ from core.xac_minh_ve_onchain import (
 )
 
 from api.ban_do_moi import router as ban_do_router
+from api.admin import create_admin_router
 from api.kho_do import router as kho_do_router
 from api.nhiem_vu import router as nhiem_vu_router
 from api.qua_tang import goi_rpc, router as qua_tang_router
@@ -334,6 +335,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Gold Rush AI API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(_LifespanCORSMiddleware)
+app.include_router(create_admin_router())
 
 # Đăng ký các router mở rộng (Tiến trình, Kho đồ, Nhiệm vụ, Bản đồ)
 app.include_router(tien_trinh_router)

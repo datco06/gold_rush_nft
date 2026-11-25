@@ -6,6 +6,18 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/admin",
+        "destination": "https://gold-rush-api.onrender.com/admin",
+        "type": 302
+      },
+      {
+        "source": "/admin/**",
+        "destination": "https://gold-rush-api.onrender.com/admin",
+        "type": 302
+      }
+    ],
     "rewrites": [
       {
         "source": "**",
