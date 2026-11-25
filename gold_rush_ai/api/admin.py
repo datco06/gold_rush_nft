@@ -36,7 +36,7 @@ class Gift(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     reward_type: Literal["gold", "item"] = "gold"
     amount: int = Field(default=100, ge=1, le=10000)
-    token_id: int = Field(default=0, ge=0, le=2147483647)
+    token_id: int = Field(default=0, ge=0, le=27)
     max_uses: int = Field(default=1, ge=1, le=10000)
     expires_at: datetime | None = None
 

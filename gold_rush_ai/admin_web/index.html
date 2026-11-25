@@ -38,7 +38,45 @@
           <form id="gift-form">
             <label for="gift-name">Tên quà tặng</label><input id="gift-name" name="name" required maxlength="120" placeholder="Ví dụ: Quà sự kiện cuối tuần">
             <div class="fields"><div><label for="reward-type">Phần thưởng</label><select id="reward-type" name="reward_type"><option value="gold">Vàng</option><option value="item">Vật phẩm NFT</option></select></div><div><label id="amount-label" for="amount">Số vàng</label><input id="amount" name="amount" type="number" min="1" max="10000" value="100" required></div></div>
-            <div id="token-field" hidden><label for="token-id">Token ID vật phẩm</label><input id="token-id" name="token_id" type="number" min="1" max="2147483647"><p class="footnote">Dùng ID vật phẩm đã được đăng ký trên hợp đồng NFT.</p></div>
+            <div id="token-field" hidden>
+              <label for="token-id">Chọn vật phẩm NFT</label>
+              <select id="token-id" name="token_id" aria-describedby="token-help" disabled>
+                <optgroup label="Vũ khí">
+                  <option value="1">#1 · Súng Lục Mặc Định</option>
+                  <option value="2">#2 · Súng Ổ Xoay Thép</option>
+                  <option value="3">#3 · Súng Trường Thợ Mỏ</option>
+                  <option value="4">#4 · Súng Nòng Đôi Thép</option>
+                  <option value="5">#5 · Súng Tinh Thể Xanh</option>
+                  <option value="6">#6 · Súng Phá Giáp Đỏ</option>
+                  <option value="7">#7 · Súng Xuyên Phá Hoàng Kim</option>
+                  <option value="8">#8 · Súng Bão Tinh Thể</option>
+                  <option value="9">#9 · Súng Hắc Long</option>
+                </optgroup>
+                <optgroup label="Giáp">
+                  <option value="10">#10 · Giáp Da Tập Sự</option>
+                  <option value="11">#11 · Giáp Đồng Gia Cố</option>
+                  <option value="12">#12 · Giáp Thép Nhẹ</option>
+                  <option value="13">#13 · Giáp Vệ Binh Thép</option>
+                  <option value="14">#14 · Giáp Tinh Thể Lam</option>
+                  <option value="15">#15 · Giáp Chiến Tướng</option>
+                  <option value="16">#16 · Giáp Hắc Long</option>
+                  <option value="17">#17 · Giáp Tinh Thể Huyền Bí</option>
+                  <option value="18">#18 · Giáp Hoàng Kim Cổ Đại</option>
+                </optgroup>
+                <optgroup label="Giày">
+                  <option value="19">#19 · Giày Da Thợ Mỏ</option>
+                  <option value="20">#20 · Giày Đồng Gia Cố</option>
+                  <option value="21">#21 · Giày Thép Nhẹ</option>
+                  <option value="22">#22 · Giày Thép Gia Cố</option>
+                  <option value="23">#23 · Giày Tinh Thể Lam</option>
+                  <option value="24">#24 · Giày Chiến Tướng Đỏ</option>
+                  <option value="25">#25 · Giày Hắc Long</option>
+                  <option value="26">#26 · Giày Tinh Thể Huyền Bí</option>
+                  <option value="27">#27 · Giày Phượng Hoàng Hoàng Kim</option>
+                </optgroup>
+              </select>
+              <p id="token-help" class="footnote">Tên và Token ID khớp với danh mục cửa hàng NFT trong game.</p>
+            </div>
             <label for="max-uses">Tổng lượt nhận tối đa</label><input id="max-uses" name="max_uses" type="number" min="1" max="10000" value="1" required>
             <label for="expires">Hết hạn lúc <span class="muted">(không bắt buộc)</span></label><input id="expires" name="expires" type="datetime-local"><p class="footnote">Theo múi giờ của thiết bị bạn đang sử dụng.</p>
             <p id="gift-error" class="error" role="alert"></p><button class="primary" type="submit">Tạo mã & QR</button>

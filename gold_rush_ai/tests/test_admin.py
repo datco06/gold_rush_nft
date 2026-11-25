@@ -44,8 +44,12 @@ def _mutation_headers(csrf: str) -> dict[str, str]:
 
 def test_admin_page_and_authentication(tmp_path: Path):
     client, _ = _client(tmp_path)
-    assert client.get("/admin").status_code == 200
-    assert "Gold Rush · Quản trị" in client.get("/admin").text
+    page = client.get("/admin")
+    assert page.status_code == 200
+    assert "Gold Rush · Quản trị" in page.text
+    assert "Súng Lục Mặc Định" in page.text
+    assert "Giáp Hoàng Kim Cổ Đại" in page.text
+    assert "Giày Phượng Hoàng Hoàng Kim" in page.text
     assert client.get("/api/admin/codes").status_code == 401
 
     wrong = client.post(
@@ -105,6 +109,42 @@ def test_create_list_and_lock_gift_qr(tmp_path: Path):
     )
     assert locked.status_code == 200
     assert client.get("/api/admin/codes").json()["summary"]["locked"] == 1
+
+
+def test_item_token_must_match_the_27_item_catalog(tmp_path: Path):
+    client, gift_db = _client(tmp_path)
+    headers = _mutation_headers(_login(client))
+    item = client.post(
+        "/api/admin/codes",
+        json={
+            "name": "Súng Hắc Long",
+            "reward_type": "item",
+            "amount": 1,
+            "token_id": 9,
+            "max_uses": 1,
+        },
+        headers=headers,
+    )
+    assert item.status_code == 201
+    with lay_csdl(gift_db) as db:
+        stored = db.execute(
+            "SELECT token_id FROM gift_codes WHERE code_hash = ?",
+            (digest(item.json()["code"]),),
+        ).fetchone()
+    assert stored["token_id"] == 9
+
+    invalid = client.post(
+        "/api/admin/codes",
+        json={
+            "name": "Không có trong danh mục",
+            "reward_type": "item",
+            "amount": 1,
+            "token_id": 28,
+            "max_uses": 1,
+        },
+        headers=headers,
+    )
+    assert invalid.status_code == 422
 
 
 def test_login_is_rate_limited(tmp_path: Path):
