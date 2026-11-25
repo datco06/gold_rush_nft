@@ -1,7 +1,49 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val releasePropertiesFile = rootProject.file("key.properties")
+val releaseProperties = Properties().apply {
+    if (releasePropertiesFile.isFile) {
+        releasePropertiesFile.reader(Charsets.UTF_8).use { load(it) }
+    }
+}
+
+val releaseEnvironment = mapOf(
+    "storeFile" to providers.environmentVariable("GOLD_RUSH_RELEASE_STORE_FILE").orNull,
+    "storePassword" to providers.environmentVariable("GOLD_RUSH_RELEASE_STORE_PASSWORD").orNull,
+    "keyAlias" to providers.environmentVariable("GOLD_RUSH_RELEASE_KEY_ALIAS").orNull,
+    "keyPassword" to providers.environmentVariable("GOLD_RUSH_RELEASE_KEY_PASSWORD").orNull,
+)
+val useReleaseEnvironment = releaseEnvironment.values.any { !it.isNullOrEmpty() }
+val releaseSigning = releaseEnvironment.mapValues { (property, value) ->
+    if (useReleaseEnvironment) value else releaseProperties.getProperty(property)
+}
+val missingReleaseProperties = releaseSigning.filterValues { it.isNullOrEmpty() }.keys
+val releaseStoreFile = releaseSigning["storeFile"]?.takeIf { it.isNotEmpty() }
+    ?.let { rootProject.file(it) }
+val useDebugSigning = !useReleaseEnvironment && !releasePropertiesFile.isFile &&
+    providers.environmentVariable("GOLD_RUSH_ALLOW_DEBUG_SIGNING").orNull == "true"
+
+if (!useDebugSigning) {
+    val checkReleaseSigning = tasks.register("checkReleaseSigning") {
+        doLast {
+            check(missingReleaseProperties.isEmpty()) {
+                "Release signing requires android/key.properties or the GOLD_RUSH_RELEASE_* " +
+                    "environment variables. Missing: ${missingReleaseProperties.joinToString()}"
+            }
+            check(releaseStoreFile?.isFile == true) {
+                "Release signing keystore was not found. Check the configured storeFile."
+            }
+        }
+    }
+    tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+        dependsOn(checkReleaseSigning)
+    }
 }
 
 android {
@@ -29,11 +71,18 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = releaseStoreFile
+            storePassword = releaseSigning["storePassword"]
+            keyAlias = releaseSigning["keyAlias"]
+            keyPassword = releaseSigning["keyPassword"]
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (useDebugSigning) "debug" else "release")
         }
     }
 }

@@ -22,11 +22,11 @@ jobs:
       - name: Checkout mã nguồn
         uses: actions/checkout@v4
 
-      - name: Cài đặt Java 17
+      - name: Cài đặt Java 21
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Cài đặt Flutter
         uses: subosito/flutter-action@v2
@@ -40,7 +40,21 @@ jobs:
           flutter pub get
 
       - name: Biên dịch Android APK Release
+        shell: bash
+        env:
+          GOLD_RUSH_ALLOW_DEBUG_SIGNING: ${{ github.ref_type != 'tag' }}
+          GOLD_RUSH_RELEASE_KEYSTORE_BASE64: ${{ secrets.GOLD_RUSH_RELEASE_KEYSTORE_BASE64 }}
+          GOLD_RUSH_RELEASE_STORE_PASSWORD: ${{ secrets.GOLD_RUSH_RELEASE_STORE_PASSWORD }}
+          GOLD_RUSH_RELEASE_KEY_ALIAS: ${{ secrets.GOLD_RUSH_RELEASE_KEY_ALIAS }}
+          GOLD_RUSH_RELEASE_KEY_PASSWORD: ${{ secrets.GOLD_RUSH_RELEASE_KEY_PASSWORD }}
         run: |
+          if [[ -n "$GOLD_RUSH_RELEASE_KEYSTORE_BASE64" ]]; then
+            umask 077
+            export GOLD_RUSH_RELEASE_STORE_FILE="$(mktemp "$RUNNER_TEMP/gold-rush-release.XXXXXX.jks")"
+            trap 'rm -f -- "$GOLD_RUSH_RELEASE_STORE_FILE"' EXIT
+            printf '%s' "$GOLD_RUSH_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$GOLD_RUSH_RELEASE_STORE_FILE"
+            unset GOLD_RUSH_RELEASE_KEYSTORE_BASE64
+          fi
           cd gold_rush
           flutter build apk --release --dart-define=GOLD_RUSH_API=https://gold-rush-api.onrender.com
 
