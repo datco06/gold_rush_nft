@@ -35,6 +35,16 @@ Gold Rush là đồ án game Web3 chạy trên Flutter/Flame. Người chơi kh�
 > trực tiếp cho màn hình Xưởng AI được đánh dấu skip có lý do; các test model,
 > schema và API AI độc lập vẫn được giữ lại để kiểm tra contract dữ liệu.
 
+## Hình ảnh giao diện
+
+**Bản đồ thế giới** · Khám phá Làng khởi đầu và chọn màn chơi.
+
+![Bản đồ thế giới Gold Rush với các địa điểm và màn chơi](docs/screenshots/ban-do-the-gioi.png)
+
+| Màn hình đăng nhập | Trung tâm quà tặng |
+|---|---|
+| ![Màn hình chào mừng với nút kết nối MetaMask](docs/screenshots/dang-nhap.png) | ![Trung tâm quà tặng với nút mở camera quét QR](docs/screenshots/trung-tam-qua-tang.png) |
+
 ## Kiến trúc tổng quan
 
 ```text
@@ -85,6 +95,12 @@ Tài liệu chi tiết theo từng phần:
 - **Blockchain:** Solidity, Hardhat, OpenZeppelin, EIP-712, Sepolia.
 - **AI/data:** Python, mô-đun AI nội bộ và dữ liệu gameplay.
 - **Triển khai:** GitHub Actions, Firebase Hosting, Render.
+
+### AI hỗ trợ phát triển
+
+Dự án sử dụng **OpenAI Codex** để hỗ trợ đọc và chỉnh sửa mã nguồn, tìm lỗi,
+viết và chạy kiểm thử, cũng như cập nhật tài liệu. Codex đã hỗ trợ sửa luồng
+kết nối MetaMask trên Android và điều chỉnh giao diện Quà tặng, nút Bắn.
 
 ## Yêu cầu môi trường
 
@@ -294,12 +310,21 @@ MetaMask, dùng lệnh đóng gói thủ công với đầy đủ cấu hình An
 
 Backend Render được cấu hình Auto-Deploy theo branch `main`. Vì vậy thay đổi backend hoặc dữ liệu QR cần push lên `main` để Render nhận commit và tạo deploy mới. Có thể kiểm tra trạng thái tại mục **Deploys** của service `gold-rush-api`.
 
-Để tạo bản APK phát hành bằng tag:
+Để GitHub Actions ký APK bằng keystore release, thêm các mục sau vào
+**Settings → Secrets and variables → Actions → Repository secrets**.
 
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+| Secret | Giá trị |
+|---|---|
+| `GOLD_RUSH_RELEASE_KEYSTORE_BASE64` | Nội dung tệp keystore được mã hóa Base64 |
+| `GOLD_RUSH_RELEASE_STORE_PASSWORD` | Mật khẩu keystore |
+| `GOLD_RUSH_RELEASE_KEY_ALIAS` | Tên khóa trong keystore |
+| `GOLD_RUSH_RELEASE_KEY_PASSWORD` | Mật khẩu của khóa |
+
+Workflow dùng keystore này cho bản APK khi các secret đã có đủ. Lượt chạy
+trên nhánh có thể dùng khóa debug khi chưa có cấu hình ký riêng. Lượt chạy
+từ tag `v*` yêu cầu keystore release để phát hành. Tăng số build trong
+`gold_rush/pubspec.yaml` trước mỗi lần phát hành bằng workflow để tester
+có thể cài cập nhật.
 
 Các secret cần được đặt trong GitHub/Render, không đặt trong workflow hoặc README:
 
@@ -312,6 +337,34 @@ Máy build cần Flutter, Android SDK Platform 37, Build Tools và Platform Tool
 Bản APK test trên Windows được build với Flutter 3.50.1, JDK 21 chạy Gradle,
 NDK 28.2.13676358 và CMake 3.22.1. Mã ứng dụng vẫn nhắm Java 17. Dùng
 `flutter doctor -v` để kiểm tra JDK và SDK Flutter đang dùng.
+
+### Cấu hình keystore release
+
+Tạo keystore một lần bằng `keytool` của JDK. Lệnh PowerShell sau đặt keystore
+ngoài thư mục dự án. Nếu đã có keystore của Gold Rush, dùng lại tệp đó.
+
+```powershell
+$keystore = Join-Path $env:USERPROFILE 'gold-rush-release.jks'
+& "$env:JAVA_HOME\bin\keytool.exe" -genkeypair -v -keystore $keystore `
+  -storetype JKS -alias goldrush-release -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Tạo `gold_rush/android/key.properties` theo mẫu sau. Thay các giá trị mẫu
+bằng thông tin đã nhập lúc tạo khóa. Có thể dùng dấu `/` trong đường dẫn
+Windows. Nếu dùng đường dẫn tương đối, Gradle tính từ `gold_rush/android/`.
+
+```properties
+storeFile=C:/Users/your-user/gold-rush-release.jks
+storePassword=<mat-khau-keystore>
+keyAlias=goldrush-release
+keyPassword=<mat-khau-khoa>
+```
+
+Gradle tự ký khi chạy `flutter build apk --release`. Giữ bản sao keystore
+và mật khẩu ở nơi an toàn. Git bỏ qua `key.properties` và tệp `.jks` trong
+thư mục Android. [Hướng dẫn ký ứng dụng của Flutter](https://docs.flutter.dev/deployment/android#sign-the-app)
+
+### Build và kiểm tra APK
 
 Từ thư mục gốc, lưu cấu hình dưới đây vào
 `build/gold-rush-android-defines.json` và thay `<project-id>` bằng Project ID
@@ -353,10 +406,10 @@ gold_rush/build/app/outputs/flutter-apk/app-release.apk
 Nếu đã biết kiến trúc thiết bị, có thể thêm `--split-per-abi` vào lệnh
 build để tạo APK nhỏ hơn cho từng kiến trúc.
 
-APK kiểm thử đã xuất trên máy build ở `build/GoldRush-1.3.0-build5-Android.apk`
-(`1.3.0+5`, Android 7.0 trở lên). Bản này có các sửa lỗi ví và đồng bộ
-Android trước đợt chỉnh giao diện. Bố cục trang Quà tặng và nút **Bắn** ở
-mã nguồn cần được build lại để có trong APK gửi tiếp theo.
+Trước khi gửi file, dùng `apksigner verify --verbose --print-certs` với APK
+để kiểm tra chữ ký và chứng chỉ release. Bản build 6 đã gửi thử dùng khóa
+debug. Tester đã cài bản đó cần gỡ Gold Rush cũ một lần để chuyển sang bản
+ký riêng. Các bản tiếp theo dùng cùng khóa release và số build tăng dần.
 
 Có thể gửi APK qua Drive hoặc USB. Tester mở APK trên điện thoại và cấp quyền
 cài ứng dụng từ nguồn đã mở tệp khi Android hỏi. Với ADB, chạy từ thư mục gốc.
@@ -365,10 +418,6 @@ cài ứng dụng từ nguồn đã mở tệp khi Android hỏi. Với ADB, ch�
 adb devices
 adb install -r .\gold_rush\build\app\outputs\flutter-apk\app-release.apk
 ```
-
-APK nội bộ dùng khóa debug. Cài đè cần cùng khóa ký và số build phù hợp.
-Khi phát hành qua Google Play, cấu hình upload key riêng trong
-`gold_rush/android/app/build.gradle.kts`.
 
 ## Kiểm tra nhanh bản Android
 
@@ -409,31 +458,3 @@ Trước khi push nên kiểm tra:
 - `git diff --cached --check` không báo lỗi khoảng trắng.
 - Test phù hợp với phần đã sửa đã chạy.
 - Sau push, kiểm tra GitHub Actions, Render Deploys và Firebase Deploy nếu có thay đổi frontend.
-
-## Checklist hoàn thiện đồ án
-
-- [x] Có gameplay 2D và bản đồ nhiều màn.
-- [x] Có đăng nhập ví và tích hợp Web3.
-- [x] Có backend FastAPI và lưu dữ liệu người chơi.
-- [x] Có smart contract cửa hàng/NFT và tài liệu tích hợp.
-- [x] Có luồng huy hiệu SBT và voucher chữ ký.
-- [x] Có faucet Sepolia cho môi trường test.
-- [x] Có mã QR quà tặng và giới hạn lượt nhận.
-- [x] Có test contract, backend và Flutter trong CI.
-- [x] Có workflow deploy web và build APK.
-- [ ] Chốt bản APK cuối, cài thử trên thiết bị thật và lưu ảnh/video minh chứng.
-- [ ] Kiểm tra toàn bộ biến môi trường production/demo trước buổi bảo vệ.
-
-## Giới hạn và lưu ý hiện tại
-
-- Sepolia là testnet; thời gian xác nhận giao dịch phụ thuộc RPC và tốc độ mine.
-- Render Free có thể sleep khi không có traffic, khiến request đầu tiên chậm.
-- Nếu backend dùng SQLite trên filesystem tạm thời, dữ liệu có thể mất khi service restart/redeploy; production nên dùng PostgreSQL hoặc persistent storage.
-- Frontend chỉ tự deploy Firebase khi commit có thay đổi trong phạm vi workflow và secret Firebase đã được cấu hình.
-- Thay đổi chỉ ở backend/QR không kích hoạt workflow build web/APK, nhưng vẫn kích hoạt Render nếu Auto-Deploy của service đang bật.
-
-## Giấy phép
-
-Đây là đồ án phục vụ học tập và kiểm thử trên testnet. Khi tái sử dụng, cần kiểm tra lại bản quyền asset, thư viện và cấu hình blockchain tương ứng.
-
-
