@@ -8,13 +8,21 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 
 import 'metamask_siwe_contract.dart';
 
 const _addressPattern = r'^0x[0-9a-fA-F]{40}$';
 const _signaturePattern = r'^0x[0-9a-fA-F]{130}$';
+const nativeLocalRpcUrl = String.fromEnvironment(
+  'GOLD_RUSH_LOCAL_RPC_URL',
+  defaultValue: 'http://10.0.2.2:8545',
+);
+const nativeSepoliaRpcUrl = String.fromEnvironment(
+  'GOLD_RUSH_SEPOLIA_RPC_URL',
+  defaultValue: 'https://ethereum-sepolia-rpc.publicnode.com',
+);
 
 String _hexMessage(String value) =>
     '0x${utf8.encode(value).map((x) => x.toRadixString(16).padLeft(2, '0')).join()}';
@@ -28,15 +36,19 @@ BigInt _positiveChainId(String value) {
 }
 
 class MetamaskSiweWeb implements MetamaskSiwePort {
-  MetamaskSiweWeb({required BuildContext context, required String projectId})
-    : _projectId = projectId.trim(),
-      _context = context,
-      _appKit = projectId.trim().isEmpty
-          ? null
-          : _createAppKit(context, projectId.trim()) {
+  MetamaskSiweWeb({
+    required BuildContext context,
+    required String projectId,
+    @visibleForTesting ReownAppKitModal? appKit,
+  }) : _projectId = projectId.trim(),
+       _context = context,
+       _appKit = projectId.trim().isEmpty
+           ? null
+           : appKit ?? _createAppKit(context, projectId.trim()) {
     _appKit?.onModalConnect.subscribe(_onModalConnect);
     _appKit?.onModalUpdate.subscribe(_onModalUpdate);
     _appKit?.onModalNetworkChange.subscribe(_onModalNetworkChange);
+    _appKit?.onSessionEventEvent.subscribe(_onSessionEvent);
     _appKit?.onModalDisconnect.subscribe(_onModalDisconnect);
     _appKit?.onModalError.subscribe(_onModalError);
   }
@@ -50,25 +62,18 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   bool _disposed = false;
   String? _lastAddress;
   BigInt? _lastChainId;
+  ({String topic, BigInt chainId})? _walletChain;
 
   static ReownAppKitModal _createAppKit(
     BuildContext context,
     String projectId,
   ) {
-    final localRpc = const String.fromEnvironment(
-      'GOLD_RUSH_LOCAL_RPC_URL',
-      defaultValue: 'http://10.0.2.2:8545',
-    );
-    final sepoliaRpc = const String.fromEnvironment(
-      'GOLD_RUSH_SEPOLIA_RPC_URL',
-      defaultValue: 'https://rpc.sepolia.org',
-    );
-    ReownAppKitModalNetworks.addSupportedNetworks('eip155', [
+    ReownAppKitModalNetworks.addSupportedNetworks('eip155', const [
       ReownAppKitModalNetworkInfo(
         name: 'Hardhat cục bộ',
         chainId: 'eip155:31337',
         currency: 'ETH',
-        rpcUrl: localRpc,
+        rpcUrl: nativeLocalRpcUrl,
         explorerUrl: 'https://hardhat.org',
         isTestNetwork: true,
       ),
@@ -76,7 +81,7 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
         name: 'Sepolia',
         chainId: 'eip155:11155111',
         currency: 'ETH',
-        rpcUrl: sepoliaRpc,
+        rpcUrl: nativeSepoliaRpcUrl,
         explorerUrl: 'https://sepolia.etherscan.io',
         isTestNetwork: true,
       ),
@@ -127,10 +132,12 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     old.onModalConnect.unsubscribe(_onModalConnect);
     old.onModalUpdate.unsubscribe(_onModalUpdate);
     old.onModalNetworkChange.unsubscribe(_onModalNetworkChange);
+    old.onSessionEventEvent.unsubscribe(_onSessionEvent);
     old.onModalDisconnect.unsubscribe(_onModalDisconnect);
     old.onModalError.unsubscribe(_onModalError);
     unawaited(old.dispose());
     _initializing = null;
+    _walletChain = null;
     if (_projectId.isEmpty || _disposed) {
       _appKit = null;
       return;
@@ -139,6 +146,7 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     _appKit?.onModalConnect.subscribe(_onModalConnect);
     _appKit?.onModalUpdate.subscribe(_onModalUpdate);
     _appKit?.onModalNetworkChange.subscribe(_onModalNetworkChange);
+    _appKit?.onSessionEventEvent.subscribe(_onSessionEvent);
     _appKit?.onModalDisconnect.subscribe(_onModalDisconnect);
     _appKit?.onModalError.subscribe(_onModalError);
   }
@@ -166,19 +174,27 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   String? _address() => _modal.session?.getAddress('eip155');
 
   BigInt _chainId() {
-    // The session chain is the wallet's real chain. selectedChain is the
-    // modal's UI selection and can point at a different supported network,
-    // which made the auth flow see a spurious chainChanged after opening the
-    // Reown modal.
-    final chain = _modal.session?.chainId ?? _modal.selectedChain?.chainId;
-    if (chain == null || !chain.contains(':')) {
-      throw const MetamaskSiweException(MetamaskSiweErrorCode.invalidChainId);
+    final modal = _modal;
+    final session = modal.session;
+    final walletChain = _walletChain;
+    if (walletChain != null && walletChain.topic == session?.topic) {
+      return walletChain.chainId;
     }
+    // Reown's session.chainId is the first sorted approved chain. Use the
+    // restored chain selection only if this session allows it.
+    final approved = session?.getApprovedChains(namespace: 'eip155') ?? [];
+    final selected = modal.selectedChain?.chainId;
+    final chain = selected != null && approved.contains(selected)
+        ? selected
+        : approved.firstOrNull;
     try {
-      return _positiveChainId(chain.substring(chain.indexOf(':') + 1));
-    } catch (_) {
-      throw const MetamaskSiweException(MetamaskSiweErrorCode.invalidChainId);
+      if (chain != null && chain.startsWith('eip155:')) {
+        return _positiveChainId(chain.substring('eip155:'.length));
+      }
+    } on FormatException {
+      // Report invalid session data through the wallet adapter contract.
     }
+    throw const MetamaskSiweException(MetamaskSiweErrorCode.invalidChainId);
   }
 
   MetamaskWalletConnection _connection() {
@@ -287,7 +303,13 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   Future<Object?> requestRpc(
     String method, [
     List<Object?> params = const [],
-  ]) async {
+  ]) => _requestRpc(method, params);
+
+  Future<Object?> _requestRpc(
+    String method,
+    List<Object?> params, {
+    BigInt? expectedChainId,
+  }) async {
     await _ensureReady();
     final modal = _modal;
     final session = modal.session;
@@ -295,11 +317,19 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     if (!modal.isConnected || topic == null || topic.isEmpty) {
       throw const MetamaskSiweException(MetamaskSiweErrorCode.notConnected);
     }
+    final chain = _chainId();
+    if ((expectedChainId != null && chain != expectedChainId) ||
+        session
+                ?.getApprovedChains(namespace: 'eip155')
+                ?.contains('eip155:$chain') !=
+            true) {
+      throw const MetamaskSiweException(MetamaskSiweErrorCode.chainChanged);
+    }
     try {
       return await modal
           .request(
             topic: topic,
-            chainId: 'eip155:${_chainId()}',
+            chainId: 'eip155:$chain',
             request: SessionRequestParams(method: method, params: params),
           )
           .timeout(const Duration(minutes: 2));
@@ -317,6 +347,13 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
 
   Future<void> switchChain(int chainId, {String? name, String? rpcUrl}) async {
     await _ensureReady();
+    final modal = _modal;
+    final topic = modal.session?.topic;
+    if (!modal.isConnected || topic == null || topic.isEmpty) {
+      throw const MetamaskSiweException(MetamaskSiweErrorCode.notConnected);
+    }
+    final beforeSwitch = _walletChain;
+    final target = BigInt.from(chainId);
     final info = ReownAppKitModalNetworkInfo(
       name: name ?? 'Mạng $chainId',
       chainId: 'eip155:$chainId',
@@ -328,19 +365,32 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
       isTestNetwork: true,
     );
     try {
-      await _modal.requestSwitchToChain(info);
-    } catch (_) {
-      await _modal.requestAddChain(info);
+      // AppKit already handles adding a missing network on this request.
+      await modal
+          .requestSwitchToChain(info)
+          .timeout(const Duration(minutes: 2));
+    } on TimeoutException {
+      throw const MetamaskSiweException(MetamaskSiweErrorCode.timeout);
+    } catch (error) {
+      throw _mapError(error);
     }
-    // MetaMask confirms the switch asynchronously; the WalletConnect session
-    // may still report the old chain for a moment. Wait for it before callers
-    // re-read chainId and wrongly report "still on the old network".
+    // MetaMask may update the session's approved chains after acknowledging
+    // the switch. Wait until requests can be routed to the target chain.
     final deadline = DateTime.now().add(const Duration(seconds: 60));
     while (DateTime.now().isBefore(deadline)) {
-      try {
-        if (_chainId().toInt() == chainId) return;
-      } catch (_) {
-        // Session/chain may be transiently unavailable while MetaMask returns.
+      final session = modal.session;
+      if (!identical(_appKit, modal) ||
+          (session != null && session.topic != topic)) {
+        throw const MetamaskSiweException(MetamaskSiweErrorCode.disconnected);
+      }
+      final approved = session?.getApprovedChains(namespace: 'eip155') ?? [];
+      if (approved.contains(info.chainId) &&
+          (_chainId() == target ||
+              (_walletChain == beforeSwitch &&
+                  modal.selectedChain?.chainId == info.chainId))) {
+        _walletChain = (topic: topic, chainId: target);
+        _emitChainChange(target);
+        return;
       }
       await Future<void>.delayed(const Duration(milliseconds: 250));
     }
@@ -363,10 +413,10 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     if (expectedChainId != null && actual.chainId != expectedChainId) {
       throw const MetamaskSiweException(MetamaskSiweErrorCode.chainChanged);
     }
-    final result = await requestRpc('personal_sign', [
+    final result = await _requestRpc('personal_sign', [
       _hexMessage(message),
       actual.address,
-    ]);
+    ], expectedChainId: actual.chainId);
     if (result is! String || !RegExp(_signaturePattern).hasMatch(result)) {
       throw const MetamaskSiweException(MetamaskSiweErrorCode.invalidResponse);
     }
@@ -429,16 +479,9 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
       // app resume, pairing ping). Emitting accountsChanged for the same
       // address makes AuthController log out via WALLET_CHANGED.
       if (connection.address == _lastAddress) {
-        if (connection.chainId == _lastChainId) return;
         // Same account, new chain (damBaoMang / MetaMask switch): emit
         // chainChanged only so AuthController refreshes _chainId, not logout.
-        _lastChainId = connection.chainId;
-        _events.add(
-          MetamaskSiweEvent(
-            MetamaskSiweEventType.chainChanged,
-            chainId: connection.chainId,
-          ),
-        );
+        _emitChainChange(connection.chainId);
         return;
       }
       _lastAddress = connection.address;
@@ -469,27 +512,43 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   void _onModalUpdate(ModalConnect? event) => _onModalConnect(event);
 
   void _onModalNetworkChange(ModalNetworkChange? event) {
-    if (event == null || _events.isClosed) return;
-    final chain = event.chainId;
-    if (chain == null || !chain.contains(':')) return;
+    if (event?.chainId == null || _events.isClosed) return;
     try {
-      final parsed = _positiveChainId(chain.substring(chain.indexOf(':') + 1));
-      // Same chain re-broadcast (session refresh) must not fire chainChanged.
-      if (parsed == _lastChainId) return;
-      _lastChainId = parsed;
-      _events.add(
-        MetamaskSiweEvent(MetamaskSiweEventType.chainChanged, chainId: parsed),
-      );
-    } catch (_) {
-      _events.add(
-        MetamaskSiweEvent(
-          MetamaskSiweEventType.invalidProviderData,
-          error: const MetamaskSiweException(
-            MetamaskSiweErrorCode.invalidChainId,
-          ),
-        ),
-      );
+      _emitChainChange(_chainId());
+    } on MetamaskSiweException {
+      // The modal can update its selection before a usable session exists.
     }
+  }
+
+  void _onSessionEvent(SessionEvent? event) {
+    if (event == null ||
+        _events.isClosed ||
+        event.name != 'chainChanged' ||
+        event.topic != _appKit?.session?.topic ||
+        !event.chainId.startsWith('eip155:')) {
+      return;
+    }
+    // The event envelope identifies its routing chain. The payload carries
+    // the chain the wallet just switched to.
+    final data = event.data.toString();
+    final value = data.startsWith('eip155:')
+        ? data.substring('eip155:'.length)
+        : data;
+    try {
+      final chain = _positiveChainId(value);
+      _walletChain = (topic: event.topic, chainId: chain);
+      _emitChainChange(chain);
+    } on FormatException {
+      // Keep the last usable chain when the wallet sends a malformed event.
+    }
+  }
+
+  void _emitChainChange(BigInt chain) {
+    if (_events.isClosed || chain == _lastChainId) return;
+    _lastChainId = chain;
+    _events.add(
+      MetamaskSiweEvent(MetamaskSiweEventType.chainChanged, chainId: chain),
+    );
   }
 
   void _onModalDisconnect(ModalDisconnect? _) {
@@ -499,6 +558,7 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     if (_lastAddress != null && _appKit?.isConnected == true) return;
     _lastAddress = null;
     _lastChainId = null;
+    _walletChain = null;
     _events.add(MetamaskSiweEvent(MetamaskSiweEventType.disconnected));
   }
 
@@ -523,6 +583,7 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
     modal?.onModalConnect.unsubscribe(_onModalConnect);
     modal?.onModalUpdate.unsubscribe(_onModalUpdate);
     modal?.onModalNetworkChange.unsubscribe(_onModalNetworkChange);
+    modal?.onSessionEventEvent.unsubscribe(_onSessionEvent);
     modal?.onModalDisconnect.unsubscribe(_onModalDisconnect);
     modal?.onModalError.unsubscribe(_onModalError);
     unawaited(modal?.dispose());

@@ -5,6 +5,9 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
 
 import '../auth/metamask_siwe_contract.dart';
 import '../auth/metamask_siwe_native.dart';
@@ -74,17 +77,13 @@ class ViAppKit implements Vi {
     String? tenMang,
     String? rpcUrl,
   }) async {
-    final localRpc = const String.fromEnvironment(
-      'GOLD_RUSH_LOCAL_RPC_URL',
-      defaultValue: 'http://10.0.2.2:8545',
-    );
-    final sepoliaRpc = const String.fromEnvironment(
-      'GOLD_RUSH_SEPOLIA_RPC_URL',
-      defaultValue: 'https://rpc.sepolia.org',
-    );
-    final requestedRpc = rpcUrl == null || rpcUrl.contains('127.0.0.1')
-        ? (chainId == 11155111 ? sepoliaRpc : localRpc)
-        : rpcUrl;
+    final requestedRpc = switch (chainId) {
+      11155111 when rpcUrl == null || rpcUrl == 'https://rpc.sepolia.org' =>
+        nativeSepoliaRpcUrl,
+      31337 when rpcUrl == null || rpcUrl.contains('127.0.0.1') =>
+        nativeLocalRpcUrl,
+      _ => rpcUrl,
+    };
     try {
       await wallet.switchChain(
         chainId,
@@ -104,13 +103,69 @@ class ViAppKit implements Vi {
     }
   }
 
+  Future<Object?> _docRpc(
+    String method, [
+    List<Object?> params = const [],
+  ]) async {
+    final chain = await chainId();
+    final url = switch (chain) {
+      11155111 => nativeSepoliaRpcUrl,
+      31337 => nativeLocalRpcUrl,
+      _ => null,
+    };
+    if (url == null) return _rpc(method, params);
+
+    // These calls only read or simulate. WalletConnect is used for signing.
+    try {
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'jsonrpc': '2.0',
+              'id': 1,
+              'method': method,
+              'params': params,
+            }),
+          )
+          .timeout(const Duration(seconds: 12));
+      if (response.statusCode != 200) {
+        throw LoiVi('RPC mạng $chain trả lỗi HTTP ${response.statusCode}.');
+      }
+      final data = jsonDecode(response.body);
+      if (data is! Map || data['id'] != 1) throw const FormatException();
+      final error = data['error'];
+      if (error is Map) {
+        final revert = dichLoiHopDong(
+          duLieu: error['data'],
+          thongDiep: error['message']?.toString(),
+        );
+        if (revert != null) {
+          throw LoiVi(revert, loai: LoaiLoiVi.hopDongTuChoi);
+        }
+        throw LoiVi('RPC mạng $chain không đọc được dữ liệu blockchain.');
+      }
+      if (!data.containsKey('result')) throw const FormatException();
+      if (await chainId() != chain) {
+        throw const LoiVi('Mạng ví đã đổi trong lúc đọc dữ liệu. Hãy thử lại.');
+      }
+      return data['result'];
+    } on TimeoutException {
+      throw LoiVi('RPC mạng $chain phản hồi quá chậm. Hãy thử lại.');
+    } on http.ClientException {
+      throw LoiVi('Không kết nối được RPC mạng $chain. Hãy thử lại.');
+    } on FormatException {
+      throw LoiVi('RPC mạng $chain trả dữ liệu không hợp lệ.');
+    }
+  }
+
   @override
   Future<String> goi({
     required String toi,
     required String duLieu,
     String? tu,
   }) async {
-    final result = await _rpc('eth_call', [
+    final result = await _docRpc('eth_call', [
       <String, Object?>{'to': toi, 'data': duLieu, if (tu != null) 'from': tu},
       'latest',
     ]);
@@ -122,7 +177,7 @@ class ViAppKit implements Vi {
 
   @override
   Future<String> maHopDong(String diaChi) async {
-    final result = await _rpc('eth_getCode', [diaChi, 'latest']);
+    final result = await _docRpc('eth_getCode', [diaChi, 'latest']);
     return result is String ? result : '0x';
   }
 
@@ -132,17 +187,17 @@ class ViAppKit implements Vi {
     required String toi,
     required String duLieu,
   }) async => _hex(
-    await _rpc('eth_estimateGas', [
+    await _docRpc('eth_estimateGas', [
       {'from': tu, 'to': toi, 'data': duLieu},
     ]),
   );
 
   @override
-  Future<BigInt> giaGas() async => _hex(await _rpc('eth_gasPrice'));
+  Future<BigInt> giaGas() async => _hex(await _docRpc('eth_gasPrice'));
 
   @override
   Future<BigInt> soDu(String diaChi) async =>
-      _hex(await _rpc('eth_getBalance', [diaChi, 'latest']));
+      _hex(await _docRpc('eth_getBalance', [diaChi, 'latest']));
 
   @override
   Future<String> guiGiaoDich({
@@ -179,7 +234,7 @@ class ViAppKit implements Vi {
 
   @override
   Future<BienLai?> bienLai(String maGiaoDich) async {
-    final result = await _rpc('eth_getTransactionReceipt', [maGiaoDich]);
+    final result = await _docRpc('eth_getTransactionReceipt', [maGiaoDich]);
     if (result == null) return null;
     if (result is! Map) throw const LoiVi('Ví trả biên lai không hợp lệ.');
     final status = result['status'];
