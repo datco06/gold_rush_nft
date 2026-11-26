@@ -24,9 +24,11 @@ class _KhoMayMoi implements KhoTienTrinhLocal {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late List<ManChoi> cacMan;
+  VoidCallback? traAnhBanDo;
 
   setUpAll(() async {
     // Đọc asset bundle thật và dữ liệu level thật, không tạo tiến trình mẫu.
+    traAnhBanDo = TaiNguyenWorldMap.giuAnhKhiMoBanDo();
     await TaiNguyenWorldMap.nap();
     await TaiNguyenWorldMap.napAnhGeorge();
     cacMan = ManChoi.docBoManChoi(
@@ -43,6 +45,7 @@ void main() {
       await icons.load();
     }
   });
+  tearDownAll(() => traAnhBanDo?.call());
 
   test(
     'Lâu đài và nhà mới giải mã được, không còn render PNG trang trí cũ',

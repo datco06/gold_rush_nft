@@ -40,6 +40,7 @@ class BanDoTheGioi extends StatefulWidget {
 class BanDoTheGioiState extends State<BanDoTheGioi>
     with TickerProviderStateMixin {
   final TransformationController _boDieuKhien = TransformationController();
+  VoidCallback? _traAnhBanDo;
   late Future<Map<String, ui.Image>> _taiAnh = TaiNguyenWorldMap.nap();
   late Future<ui.Image?> _taiAnhGeorge = TaiNguyenWorldMap.napAnhGeorge(
     widget.tepAnhGeorge,
@@ -97,6 +98,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
   @override
   void initState() {
     super.initState();
+    _traAnhBanDo = TaiNguyenWorldMap.giuAnhKhiMoBanDo();
     _nodeGeorgeHienTai = _xacDinhNodeKhoiDau();
     _viTriGeorge =
         BoCucWorldMap.viTriMan[_nodeGeorgeHienTai] ??
@@ -149,7 +151,7 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
     _boDieuKhienGeorge.dispose();
     _boNhipCanhVat.dispose();
     _boDieuKhien.dispose();
-    // Ảnh được dùng chung giữa các lần mở map; không dispose ở mỗi overlay.
+    _traAnhBanDo?.call();
     super.dispose();
   }
 
@@ -446,7 +448,25 @@ class BanDoTheGioiState extends State<BanDoTheGioi>
                       Positioned(right: 12, top: 12, child: _thanhDieuKhien()),
                       FutureBuilder<Map<String, ui.Image>>(
                         future: _taiAnh,
+                        initialData: TaiNguyenWorldMap.anhDaNap,
                         builder: (context, snapshot) {
+                          if (TaiNguyenWorldMap.giaiPhongKhiDongBanDo &&
+                              snapshot.connectionState ==
+                                  ConnectionState.waiting &&
+                              !snapshot.hasData) {
+                            return const Align(
+                              alignment: Alignment.topCenter,
+                              child: IgnorePointer(
+                                child: ColoredBox(
+                                  color: Color(0xD919251E),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: ChuGame('Đang tải ảnh…'),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
                           if (!snapshot.hasError) {
                             return const SizedBox.shrink();
                           }

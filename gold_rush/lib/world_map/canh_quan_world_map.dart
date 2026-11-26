@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -812,6 +813,7 @@ class TaiNguyenWorldMap {
 
   static Future<Map<String, ui.Image>>? _boNho;
   static Map<String, ui.Image>? _anhDaNap;
+  static int _soManBanDo = 0;
   static final Map<String, Future<ui.Image?>> _boNhoGeorge = {};
   static final Map<String, ui.Image> _anhGeorgeDaNap = {};
 
@@ -820,6 +822,30 @@ class TaiNguyenWorldMap {
       _anhGeorgeDaNap[tep];
 
   static Future<Map<String, ui.Image>> nap() => _boNho ??= _napTatCa();
+
+  static bool get giaiPhongKhiDongBanDo =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  /// Giữ ảnh lúc còn màn bản đồ sử dụng, kể cả lúc đóng và mở lại nhanh.
+  static VoidCallback? giuAnhKhiMoBanDo() {
+    if (!giaiPhongKhiDongBanDo) return null;
+    _soManBanDo++;
+    return () {
+      if (--_soManBanDo != 0) return;
+      final dangNap = _boNho;
+      if (dangNap == null) return;
+      unawaited(
+        dangNap.then<void>((anh) {
+          if (_soManBanDo != 0 || !identical(_boNho, dangNap)) return;
+          _boNho = null;
+          _anhDaNap = null;
+          for (final hinh in anh.values) {
+            hinh.dispose();
+          }
+        }, onError: (Object _, StackTrace _) {}),
+      );
+    };
+  }
 
   static Future<ui.Image?> napAnhGeorge([String tep = 'george.png']) {
     return _boNhoGeorge[tep] ??= _napMotAnhGeorge(tep);
@@ -845,22 +871,33 @@ class TaiNguyenWorldMap {
 
   static Future<Map<String, ui.Image>> _napTatCa() async {
     final daNap = <String, ui.Image>{};
+    final kichThuocDot = giaiPhongKhiDongBanDo ? 4 : tenAnh.length;
+    final dangNapChoManBanDo = giaiPhongKhiDongBanDo && _soManBanDo != 0;
     try {
-      final cacAnh = await Future.wait(
-        tenAnh.map((ten) async {
-          final data = await rootBundle.load('$thuMuc$ten');
-          final codec = await ui.instantiateImageCodec(
-            data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-            targetWidth: ten.startsWith('nha_') ? 256 : null,
-          );
-          try {
-            return MapEntry(ten, (await codec.getNextFrame()).image);
-          } finally {
-            codec.dispose();
+      for (var i = 0; i < tenAnh.length; i += kichThuocDot) {
+        final cuoiDot = math.min(i + kichThuocDot, tenAnh.length);
+        await Future.wait(
+          tenAnh.getRange(i, cuoiDot).map((ten) async {
+            final data = await rootBundle.load('$thuMuc$ten');
+            final codec = await ui.instantiateImageCodec(
+              data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+              targetWidth: ten.startsWith('nha_') ? 256 : null,
+            );
+            try {
+              daNap[ten] = (await codec.getNextFrame()).image;
+            } finally {
+              codec.dispose();
+            }
+          }),
+        );
+        if (dangNapChoManBanDo && _soManBanDo == 0) {
+          for (final anh in daNap.values) {
+            anh.dispose();
           }
-        }),
-      );
-      daNap.addEntries(cacAnh);
+          _boNho = null;
+          return const {};
+        }
+      }
       return _anhDaNap = Map.unmodifiable(daNap);
     } catch (_) {
       for (final anh in daNap.values) {

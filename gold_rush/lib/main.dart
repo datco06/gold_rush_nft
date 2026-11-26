@@ -308,9 +308,9 @@ class _ManHinhGameState extends State<ManHinhGame> {
     super.initState();
     _wallet = platform.createGameWallet(widget.wallet);
     _game = GoldRushGame(vi: _wallet.vi, auth: widget.auth);
-    // Khởi động nạp ảnh World Map ngay khi game tạo, để lúc mở bản đồ
-    // phần nền thường đã nằm trong bộ nhớ dùng chung.
-    unawaited(TaiNguyenWorldMap.nap().then<void>((_) {}, onError: (_, _) {}));
+    if (!TaiNguyenWorldMap.giaiPhongKhiDongBanDo) {
+      unawaited(TaiNguyenWorldMap.nap().then<void>((_) {}, onError: (_, _) {}));
+    }
     _gameFocusNode = FocusNode(debugLabel: 'gold-rush-game');
     widget.auth.addListener(_lockImmediately);
   }
