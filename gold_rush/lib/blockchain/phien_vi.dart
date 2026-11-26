@@ -105,6 +105,7 @@ class PhienVi extends ChangeNotifier {
   CuaHangChuoi? cuaHang;
   StreamSubscription<SuKienVi>? _ngheVi;
   bool _daDong = false;
+  bool get daDong => _daDong;
 
   BigInt vang = BigInt.zero;
   VeVaoMan ve = VeVaoMan.khong;
@@ -207,6 +208,7 @@ class PhienVi extends ChangeNotifier {
     Future<T> Function() viec, {
     String? xong,
   }) async {
+    if (_daDong) return null;
     if (dangXuLy) {
       _bao('Đang xử lý việc trước — đợi một chút.');
       return null;
@@ -221,7 +223,7 @@ class PhienVi extends ChangeNotifier {
     } on LoiVi catch (e) {
       dangXuLy = false;
       _bao(e.thongBao, loi: !e.nguoiDungTuChoi);
-      if (e.loai == LoaiLoiVi.doiTaiKhoan) _ngatKetNoi();
+      if (!_daDong && e.loai == LoaiLoiVi.doiTaiKhoan) _ngatKetNoi();
       return null;
     } catch (e) {
       dangXuLy = false;
@@ -393,7 +395,9 @@ class PhienVi extends ChangeNotifier {
   }
 
   /// Yêu cầu các màn hình đang nghe vẽ lại (ví dụ sau khi đổi nhân vật đang dùng).
-  void veLai() => notifyListeners();
+  void veLai() {
+    if (!_daDong) notifyListeners();
+  }
 
   void _ngatKetNoi() {
     diaChi = null;
@@ -461,6 +465,7 @@ class PhienVi extends ChangeNotifier {
   // ------------------------------------------------------------------
   /// Game gọi khi nhật ký ván đã lên máy chủ. Trả về số vàng của phiếu (null = chưa có phiếu).
   Future<BigInt?> xinPhieuChoVan(String maVan) async {
+    if (_daDong) return null;
     final dc = diaChi;
     if (dc == null) {
       if (!_vanChuaXinPhieu.contains(maVan)) _vanChuaXinPhieu.add(maVan);
@@ -468,14 +473,17 @@ class PhienVi extends ChangeNotifier {
         'Chưa kết nối ví xác thực; không thể xin phiếu blockchain cho ván này.',
         loi: true,
       );
-      notifyListeners();
       return null;
     }
     try {
       final p = await mayChu.xinPhieu(maVan: maVan, vi: dc);
-      if (cuaHang != null) {
+      if (_daDong || diaChi != dc) return null;
+      final ch = cuaHang;
+      if (ch != null) {
         // Phiếu MỚI đứng trước: bộ lọc giữ bản đầu tiên của mỗi mã ván → giữ bản hạn mới nhất.
-        phieuCho = await cuaHang!.locPhieuDungDuoc(dc, [p, ...phieuCho], ve);
+        final phieuMoi = await ch.locPhieuDungDuoc(dc, [p, ...phieuCho], ve);
+        if (_daDong || diaChi != dc || !identical(cuaHang, ch)) return null;
+        phieuCho = phieuMoi;
       }
       notifyListeners();
       return p.phieu.soVang;
@@ -593,8 +601,39 @@ class PhienVi extends ChangeNotifier {
 
   Future<bool> nhanTatCa() => _lamViec('Chuẩn bị nhận vàng…', () async {
     await _taiLaiNoi(); // phiếu mới ký lại, hạn mới
-    await cuaHang!.thucHien(diaChi: diaChi!, phieu: phieuCho, baoTienDo: _bao);
-    await _taiLaiNoi();
+    final ch = cuaHang!;
+    final dc = diaChi!;
+    void kiemTraPhien() {
+      if (_daDong || !identical(cuaHang, ch) || diaChi != dc) {
+        throw const LoiVi(
+          'Phiên ví đã kết thúc. Hãy kiểm tra giao dịch trong MetaMask.',
+        );
+      }
+    }
+
+    kiemTraPhien();
+    await ch.thucHien(diaChi: dc, phieu: phieuCho, baoTienDo: _bao);
+    kiemTraPhien();
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      await _taiLaiNoi();
+      return;
+    }
+
+    // Sau khi MetaMask trả về, đọc trạng thái nhận thưởng trên mạng của
+    // giao dịch. Để lần mở Cửa hàng tiếp theo tải lại giá và danh mục.
+    if (await vi.chainId() != ch.bo.chainId) {
+      throw const LoiVi(
+        'Đã gửi giao dịch. Hãy trở về đúng mạng để đồng bộ vàng.',
+      );
+    }
+    final soVang = await ch.soVang(dc);
+    final veMoi = await ch.veCua(dc);
+    final phieuCon = await ch.locPhieuDungDuoc(dc, phieuCho, veMoi);
+    kiemTraPhien();
+    vang = soVang;
+    ve = veMoi;
+    phieuCho = phieuCon;
+    await _luuVang();
   }, xong: 'Đã nhận vàng.');
 
   Future<bool> mua(NhanVatBan nv) =>

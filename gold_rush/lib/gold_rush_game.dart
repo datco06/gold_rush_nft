@@ -1868,6 +1868,7 @@ class GoldRushGame extends FlameGame
     final daGui = GuiNhatKy.daCauHinh
         ? await GuiNhatKy.gui(nk, csrfToken: auth?.csrfToken)
         : false;
+    if (pv?.daDong == true) return;
 
     if (daGui && kq.thang && auth != null && maVan.isNotEmpty) {
       final mayChuHuyHieu = MayChuHuyHieu(layCsrfToken: () => auth?.csrfToken);
@@ -1876,11 +1877,13 @@ class GoldRushGame extends FlameGame
           maVan: maVan,
           csrfToken: auth?.csrfToken,
         );
+        if (pv?.daDong == true) return;
         if (pv != null &&
             !pv.daKetNoi &&
             auth?.canEnterGame == true &&
             auth?.walletAddress != null) {
           await pv.ketNoiDaXacThuc(auth!.walletAddress!);
+          if (pv.daDong) return;
         }
         List<Map<String, dynamic>> danhSach(Object? raw) => raw is List
             ? raw.whereType<Map<String, dynamic>>().toList()
@@ -1907,7 +1910,9 @@ class GoldRushGame extends FlameGame
                   !huyHieuSBTDaSoHuu.value.contains(item['badge_id']),
             )
             .toList();
-        if (moi.isNotEmpty && identical(ketQuaVan.value, kq)) {
+        if (moi.isNotEmpty &&
+            identical(ketQuaVan.value, kq) &&
+            overlays.isActive(LopPhu.ketThuc)) {
           final badgeId = moi.first['badge_id'];
           var sbtDaSoHuu = false;
           if (badgeId is int) {
@@ -1935,21 +1940,29 @@ class GoldRushGame extends FlameGame
                   ),
                 );
                 sbtDaSoHuu = true;
-                huyHieuSBTDaSoHuu.value = {...huyHieuSBTDaSoHuu.value, badgeId};
               } catch (_) {
                 // Không chặn phần thưởng ván nếu người chơi hủy hoặc SBT chưa cấu hình.
               }
             }
-            huyHieuDaNhan.value = {...huyHieuDaNhan.value, badgeId};
+            if (pv?.daDong == true) return;
+            if (identical(ketQuaVan.value, kq)) {
+              huyHieuDaNhan.value = {...huyHieuDaNhan.value, badgeId};
+              if (sbtDaSoHuu) {
+                huyHieuSBTDaSoHuu.value = {...huyHieuSBTDaSoHuu.value, badgeId};
+              }
+            }
           }
           final badgeHienThi = <String, dynamic>{
             ...moi.first,
             'sbt_da_so_huu': sbtDaSoHuu,
           };
-          kq = kq.voiHuyHieu(badgeHienThi);
-          ketQuaVan.value = kq;
-          overlays.remove(LopPhu.ketThuc);
-          overlays.add(LopPhu.huyHieu);
+          if (identical(ketQuaVan.value, kq) &&
+              overlays.isActive(LopPhu.ketThuc)) {
+            kq = kq.voiHuyHieu(badgeHienThi);
+            ketQuaVan.value = kq;
+            overlays.remove(LopPhu.ketThuc);
+            overlays.add(LopPhu.huyHieu);
+          }
         }
       } finally {
         mayChuHuyHieu.dong();
@@ -1957,7 +1970,7 @@ class GoldRushGame extends FlameGame
     }
 
     void datTrangThai(String p) {
-      if (!identical(ketQuaVan.value, kq)) return;
+      if (pv?.daDong == true || !identical(ketQuaVan.value, kq)) return;
       kq = kq.voiPhieu(p);
       ketQuaVan.value = kq;
     }
@@ -1996,8 +2009,13 @@ class GoldRushGame extends FlameGame
     // sau khi đọc lại số dư on-chain thành công. Nếu thiếu ETH/từ chối giao
     // dịch, phiếu vẫn chờ nhận và tuyệt đối không cộng vàng local.
     var daGhiOnChain = false;
-    if (soVang != null && pv != null && pv.daKetNoi) {
+    if (pv?.daDong == true) return;
+    if (soVang != null &&
+        pv != null &&
+        pv.daKetNoi &&
+        identical(ketQuaVan.value, kq)) {
       daGhiOnChain = await pv.nhanTatCa();
+      if (pv.daDong) return;
     }
 
     if (daGhiOnChain) {
