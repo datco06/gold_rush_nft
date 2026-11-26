@@ -369,8 +369,10 @@ class _ManHinhGameState extends State<ManHinhGame> {
                 _LopPhuFadeIn(child: ManHinhMenu(game: game)),
             LopPhu.caiDat: (_, game) => ManHinhCaiDat(game: game),
             LopPhu.tamDung: (_, game) => ManHinhTamDung(game: game),
-            LopPhu.ketThuc: (_, game) => ManHinhKetThuc(game: game),
-            LopPhu.huyHieu: (_, game) => ManHinhHuyHieu(game: game),
+            LopPhu.ketThuc: (_, game) =>
+                NenKetQua(game: game, child: ManHinhKetThuc(game: game)),
+            LopPhu.huyHieu: (_, game) =>
+                NenKetQua(game: game, child: ManHinhHuyHieu(game: game)),
             LopPhu.cuaHang: (_, game) =>
                 _LopPhuFadeIn(child: ManHinhCuaHang(game: game)),
             LopPhu.rungRuong: (_, game) =>

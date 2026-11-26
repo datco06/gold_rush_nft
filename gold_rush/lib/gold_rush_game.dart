@@ -6,6 +6,8 @@ import 'dart:typed_data';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -74,6 +76,7 @@ class KetQuaVan {
   final String maVan;
   final bool thang;
   final int xu;
+  final int diem;
 
   /// Thống kê chiến đấu chuẩn hóa cho Progress/Backend (`stage_id`, `won`, `boss_defeated`, v.v.).
   final Map<String, Object> thongKe;
@@ -86,6 +89,7 @@ class KetQuaVan {
     required this.man,
     required this.thang,
     required this.xu,
+    this.diem = 0,
     this.maVan = '',
     this.thongKe = const {},
     this.phieu,
@@ -101,6 +105,7 @@ class KetQuaVan {
     maVan: maVan,
     thang: thang,
     xu: xu,
+    diem: diem,
     thongKe: thongKe,
     phieu: p,
     huyHieuMoi: huyHieuMoi,
@@ -111,6 +116,7 @@ class KetQuaVan {
     maVan: maVan,
     thang: thang,
     xu: xu,
+    diem: diem,
     thongKe: thongKe,
     phieu: phieu,
     huyHieuMoi: badge,
@@ -192,7 +198,11 @@ class GoldRushGame extends FlameGame
     });
   }
 
-  late BanDo banDo;
+  BanDo? _banDo;
+  BanDo get banDo => _banDo!;
+
+  bool get dungNenKetQuaNhe =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   List<ManChoi> danhSachMan = const [ManChoi.macDinh];
   ManChoi manHienTai = ManChoi.macDinh;
@@ -373,7 +383,7 @@ class GoldRushGame extends FlameGame
     }, chu);
   }
 
-  late TimDuong timDuong;
+  TimDuong? _timDuong;
 
   final DieuChinhDoKho doKho = DieuChinhDoKho();
   final NhatKyChoi nhatKy = NhatKyChoi();
@@ -1052,10 +1062,10 @@ class GoldRushGame extends FlameGame
     await _napDanhSachMan();
     await tienTrinhWorldMap.nap(danhSachMan);
 
-    banDo = await _layBanDo(manHienTai.tep);
+    _banDo = await _layBanDo(manHienTai.tep);
     theGioi.add(banDo.thanhPhan);
 
-    timDuong = _dungTimDuong();
+    _timDuong = _dungTimDuong();
 
     await _napMoHinhDoKho();
     unawaited(napHuyHieu());
@@ -1191,9 +1201,9 @@ class GoldRushGame extends FlameGame
       this.danhSachMan = danhSachMan;
       manHienTai = danhSachMan.first;
     }
-    banDo = banDoDau;
+    _banDo = banDoDau;
     theGioi.add(banDo.thanhPhan);
-    timDuong = _dungTimDuong();
+    _timDuong = _dungTimDuong();
     final ids = (danhSachMan != null && danhSachMan.isNotEmpty)
         ? danhSachMan.map((m) => m.id).toList()
         : [1, 2, 3, 4, 5, 6];
@@ -1230,8 +1240,14 @@ class GoldRushGame extends FlameGame
     }
   }
 
-  Future<BanDo> _layBanDo(String tep) async =>
-      _boNhoBanDo[tep] ??= await BanDo.nap(tep);
+  Future<BanDo> _layBanDo(String tep) async {
+    final ketQua = _boNhoBanDo[tep] ??= await BanDo.nap(tep);
+    if (dungNenKetQuaNhe && _boNhoBanDo.length > 2) {
+      final tepHienTai = _banDo?.tep;
+      _boNhoBanDo.removeWhere((ten, _) => ten != tepHienTai && ten != tep);
+    }
+    return ketQua;
+  }
 
   /// Kiểm tra bản đồ trước khi đặt cọc.
   Future<bool> napTruocBanDo(ManChoi m) async {
@@ -1245,15 +1261,16 @@ class GoldRushGame extends FlameGame
   }
 
   Future<void> _doiBanDo(ManChoi m) async {
-    if (banDo.tep == m.tep) return;
+    if (_banDo?.tep == m.tep) return;
 
     final moi = await _layBanDo(m.tep);
+    if (_banDo?.tep == m.tep) return;
 
-    banDo.thanhPhan.removeFromParent();
-    banDo = moi;
+    _banDo?.thanhPhan.removeFromParent();
+    _banDo = moi;
 
     theGioi.add(banDo.thanhPhan);
-    timDuong = _dungTimDuong();
+    _timDuong = _dungTimDuong();
   }
 
   Future<void> _napMoHinhDoKho() async {
@@ -1622,7 +1639,7 @@ class GoldRushGame extends FlameGame
     Vector2? viTri,
   }) {
     final viTriSinh = viTri ?? _viTriCongSinh();
-    final tim = timDuong;
+    final tim = _timDuong!;
     final component = switch (loai) {
       'skeleton' => KeDich.skeleton(
         banDo: banDo,
@@ -1728,14 +1745,39 @@ class GoldRushGame extends FlameGame
   }
 
   void _ketThucVan() {
-    _guiNhatKy(trangThai == TrangThaiChoi.thang ? 'thang' : 'thua');
+    _guiNhatKy(
+      trangThai == TrangThaiChoi.thang ? 'thang' : 'thua',
+      giaiPhongCanh: dungNenKetQuaNhe,
+    );
 
     diemCaoNhat = max(diemCaoNhat, george?.diem ?? 0);
 
     _datDieuKhien(false);
     AmThanh.dungNhacNen();
+    if (dungNenKetQuaNhe) overlays.remove(LopPhu.nutBan);
     overlays.add(LopPhu.ketThuc);
     pauseEngine();
+  }
+
+  void _giaiPhongCanhVan() {
+    // Các component có thể vẫn nằm trong hàng đợi thêm/xóa khi ván vừa kết thúc.
+    processLifecycleEvents();
+    camera.stop();
+    final thanhPhan = {
+      ...theGioi.children,
+      ..._thanhPhanVan,
+      if (_banDo case final banDo?) banDo.thanhPhan,
+    };
+    for (final c in thanhPhan) {
+      if (c.parent == theGioi) c.removeFromParent();
+    }
+    processLifecycleEvents();
+    _thanhPhanVan.clear();
+    george = null;
+    _boss = null;
+    _timDuong = null;
+    _banDo = null;
+    _boNhoBanDo.clear();
   }
 
   // ------------------------------------------------------------------
@@ -1783,7 +1825,7 @@ class GoldRushGame extends FlameGame
     }
   }
 
-  void _guiNhatKy(String ketQua) {
+  void _guiNhatKy(String ketQua, {bool giaiPhongCanh = false}) {
     if (!_vanDangDienRa) return;
 
     _vanDangDienRa = false;
@@ -1836,6 +1878,7 @@ class GoldRushGame extends FlameGame
       maVan: maVan,
       thang: thang,
       xu: nhatKy.soXu,
+      diem: g?.diem ?? 0,
       thongKe: thongKe,
     );
     // Màn 1 không đặt cọc nhưng vẫn là ván chính thức: chỉ ván thắng hợp lệ
@@ -1848,10 +1891,28 @@ class GoldRushGame extends FlameGame
     }
     ketQuaVan.value = kq;
 
+    // Chờ thoát lượt update/va chạm hiện tại trước khi gỡ cây component.
+    final donCanh = giaiPhongCanh
+        ? Future<void>.microtask(_giaiPhongCanhVan)
+        : null;
     if (thang || guiNhatKy) {
       if (!_daGuiVaXinPhieu) {
         _daGuiVaXinPhieu = true;
-        final dangNhan = _guiVaXinPhieu(nk, maVan, kq, coPhieu);
+        Future<void> xuLyThuong() => _guiVaXinPhieu(nk, maVan, kq, coPhieu);
+        final xuLy = donCanh == null
+            ? xuLyThuong()
+            : donCanh.then((_) => xuLyThuong());
+        final dangNhan = xuLy.catchError(
+          (Object loi, StackTrace stack) {
+            debugPrint('Lỗi xử lý thưởng ván $maVan: $loi');
+            final ketQua = ketQuaVan.value;
+            if (phienVi?.daDong != true && ketQua?.maVan == maVan) {
+              ketQuaVan.value = ketQua!.voiPhieu(
+                'Chưa đồng bộ được phần thưởng. Hãy kiểm tra giao dịch trong MetaMask.',
+              );
+            }
+          },
+        );
         _dangNhanThuong = dangNhan;
         unawaited(dangNhan);
       }
@@ -2174,6 +2235,16 @@ class GoldRushGame extends FlameGame
       return;
     }
 
+    if (_banDo == null) {
+      try {
+        await _doiBanDo(manHienTai);
+      } catch (e) {
+        debugPrint('Không nạp lại được bản đồ ${manHienTai.tep}: $e');
+        phienVi?.baoLoi('Không nạp được bản đồ. Hãy thử lại.');
+        return;
+      }
+    }
+
     // Nút "Chơi lại" từ màn thắng đi thẳng vào đây, không qua màn chọn màn.
     // Đăng ký ticket trước khi dựng ván để một chiến thắng mới luôn đủ điều
     // kiện xin phiếu vàng như luồng "Chơi" ở màn chọn màn.
@@ -2269,7 +2340,7 @@ class GoldRushGame extends FlameGame
     _datDieuKhien(false);
 
     AmThanh.dungNhacNen();
-    _dungVan();
+    if (_banDo != null) _dungVan();
     pauseEngine();
   }
 

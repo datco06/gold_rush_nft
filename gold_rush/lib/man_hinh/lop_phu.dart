@@ -10,6 +10,28 @@ import '../man_choi.dart';
 import '../ngon_ngu/ngon_ngu.dart';
 import 'main_lobby.dart';
 
+/// Nền Android vẽ trực tiếp, dùng khi cảnh chơi đã được giải phóng.
+class NenKetQua extends StatelessWidget {
+  const NenKetQua({super.key, required this.game, required this.child});
+
+  final GoldRushGame game;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!game.dungNenKetQuaNhe) return child;
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: RadialGradient(
+          radius: 1.05,
+          colors: [Color(0xFF263F59), Color(0xFF0B1728)],
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
 /// Khung dùng chung cho Menu, Cài đặt, Tạm dừng và Kết thúc.
 class _Khung extends StatelessWidget {
   final String tieuDe;
@@ -363,7 +385,7 @@ class ManHinhKetThuc extends StatelessWidget {
 
   Widget _xay(KetQuaVan? kq) {
     final thang = game.trangThai == TrangThaiChoi.thang;
-    final diem = game.george?.diem ?? 0;
+    final diem = game.george?.diem ?? kq?.diem ?? 0;
     final m = game.manHienTai;
 
     final hetGio = !thang && game.giayConLai != null && game.giayConLai! <= 0;

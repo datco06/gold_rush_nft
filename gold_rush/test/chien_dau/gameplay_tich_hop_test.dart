@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_rush/cau_hinh.dart';
 import 'package:gold_rush/chien_dau/ki_nang.dart';
@@ -54,7 +55,8 @@ Future<GoldRushGame> _dungGameThu({
   final game = GoldRushGame(batBoss: batBoss);
   game.taiNguyen.napTuAnhGia(anh);
   final bd = banDoDau ?? _taoBanDoThu();
-  final manChoTest = danhSachMan ??
+  final manChoTest =
+      danhSachMan ??
       (batBoss
           ? [
               const ManChoi(
@@ -83,6 +85,46 @@ Future<GoldRushGame> _dungGameThu({
 }
 
 void main() {
+  test(
+    'Android giải phóng cảnh sau ván, giữ điểm và nạp lại khi chơi tiếp',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+      final game = await _dungGameThu();
+      final banDoCu = game.banDo;
+      for (final xu in game.theGioi.children.whereType<DongXu>().toList()) {
+        game.george!.onCollisionStart({}, xu);
+      }
+      final diem = game.george!.diem;
+      expect(diem, greaterThan(0));
+      expect(game.ketQuaVan.value?.thang, isTrue);
+      await Future<void>.value();
+
+      expect(game.theGioi.children, isEmpty);
+      expect(game.george, isNull);
+      expect(game.ketQuaVan.value?.diem, diem);
+      expect(game.diemCaoNhat, diem);
+      expect(game.overlays.isActive(LopPhu.ketThuc), isTrue);
+      expect(game.overlays.isActive(LopPhu.nutBan), isFalse);
+
+      await game.batDauVanMoi(maVan: 'van-android-choi-lai');
+      expect(game.trangThai, TrangThaiChoi.dangChoi);
+      expect(game.ketQuaVan.value, isNull);
+      expect(game.banDo, isNot(same(banDoCu)));
+      expect(game.banDo.tep, banDoCu.tep);
+      expect(game.george, isNotNull);
+
+      game.george!.nhanSatThuong(CauHinh.mauToiDa);
+      await Future<void>.value();
+      expect(game.ketQuaVan.value?.thang, isFalse);
+      expect(game.theGioi.children, isEmpty);
+      game.veMenu();
+      expect(game.overlays.isActive(LopPhu.menu), isTrue);
+      expect(game.theGioi.children, isEmpty);
+    },
+  );
+
   test('4. George chết thì thua và dừng ván', () async {
     final game = await _dungGameThu();
     expect(game.trangThai, TrangThaiChoi.dangChoi);
