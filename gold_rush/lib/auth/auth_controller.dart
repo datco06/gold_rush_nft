@@ -106,8 +106,11 @@ class AuthController extends ChangeNotifier {
     required this._api,
     DateTime Function()? clock,
     AuthTimerFactory? timerFactory,
+    Future<void> Function()? disconnectWalletOnLogout,
+    this.passiveServerSessionCheck = false,
     this.disposeDependencies = false,
   }) : _clock = clock ?? DateTime.now,
+       _disconnectWalletOnLogout = disconnectWalletOnLogout,
        _timerFactory = timerFactory ?? Timer.new {
     _subscription = _wallet.events.listen(
       _walletChanged,
@@ -125,19 +128,26 @@ class AuthController extends ChangeNotifier {
     required AuthApiClient api,
     DateTime Function()? clock,
     AuthTimerFactory? timerFactory,
+    bool passiveServerSessionCheck = false,
     bool disposeDependencies = false,
   }) : this(
          wallet: MetamaskAuthWallet(wallet),
          api: api,
          clock: clock,
          timerFactory: timerFactory,
+         disconnectWalletOnLogout:
+             wallet is MetamaskSiweSessionPort ? wallet.disconnect : null,
+         passiveServerSessionCheck: passiveServerSessionCheck,
          disposeDependencies: disposeDependencies,
        );
 
   final AuthWallet _wallet;
   final AuthApiClient _api;
+  final Future<void> Function()? _disconnectWalletOnLogout;
+  bool _disconnectWalletRequested = false;
   final DateTime Function() _clock;
   final AuthTimerFactory _timerFactory;
+  final bool passiveServerSessionCheck;
   final bool disposeDependencies;
   late final StreamSubscription<MetamaskSiweEventType> _subscription;
   Timer? _timer;
@@ -236,7 +246,7 @@ class AuthController extends ChangeNotifier {
     if (_disposed) return Future<void>.value();
     if (_logoutOperation != null) return _logoutOperation!;
     if (_operation != null) return _operation!;
-    if (_logoutPending) return logout();
+    if (_logoutPending) return _requestLogout(null);
     if (_api.mutationPending) {
       _unknownCredential = true;
       return _requestLogout(
@@ -533,6 +543,36 @@ class AuthController extends ChangeNotifier {
     _scheduleCheck(epoch);
   }
 
+  // Periodic Android checks keep the game mounted while validating the
+  // server credential. An unavailable wallet read during handoff is transient.
+  Future<void> _checkServerSession() => _run((epoch) async {
+    final AuthMeResponse me;
+    try {
+      me = await _api.getMe();
+    } on AuthApiException catch (error) {
+      _guard(epoch);
+      switch (error.kind) {
+        case AuthApiErrorKind.network:
+        case AuthApiErrorKind.timeout:
+        case AuthApiErrorKind.rateLimited:
+        case AuthApiErrorKind.server:
+          _scheduleCheck(epoch);
+          return;
+        default:
+          rethrow;
+      }
+    }
+    _guard(epoch);
+    _remember(me.csrfToken);
+    _notExpired(me.expiresAt);
+    if (me.user.id != _user?.id || me.user.walletAddress != _walletAddress) {
+      throw _identityMismatch;
+    }
+    _expiresAt = me.expiresAt;
+    _scheduleCheck(epoch);
+    unawaited(_confirmWalletStillConnected());
+  });
+
   /// An absolute-expiry check plus at most 60 seconds between /me checks.
   /// Timer/clock injection permits deterministic tests without sleeping.
   void _scheduleCheck(int epoch) {
@@ -556,7 +596,9 @@ class AuthController extends ChangeNotifier {
           ),
         );
       } else if (_status == AuthStatus.authenticated) {
-        unawaited(restoreSession());
+        unawaited(
+          passiveServerSessionCheck ? _checkServerSession() : restoreSession(),
+        );
       } else if (_status == AuthStatus.registrationRequired) {
         _scheduleCheck(epoch);
       }
@@ -717,7 +759,10 @@ class AuthController extends ChangeNotifier {
   /// Locks synchronously, then waits for the old operation before revocation.
   /// Multiple calls share the same cleanup. An underlying timed-out mutation
   /// is never retried or bypassed; the player can retry logout once it settles.
-  Future<void> logout() => _requestLogout(null);
+  Future<void> logout() {
+    if (_disconnectWalletOnLogout != null) _disconnectWalletRequested = true;
+    return _requestLogout(null);
+  }
 
   Future<void> _requestLogout(_AuthFailure? reason) {
     if (_disposed) return Future<void>.value();
@@ -777,6 +822,23 @@ class AuthController extends ChangeNotifier {
         _csrfToken = null;
         _unknownCredential = false;
         _serverSessionMayBeActive = false;
+        if (_disconnectWalletRequested) {
+          try {
+            await _disconnectWalletOnLogout!();
+          } catch (_) {
+            if (!_disposed) {
+              _status = AuthStatus.error;
+              _errorCode = 'WALLET_DISCONNECT_FAILED';
+              _errorMessage =
+                  'Đã đăng xuất khỏi Gold Rush nhưng chưa ngắt được kết nối MetaMask. '
+                  'Hãy thử đăng xuất lại.';
+              _notify();
+            }
+            return;
+          }
+          if (_disposed) return;
+          _disconnectWalletRequested = false;
+        }
         _logoutPending = false;
         _status = AuthStatus.unauthenticated;
         if (reason == null) {

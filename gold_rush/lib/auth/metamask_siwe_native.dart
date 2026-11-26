@@ -35,7 +35,7 @@ BigInt _positiveChainId(String value) {
   return id;
 }
 
-class MetamaskSiweWeb implements MetamaskSiwePort {
+class MetamaskSiweWeb implements MetamaskSiweSessionPort {
   MetamaskSiweWeb({
     required BuildContext context,
     required String projectId,
@@ -172,6 +172,35 @@ class MetamaskSiweWeb implements MetamaskSiwePort {
   }
 
   String? _address() => _modal.session?.getAddress('eip155');
+
+  @override
+  Future<void> disconnect() async {
+    if (_disposed || _appKit == null) return;
+    await _ensureReady();
+    final modal = _modal;
+    if (modal.isConnected || modal.session != null) {
+      try {
+        await modal.disconnect().timeout(const Duration(seconds: 10));
+        // WalletConnect clears the modal via the asynchronous session-delete
+        // event. Wait for it before letting connect() reuse a session.
+        for (
+          var i = 0;
+          i < 20 && (modal.isConnected || modal.session != null);
+          i++
+        ) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+      } on TimeoutException {
+        throw const MetamaskSiweException(MetamaskSiweErrorCode.timeout);
+      }
+      if (modal.isConnected || modal.session != null) {
+        throw const MetamaskSiweException(MetamaskSiweErrorCode.disconnected);
+      }
+    }
+    _lastAddress = null;
+    _lastChainId = null;
+    _walletChain = null;
+  }
 
   BigInt _chainId() {
     final modal = _modal;

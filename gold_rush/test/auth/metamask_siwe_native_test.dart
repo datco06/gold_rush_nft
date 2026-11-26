@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gold_rush/auth/auth_api_client.dart';
+import 'package:gold_rush/auth/auth_controller.dart';
 import 'package:gold_rush/auth/metamask_siwe_contract.dart';
 import 'package:gold_rush/auth/metamask_siwe_native.dart';
 import 'package:gold_rush/blockchain/vi_appkit.dart';
@@ -12,12 +15,76 @@ import 'package:reown_appkit/reown_appkit.dart';
 const _mainnet = 'eip155:1';
 const _sepolia = 'eip155:11155111';
 const _address = '0x1111111111111111111111111111111111111111';
+const _otherAddress = '0x2222222222222222222222222222222222222222';
 const _metadata = ConnectionMetadata(
   publicKey: 'test-key',
   metadata: PairingMetadata(name: 'Test', description: ''),
 );
 
 void main() {
+  testWidgets('explicit logout releases the old wallet before reconnecting', (
+    tester,
+  ) async {
+    final calls = <String>[];
+    final disconnectStarted = Completer<void>();
+    final modal = _Modal()
+      ..selectedChain = _network(_sepolia)
+      ..waitForSessionDelete = true
+      ..onDisconnectCalled = () {
+        calls.add('disconnect');
+        disconnectStarted.complete();
+      };
+    final wallet = await _wallet(tester, modal);
+    final now = DateTime.utc(2026, 11, 27);
+    final api = AuthApiClient(
+      client: MockClient((request) async {
+        calls.add(request.url.path);
+        if (request.url.path == '/api/auth/logout') {
+          return http.Response('', 204);
+        }
+        expect(request.url.path, '/api/me');
+        return http.Response(
+          jsonEncode({
+            'user': {
+              'id': '80574202-05bd-4577-8edf-d480b37cf9a2',
+              'wallet_address': _address,
+              'username': 'George',
+              'avatar': 'george',
+              'created_at': now.toIso8601String(),
+            },
+            'chain_id': 11155111,
+            'expires_at': now.add(const Duration(hours: 1)).toIso8601String(),
+            'csrf_token': 'test-session-csrf',
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    final auth = AuthController.web(wallet: wallet, api: api, clock: () => now);
+    addTearDown(auth.dispose);
+
+    await auth.restoreSession();
+    expect(auth.walletAddress, _address);
+    final logout = auth.logout();
+    await Future.any([disconnectStarted.future, logout]);
+    expect(
+      calls,
+      ['/api/me', '/api/auth/logout', 'disconnect'],
+      reason: auth.errorMessage,
+    );
+    expect(auth.status, AuthStatus.loggingOut);
+    modal.session = null;
+    await tester.pump(const Duration(milliseconds: 100));
+    await logout;
+    expect(auth.status, AuthStatus.unauthenticated);
+    expect(await wallet.getAccounts(), isEmpty);
+
+    final connection = await wallet.connect();
+    expect(modal.openRequests, 1);
+    expect(connection.address, _otherAddress);
+  });
+
   testWidgets('reads inventory and contract code without opening MetaMask', (
     tester,
   ) async {
@@ -149,31 +216,34 @@ ReownAppKitModalNetworkInfo _network(String chainId) =>
       explorerUrl: '',
     );
 
+ReownAppKitModalSession _session(String address, String topic) =>
+    ReownAppKitModalSession(
+      sessionData: SessionData(
+        topic: topic,
+        pairingTopic: 'pairing',
+        relay: Relay('irn'),
+        expiry: 2000000000,
+        acknowledged: true,
+        controller: 'test-key',
+        namespaces: {
+          'eip155': Namespace(
+            accounts: ['$_mainnet:$address', '$_sepolia:$address'],
+            methods: ['personal_sign', 'eth_sendTransaction', 'eth_call'],
+            events: ['chainChanged'],
+          ),
+        },
+        self: _metadata,
+        peer: _metadata,
+      ),
+    );
+
 class _Modal implements ReownAppKitModal {
   @override
-  final session = ReownAppKitModalSession(
-    sessionData: SessionData(
-      topic: 'current-session',
-      pairingTopic: 'pairing',
-      relay: Relay('irn'),
-      expiry: 2000000000,
-      acknowledged: true,
-      controller: 'test-key',
-      namespaces: const {
-        'eip155': Namespace(
-          accounts: ['$_mainnet:$_address', '$_sepolia:$_address'],
-          methods: ['personal_sign', 'eth_sendTransaction', 'eth_call'],
-          events: ['chainChanged'],
-        ),
-      },
-      self: _metadata,
-      peer: _metadata,
-    ),
-  );
+  ReownAppKitModalSession? session = _session(_address, 'current-session');
   @override
   ReownAppKitModalNetworkInfo? selectedChain = _network(_mainnet);
   @override
-  bool get isConnected => true;
+  bool get isConnected => session != null;
   @override
   final onModalConnect = Event<ModalConnect>();
   @override
@@ -191,6 +261,9 @@ class _Modal implements ReownAppKitModal {
   void Function()? duringRequest;
   bool rejectSwitch = false;
   int addRequests = 0;
+  int openRequests = 0;
+  bool waitForSessionDelete = false;
+  void Function()? onDisconnectCalled;
 
   void emitChain(Object chain, {String topic = 'current-session'}) {
     onSessionEventEvent.broadcast(
@@ -200,6 +273,19 @@ class _Modal implements ReownAppKitModal {
 
   @override
   Future<void> init() async {}
+
+  @override
+  Future<void> disconnect({bool disconnectAllSessions = true}) async {
+    expect(disconnectAllSessions, isTrue);
+    onDisconnectCalled?.call();
+    if (!waitForSessionDelete) session = null;
+  }
+
+  @override
+  Future<void> openModalView([Widget? startWidget]) async {
+    openRequests++;
+    session = _session(_otherAddress, 'new-session');
+  }
 
   @override
   Future<void> dispose() async {}

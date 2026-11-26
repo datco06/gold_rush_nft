@@ -3,7 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'ngon_ngu/ngon_ngu.dart';
@@ -104,6 +105,8 @@ class _UngDungGoldRushState extends State<UngDungGoldRush> {
     _wallet = wallet;
     _auth = AuthController.web(
       wallet: wallet,
+      passiveServerSessionCheck:
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android,
       api: AuthApiClient(
         baseUrl: const String.fromEnvironment(
           'GOLD_RUSH_API',

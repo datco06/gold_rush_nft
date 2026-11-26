@@ -169,3 +169,8 @@ abstract interface class MetamaskSiwePort {
   /// or promise to close an extension popup. Later active calls reject safely.
   void dispose();
 }
+
+/// A wallet adapter with an app-owned connection that can be revoked on logout.
+abstract interface class MetamaskSiweSessionPort implements MetamaskSiwePort {
+  Future<void> disconnect();
+}
