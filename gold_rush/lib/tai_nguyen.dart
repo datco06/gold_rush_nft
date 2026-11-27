@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flame/flame.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 
 import 'blockchain/nhan_vat.dart';
 import 'cau_hinh.dart';
@@ -23,6 +25,12 @@ class TaiNguyen {
   final Map<String, Map<HuongDi, SpriteAnimation>> georgeTheoTep = {};
   final Map<String, ui.Image> anhNhanVatTheoKhoa = {};
   final Map<String, Map<HuongDi, SpriteAnimation>> trangBiTheoTep = {};
+  final Map<String, ui.Image> _anhTrangBiAndroid = {};
+  final Set<String> _tepTrangBiLoi = {};
+  bool _daDongTrangBi = false;
+
+  bool get napTrangBiKhiCan =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   late final Map<HuongDi, SpriteAnimation> zombie;
   late final Map<HuongDi, SpriteAnimation> skeleton;
   late final Map<HuongDi, SpriteAnimation> quaiThuong;
@@ -60,39 +68,11 @@ class TaiNguyen {
     quaiGiap = _bonHuong(anhQuaiGiap, 0.16, frameSize: 64);
     quaiKhongLo = _bonHuong(anhQuaiKhongLo, 0.2, frameSize: 64);
 
-    // Nạp sprite sheet trang bị theo đúng 4 hướng x 4 frame.
-    const trangBiFiles = [
-      'sung_cap_1_sprite_4x4.png',
-      'sung_cap_2_sprite_4x4.png',
-      'sung_cap_3_sprite_4x4.png',
-      'sung_manh_1_sprite_4x4.png',
-      'sung_manh_2_sprite_4x4.png',
-      'sung_manh_3_sprite_4x4.png',
-      'sung_hiem_xuyen_pha.png',
-      'sung_hiem_bao_tinh_the.png',
-      'sung_hiem_hac_long.png',
-      'giap_thuong_cap_1.png',
-      'giap_thuong_cap_2.png',
-      'giap_thuong_cap_3.png',
-      'giap_manh_cap_1.png',
-      'giap_manh_cap_2.png',
-      'giap_manh_cap_3.png',
-      'giap_hiem_hac_long.png',
-      'giap_hiem_tinh_the.png',
-      'giap_hiem_hoang_kim.png',
-      'giay_thuong_cap_1.png',
-      'giay_thuong_cap_2.png',
-      'giay_thuong_cap_3.png',
-      'giay_manh_cap_1.png',
-      'giay_manh_cap_2.png',
-      'giay_manh_cap_3.png',
-      'giay_hiem_hac_long.png',
-      'giay_hiem_tinh_the.png',
-      'giay_hiem_phuong_hoang.png',
-    ];
-    for (final tep in trangBiFiles) {
-      final anh = await Flame.images.load('trang_bi/$tep');
-      trangBiTheoTep[tep] = _bonHuong(anh, 0.12, frameSize: 64);
+    if (!napTrangBiKhiCan) {
+      for (final tep in _trangBiFiles) {
+        final anh = await Flame.images.load('trang_bi/$tep');
+        trangBiTheoTep[tep] = _bonHuong(anh, 0.12, frameSize: 64);
+      }
     }
 
     dongXu = SpriteAnimation.fromFrameData(
@@ -107,6 +87,97 @@ class TaiNguyen {
 
     joystickNen = Sprite(await Flame.images.load('joystick_nen.png'));
     joystickNum = Sprite(await Flame.images.load('joystick_num.png'));
+  }
+
+  // Các sheet trang bị có 4 hướng × 4 frame, mỗi frame 64 px.
+  static const _trangBiFiles = [
+    'sung_cap_1_sprite_4x4.png',
+    'sung_cap_2_sprite_4x4.png',
+    'sung_cap_3_sprite_4x4.png',
+    'sung_manh_1_sprite_4x4.png',
+    'sung_manh_2_sprite_4x4.png',
+    'sung_manh_3_sprite_4x4.png',
+    'sung_hiem_xuyen_pha.png',
+    'sung_hiem_bao_tinh_the.png',
+    'sung_hiem_hac_long.png',
+    'giap_thuong_cap_1.png',
+    'giap_thuong_cap_2.png',
+    'giap_thuong_cap_3.png',
+    'giap_manh_cap_1.png',
+    'giap_manh_cap_2.png',
+    'giap_manh_cap_3.png',
+    'giap_hiem_hac_long.png',
+    'giap_hiem_tinh_the.png',
+    'giap_hiem_hoang_kim.png',
+    'giay_thuong_cap_1.png',
+    'giay_thuong_cap_2.png',
+    'giay_thuong_cap_3.png',
+    'giay_manh_cap_1.png',
+    'giay_manh_cap_2.png',
+    'giay_manh_cap_3.png',
+    'giay_hiem_hac_long.png',
+    'giay_hiem_tinh_the.png',
+    'giay_hiem_phuong_hoang.png',
+  ];
+
+  bool canNapAnhTrangBi(String tep) =>
+      napTrangBiKhiCan &&
+      !_daDongTrangBi &&
+      _trangBiFiles.contains(tep) &&
+      !trangBiTheoTep.containsKey(tep) &&
+      !_tepTrangBiLoi.contains(tep);
+
+  Future<void> napAnhTrangBi(Set<String> cacTep) async {
+    for (final tep in cacTep.where(canNapAnhTrangBi)) {
+      try {
+        final data = await Flame.bundle.load('assets/images/trang_bi/$tep');
+        if (_daDongTrangBi) return;
+        final codec = await ui.instantiateImageCodec(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        );
+        try {
+          final anh = (await codec.getNextFrame()).image;
+          if (_daDongTrangBi) {
+            anh.dispose();
+            return;
+          }
+          _anhTrangBiAndroid[tep] = anh;
+          trangBiTheoTep[tep] = _bonHuong(anh, 0.12, frameSize: 64);
+        } finally {
+          codec.dispose();
+        }
+      } catch (loi) {
+        _tepTrangBiLoi.add(tep);
+        debugPrint('Không nạp được ảnh trang bị $tep: $loi');
+      }
+    }
+  }
+
+  /// Gọi sau khi George đã bỏ các ảnh không còn được dùng để vẽ.
+  void gioiHanAnhTrangBi(Set<String> dangDung) {
+    if (!napTrangBiKhiCan) return;
+    // Đưa các ảnh vừa dùng về cuối map theo thứ tự gần đây nhất.
+    for (final tep in dangDung) {
+      final anh = _anhTrangBiAndroid.remove(tep);
+      if (anh != null) _anhTrangBiAndroid[tep] = anh;
+    }
+    final anhDu = _anhTrangBiAndroid.keys
+        .where((tep) => !dangDung.contains(tep))
+        .toList();
+    for (final tep in anhDu.take(anhDu.length > 3 ? anhDu.length - 3 : 0)) {
+      trangBiTheoTep.remove(tep);
+      _anhTrangBiAndroid.remove(tep)?.dispose();
+    }
+  }
+
+  void dongAnhTrangBi() {
+    if (!napTrangBiKhiCan) return;
+    _daDongTrangBi = true;
+    trangBiTheoTep.clear();
+    for (final anh in _anhTrangBiAndroid.values) {
+      anh.dispose();
+    }
+    _anhTrangBiAndroid.clear();
   }
 
   /// Nạp sprite-sheet AI 4x4 từ bytes backend. Mỗi ô 16x16, giống sprite

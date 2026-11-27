@@ -607,7 +607,7 @@ class GoldRushGame extends FlameGame
 
       if (coThayDoi) {
         danhSachVatPham.value = danhSachMoi;
-        _apDungTrangBiChoGeorge();
+        await _apDungTrangBiChoGeorge();
       }
       // Inventory must exist before selected IDs can be reapplied. Automatic
       // synchronization never overwrites preferences with a temporarily empty bag.
@@ -767,8 +767,9 @@ class GoldRushGame extends FlameGame
         for (var i = 0; i < ds.length; i++)
           if (i != index) ds[i],
       ];
-      _apDungTrangBiChoGeorge();
+      final dangNapAnh = _apDungTrangBiChoGeorge();
       await kho?.xoaVatPham(itemId);
+      await dangNapAnh;
       return;
     }
 
@@ -812,8 +813,9 @@ class GoldRushGame extends FlameGame
         else
           item,
     ];
-    _apDungTrangBiChoGeorge();
+    final dangNapAnh = _apDungTrangBiChoGeorge();
     await kho?.luuOTrangBi(o.name, itemId);
+    await dangNapAnh;
     // A concurrent startup read may have been discarded because this choice
     // was newer. Reapply the other saved slots after the write has finished.
     await _dangKhoiPhucLuaChon;
@@ -828,8 +830,9 @@ class GoldRushGame extends FlameGame
       for (final item in ds)
         if (item.id == itemId) item.voiTrangBi(null) else item,
     ];
-    _apDungTrangBiChoGeorge();
+    final dangNapAnh = _apDungTrangBiChoGeorge();
     await kho?.xoaVatPham(itemId);
+    await dangNapAnh;
     await _dangKhoiPhucLuaChon;
     await khoiPhucLuaChonKhoDo();
   }
@@ -910,7 +913,7 @@ class GoldRushGame extends FlameGame
     }
     if (daDoi || nhanVatTruoc != nhanVatDangDung) {
       danhSachVatPham.value = restored;
-      _apDungTrangBiChoGeorge();
+      await _apDungTrangBiChoGeorge();
     }
   }
 
@@ -963,6 +966,7 @@ class GoldRushGame extends FlameGame
   void onRemove() {
     _dongHieuUngVan();
     _daDongLuaChon = true;
+    taiNguyen.dongAnhTrangBi();
     for (final listener in _choLuuLichSu) {
       auth?.removeListener(listener);
     }
@@ -974,10 +978,8 @@ class GoldRushGame extends FlameGame
     super.onRemove();
   }
 
-  void _apDungTrangBiChoGeorge() {
-    final g = george;
-    if (g == null) return;
-
+  ({VatPhamHienThi? sung, VatPhamHienThi? giap, VatPhamHienThi? giay})
+  _trangBiHienTai() {
     VatPhamHienThi? tim(OTrangBi o) {
       for (final vp in danhSachVatPham.value) {
         if (vp.oDangTrangBi == o) return vp;
@@ -985,11 +987,66 @@ class GoldRushGame extends FlameGame
       return null;
     }
 
-    final sung = tim(OTrangBi.vuKhiChinh) ?? tim(OTrangBi.vuKhiPhu);
-    final giap = tim(OTrangBi.giap);
-    final giay = tim(OTrangBi.giay);
+    return (
+      sung: tim(OTrangBi.vuKhiChinh) ?? tim(OTrangBi.vuKhiPhu),
+      giap: tim(OTrangBi.giap),
+      giay: tim(OTrangBi.giay),
+    );
+  }
+
+  String? _tepTrangBi(VatPhamHienThi? vp) => vp?.duongDanAnh?.split('/').last;
+
+  Set<String> _cacTepTrangBiHienTai() {
+    final (:sung, :giap, :giay) = _trangBiHienTai();
+    return {
+      for (final vp in [sung, giap, giay])
+        if (_tepTrangBi(vp) case final tep?) tep,
+    };
+  }
+
+  Future<void>? _dangNapAnhTrangBi;
+  Set<String> _tepTrangBiDangVe = const {};
+
+  Future<void>? _apDungTrangBiChoGeorge() {
+    if (_daDongLuaChon) return null;
+    if (_dangNapAnhTrangBi case final dangNap?) return dangNap;
+    if (taiNguyen.napTrangBiKhiCan &&
+        _cacTepTrangBiHienTai().any(taiNguyen.canNapAnhTrangBi)) {
+      final dangNap = _napVaCapNhatAnhTrangBi().whenComplete(() {
+        _dangNapAnhTrangBi = null;
+      });
+      _dangNapAnhTrangBi = dangNap;
+      return dangNap;
+    }
+    _capNhatTrangBiChoGeorge();
+    return null;
+  }
+
+  Future<void> _napVaCapNhatAnhTrangBi() async {
+    while (!_daDongLuaChon) {
+      final luaChon = danhSachVatPham.value;
+      await taiNguyen.napAnhTrangBi(_cacTepTrangBiHienTai());
+      if (_daDongLuaChon) return;
+      if (identical(luaChon, danhSachVatPham.value)) {
+        _capNhatTrangBiChoGeorge();
+        return;
+      }
+      // Người chơi đã chọn món khác trong lúc nạp. Giữ ảnh đang vẽ,
+      // giới hạn cache và nạp tiếp lựa chọn mới nhất.
+      taiNguyen.gioiHanAnhTrangBi(_tepTrangBiDangVe);
+    }
+  }
+
+  void _capNhatTrangBiChoGeorge() {
+    final g = george;
+    if (g == null) {
+      taiNguyen.gioiHanAnhTrangBi(_cacTepTrangBiHienTai());
+      return;
+    }
+
+    final (:sung, :giap, :giay) = _trangBiHienTai();
     Map<HuongDi, SpriteAnimation> hoatAnh(VatPhamHienThi? vp) {
-      final tep = vp?.duongDanAnh?.split('/').last;
+      final tep = _tepTrangBi(vp);
       return tep == null ? const {} : taiNguyen.trangBiTheoTep[tep] ?? const {};
     }
 
@@ -1006,6 +1063,10 @@ class GoldRushGame extends FlameGame
       giap: hoatAnh(giap),
       giay: hoatAnh(giay),
     );
+    if (taiNguyen.napTrangBiKhiCan) {
+      _tepTrangBiDangVe = _cacTepTrangBiHienTai();
+      taiNguyen.gioiHanAnhTrangBi(_tepTrangBiDangVe);
+    }
   }
 
   /// Phiên ví dùng chung, không tạo riêng cho từng màn hình.
@@ -1340,6 +1401,14 @@ class GoldRushGame extends FlameGame
   Boss? get boss => _boss;
 
   void _dungVan({String? maVan}) {
+    if (taiNguyen.napTrangBiKhiCan) {
+      // Bỏ tham chiếu ảnh ngay cả khi Flame còn đang chờ gỡ George cũ.
+      george?.capNhatTrangBiHienThi(
+        vuKhi: const {},
+        giap: const {},
+        giay: const {},
+      );
+    }
     for (final c in _thanhPhanVan) {
       c.removeFromParent();
     }
@@ -1372,33 +1441,12 @@ class GoldRushGame extends FlameGame
       orElse: () => DiemXuatHien('george', banDo.kichThuoc / 2),
     );
 
-    VatPhamHienThi? timTrangBi(OTrangBi o) {
-      for (final vp in danhSachVatPham.value) {
-        if (vp.oDangTrangBi == o) return vp;
-      }
-      return null;
-    }
-
-    String? tenTep(VatPhamHienThi? vp) => vp?.duongDanAnh?.split('/').last;
-    Map<HuongDi, SpriteAnimation> hoatAnhTrangBi(VatPhamHienThi? vp) {
-      final tep = tenTep(vp);
-      return tep == null ? const {} : taiNguyen.trangBiTheoTep[tep] ?? const {};
-    }
-
-    final sung =
-        timTrangBi(OTrangBi.vuKhiChinh) ?? timTrangBi(OTrangBi.vuKhiPhu);
-    final giap = timTrangBi(OTrangBi.giap);
-    final giay = timTrangBi(OTrangBi.giay);
-
     george = George(
       banDo: banDo,
       hoatAnh: taiNguyen.georgeTheoTep[nhanVatDangDung] ?? taiNguyen.george,
       viTri: diemGeorge.viTri.clone(),
       khiChiSoDoi: _khiChiSoDoi,
       khiChet: _khiGeorgeChet,
-      trangBiVuKhi: hoatAnhTrangBi(sung),
-      trangBiGiap: hoatAnhTrangBi(giap),
-      trangBiGiay: hoatAnhTrangBi(giay),
     );
     _apDungTrangBiChoGeorge();
 
@@ -2228,7 +2276,12 @@ class GoldRushGame extends FlameGame
 
     this.batDauThat = maVan == null ? null : (batDauThat ?? DateTime.now());
 
-    batDauVanMoi(maVan: maVan);
+    final dangBatDau = batDauVanMoi(maVan: maVan);
+    if (taiNguyen.napTrangBiKhiCan) {
+      await dangBatDau;
+    } else {
+      unawaited(dangBatDau);
+    }
     return true;
   }
 
@@ -2285,6 +2338,12 @@ class GoldRushGame extends FlameGame
         pv.baoLoi('Không đăng ký được màn chơi với máy chủ: $e');
         return;
       }
+    }
+
+    final dangNapAnh = _apDungTrangBiChoGeorge();
+    if (dangNapAnh != null) {
+      await dangNapAnh;
+      if (_daDongLuaChon) return;
     }
 
     ketQuaVan.value = null;

@@ -13,7 +13,12 @@ void main() {
   setUpAll(() async {
     taiNguyen = TaiNguyen();
     await taiNguyen.nap();
+    await taiNguyen.napAnhTrangBi({
+      'sung_cap_1_sprite_4x4.png',
+      'sung_cap_2_sprite_4x4.png',
+    });
   });
+  tearDownAll(() => taiNguyen.dongAnhTrangBi());
 
   group('TrangBiGeorge - Layout vị trí súng theo 4 hướng', () {
     test('Súng gắn vào tay và cập nhật toạ độ đúng theo từng hướng mặt', () async {

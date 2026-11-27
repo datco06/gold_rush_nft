@@ -15,6 +15,8 @@ import 'package:gold_rush/components/ke_dich.dart';
 import 'package:gold_rush/components/luoi_va_cham.dart';
 import 'package:gold_rush/components/vat_pham_roi.dart';
 import 'package:gold_rush/gold_rush_game.dart';
+import 'package:gold_rush/kho_do/danh_sach_trang_bi.dart';
+import 'package:gold_rush/kho_do/vat_pham_hien_thi.dart' as kho;
 import 'package:gold_rush/man_choi.dart';
 
 Future<ui.Image> _taoAnhGia() async {
@@ -85,6 +87,68 @@ Future<GoldRushGame> _dungGameThu({
 }
 
 void main() {
+  test(
+    'Android nạp trang bị trước ván, giữ ảnh cũ lúc đổi và giới hạn cache',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final game = await _dungGameThu();
+      final danhMuc = danhSachTrangBiCuaHang();
+      final sung = danhMuc.where((vp) => vp.loai == kho.LoaiVatPham.vuKhi).take(5);
+      final giap = danhMuc.firstWhere((vp) => vp.loai == kho.LoaiVatPham.giap);
+      final giay = danhMuc.firstWhere((vp) => vp.loai == kho.LoaiVatPham.giay);
+      String tep(kho.VatPhamHienThi vp) => vp.duongDanAnh!.split('/').last;
+
+      expect(danhMuc, hasLength(27));
+      expect(game.taiNguyen.trangBiTheoTep, isEmpty);
+      game.danhSachVatPham.value = [
+        sung.first.voiTrangBi(kho.OTrangBi.vuKhiChinh),
+        ...sung.skip(1),
+        giap.voiTrangBi(kho.OTrangBi.giap),
+        giay.voiTrangBi(kho.OTrangBi.giay),
+      ];
+
+      await game.batDauVanMoi(maVan: 'van-trang-bi-android');
+      expect(
+        game.taiNguyen.trangBiTheoTep.keys,
+        unorderedEquals([tep(sung.first), tep(giap), tep(giay)]),
+      );
+      expect(game.george!.trangBiVuKhi, hasLength(4));
+      expect(game.george!.trangBiGiap, hasLength(4));
+      expect(game.george!.trangBiGiay, hasLength(4));
+      final anhDau =
+          game.george!.trangBiVuKhi.values.first.frames.first.sprite.image;
+
+      for (final moi in sung.skip(1)) {
+        final boCu = game.george!.trangBiVuKhi;
+        final dangDoi = game.trangBiVatPham(moi.id);
+        expect(game.george!.trangBiVuKhi, same(boCu));
+        await dangDoi;
+        expect(
+          game.george!.trangBiVuKhi,
+          same(game.taiNguyen.trangBiTheoTep[tep(moi)]),
+        );
+        expect(game.taiNguyen.trangBiTheoTep.length, lessThanOrEqualTo(6));
+      }
+
+      expect(anhDau.debugDisposed, isTrue);
+      final doiLanDau = game.trangBiVatPham(sung.first.id);
+      final monCuoi = sung.elementAt(2);
+      final doiLanSau = game.trangBiVatPham(monCuoi.id);
+      await Future.wait([doiLanDau, doiLanSau]);
+      expect(
+        game.george!.trangBiVuKhi,
+        same(game.taiNguyen.trangBiTheoTep[tep(monCuoi)]),
+      );
+      expect(game.taiNguyen.trangBiTheoTep.length, lessThanOrEqualTo(6));
+      final anhDangDung =
+          game.george!.trangBiVuKhi.values.first.frames.first.sprite.image;
+      expect(anhDangDung.debugDisposed, isFalse);
+      game.onRemove();
+      expect(anhDangDung.debugDisposed, isTrue);
+    },
+  );
+
   test(
     'Android giải phóng cảnh sau ván, giữ điểm và nạp lại khi chơi tiếp',
     () async {

@@ -16,7 +16,14 @@ void main() {
   setUpAll(() async {
     taiNguyen = TaiNguyen();
     await taiNguyen.nap();
+    await taiNguyen.napAnhTrangBi({
+      'sung_cap_1_sprite_4x4.png',
+      'sung_cap_2_sprite_4x4.png',
+      'giap_thuong_cap_1.png',
+      'giay_thuong_cap_1.png',
+    });
   });
+  tearDownAll(() => taiNguyen.dongAnhTrangBi());
 
   group('TrangBiGeorge - Kiểm tra các cấu hình trang bị', () {
     test('1. Không trang bị: nạp, đổi hướng và bắn khi cả 3 ô trống', () async {
