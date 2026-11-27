@@ -112,6 +112,8 @@ trợ phát triển.
 | **Google Gemini** | Công việc đơn giản, yêu cầu rõ ràng và ít ảnh hưởng hệ thống | Viết API CRUD cơ bản, tạo schema, dữ liệu mẫu, tài liệu endpoint và thông báo lỗi |
 | **OpenAI GPT/Codex** | Công việc phức tạp, cần đọc nhiều file, phân tích nguyên nhân và đánh giá bảo mật | Điều tra lỗi gameplay, xử lý xác thực SIWE, phiên đăng nhập, CSRF/CORS, tích hợp blockchain, sửa race condition và refactor nhiều mô-đun |
 
+Xem [cách dùng AI và các đoạn chat thực tế trong dự án](docs/ai.md).
+
 ## Yêu cầu môi trường
 
 - Flutter stable và Dart SDK tương ứng.
