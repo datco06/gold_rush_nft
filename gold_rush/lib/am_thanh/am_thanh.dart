@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/foundation.dart';
+
+import 'hieu_ung_am_thanh_van.dart';
 
 /// Lớp bọc quanh flame_audio.
 ///
@@ -22,13 +26,48 @@ class AmThanh {
   static bool batHieuUng = true;
 
   static bool _dangPhatNhac = false;
+  static HieuUngAmThanhVan? _hieuUngVan;
+  static Future<void>? _dangDongHieuUng;
+
+  static bool get _dungHieuUngTheoVan =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  /// Trả về hàm dọn hiệu ứng thuộc đúng ván vừa mở.
+  static VoidCallback? moHieuUngVan() {
+    if (!_dungHieuUngTheoVan) return null;
+    if (_hieuUngVan case final cu?) _dongHieuUngVan(cu);
+    final moi = HieuUngAmThanhVan();
+    _hieuUngVan = moi;
+    return () => _dongHieuUngVan(moi);
+  }
+
+  static void _dongHieuUngVan(HieuUngAmThanhVan van) {
+    if (!identical(_hieuUngVan, van)) return;
+    _hieuUngVan = null;
+    // Nếu vào lại rất nhanh, đợi player cũ được dọn trước khi phát hiệu ứng mới.
+    final dangDong = Future.wait<void>([
+      if (_dangDongHieuUng case final cu?) cu,
+      van.dong(),
+    ]).then<void>((_) {});
+    _dangDongHieuUng = dangDong;
+    unawaited(
+      dangDong.then((_) {
+        if (identical(_dangDongHieuUng, dangDong)) _dangDongHieuUng = null;
+      }),
+    );
+  }
 
   /// Nạp sẵn toàn bộ tệp âm thanh vào bộ nhớ đệm.
   ///
   /// Không nạp trước thì lần phát đầu tiên bị trễ rõ rệt, nghe như game giật.
   static Future<void> napTruoc() async {
     try {
-      await FlameAudio.audioCache.loadAll([_dongXu, _vaCham, _buocChan, _nhacNen]);
+      await FlameAudio.audioCache.loadAll([
+        _dongXu,
+        _vaCham,
+        _buocChan,
+        _nhacNen,
+      ]);
     } catch (e) {
       debugPrint('Không nạp được âm thanh: $e');
     }
@@ -37,6 +76,12 @@ class AmThanh {
   static Future<void> _phat(String ten, {double amLuong = 1.0}) async {
     if (!batHieuUng) return;
     try {
+      if (_dungHieuUngTheoVan) {
+        if (_dangDongHieuUng == null) {
+          await _hieuUngVan?.phat(ten, amLuong: amLuong);
+        }
+        return;
+      }
       await FlameAudio.play(ten, volume: amLuong);
     } catch (e) {
       debugPrint('Không phát được $ten: $e');

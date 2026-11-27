@@ -961,6 +961,7 @@ class GoldRushGame extends FlameGame
 
   @override
   void onRemove() {
+    _dongHieuUngVan();
     _daDongLuaChon = true;
     for (final listener in _choLuuLichSu) {
       auth?.removeListener(listener);
@@ -1038,6 +1039,12 @@ class GoldRushGame extends FlameGame
   TrangThaiChoi trangThai = TrangThaiChoi.tamDung;
   bool _daGuiVaXinPhieu = false;
   Future<void>? _dangNhanThuong;
+  VoidCallback? _traHieuUngVan;
+
+  void _dongHieuUngVan() {
+    _traHieuUngVan?.call();
+    _traHieuUngVan = null;
+  }
 
   int tongSoXu = 0;
   int soXuDaNhat = 0;
@@ -1753,6 +1760,7 @@ class GoldRushGame extends FlameGame
     diemCaoNhat = max(diemCaoNhat, george?.diem ?? 0);
 
     _datDieuKhien(false);
+    _dongHieuUngVan();
     AmThanh.dungNhacNen();
     if (dungNenKetQuaNhe) overlays.remove(LopPhu.nutBan);
     overlays.add(LopPhu.ketThuc);
@@ -2300,6 +2308,8 @@ class GoldRushGame extends FlameGame
     });
     _datDieuKhien(true);
 
+    _dongHieuUngVan();
+    _traHieuUngVan = AmThanh.moHieuUngVan();
     resumeEngine();
     AmThanh.batNhacNen();
   }
@@ -2332,6 +2342,7 @@ class GoldRushGame extends FlameGame
 
   void veMenu() {
     _guiNhatKy('bo');
+    _dongHieuUngVan();
 
     _anTatCaLopPhu();
     overlays.add(LopPhu.menu);
