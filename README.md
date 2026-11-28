@@ -504,19 +504,4 @@ kiểm tra mã triển khai và cấu hình của
 `ThanhTuuSBT`. Bước duyệt MetaMask và xác nhận giao dịch đầu cuối trên
 điện thoại Android thật vẫn cần tester thực hiện.
 
-## Quy trình đóng góp
 
-```bash
-git status
-git diff --check
-git add <file-can-thay-doi>
-git commit -m "Mô tả thay đổi bằng tiếng Việt"
-git push origin main
-```
-
-Trước khi push nên kiểm tra:
-
-- Không có `.env`, private key hoặc seed phrase trong staged files.
-- `git diff --cached --check` không báo lỗi khoảng trắng.
-- Test phù hợp với phần đã sửa đã chạy.
-- Sau push, kiểm tra GitHub Actions, Render Deploys và Firebase Deploy nếu có thay đổi frontend.
